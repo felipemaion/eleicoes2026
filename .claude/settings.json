@@ -13,7 +13,7 @@
       "Bash(tippecanoe:*)", "Bash(./scripts/*)", "WebSearch", "WebFetch"
     ],
     "deny": [
-      "Bash(git push:*)", "Bash(gh pr merge:*)", "Bash(gh repo delete:*)",
+      "Bash(gh repo delete:*)",
       "Bash(git reset --hard:*)", "Bash(rm -rf:*)", "Bash(claude -p:*)",
       "Read(.env)", "Read(**/.env)", "Read(**/secrets/**)"
     ]

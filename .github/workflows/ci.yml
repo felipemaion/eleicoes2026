@@ -10,6 +10,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # hashFiles() não é aceito no `if` de job; um job próprio detecta os pacotes existentes.
+  detectar:
+    name: Detectar pacotes
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.d.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: d
+        run: echo "web=$([ -f apps/web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   python:
     name: Python (lint, tipos, testes)
     runs-on: ubuntu-latest
@@ -29,8 +40,9 @@ jobs:
 
   web:
     name: Frontend
+    needs: detectar
+    if: needs.detectar.outputs.web == 'true'
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('apps/web/package.json') != '' }}
     defaults:
       run:
         working-directory: apps/web
