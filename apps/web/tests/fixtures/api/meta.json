@@ -7,14 +7,19 @@
   "SE"
  ],
  "cargos": [
-  "deputado_federal"
+  "DEPUTADO FEDERAL"
  ],
  "grupos": [
   {
    "id": "missao_2026",
    "rotulo": "Missão 2026",
    "ano": 2026
+  },
+  {
+   "id": "mbl_2022",
+   "rotulo": "MBL 2022",
+   "ano": 2022
   }
  ],
- "dt_geracao": "2026-10-07T10:00:00"
+ "dt_geracao": "2026-10-07"
 }

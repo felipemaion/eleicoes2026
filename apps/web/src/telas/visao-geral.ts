@@ -3,8 +3,9 @@ import { kpisDoGrupo, paramsDeFiltros, rankingDeCandidatos } from "../dados/adap
 import { render as renderKpi } from "../componentes/graficos/kpi";
 import { render as renderRanking } from "../componentes/graficos/ranking";
 import { formatarNumero } from "../formato";
-import { campoSelect, h, nota, titulo } from "./dom";
+import { h, titulo } from "./dom";
 import { carregar } from "./estados";
+import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
 export const tela: Tela = {
@@ -12,41 +13,27 @@ export const tela: Tela = {
   render(container, { filtros }) {
     const cliente = criarCliente();
     const conteudo = h("div");
-    container.replaceChildren(titulo("Visão geral"), conteudo);
-    let comparacao = "";
-    let soIndicados = false;
+    container.replaceChildren(titulo("Visão geral"), cabecalhoDaTela("visao-geral"), conteudo);
     let parar = (): void => { /* ainda sem busca */ };
 
-    const iniciar = (focar?: string): void => {
+    const iniciar = (): void => {
       parar();
       parar = carregar(
         conteudo,
-        () => Promise.all([cliente.candidatos({ ...paramsDeFiltros(filtros), comparacao: comparacao || undefined }), cliente.grupos()]),
-        ([r]) => (r.candidatos.length === 0 ? "Nenhum candidato encontrado para estes filtros." : null),
+        () => {
+          const p = paramsDeFiltros(filtros);
+          // 500 é o teto da API: a soma dos KPIs só é completa se `total` couber nele.
+          return Promise.all([cliente.candidatos({ ...p, limite: "500" }), cliente.gastos(p)]);
+        },
+        ([r]) => (r.itens.length === 0 ? "Nenhum candidato encontrado para estes filtros." : null),
         ([r, g], destino) => {
-          comparacao = comparacao || g.comparacoes[0]?.id || "";
-          const seletor = campoSelect("Comparar", "comparacao", g.comparacoes.map((c) => ({ valor: c.id, texto: c.rotulo })), comparacao, (v) => { comparacao = v; iniciar("comparacao"); });
-          const caixa = h("input", { type: "checkbox", name: "so-indicados", checked: soIndicados });
-          const rotuloCaixa = h("label", {}, caixa, " Só candidatos indicados pelo grupo");
           const kpis = h("div");
           const ranking = h("div");
-          const kpiHandle = r.kpis ? renderKpi(kpis, kpisDoGrupo(r.kpis)) : null;
-          const barras = (): ReturnType<typeof rankingDeCandidatos> => rankingDeCandidatos(r.candidatos, soIndicados);
-          const rk = renderRanking(ranking, barras(), { titulo: "Votos por candidato", formato: formatarNumero, colunaValor: "Votos" });
-          caixa.addEventListener("change", () => { soIndicados = caixa.checked; rk.atualizar(barras()); });
-          const avisos = [
-            r.contas_parciais ? "Contas de 2026 parciais: custo por voto e receitas ainda mudam." : "",
-            `Fonte: TSE. dt_geracao: ${r.dt_geracao ?? "indisponível"}.`,
-          ].filter(Boolean);
-          destino.append(
-            h("div", { className: "controles" }, seletor.rotulo, rotuloCaixa),
-            kpis,
-            h("h2", { textContent: "Ranking de candidatos" }),
-            ranking,
-            ...avisos.map(nota),
-          );
-          if (focar) destino.querySelector<HTMLElement>(`[name=${focar}]`)?.focus();
-          return () => { kpiHandle?.destruir(); rk.destruir(); };
+          const ctx = { dt_geracao: g.dt_geracao, mes_base_ipca: g.base_ipca ?? undefined, contas_parciais: g.contas_parciais };
+          const kpiHandle = renderKpi(kpis, kpisDoGrupo(r, g), { ajuda: (k) => ajuda(k, ctx) });
+          const rk = renderRanking(ranking, rankingDeCandidatos(r.itens), { titulo: "Votos por candidato", formato: formatarNumero, colunaValor: "Votos" });
+          destino.append(...[avisosUi("visao-geral", ctx)].filter((x) => x !== null), kpis, h("h2", { textContent: "Ranking de candidatos" }), ranking, rodapeUi("visao-geral", ctx));
+          return () => { kpiHandle.destruir(); rk.destruir(); };
         },
       );
     };

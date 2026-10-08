@@ -1,4 +1,9 @@
 {
+ "ano": 2026,
+ "total": 2,
+ "limite": 5000,
+ "offset": 0,
+ "truncado": false,
  "pontos": [
   {
    "lat": -10.9,
@@ -10,5 +15,6 @@
    "lon": -37.4,
    "votos": 300
   }
- ]
+ ],
+ "dt_geracao": "2026-10-07"
 }

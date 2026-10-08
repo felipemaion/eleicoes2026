@@ -4,22 +4,27 @@
  * malformado falha alto em vez de virar gráfico errado.
  */
 import type {
-  Ficha, Meta, PontoVoto, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio,
+  Ficha, Meta, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
+/** Cancelamento por abort não é falha: quem cancelou já não quer a resposta. */
+export function foiCancelada(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "AbortError";
+}
+
 export type Params = Readonly<Record<string, string | undefined>>;
 
 export interface ClienteApi {
-  meta(): Promise<Meta>;
-  grupos(): Promise<RespostaGrupos>;
-  candidatos(p: Params): Promise<RespostaCandidatos>;
-  ficha(ano: number, sq: string): Promise<Ficha>;
-  mapa(p: Params): Promise<RespostaMapa>;
-  pontos(p: Params): Promise<{ pontos: PontoVoto[] }>;
-  gastos(p: Params): Promise<RespostaGastos>;
-  comparativo(p: Params): Promise<RespostaComparativo>;
-  municipio(ibge: string): Promise<RespostaMunicipio>;
+  meta(sinal?: AbortSignal): Promise<Meta>;
+  grupos(sinal?: AbortSignal): Promise<RespostaGrupos>;
+  candidatos(p: Params, sinal?: AbortSignal): Promise<RespostaCandidatos>;
+  ficha(ano: number, sq: string | number, sinal?: AbortSignal): Promise<Ficha>;
+  mapa(p: Params, sinal?: AbortSignal): Promise<RespostaMapa>;
+  pontos(p: Params, sinal?: AbortSignal): Promise<RespostaPontos>;
+  gastos(p: Params, sinal?: AbortSignal): Promise<RespostaGastos>;
+  comparativo(p: Params, sinal?: AbortSignal): Promise<RespostaComparativo>;
+  municipio(ibge: string, sinal?: AbortSignal): Promise<RespostaMunicipio>;
 }
 
 function ehObjeto(x: unknown): x is Record<string, unknown> {
@@ -48,22 +53,22 @@ function query(p: Params): string {
 export function criarCliente(base = "/api"): ClienteApi {
   // T aparece no guarda e no retorno; o linter não enxerga o predicado de tipo como uso.
    
-  async function obter<T>(caminho: string, valido: (x: unknown) => x is T): Promise<T> {
-    const r = await fetch(`${base}${caminho}`);
+  async function obter<T>(caminho: string, valido: (x: unknown) => x is T, sinal?: AbortSignal): Promise<T> {
+    const r = await fetch(`${base}${caminho}`, sinal ? { signal: sinal } : undefined);
     if (!r.ok) throw new Error(`GET ${base}${caminho} falhou: ${String(r.status)}`);
     const corpo: unknown = await r.json();
     if (!valido(corpo)) throw new Error(`GET ${base}${caminho.split("?")[0] ?? caminho}: resposta inesperada`);
     return corpo;
   }
   return {
-    meta: () => obter("/meta", ehMeta),
-    grupos: () => obter("/grupos", comChaves<RespostaGrupos>("grupos")),
-    candidatos: (p) => obter(`/candidatos${query(p)}`, comChaves<RespostaCandidatos>("candidatos")),
-    ficha: (ano, sq) => obter(`/candidatos/${String(ano)}/${encodeURIComponent(sq)}`, comChaves<Ficha>("candidato", "votos_municipios", "gastos", "receitas")),
-    mapa: (p) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade", "denominador")),
-    pontos: (p) => obter(`/mapa/pontos${query(p)}`, comChaves<{ pontos: PontoVoto[] }>("pontos")),
-    gastos: (p) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("candidatos", "mes_base_deflator")),
-    comparativo: (p) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "candidatos", "mes_base_deflator")),
-    municipio: (ibge) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos")),
+    meta: (sinal) => obter("/meta", ehMeta, sinal),
+    grupos: (sinal) => obter("/grupos", comChaves<RespostaGrupos>("grupos"), sinal),
+    candidatos: (p, sinal) => obter(`/candidatos${query(p)}`, comChaves<RespostaCandidatos>("itens", "total"), sinal),
+    ficha: (ano, sq, sinal) => obter(`/candidatos/${String(ano)}/${encodeURIComponent(sq)}`, comChaves<Ficha>("candidato", "votos_por_municipio", "votos_por_uf", "votos_total"), sinal),
+    mapa: (p, sinal) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade"), sinal),
+    pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
+    gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),
+    comparativo: (p) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para")),
+    municipio: (ibge, sinal) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos"), sinal),
   };
 }

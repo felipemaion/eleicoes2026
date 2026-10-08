@@ -1,163 +1,36 @@
 /**
- * TIPOS PROVISÓRIOS do contrato da API (T-B02), escritos a partir do brief enquanto
- * `docs/api/openapi.json` só tem /health e /meta. Único módulo a trocar quando o OpenAPI
- * ganhar os endpoints: rode `pnpm gen:api` e reexporte de `./gerado/api` aqui, sem mexer
- * em adaptadores nem telas. Não espalhe tipos de resposta fora deste arquivo.
+ * Tipos do contrato da API: SEMPRE derivados de `./gerado/api` (`pnpm gen:api` a partir de
+ * `docs/api/openapi.json`). Nada aqui é escrito à mão — só apelidos legíveis. O backend é a
+ * fonte de verdade; divergência de semântica vai para o handoff, não para um tipo paralelo.
  */
-import type { components } from "./gerado/api";
+import type { components, paths } from "./gerado/api";
 
-/** Já existe no OpenAPI: vem do gerado (`pnpm gen:api`), não é escrito à mão. */
-export type Meta = components["schemas"]["Meta"];
+type S = components["schemas"];
 
-export interface Grupo {
-  id: string;
-  rotulo: string;
-  ano: number;
-  n_candidaturas: number;
-}
+export type Meta = S["Meta"];
+export type RespostaGrupos = S["GruposResposta"];
+export type Grupo = S["GrupoResumo"];
+export type ComparacaoDef = S["ComparacaoResumo"];
+export type Candidato = S["CandidatoResumo"];
+export type RespostaCandidatos = S["ListaCandidatos"];
+export type Ficha = S["FichaCandidato"];
+export type VotoMunicipio = S["VotosMunicipio"];
+export type RespostaMapa = S["Mapa"];
+export type DetalheMapa = S["Detalhe"];
+export type EscalaSugerida = S["EscalaSugerida"];
+export type PontoVoto = S["Ponto"];
+export type RespostaPontos = S["Pontos"];
+export type RespostaGastos = S["Gastos"];
+export type GastoCandidato = S["GastoCandidato"];
+export type RespostaComparativo = S["Comparativo"];
+export type MunicipioComparado = S["EvolucaoMunicipio"];
+export type RespostaMunicipio = S["ResumoMunicipio"];
 
-export interface ComparacaoDef {
-  id: string;
-  rotulo: string;
-  antes: string;
-  depois: string;
-}
+/** Valores aceitos pela API (enums do OpenAPI). */
+export type CargoApi = S["Cargo"];
+export type UfApi = S["UF"];
+export type IndicadorApi = S["Indicador"];
+export type NivelApi = S["Nivel"];
 
-export interface RespostaGrupos {
-  grupos: Grupo[];
-  comparacoes: ComparacaoDef[];
-}
-
-export interface Candidato {
-  sq_candidato: string;
-  ano: number;
-  nome: string;
-  partido: string;
-  cargo: string;
-  uf: string;
-  grupo: string;
-  votos: number;
-  pct_validos: number;
-  penetracao: number;
-  resultado: string;
-  /** Indicado pelo grupo (recorte "só indicados"). */
-  indicado: boolean;
-}
-
-export interface VotoMunicipio {
-  cd_mun_ibge: string;
-  nome: string;
-  votos: number;
-  taxa: number;
-}
-
-export interface FonteReceita {
-  fonte: string;
-  valor: number;
-}
-
-export interface Ficha {
-  candidato: Candidato;
-  votos_municipios: VotoMunicipio[];
-  gastos: { contratado: number; pago: number; custo_voto_contratado: number | null; custo_voto_pago: number | null };
-  receitas: FonteReceita[];
-  contas_parciais: boolean;
-}
-
-export type EscalaSugerida = "quantil" | "divergente" | "log";
-
-export interface DetalheMapa {
-  nome?: string;
-  votos: number;
-  aptos: number;
-  taxa: number;
-}
-
-export interface RespostaMapa {
-  /** Nome curto do indicador, usado na legenda (ex.: "Penetração"). */
-  nome?: string;
-  valores: Record<string, number>;
-  detalhes: Record<string, DetalheMapa>;
-  escala_sugerida: EscalaSugerida;
-  /** Só para escala_sugerida = "divergente": semiamplitude simétrica em torno de 0. */
-  extensao?: number;
-  tipo: "taxa" | "razao" | "diferenca";
-  unidade: string;
-  denominador: string;
-}
-
-export interface PontoVoto {
-  lat: number;
-  lon: number;
-  votos: number;
-}
-
-export interface GastoCandidato {
-  id: string;
-  rotulo: string;
-  votos: number;
-  custo_contratado: number;
-  custo_pago: number;
-}
-
-export interface RespostaGastos {
-  candidatos: GastoCandidato[];
-  receita_por_fonte: { rotulo: string; valores: Record<string, number> }[];
-  custo_voto_contratado: number | null;
-  custo_voto_pago: number | null;
-  pct_publico: number;
-  pct_autofinanciamento: number;
-  contas_parciais: boolean;
-  /** Mês-base do IPCA usado nos valores de 2022 (ex.: "2026-09"). */
-  mes_base_deflator: string;
-}
-
-export interface MunicipioComparado {
-  cd_mun_ibge: string;
-  nome: string;
-  /** Δ penetração por AMC (2026 − 2022), em fração dos aptos. */
-  delta_penetracao: number;
-  retencao: number | null;
-}
-
-export interface RespostaComparativo {
-  rotulo_antes: string;
-  rotulo_depois: string;
-  kpis: { penetracao_antes: number; penetracao_depois: number; retencao: number | null };
-  municipios: MunicipioComparado[];
-  candidatos: { rotulo: string; antes: number; depois: number }[];
-  /** Penetração por município nos dois anos (mesmas quebras no mapa). */
-  penetracao_antes: Record<string, number>;
-  penetracao_depois: Record<string, number>;
-  mes_base_deflator: string;
-}
-
-export interface RespostaMunicipio {
-  cd_mun_ibge: string;
-  nome: string;
-  uf: string;
-  aptos: number;
-  grupos: { grupo: string; rotulo: string; votos: number; taxa: number }[];
-}
-
-export interface KpisGrupo {
-  votos: number;
-  votos_nominais: number;
-  votos_legenda: number;
-  pct_validos: number;
-  penetracao: number;
-  /** Penetração do grupo de comparação (MBL 2022) no mesmo cargo. */
-  penetracao_comparada: number | null;
-  eleitos: number;
-  candidaturas_aptas: number;
-  custo_voto_contratado: number | null;
-  pct_publico: number;
-  delta_penetracao: number | null;
-}
-
-export interface RespostaCandidatos {
-  candidatos: Candidato[];
-  kpis: KpisGrupo | null;
-  contas_parciais: boolean;
-  dt_geracao: string | null;
-}
+/** Query de um endpoint, tirada do OpenAPI — o compilador acusa parâmetro renomeado. */
+export type QueryDe<C extends keyof paths> = paths[C] extends { get: { parameters: { query?: infer Q } } } ? Q : never;

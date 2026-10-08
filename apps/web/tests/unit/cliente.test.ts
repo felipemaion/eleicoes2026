@@ -37,7 +37,7 @@ describe("cliente — endpoints de domínio", () => {
     expect(urls[0]).toBe("/api/mapa?ano=2026&uf=SE&indicador=penetracao");
   });
   it("ficha usa ano e sq no caminho, escapados", async () => {
-    const urls = espiar({ candidato: {}, votos_municipios: [], gastos: {}, receitas: [], contas_parciais: false });
+    const urls = espiar({ candidato: {}, votos_por_municipio: [], votos_por_uf: [], votos_total: 0 });
     await criarCliente().ficha(2026, "a/b");
     expect(urls[0]).toBe("/api/candidatos/2026/a%2Fb");
   });
@@ -56,5 +56,18 @@ describe("cliente — endpoints de domínio", () => {
   it("expõe todos os endpoints do contrato", () => {
     const c = criarCliente();
     for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio"] as const) expect(typeof c[m]).toBe("function");
+  });
+});
+
+describe("cliente — cancelamento", () => {
+  it("repassa o AbortSignal ao fetch", async () => {
+    const sinais: (AbortSignal | undefined)[] = [];
+    vi.stubGlobal("fetch", (_u: string, init?: RequestInit) => {
+      sinais.push(init?.signal ?? undefined);
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ pontos: [], truncado: false }) });
+    });
+    const ac = new AbortController();
+    await criarCliente().pontos({ uf: "SE" }, ac.signal);
+    expect(sinais[0]).toBe(ac.signal);
   });
 });

@@ -29,3 +29,15 @@ const fNumero = localePtBR.format(",.0f");
 export const formatarMoeda = (v: number): string => fMoeda(v);
 /** 1234567 → "1.234.567". */
 export const formatarNumero = (v: number): string => fNumero(v);
+
+/** Penetração vem da API em ‰ (votos por mil aptos): 12,3 → "12,3 ‰". Não é fração. */
+export const formatarPermil = (v: number): string => `${decimal.format(v)} ‰`;
+/** Taxa já em pontos (0–100), p.ex. % dos válidos: 4,6 → "4,6%". */
+export const formatarPontos = (v: number): string => `${decimal.format(v)}%`;
+
+/** Escolhe o formatador pela `unidade` que a API informa; unidade desconhecida falha alto. */
+export function formatadorDaUnidade(unidade: string): (v: number) => string {
+  if (unidade === "‰") return formatarPermil;
+  if (unidade === "%") return formatarPontos;
+  throw new Error(`Unidade de taxa desconhecida: "${unidade}"`);
+}

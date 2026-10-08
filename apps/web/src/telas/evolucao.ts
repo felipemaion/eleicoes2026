@@ -1,15 +1,15 @@
-import { escalaIgualNosDoisAnos, mapaDeDiferenca, paramsDeFiltros, paresDaComparacao } from "../dados/adaptadores";
+import { escalaIgualNosDoisAnos, mapaDeDiferenca, paramsComCargo, penetracaoDosAnos } from "../dados/adaptadores";
 import { criarCliente } from "../dados/cliente";
-import { render as renderComparacao } from "../componentes/graficos/comparacao";
-import { render as renderKpi } from "../componentes/graficos/kpi";
+import { render as renderKpi, type Kpi } from "../componentes/graficos/kpi";
 import type { MetaIndicador } from "../componentes/escalas/escalas";
-import { formatarDecimal, formatarPercentual } from "../formato";
+import { formatarPermil } from "../formato";
 import { campoSelect, h, nota, titulo } from "./dom";
 import { carregar } from "./estados";
 import { montarMapa } from "./mapa-embutido";
+import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
-const META_PENETRACAO: MetaIndicador = { nome: "Penetração", tipo: "taxa", unidade: "% dos eleitores aptos", denominador: "eleitores aptos do município" };
+const META_PENETRACAO: MetaIndicador = { nome: "Penetração", tipo: "taxa", unidade: "‰", denominador: "eleitores aptos do município" };
 
 function figura(legenda: string): { fig: HTMLElement; area: HTMLElement } {
   const area = h("div", { className: "mapa-area" });
@@ -21,7 +21,7 @@ export const tela: Tela = {
   render(container, { filtros }) {
     const cliente = criarCliente();
     const conteudo = h("div");
-    container.replaceChildren(titulo("Evolução 2022×2026"), conteudo);
+    container.replaceChildren(titulo("Evolução 2022×2026"), cabecalhoDaTela("evolucao"), conteudo);
     let comparacao = "";
     let parar = (): void => { /* ainda sem busca */ };
 
@@ -29,48 +29,53 @@ export const tela: Tela = {
       parar();
       parar = carregar(
         conteudo,
-        () => Promise.all([cliente.comparativo({ ...paramsDeFiltros(filtros), comparacao: comparacao || undefined }), cliente.grupos()]),
+        () => Promise.all([cliente.comparativo({ ...paramsComCargo(filtros), comparacao: comparacao || undefined }), cliente.grupos()]),
         ([c]) => (c.municipios.length === 0 ? "Sem dados comparáveis entre 2022 e 2026 para estes filtros." : null),
         ([c, g], destino) => {
           comparacao = comparacao || g.comparacoes[0]?.id || "";
           const seletor = campoSelect("Comparar", "comparacao", g.comparacoes.map((x) => ({ valor: x.id, texto: x.rotulo })), comparacao, (v) => { comparacao = v; iniciar("comparacao"); });
+          const { de, para, kpis: k } = c;
+          const itens: Kpi[] = [];
+          if (k.penetracao_de !== null) itens.push({ rotulo: `Penetração ${de.rotulo}`, ajuda: "penetracao", valor: k.penetracao_de, formato: "permil", unidade: "votos por mil aptos" });
+          if (k.penetracao_para !== null) itens.push({ rotulo: `Penetração ${para.rotulo}`, ajuda: "penetracao", valor: k.penetracao_para, formato: "permil", unidade: "votos por mil aptos" });
+          if (k.delta_penetracao !== null) itens.push({ rotulo: "Δ penetração", ajuda: "evolucao", valor: k.delta_penetracao, formato: "permil", unidade: "‰ — métrica-âncora (depois − antes)" });
+          if (k.swing_pp !== null) itens.push({ rotulo: "Swing (% válidos)", ajuda: "evolucao", valor: k.swing_pp, formato: "pontos", unidade: "pontos percentuais" });
+          if (k.retencao !== null) itens.push({ rotulo: "Retenção", ajuda: "evolucao", valor: k.retencao, formato: "percentual", unidade: "votos depois ÷ votos antes (nos municípios comparáveis)" });
+          if (k.ganho_absoluto !== null) itens.push({ rotulo: "Ganho absoluto", ajuda: "evolucao", valor: k.ganho_absoluto, formato: "inteiro", unidade: "votos a mais que antes" });
           const kpis = h("div");
-          const kpi = renderKpi(kpis, [
-            { rotulo: `Penetração ${c.rotulo_antes}`, valor: c.kpis.penetracao_antes, formato: "percentual", unidade: "% dos aptos" },
-            { rotulo: `Penetração ${c.rotulo_depois}`, valor: c.kpis.penetracao_depois, formato: "percentual", unidade: "% dos aptos" },
-            ...(c.kpis.retencao === null ? [] : [{ rotulo: "Retenção", valor: c.kpis.retencao, formato: "percentual" as const, unidade: "votos de 2026 que já eram do grupo em 2022 (razão)" }]),
-          ]);
-          const a = figura(c.rotulo_antes);
-          const d = figura(c.rotulo_depois);
+          const ctx = { dt_geracao: c.dt_geracao };
+          const kpi = renderKpi(kpis, itens, { ajuda: (k) => ajuda(k, ctx) });
+          const a = figura(de.rotulo);
+          const d = figura(para.rotulo);
           const dif = figura("Diferença (Δ penetração por AMC)");
-          const areaComp = h("div");
-          const comp = renderComparacao(areaComp, paresDaComparacao(c), { titulo: "Penetração por candidato", rotuloAntes: c.rotulo_antes, rotuloDepois: c.rotulo_depois, formato: formatarPercentual });
           destino.append(
+            ...[avisosUi("evolucao", ctx)].filter((x) => x !== null),
             h("div", { className: "controles" }, seletor.rotulo), kpis,
             h("h2", { textContent: "Mapas lado a lado" }),
             h("div", { className: "mapas-3" }, a.fig, d.fig, dif.fig),
             nota("Os mapas de 2022 e 2026 usam as mesmas quebras de cor. Zonas eleitorais não são comparadas entre anos (rezoneamento); a comparação é por município agregado (AMC)."),
-            h("h2", { textContent: "Comparação por candidato (mesmos candidatos nos dois anos)" }), areaComp,
-            nota(`Retenção: ${c.kpis.retencao === null ? "indisponível" : formatarDecimal(c.kpis.retencao)}. Valores monetários de 2022 deflacionados para ${c.mes_base_deflator}.`),
+            ...(c.mesmos_candidatos ? [nota("Comparação restrita aos candidatos que concorreram nos dois anos.")] : []),
+            rodapeUi("evolucao", ctx),
           );
           if (focar) destino.querySelector<HTMLElement>(`[name=${focar}]`)?.focus();
 
           let vivo = true;
-          const nomes = new Map(c.municipios.map((m) => [m.cd_mun_ibge, m.nome]));
+          const nomes = new Map(c.municipios.map((m) => [String(m.cd_amc), m.nome]));
           const detalhes = (valores: Readonly<Record<string, number>>): Record<string, { nome: string; taxa: number }> =>
             Object.fromEntries(Object.entries(valores).map(([id, taxa]) => [id, { nome: nomes.get(id) ?? id, taxa }]));
-          const escalas = escalaIgualNosDoisAnos(c.penetracao_antes, c.penetracao_depois);
+          const pen = penetracaoDosAnos(c);
+          const escalas = escalaIgualNosDoisAnos(pen.antes, pen.depois);
           const diff = mapaDeDiferenca(c);
+          const opcoes = { ano: para.ano, formatarTaxa: formatarPermil };
           const montagens = [
-            montarMapa(a.area, `Mapa de penetração, ${c.rotulo_antes}`).then((m) => { if (vivo) m.definirValores(c.penetracao_antes, escalas.antes, META_PENETRACAO, detalhes(c.penetracao_antes)); return m; }),
-            montarMapa(d.area, `Mapa de penetração, ${c.rotulo_depois}`).then((m) => { if (vivo) m.definirValores(c.penetracao_depois, escalas.depois, META_PENETRACAO, detalhes(c.penetracao_depois)); return m; }),
-            montarMapa(dif.area, "Mapa da diferença de penetração").then((m) => { if (vivo) m.definirValores(diff.valores, diff.escala, diff.meta, diff.detalhes); return m; }),
+            montarMapa(a.area, `Mapa de penetração, ${de.rotulo}`, opcoes).then((m) => { if (vivo) m.definirValores(pen.antes, escalas.antes, META_PENETRACAO, detalhes(pen.antes)); return m; }),
+            montarMapa(d.area, `Mapa de penetração, ${para.rotulo}`, opcoes).then((m) => { if (vivo) m.definirValores(pen.depois, escalas.depois, META_PENETRACAO, detalhes(pen.depois)); return m; }),
+            montarMapa(dif.area, "Mapa da diferença de penetração", opcoes).then((m) => { if (vivo) m.definirValores(diff.valores, diff.escala, diff.meta, diff.detalhes); return m; }),
           ];
           Promise.all(montagens).catch((e: unknown) => { if (vivo) destino.append(h("p", { role: "alert", textContent: `Não foi possível desenhar os mapas: ${e instanceof Error ? e.message : String(e)}` })); });
           return () => {
             vivo = false;
             kpi.destruir();
-            comp.destruir();
             for (const p of montagens) void p.then((m) => { m.destruir(); }, () => { /* nunca montou */ });
           };
         },
