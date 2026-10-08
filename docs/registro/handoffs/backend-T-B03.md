@@ -29,6 +29,9 @@ No container Docker Desktop (1 CPU, bind virtiofs) o frio de comparativo BR foi 
 ## Mudanças de contrato OpenAPI (avisar frontend)
 `/mapa` +`comparacao`; `EscalaSugerida.anos`; `Comparativo.escala_sugerida`; `Comparativo.n_de/n_para` agora `int|null` (null = TSE não publicou `ds_situacao_candidatura`, nulo em todo 2026 hoje); `CandidatoResumo.situacao` anulável. `docs/api/openapi.json` regenerado.
 
+## Compose do Oracle
+`ELEICOES_DUCKDB_THREADS` aceito (alias de `threads`); caminhos de grupos/CSV absolutos por env na imagem (independem do cwd); testado com rootfs read-only e `/datasets` :ro.
+
 ## Pendências / pedidos
 - **dados**: `receitas_candidatos` sem `sq_candidato_doador` (transferências entre candidatos não abatidas); sem `municipios_extra` (AMC = município, desmembrados não agregados) nem `locais_h3`/`votos_local` (H3 → 503); `ds_situacao_candidatura` nulo em 2026.
 - **analise**: aceitar `ESTIMÁVEL` na `financeiro` (TODO em `duckdb.py`); docstring diz que pagas não trazem candidato, mas trazem `sq_candidato`.

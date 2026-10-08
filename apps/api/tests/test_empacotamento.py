@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -35,3 +36,10 @@ def test_dockerfile_roda_sem_root_com_factory_e_healthcheck() -> None:
     assert "HEALTHCHECK" in DOCKERFILE
     assert "/api/health" in DOCKERFILE
     assert DOCKERFILE.count("\nFROM ") >= 2  # multi-stage
+
+
+def test_threads_aceita_o_nome_do_compose_de_producao(monkeypatch: pytest.MonkeyPatch) -> None:
+    from api.config import Settings
+
+    monkeypatch.setenv("ELEICOES_DUCKDB_THREADS", "3")
+    assert Settings().threads == 3
