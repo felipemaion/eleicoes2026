@@ -14,6 +14,15 @@ from collections.abc import Sequence
 
 import polars as pl
 
+from indicadores._colunas import (
+    CD_CARGO,
+    NM_TIPO_DESTINACAO_VOTOS,
+    NR_TURNO,
+    QT_VOTOS_LEGENDA_VALIDOS,
+    QT_VOTOS_NOM_CONVR_LEG_VALIDOS,
+    QT_VOTOS_NOMINAIS,
+    QT_VOTOS_NOMINAIS_VALIDOS,
+)
 from indicadores._comum import (
     LIMIAR_N_BAIXO,
     exigir_colunas,
@@ -53,31 +62,31 @@ def votos_nominais(
     """
     exigir_colunas(
         votacao,
-        [*chaves, "nm_tipo_destinacao_votos", "qt_votos_nominais", "qt_votos_nominais_validos"],
+        [*chaves, NM_TIPO_DESTINACAO_VOTOS, QT_VOTOS_NOMINAIS, QT_VOTOS_NOMINAIS_VALIDOS],
         "votos_nominais",
     )
-    for coluna, regra in (("nr_turno", "um turno por vez"), ("cd_cargo", "um cargo por vez")):
+    for coluna, regra in ((NR_TURNO, "um turno por vez"), (CD_CARGO, "um cargo por vez")):
         if coluna not in chaves:
             exigir_valor_unico(votacao, coluna, regra, "votos_nominais")
     conhecidas = {*DESTINACOES_VALIDAS, *DESTINACOES_ANULADAS, *DESTINACOES_LEGENDA}
-    presentes = set(votacao["nm_tipo_destinacao_votos"].unique().to_list())
+    presentes = set(votacao[NM_TIPO_DESTINACAO_VOTOS].unique().to_list())
     if desconhecidas := presentes - conhecidas:
         raise ValueError(
             f"nm_tipo_destinacao_votos desconhecida: {sorted(map(repr, desconhecidas))}"
         )
-    destino = pl.col("nm_tipo_destinacao_votos")
+    destino = pl.col(NM_TIPO_DESTINACAO_VOTOS)
     return (
         votacao.group_by(list(chaves))
         .agg(
-            pl.col("qt_votos_nominais_validos")
+            pl.col(QT_VOTOS_NOMINAIS_VALIDOS)
             .filter(destino.is_in(DESTINACOES_VALIDAS))
             .sum()
             .alias("votos_nominais_validos"),
-            pl.col("qt_votos_nominais")
+            pl.col(QT_VOTOS_NOMINAIS)
             .filter(destino.is_in(DESTINACOES_ANULADAS))
             .sum()
             .alias("votos_anulados"),
-            pl.col("qt_votos_nominais")
+            pl.col(QT_VOTOS_NOMINAIS)
             .filter(destino.is_in(DESTINACOES_LEGENDA))
             .sum()
             .alias("votos_convertidos_legenda"),
@@ -218,8 +227,8 @@ def votacao_partido(partidos: pl.DataFrame) -> pl.DataFrame:
     exigir_colunas(
         partidos,
         [
-            "qt_votos_legenda_validos",
-            "qt_votos_nom_convr_leg_validos",
+            QT_VOTOS_LEGENDA_VALIDOS,
+            QT_VOTOS_NOM_CONVR_LEG_VALIDOS,
             "votos_nominais_validos",
             "qt_total_votos_validos_uf",
             "vagas",
@@ -231,7 +240,7 @@ def votacao_partido(partidos: pl.DataFrame) -> pl.DataFrame:
     qe = pl.col("quociente_eleitoral")
     return (
         partidos.with_columns(
-            (pl.col("qt_votos_legenda_validos") + pl.col("qt_votos_nom_convr_leg_validos")).alias(
+            (pl.col(QT_VOTOS_LEGENDA_VALIDOS) + pl.col(QT_VOTOS_NOM_CONVR_LEG_VALIDOS)).alias(
                 "votos_legenda_total"
             ),
             _qe_expr(pl.col("qt_total_votos_validos_uf"), pl.col("vagas")).alias(

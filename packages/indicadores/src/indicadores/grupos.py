@@ -10,6 +10,11 @@ from collections.abc import Sequence
 
 import polars as pl
 
+from indicadores._colunas import (
+    CD_CARGO,
+    DS_SITUACAO_CANDIDATURA,
+    NR_TURNO,
+)
 from indicadores._comum import exigir_colunas, exigir_valor_unico
 from indicadores.financeiro import resumo_receitas
 
@@ -35,8 +40,8 @@ def agregar_grupo(
         raise ValueError(f"agregar_grupo: grupo {grupo!r} sem membros")
     exigir_colunas(votos, [entidade, *chaves, "votos"], "agregar_grupo")
     dos_membros = votos.filter(pl.col(entidade).is_in(list(membros)))
-    exigir_valor_unico(dos_membros, "cd_cargo", "um cargo por vez", "agregar_grupo")
-    exigir_valor_unico(dos_membros, "nr_turno", "um turno por vez", "agregar_grupo")
+    exigir_valor_unico(dos_membros, CD_CARGO, "um cargo por vez", "agregar_grupo")
+    exigir_valor_unico(dos_membros, NR_TURNO, "um turno por vez", "agregar_grupo")
     return (
         dos_membros.group_by(list(chaves))
         .agg(pl.col("votos").sum())
@@ -55,9 +60,9 @@ def n_candidatos(
     Candidatos com zero voto contam; renúncias antes da urna não. Com `por` (ex.: `sg_uf`),
     recortes sem candidatura apta não aparecem (o `n` deles é 0 → indicador por candidato nulo).
     """
-    exigir_colunas(candidaturas, [entidade, *por, "ds_situacao_candidatura"], "n_candidatos")
+    exigir_colunas(candidaturas, [entidade, *por, DS_SITUACAO_CANDIDATURA], "n_candidatos")
     aptas = candidaturas.filter(
-        pl.col(entidade).is_in(list(membros)) & (pl.col("ds_situacao_candidatura") == SITUACAO_APTA)
+        pl.col(entidade).is_in(list(membros)) & (pl.col(DS_SITUACAO_CANDIDATURA) == SITUACAO_APTA)
     )
     contagem = pl.len().alias("n_candidatos")
     if not por:
