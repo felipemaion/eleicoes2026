@@ -92,10 +92,10 @@ class Comparativo(BaseModel):
     cargo: str
     uf: str | None
     mesmos_candidatos: bool
-    n_de: int | None = Field(
-        description="Candidaturas aptas do lado 'de'; null = situação não publicada."
+    n_de: int = Field(
+        description="Candidaturas do lado 'de' que seguem na disputa (aptas ou sem situação)."
     )
-    n_para: int | None
+    n_para: int = Field(description="Idem para o lado 'para' (2026 chega sem situação do TSE).")
     kpis: KpisComparativo
     escala_sugerida: EscalaSugerida = Field(
         description="Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas)."
@@ -189,16 +189,20 @@ def _pessoas(candidaturas: Sequence[Candidatura], votos: dict[int, int]) -> pl.D
     )
 
 
-def _n_aptas(candidaturas: Sequence[Candidatura]) -> int | None:
-    """Aptas do lado; `None` se o TSE ainda não publicou a situação (0 seria dado falso)."""
-    if candidaturas and all(c.ds_situacao_candidatura is None for c in candidaturas):
-        return None
+def _n_aptas(candidaturas: Sequence[Candidatura]) -> int:
+    """Candidaturas do lado que seguem na disputa.
+
+    Conta as APTAS e as ainda sem situação: 2026 chega com `ds_situacao_candidatura` nulo até o
+    TSE julgar, e descartá-las zerava (ou anulava) o lado inteiro. Indeferidas/renunciadas, que
+    já têm situação, ficam de fora.
+    """
     quadro = pl.DataFrame(
         [(c.sq_candidato, c.ds_situacao_candidatura) for c in candidaturas],
         schema={"sq_candidato": pl.Int64, "ds_situacao_candidatura": pl.String},
         orient="row",
     )
-    return int(grupos.n_candidatos(quadro, [c.sq_candidato for c in candidaturas]).item())
+    aptas = int(grupos.n_candidatos(quadro, [c.sq_candidato for c in candidaturas]).item())
+    return aptas + sum(1 for c in candidaturas if c.ds_situacao_candidatura is None)
 
 
 def _selecao(
@@ -314,6 +318,70 @@ def _comparar_receitas(
     )
 
 
+def _rotulo_candidatos(candidaturas: Sequence[Candidatura], ano: int) -> str:
+    """ "Kim + Beraldo (2022)": até 3 nomes de urna, o resto vira "+N"."""
+    if not candidaturas:
+        return f"Seleção {ano}"
+    nomes = [c.nm_urna for c in sorted(candidaturas, key=lambda c: c.sq_candidato)]
+    resto = len(nomes) - 3
+    return f"{' + '.join(nomes[:3])}{f' + {resto}' if resto > 0 else ''} ({ano})"
+
+
+def _grupo_do_ano(catalogo: Catalogo, grupo_id: str, ano: int) -> DefinicaoGrupo:
+    grupo = catalogo.grupo(grupo_id)
+    if grupo.ano != ano:
+        raise parametro_invalido(
+            "grupo_ano_errado", f"grupo '{grupo_id}' é de {grupo.ano}; este lado é {ano}"
+        )
+    return grupo
+
+
+def _por_lados(
+    repo: Repositorio,
+    catalogo: Catalogo,
+    cargo: Cargo,
+    uf: str | None,
+    *,
+    pessoas: Sequence[str],
+    grupo_de: str | None,
+    grupo_para: str | None,
+    sq_de: Sequence[int],
+    sq_para: Sequence[int],
+) -> tuple[list[Candidatura], list[Candidatura], GrupoRef, GrupoRef]:
+    """Cada lado é um grupo OU uma seleção (`pessoas`/`sq_*`), independentemente do outro."""
+    por_pessoa = bool(pessoas)
+    tem_de = bool(grupo_de or sq_de or por_pessoa)
+    tem_para = bool(grupo_para or sq_para or por_pessoa)
+    if not (tem_de or tem_para):
+        raise parametro_invalido(
+            "comparativo_sem_alvo",
+            "informe 'comparacao', 'grupo_2022/2026', 'pessoas' ou 'sq_2022/2026'",
+        )
+    for ano, grupo, sqs in ((ANO_DE, grupo_de, sq_de), (ANO_PARA, grupo_para, sq_para)):
+        if grupo and (sqs or por_pessoa):
+            raise parametro_invalido(
+                "lado_ambiguo", f"lado {ano}: use 'grupo_{ano}' ou candidatos, não ambos"
+            )
+    if not (tem_de and tem_para):
+        vazio = ANO_DE if not tem_de else ANO_PARA
+        raise parametro_invalido(
+            "lado_vazio", f"informe também o lado {vazio} ('grupo_{vazio}' ou 'sq_{vazio}')"
+        )
+    s_de, s_para = _selecao(repo, cargo, uf, pessoas=pessoas, sq_de=sq_de, sq_para=sq_para)
+    lados: list[tuple[list[Candidatura], GrupoRef]] = []
+    for ano, grupo, escolhidas in ((ANO_DE, grupo_de, s_de), (ANO_PARA, grupo_para, s_para)):
+        if grupo:
+            g = _grupo_do_ano(catalogo, grupo, ano)
+            lados.append(
+                (_lado(repo, g, cargo.value, uf), GrupoRef(id=g.id, rotulo=g.rotulo, ano=ano))
+            )
+        else:
+            ref = GrupoRef(id=ID_SELECAO, rotulo=_rotulo_candidatos(escolhidas, ano), ano=ano)
+            lados.append((escolhidas, ref))
+    (c_de, de), (c_para, para) = lados
+    return c_de, c_para, de, para
+
+
 def montar_comparativo(
     repo: Repositorio,
     catalogo: Catalogo,
@@ -325,39 +393,47 @@ def montar_comparativo(
     pessoas: Sequence[str] = (),
     sq_2022: Sequence[int] = (),
     sq_2026: Sequence[int] = (),
+    grupo_2022: str | None = None,
+    grupo_2026: str | None = None,
 ) -> Comparativo:
-    """Evolução do grupo `de` para `para`, ou de uma seleção do usuário (pessoas/sqs).
+    """Evolução entre dois lados: cada um é um grupo do catálogo ou candidatos escolhidos.
 
-    Com `comparacao_id`, opcionalmente só as mesmas pessoas (`pessoa_id`). Sem par comparável
+    `comparacao_id` é atalho para um par de grupos; com `mesmos_candidatos`, só as mesmas
+    pessoas (`pessoa_id`) dos dois lados. Sem par comparável
     (um lado sem candidaturas no cargo/UF) → 422, nunca um comparativo vazio ou erro interno.
     """
-    escolheu = bool(pessoas or sq_2022 or sq_2026)
-    if comparacao_id is not None and escolheu:
-        raise parametro_invalido(
-            "comparacao_e_selecao", "use 'comparacao' ou 'pessoas'/'sq_2022'/'sq_2026', não ambos"
-        )
-    if comparacao_id is None and not escolheu:
-        raise parametro_invalido(
-            "comparativo_sem_alvo", "informe 'comparacao' ou 'pessoas'/'sq_2022'/'sq_2026'"
-        )
     if cargo is Cargo.SENADOR:
         # 2022 elegeu 1 vaga (1 voto) e 2026 elege 2 (2 votos): taxas incomparáveis (§1.8).
         raise parametro_invalido(
             "cargo_sem_evolucao", "Senado não entra em evolução 2022→2026 (1 voto × 2 votos)"
         )
-    if comparacao_id is None:
-        c_de, c_para = _selecao(repo, cargo, uf, pessoas=pessoas, sq_de=sq_2022, sq_para=sq_2026)
-        id_comp, rotulo = ID_SELECAO, "Seleção do usuário"
-        de = GrupoRef(id=ID_SELECAO, rotulo="Seleção 2022", ano=ANO_DE)
-        para = GrupoRef(id=ID_SELECAO, rotulo="Seleção 2026", ano=ANO_PARA)
-        mesmos_candidatos = False  # a escolha já é do usuário
-    else:
+    if comparacao_id is not None:
+        if pessoas or sq_2022 or sq_2026 or grupo_2022 or grupo_2026:
+            raise parametro_invalido(
+                "comparacao_e_selecao",
+                "'comparacao' é exclusivo com 'grupo_2022/2026', 'pessoas' e 'sq_2022/2026'",
+            )
         comp = catalogo.comparacao(comparacao_id)
         g_de, g_para = catalogo.grupo(comp.de), catalogo.grupo(comp.para)
         c_de, c_para = _lado(repo, g_de, cargo.value, uf), _lado(repo, g_para, cargo.value, uf)
         id_comp, rotulo = comp.id, comp.rotulo
         de = GrupoRef(id=g_de.id, rotulo=g_de.rotulo, ano=g_de.ano)
         para = GrupoRef(id=g_para.id, rotulo=g_para.rotulo, ano=g_para.ano)
+    else:
+        c_de, c_para, de, para = _por_lados(
+            repo,
+            catalogo,
+            cargo,
+            uf,
+            pessoas=pessoas,
+            grupo_de=grupo_2022,
+            grupo_para=grupo_2026,
+            sq_de=sq_2022,
+            sq_para=sq_2026,
+        )
+        id_comp, rotulo = ID_SELECAO, f"{de.rotulo} → {para.rotulo}"
+        if de.id == ID_SELECAO and para.id == ID_SELECAO:
+            mesmos_candidatos = False  # a escolha já é do usuário
     if not c_de or not c_para:
         lado = de.rotulo if not c_de else para.rotulo
         raise parametro_invalido(

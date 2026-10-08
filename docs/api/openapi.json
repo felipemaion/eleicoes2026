@@ -672,7 +672,7 @@
           "comparativo"
         ],
         "summary": "Evolução 2022→2026",
-        "description": "Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.\n\nDois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,\n`sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.",
+        "description": "Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.\n\nOu `comparacao` (atalho para um par de grupos), ou um valor por lado, combináveis:\n`grupo_2022`/`sq_2022` × `grupo_2026`/`sq_2026` (ou `pessoas`, que preenche os dois lados).\nLado sem grupo nem candidatos → 422 `lado_vazio`; grupo e candidatos no mesmo lado →\n`lado_ambiguo`; grupo do ano errado → `grupo_ano_errado`; `comparacao` com lados →\n`comparacao_e_selecao`; sem candidaturas no cargo/UF → `sem_par_comparavel`.",
         "operationId": "comparativo_api_comparativo_get",
         "parameters": [
           {
@@ -795,6 +795,42 @@
               "title": "Sq 2026"
             },
             "description": "Seleção: `sq_candidato` de 2026."
+          },
+          {
+            "name": "grupo_2022",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Lado 2022 = grupo (id de 2022 em /grupos). Exclusivo com `sq_2022`.",
+              "title": "Grupo 2022"
+            },
+            "description": "Lado 2022 = grupo (id de 2022 em /grupos). Exclusivo com `sq_2022`."
+          },
+          {
+            "name": "grupo_2026",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Lado 2026 = grupo (id de 2026 em /grupos). Exclusivo com `sq_2026`.",
+              "title": "Grupo 2026"
+            },
+            "description": "Lado 2026 = grupo (id de 2026 em /grupos). Exclusivo com `sq_2026`."
           }
         ],
         "responses": {
@@ -1481,27 +1517,14 @@
             "title": "Mesmos Candidatos"
           },
           "n_de": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "N De",
-            "description": "Candidaturas aptas do lado 'de'; null = situação não publicada."
+            "description": "Candidaturas do lado 'de' que seguem na disputa (aptas ou sem situação)."
           },
           "n_para": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "N Para"
+            "type": "integer",
+            "title": "N Para",
+            "description": "Idem para o lado 'para' (2026 chega sem situação do TSE)."
           },
           "kpis": {
             "$ref": "#/components/schemas/KpisComparativo"

@@ -65,6 +65,8 @@ def comparativo_em_cache(
     pessoas: Sequence[str] = (),
     sq_2022: Sequence[int] = (),
     sq_2026: Sequence[int] = (),
+    grupo_2022: str | None = None,
+    grupo_2026: str | None = None,
 ) -> Comparativo:
     """`/comparativo` com cache LRU."""
     return cache.obter(
@@ -78,6 +80,8 @@ def comparativo_em_cache(
             tuple(sorted(pessoas)),
             tuple(sorted(sq_2022)),
             tuple(sorted(sq_2026)),
+            grupo_2022,
+            grupo_2026,
         ),
         lambda: montar_comparativo(
             repo,
@@ -89,5 +93,7 @@ def comparativo_em_cache(
             pessoas=pessoas,
             sq_2022=sq_2022,
             sq_2026=sq_2026,
+            grupo_2022=grupo_2022,
+            grupo_2026=grupo_2026,
         ),
     )
