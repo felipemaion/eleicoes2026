@@ -740,9 +740,16 @@
             "$ref": "#/components/schemas/Partido"
           },
           "situacao": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Situacao",
-            "description": "`ds_situacao_candidatura` (APTO, INDEFERIDO…)."
+            "description": "`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou."
           },
           "resultado": {
             "anyOf": [
