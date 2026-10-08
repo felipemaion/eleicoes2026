@@ -4,4 +4,5 @@ class ResizeObserverInerte implements ResizeObserver {
   unobserve(): void { /* idem */ }
   disconnect(): void { /* idem */ }
 }
-globalThis.ResizeObserver ??= ResizeObserverInerte;
+// O tipo do DOM diz que sempre existe; no jsdom não existe — daí o `in`.
+if (!("ResizeObserver" in globalThis)) globalThis.ResizeObserver = ResizeObserverInerte;
