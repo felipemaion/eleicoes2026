@@ -7,12 +7,13 @@ setup:
 	@[ -f apps/web/package.json ] && (cd apps/web && pnpm install) || true
 
 test:
-	uv run pytest
+	uv run pytest --cov --cov-fail-under=80
 	@[ -f apps/web/package.json ] && (cd apps/web && pnpm test) || true
 
 lint:
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run mypy packages/contratos/src packages/indicadores/src packages/etl/src apps/api/src
 	@[ -f apps/web/package.json ] && (cd apps/web && pnpm lint && pnpm typecheck) || true
 
 check-tooling:

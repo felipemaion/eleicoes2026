@@ -25,7 +25,7 @@ partidos sem mudar código (`config/grupos.yaml`).
 ## Repositório
 
 ```
-etl/                  dados: download TSE/IBGE/BCB → Parquet validado (papel: dados)
+packages/etl/         dados: download TSE/IBGE/BCB → Parquet validado (papel: dados)
 packages/contratos/   schemas Parquet + modelos compartilhados (papel: dados)
 packages/indicadores/ funções puras de indicadores eleitorais (papel: analise)
 apps/api/             FastAPI, DuckDB read-only sobre Parquet (papel: backend)

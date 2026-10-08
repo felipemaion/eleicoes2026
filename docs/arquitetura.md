@@ -2,7 +2,7 @@
 
 ```
 TSE / IBGE / BCB (ZIPs e APIs oficiais)
-        │  etl/  (papel dados — roda LOCAL; ADR 0002)
+        │  packages/etl/  (papel dados — roda LOCAL; ADR 0002)
         ▼
 data/processed/*.parquet  ── contrato: packages/contratos (schemas validados)
         │                        │
@@ -19,8 +19,8 @@ apps/web  Vite + TS + D3 + MapLibre  ◄── PMTiles e bundle servidos pelo Ca
 
 | Camada | Responsabilidade única | Depende de |
 |---|---|---|
-| `etl/fontes/*` | Baixar e parsear **uma** fonte oficial | `contratos` |
-| `etl/pipeline` | Orquestrar fontes, validar, escrever Parquet + manifesto | `fontes`, `contratos` |
+| `packages/etl/fontes/*` | Baixar e parsear **uma** fonte oficial | `contratos` |
+| `packages/etl/pipeline` | Orquestrar fontes, validar, escrever Parquet + manifesto | `fontes`, `contratos` |
 | `packages/contratos` | Schemas (colunas, tipos, chaves) e enums (UF, cargo, ano) | — |
 | `packages/indicadores` | Calcular métricas a partir de DataFrames | `contratos` |
 | `apps/api/repositorio` | `Repository` (Protocol) + `DuckDBRepository` | `contratos` |
