@@ -179,9 +179,9 @@ def montar_comparativo(
         {"cd_mun_ibge": codigos, "amc": [0] * len(codigos)}, schema=crosswalk.schema
     )
     try:
-        por_amc = evolucao.evolucao(q_de, q_para, crosswalk)
+        por_amc = evolucao.evolucao(q_de, q_para, crosswalk, cd_cargo=cargo.codigo)
         # Recorte inteiro como uma AMC só: Σ votos / Σ base, não média de AMCs.
-        total = evolucao.evolucao(q_de, q_para, todos)
+        total = evolucao.evolucao(q_de, q_para, todos, cd_cargo=cargo.codigo)
     except ValueError as erro:  # município sem AMC: dado inconsistente
         raise DadosIndisponiveis(str(erro)) from erro
     cabecas = {m.cd_mun_ibge: m for m in repo.municipios(por_amc["amc"].to_list())}
