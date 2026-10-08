@@ -167,12 +167,22 @@ def listar_pessoas(
     uf: str | None,
     cargo: str | None,
     limite: int,
+    pessoas: Sequence[str] = (),
 ) -> ListaPessoas:
-    """Quem concorreu em 2022 e em 2026 (ligados por `pessoa_id`), filtrável por nome/UF/cargo."""
+    """Quem concorreu em 2022 e em 2026 (ligados por `pessoa_id`), filtrável por nome/UF/cargo.
+
+    `pessoas` (`pessoa_id_publico`) entram sempre, além da página do recorte, para a seleção do
+    usuário não depender de estar entre as primeiras `limite`.
+    """
     termo = normalizar(q) if q else None
     total, pares = repo.pares_de_pessoas(
         ANO_DE, ANO_PARA, termo=termo or None, uf=uf, cargo=cargo, limite=limite
     )
+    na_pagina = {id_publico(p.para.pessoa_id) for p in pares}
+    faltam = [p for p in dict.fromkeys(pessoas) if p not in na_pagina]
+    if faltam:
+        _, extras = repo.pares_de_pessoas(ANO_DE, ANO_PARA, publicos=faltam, limite=len(faltam) * 4)
+        pares = [*pares, *extras]
     itens = _itens(repo, catalogo, [c for p in pares for c in (p.de, p.para)])
     return ListaPessoas(
         total=total,

@@ -71,8 +71,14 @@ def pedidos(get: Get, ufs: tuple[str, ...] = UFS_PADRAO) -> Iterator[Pedido]:
     grupos = corpo["grupos"]
     comparacoes = corpo["comparacoes"]
     recortes: list[str | None] = [None, *ufs]
-    for g in grupos:
+    for ano in ANOS:
+        yield "/api/candidatos/ufs", {"ano": ano}
         for cargo in CARGOS:
+            yield "/api/candidatos/ufs", {"ano": ano, "cargo": cargo}
+    for g in grupos:
+        yield "/api/candidatos/ufs", {"grupo": g["id"]}
+        for cargo in CARGOS:
+            yield "/api/candidatos/ufs", {"grupo": g["id"], "cargo": cargo}
             for uf in recortes:
                 base = {"grupo": g["id"], "cargo": cargo, "uf": uf}
                 yield "/api/candidatos", base

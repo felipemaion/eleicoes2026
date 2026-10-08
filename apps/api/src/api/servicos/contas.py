@@ -72,6 +72,8 @@ class ContasCand:
     receita_total: float
     repasses_contratados: float
     repasses_pagos: float
+    pct_publico: float | None = None
+    pct_autofinanciamento: float | None = None
 
 
 @dataclass(frozen=True)
@@ -206,8 +208,8 @@ def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) 
     por_cand = financeiro.custo_por_voto(base).filter(pl.col("despesa_contratada").is_not_null())
 
     classificadas = financeiro.classificar_receitas(receitas)
-    totais_cand = {
-        linha["sq_candidato"]: linha["receita_total"]
+    resumo_cand = {
+        linha["sq_candidato"]: linha
         for linha in financeiro.resumo_receitas(classificadas).to_dicts()
     }
     resumo_rec = grupos.receitas_grupo(classificadas, sqs).to_dicts()[0]
@@ -232,7 +234,11 @@ def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) 
                     custo_voto_contratado=linha["custo_voto_contratado"],
                     custo_voto_pago=linha["custo_voto_pago"],
                 ),
-                receita_total=totais_cand.get(linha["sq_candidato"], 0.0),
+                receita_total=resumo_cand.get(linha["sq_candidato"], {}).get("receita_total", 0.0),
+                pct_publico=resumo_cand.get(linha["sq_candidato"], {}).get("pct_publico"),
+                pct_autofinanciamento=resumo_cand.get(linha["sq_candidato"], {}).get(
+                    "pct_autofinanciamento"
+                ),
                 repasses_contratados=linha["repasse_contratado"],
                 repasses_pagos=linha["repasse_pago"],
             )

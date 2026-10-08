@@ -328,11 +328,19 @@ def evolucao_pessoas(
     uf: UF | None = None,
     cargo: Annotated[Cargo | None, Query(description="Exige este cargo nos dois anos.")] = None,
     limite: Annotated[int, Query(ge=1, le=200)] = 50,
+    pessoas: Annotated[
+        list[IdPublico] | None,
+        Query(
+            max_length=MAX_SELECAO,
+            description="`pessoa_id_publico` que devem vir na resposta mesmo fora da página "
+            "(`limite`) do recorte.",
+        ),
+    ] = None,
 ) -> ListaPessoas:
     """Quem concorreu nos dois anos, com o resumo de cada ano; alimenta `/comparativo?pessoas=`."""
     return cache.obter(
         repo.dt_geracao(),
-        ("evolucao_pessoas", q, uf, cargo, limite),
+        ("evolucao_pessoas", q, uf, cargo, limite, tuple(pessoas or ())),
         lambda: listar_pessoas(
             repo,
             catalogo,
@@ -340,6 +348,7 @@ def evolucao_pessoas(
             uf=uf.value if uf else None,
             cargo=cargo.value if cargo else None,
             limite=limite,
+            pessoas=pessoas or (),
         ),
     )
 

@@ -479,6 +479,7 @@ class RepositorioDuckDB:
         termo: str | None = None,
         uf: str | None = None,
         cargo: str | None = None,
+        publicos: Sequence[str] | None = None,
         limite: int,
     ) -> tuple[int, list[ParDePessoa]]:
         """Pessoas com candidatura nos dois anos, ligadas por `pessoa_id`."""
@@ -490,6 +491,9 @@ class RepositorioDuckDB:
         if uf is not None:
             condicoes.append("(a.sg_uf = ? OR b.sg_uf = ?)")
             params += [uf, uf]
+        if publicos is not None:
+            condicoes.append("a.pessoa_pub IN (SELECT unnest(?::VARCHAR[]))")
+            params.append(list(publicos))
         if termo:
             ca, pa, _, _ = _casamento(termo, "a.")
             cb, pb, _, _ = _casamento(termo, "b.")
