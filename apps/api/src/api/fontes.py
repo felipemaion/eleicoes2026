@@ -65,7 +65,8 @@ _CATALOGO: dict[str, _Entrada] = {
     "prestacao_contas": _Entrada(
         f"{CDN_TSE}/prestacao_contas/prestacao_de_contas_eleitorais_candidatos_{{ano}}.zip",
         "VR_RECEITA, VR_DESPESA_CONTRATADA, VR_PAGTO_DESPESA por candidato; custo por voto "
-        "exclui repasses a outros candidatos/partidos.",
+        "exclui repasses a outros candidatos/partidos; receitas do grupo descontam repasses "
+        "entre membros (§4.6) e o saldo usa a despesa com repasses (§4.8).",
         "#42-custo-por-voto-contratado-e-pago-e-dívida",
     ),
     "ipca": _Entrada(

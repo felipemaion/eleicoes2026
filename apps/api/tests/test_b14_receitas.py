@@ -5,7 +5,10 @@ e 25000; o repasse de 7000 do sq 5 ao sq 3 sai do total do grupo (118000). Votos
 Despesa contratada 100000 (+400 de repasse) e 5000.
 """
 
+from typing import Any
+
 import pytest
+from api.main import criar_app
 from fastapi.testclient import TestClient
 
 DF = "DEPUTADO FEDERAL"
@@ -13,19 +16,19 @@ PARAMS = {"grupo": "missao_2026", "uf": "SP", "cargo": DF}
 FATOR = 1.005**48  # IPCA fixture: 2022-09 → 2026-09
 
 
-def _gastos(api: TestClient) -> dict:  # type: ignore[type-arg]
+def _gastos(api: TestClient) -> dict[str, Any]:
     return api.get("/api/gastos", params=PARAMS).json()
 
 
 def test_receitas_do_grupo_trazem_composicao_e_repasses(api: TestClient) -> None:
     rec = _gastos(api)["receitas"]
     assert rec["receita_total"] == 118000.0
-    assert rec["receita_estimavel"] == 0.0
+    assert rec["receita_estimavel"] == 2000.0
     assert rec["receita_repasses_internos"] == 7000.0
     assert rec["receita_repasses_doador_desconhecido"] == 0.0
     assert rec["faixa_receita"] == {"minima": 118000.0, "maxima": 118000.0}
     assert rec["pct_pessoa_fisica"] == pytest.approx(100 * (15000 + 2000 + 8000) / 118000)
-    assert rec["pct_estimavel"] == 0.0
+    assert rec["pct_estimavel"] == pytest.approx(100 * 2000 / 118000)
     assert rec["n_efetivo_fontes"] > 1
     assert rec["hhi_fontes"] == pytest.approx(1 / rec["n_efetivo_fontes"])
 
@@ -47,9 +50,9 @@ def test_receita_por_voto_e_distribuicao_do_grupo(api: TestClient) -> None:
 
 def test_saldo_do_grupo_usa_despesa_com_repasses(api: TestClient) -> None:
     saldo = _gastos(api)["saldo"]
-    # receita bruta 125000 − (105000 própria + 400 repasse): repasses internos se anulam.
+    # receita bruta 125000 (123000 financeira) − (105000 própria + 400 repasse); internos se anulam.
     assert saldo["saldo_contratado"] == pytest.approx(125000 - 105400)
-    assert saldo["saldo_financeiro"] == pytest.approx(125000 - 85400)
+    assert saldo["saldo_financeiro"] == pytest.approx(123000 - 85400)
     assert saldo["pct_receita_gasta"] == pytest.approx(100 * 105400 / 125000)
 
 
@@ -98,14 +101,14 @@ def test_comparativo_traz_receitas_2022_deflacionadas(api: TestClient) -> None:
     total = rec["monetarios"]["receita_total"]
     assert total["de_nominal"] == 40000.0
     assert total["de"] == pytest.approx(40000 * FATOR)
-    assert total["para"] == 100000.0
-    assert total["delta"] == pytest.approx(100000 - 40000 * FATOR)
-    assert total["var_pct"] == pytest.approx(100 * (100000 / (40000 * FATOR) - 1))
+    assert total["para"] == 118000.0
+    assert total["delta"] == pytest.approx(118000 - 40000 * FATOR)
+    assert total["var_pct"] == pytest.approx(100 * (118000 / (40000 * FATOR) - 1))
     pub = rec["percentuais"]["pct_publico"]
     assert pub["de"] == pytest.approx(75.0)  # 30000 FEFC de 40000
     assert pub["delta"] == pytest.approx(pub["para"] - pub["de"])
     assert rec["contas_parciais_para"] is True
-    assert any(f["id"] == "ipca" for f in corpo["fontes"])
+    assert any(f["dataset"] == "ipca" for f in corpo["fontes"])
 
 
 def test_comparativo_de_selecao_tambem_traz_receitas(api: TestClient) -> None:
@@ -115,8 +118,8 @@ def test_comparativo_de_selecao_tambem_traz_receitas(api: TestClient) -> None:
     assert corpo["receitas"]["monetarios"]["receita_total"]["para"] == 100000.0
 
 
-def test_openapi_documenta_os_campos_novos(api: TestClient) -> None:
-    esquemas = api.get("/api/openapi.json").json()["components"]["schemas"]
+def test_openapi_documenta_os_campos_novos() -> None:
+    esquemas = criar_app().openapi()["components"]["schemas"]
     assert "receita_por_voto" in esquemas["Gastos"]["properties"]
     assert "receitas" in esquemas["Comparativo"]["properties"]
     assert "saldo_contratado" in esquemas["GastoCandidato"]["properties"]

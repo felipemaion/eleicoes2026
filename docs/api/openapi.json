@@ -1517,6 +1517,17 @@
             "type": "array",
             "title": "Municipios"
           },
+          "receitas": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComparativoReceitas"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Receitas 2022→2026 deflacionadas; null se algum lado não tem contas."
+          },
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
@@ -1544,6 +1555,7 @@
           "kpis",
           "escala_sugerida",
           "municipios",
+          "receitas",
           "dt_geracao",
           "fontes"
         ],
@@ -1583,6 +1595,50 @@
             "uf": "SP"
           }
         ]
+      },
+      "ComparativoReceitas": {
+        "properties": {
+          "base_ipca": {
+            "type": "string",
+            "title": "Base Ipca",
+            "description": "Mês-base (AAAA-MM) em que o ano 'de' foi corrigido."
+          },
+          "contas_parciais_de": {
+            "type": "boolean",
+            "title": "Contas Parciais De"
+          },
+          "contas_parciais_para": {
+            "type": "boolean",
+            "title": "Contas Parciais Para",
+            "description": "2026 parcial: queda de receita é esperada até a prestação final (§4.10)."
+          },
+          "monetarios": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/IndicadorComparado"
+            },
+            "type": "object",
+            "title": "Monetarios",
+            "description": "receita_total, receita_<categoria>, receita_por_voto, receita_por_mil_aptos, receita_media_candidato, receita_mediana_candidato."
+          },
+          "percentuais": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/IndicadorComparado"
+            },
+            "type": "object",
+            "title": "Percentuais",
+            "description": "pct_publico, pct_autofinanciamento, pct_pessoa_fisica, pct_estimavel."
+          }
+        },
+        "type": "object",
+        "required": [
+          "base_ipca",
+          "contas_parciais_de",
+          "contas_parciais_para",
+          "monetarios",
+          "percentuais"
+        ],
+        "title": "ComparativoReceitas",
+        "description": "Receitas do grupo 'de' × 'para', 2022 deflacionado ao mês-base."
       },
       "Detalhe": {
         "properties": {
@@ -1640,6 +1696,97 @@
         ],
         "title": "Detalhe",
         "description": "Numerador e denominadores de um território."
+      },
+      "DistribuicaoReceita": {
+        "properties": {
+          "n_candidatos": {
+            "type": "integer",
+            "title": "N Candidatos"
+          },
+          "n_com_contas": {
+            "type": "integer",
+            "title": "N Com Contas"
+          },
+          "soma": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soma"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media"
+          },
+          "mediana": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana"
+          },
+          "p25": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P25"
+          },
+          "p75": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P75"
+          },
+          "maximo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_candidatos",
+          "n_com_contas",
+          "soma",
+          "media",
+          "mediana",
+          "p25",
+          "p75",
+          "maximo"
+        ],
+        "title": "DistribuicaoReceita",
+        "description": "Receita por candidato do grupo: cauda pesada, então média e mediana juntas (§4.9)."
       },
       "EscalaSugerida": {
         "properties": {
@@ -1820,6 +1967,27 @@
         ],
         "title": "EvolucaoMunicipio",
         "description": "Evolução numa AMC (município IBGE com desmembramentos agregados, §5.1)."
+      },
+      "FaixaReceita": {
+        "properties": {
+          "minima": {
+            "type": "number",
+            "title": "Minima",
+            "description": "Total − repasses de candidato com doador desconhecido."
+          },
+          "maxima": {
+            "type": "number",
+            "title": "Maxima",
+            "description": "Total (todos os repasses desconhecidos são externos)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "minima",
+          "maxima"
+        ],
+        "title": "FaixaReceita",
+        "description": "Intervalo honesto da receita do grupo quando há repasse de doador desconhecido (§4.6)."
       },
       "FichaCandidato": {
         "properties": {
@@ -2036,6 +2204,97 @@
             ],
             "title": "Pct Autofinanciamento"
           },
+          "pct_pessoa_fisica": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Pessoa Fisica",
+            "description": "Pessoa física + financiamento coletivo, %."
+          },
+          "n_efetivo_fontes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Efetivo Fontes",
+            "description": "1 / HHI das categorias de receita (§4.5)."
+          },
+          "receita_repasses_candidatos": {
+            "type": "number",
+            "title": "Receita Repasses Candidatos",
+            "description": "Recebido de outros candidatos (§4.6)."
+          },
+          "receita_sem_repasses": {
+            "type": "number",
+            "title": "Receita Sem Repasses"
+          },
+          "receita_por_voto": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Voto",
+            "description": "R$/voto = receita ÷ votos (§4.7)."
+          },
+          "receita_por_mil_aptos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Mil Aptos",
+            "description": "R$ por mil aptos da circunscrição."
+          },
+          "saldo_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Contratado",
+            "description": "receita − despesa contratada, com repasses (§4.8)."
+          },
+          "saldo_financeiro": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Financeiro"
+          },
+          "pct_receita_gasta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Receita Gasta"
+          },
           "custo": {
             "$ref": "#/components/schemas/ResumoCustoCandidato"
           }
@@ -2053,6 +2312,15 @@
           "receita_total",
           "pct_publico",
           "pct_autofinanciamento",
+          "pct_pessoa_fisica",
+          "n_efetivo_fontes",
+          "receita_repasses_candidatos",
+          "receita_sem_repasses",
+          "receita_por_voto",
+          "receita_por_mil_aptos",
+          "saldo_contratado",
+          "saldo_financeiro",
+          "pct_receita_gasta",
           "custo"
         ],
         "title": "GastoCandidato",
@@ -2095,6 +2363,39 @@
           },
           "receitas": {
             "$ref": "#/components/schemas/ResumoReceitasOut"
+          },
+          "receita_por_voto": {
+            "$ref": "#/components/schemas/ReceitaPorVotoGrupo"
+          },
+          "distribuicao_receita": {
+            "$ref": "#/components/schemas/DistribuicaoReceita"
+          },
+          "saldo": {
+            "$ref": "#/components/schemas/SaldoGrupo"
+          },
+          "receita_por_mil_aptos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Mil Aptos",
+            "description": "1000 × receita do grupo ÷ aptos da circunscrição, contados uma vez (§4.7); null com mais de um cargo."
+          },
+          "aptos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aptos",
+            "description": "Eleitorado usado em `receita_por_mil_aptos`."
           },
           "por_candidato": {
             "items": {
@@ -2139,6 +2440,11 @@
           "uf",
           "agregado",
           "receitas",
+          "receita_por_voto",
+          "distribuicao_receita",
+          "saldo",
+          "receita_por_mil_aptos",
+          "aptos",
           "por_candidato",
           "contas_parciais",
           "base_ipca",
@@ -2160,21 +2466,41 @@
               "votos": 1180
             },
             "ano": 2026,
+            "aptos": 15000,
             "cargo": "DEPUTADO FEDERAL",
             "contas_parciais": true,
             "dt_geracao": "2026-10-06",
             "fontes": [],
             "grupo": "missao_2026",
             "por_candidato": [],
+            "receita_por_mil_aptos": 7866.7,
+            "receita_por_voto": {
+              "candidatos_sem_contas_excluidos": 0,
+              "candidatos_sem_voto_excluidos": 0,
+              "mediana_receita_por_voto": 96.4,
+              "receita_por_voto": 100.0
+            },
             "receitas": {
+              "faixa_receita": {
+                "maxima": 118000.0,
+                "minima": 118000.0
+              },
+              "n_efetivo_fontes": 2.1,
               "pct_autofinanciamento": 8.47,
+              "pct_pessoa_fisica": 21.2,
               "pct_publico": 67.8,
               "por_categoria": {
                 "fefc": 70000.0,
                 "fundo_partidario": 10000.0
               },
               "receita_financeira": 116000.0,
+              "receita_repasses_internos": 7000.0,
               "receita_total": 118000.0
+            },
+            "saldo": {
+              "pct_receita_gasta": 84.3,
+              "saldo_contratado": 19600.0,
+              "saldo_financeiro": 39600.0
             },
             "uf": "SP"
           }
@@ -2281,6 +2607,66 @@
             "title": "Receita Por Fonte",
             "description": "Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…"
           },
+          "receita_por_voto": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Voto",
+            "description": "R$/voto = receita ÷ votos (§4.7)."
+          },
+          "receita_por_mil_aptos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Mil Aptos",
+            "description": "R$ por mil aptos da circunscrição."
+          },
+          "saldo_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Contratado",
+            "description": "receita − despesa contratada, com repasses (§4.8)."
+          },
+          "saldo_financeiro": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Financeiro",
+            "description": "receita financeira − despesa paga."
+          },
+          "pct_receita_gasta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Receita Gasta",
+            "description": "100 × despesa contratada ÷ receita."
+          },
           "explicacao_repasses": {
             "type": "string",
             "title": "Explicacao Repasses",
@@ -2303,6 +2689,11 @@
           "custo_voto_pago_com_repasses",
           "receita_total",
           "receita_por_fonte",
+          "receita_por_voto",
+          "receita_por_mil_aptos",
+          "saldo_contratado",
+          "saldo_financeiro",
+          "pct_receita_gasta",
           "explicacao_repasses"
         ],
         "title": "GastosCandidato",
@@ -2453,6 +2844,79 @@
         ],
         "title": "Indicador",
         "description": "Indicadores mapeáveis (spec §2): taxas em coroplético, absoluto em símbolo."
+      },
+      "IndicadorComparado": {
+        "properties": {
+          "de_nominal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "De Nominal",
+            "description": "Valor do ano 'de' como o TSE publicou."
+          },
+          "de": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "De",
+            "description": "Valor do ano 'de' em R$ do mês-base (monetário) ou igual ao nominal (%)."
+          },
+          "para": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Para"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta",
+            "description": "para − de (R$ do mês-base, ou p.p. nos percentuais)."
+          },
+          "var_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Var Pct",
+            "description": "100 × (para / de − 1); só monetários."
+          }
+        },
+        "type": "object",
+        "required": [
+          "de_nominal",
+          "de",
+          "para",
+          "delta",
+          "var_pct"
+        ],
+        "title": "IndicadorComparado",
+        "description": "Um indicador de receita nos dois anos (spec §4.10)."
       },
       "KpisComparativo": {
         "properties": {
@@ -3160,6 +3624,49 @@
         "title": "Pontos",
         "description": "Corpo de GET /mapa/pontos (densidade de votos por local)."
       },
+      "ReceitaPorVotoGrupo": {
+        "properties": {
+          "receita_por_voto": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Voto"
+          },
+          "mediana_receita_por_voto": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Receita Por Voto"
+          },
+          "candidatos_sem_voto_excluidos": {
+            "type": "integer",
+            "title": "Candidatos Sem Voto Excluidos"
+          },
+          "candidatos_sem_contas_excluidos": {
+            "type": "integer",
+            "title": "Candidatos Sem Contas Excluidos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "receita_por_voto",
+          "mediana_receita_por_voto",
+          "candidatos_sem_voto_excluidos",
+          "candidatos_sem_contas_excluidos"
+        ],
+        "title": "ReceitaPorVotoGrupo",
+        "description": "Receita por voto do grupo: Σ receita ÷ Σ votos, sobre candidatos com contas e voto (§4.7)."
+      },
       "ResultadoBusca": {
         "properties": {
           "total": {
@@ -3540,11 +4047,62 @@
           },
           "receita_total": {
             "type": "number",
-            "title": "Receita Total"
+            "title": "Receita Total",
+            "description": "Σ das receitas; no grupo, sem repasses internos."
           },
           "receita_financeira": {
             "type": "number",
             "title": "Receita Financeira"
+          },
+          "receita_estimavel": {
+            "type": "number",
+            "title": "Receita Estimavel",
+            "description": "Bens e serviços doados, não passam pela conta."
+          },
+          "receita_repasses_candidatos": {
+            "type": "number",
+            "title": "Receita Repasses Candidatos",
+            "description": "Σ recebido de outros candidatos."
+          },
+          "receita_sem_repasses": {
+            "type": "number",
+            "title": "Receita Sem Repasses",
+            "description": "receita_total − repasses de candidatos."
+          },
+          "receita_repasses_internos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Repasses Internos",
+            "description": "Só no grupo: repasses entre membros, descontados do total (§4.6)."
+          },
+          "receita_repasses_doador_desconhecido": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Repasses Doador Desconhecido",
+            "description": "Só no grupo: repasses sem doador identificado; ficam no total."
+          },
+          "faixa_receita": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FaixaReceita"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só no grupo; ver `FaixaReceita`."
           },
           "pct_publico": {
             "anyOf": [
@@ -3568,6 +4126,53 @@
               }
             ],
             "title": "Pct Autofinanciamento"
+          },
+          "pct_pessoa_fisica": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Pessoa Fisica",
+            "description": "Pessoas físicas + financiamento coletivo, % da receita total (§4.5)."
+          },
+          "pct_estimavel": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Estimavel"
+          },
+          "hhi_fontes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hhi Fontes",
+            "description": "Σ (parte da categoria)²; 1 = uma fonte só."
+          },
+          "n_efetivo_fontes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Efetivo Fontes",
+            "description": "1 / HHI: nº de fontes equivalentes."
           }
         },
         "type": "object",
@@ -3575,11 +4180,69 @@
           "por_categoria",
           "receita_total",
           "receita_financeira",
+          "receita_estimavel",
+          "receita_repasses_candidatos",
+          "receita_sem_repasses",
+          "receita_repasses_internos",
+          "receita_repasses_doador_desconhecido",
+          "faixa_receita",
           "pct_publico",
-          "pct_autofinanciamento"
+          "pct_autofinanciamento",
+          "pct_pessoa_fisica",
+          "pct_estimavel",
+          "hhi_fontes",
+          "n_efetivo_fontes"
         ],
         "title": "ResumoReceitasOut",
-        "description": "Receita por categoria (§4.1) e dependência de recursos públicos."
+        "description": "Receita por categoria (§4.1), composição (§4.5) e repasses entre candidatos (§4.6)."
+      },
+      "SaldoGrupo": {
+        "properties": {
+          "saldo_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Contratado",
+            "description": "receita − despesa contratada."
+          },
+          "saldo_financeiro": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saldo Financeiro",
+            "description": "receita financeira − despesa paga."
+          },
+          "pct_receita_gasta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Receita Gasta",
+            "description": "100 × despesa contratada ÷ receita."
+          }
+        },
+        "type": "object",
+        "required": [
+          "saldo_contratado",
+          "saldo_financeiro",
+          "pct_receita_gasta"
+        ],
+        "title": "SaldoGrupo",
+        "description": "Saldo (§4.8). Receita bruta e despesa com repasses: repasses internos se anulam."
       },
       "Saude": {
         "properties": {
