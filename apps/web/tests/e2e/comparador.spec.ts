@@ -54,7 +54,7 @@ test("comparador: Guto Zacarias 2022 × Rafa Minato 2026 (dep. estadual SP) em p
   await page.goto("/#/evolucao?uf=SP&cargo=deputado_estadual");
   await escolherCandidato(page, 0, "guto", "GUTO ZACARIAS");
   await expect(page.locator(".chip-candidato")).toContainText("GUTO ZACARIAS");
-  await expect(page.locator(".chip-candidato .selo")).toHaveText("indicado MBL");
+  await expect(page.locator(".chip-candidato .selo")).toHaveText("indicado pelo MBL");
   await page.locator(".cartao-lado").first().getByRole("button", { name: "Aplicar" }).click();
   await expect(page).toHaveURL(/de=c(:|%3A)111/);
   await escolherCandidato(page, 1, "rafa", "RAFA MINATO");
@@ -104,7 +104,7 @@ test("comparador: Kim + Beraldo 2022 × Partido Missão 2026 inteiro (dep. feder
 
   await page.reload();
   await expect(frase).toContainText("KIM KATAGUIRI + CRISTIANO BERALDO");
-  await page.getByRole("button", { name: /Limpar/ }).click();
+  await page.getByRole("button", { name: /Voltar ao padrão/ }).click();
   await expect(page).not.toHaveURL(/de=/);
   await expect(frase).toContainText("MBL 2022");
 });

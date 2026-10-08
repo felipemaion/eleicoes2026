@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import textos from "../../../../docs/metodologia/publico/textos.json";
-import { avisosDaTela, definicaoDe, formatarDtGeracao, formatarMesBase, indicadorDe, notaRodape, preencher, subtituloDaTela } from "../../src/textos";
+import { avisosDaTela, definicaoDe, formatarDtGeracao, formatarMesBase, indicadorDe, notaRodape, TEXTOS_COMPARADOR, preencher, subtituloDaTela } from "../../src/textos";
 
 const AVISOS_GASTOS: string[] = textos.telas.gastos.avisos;
 
@@ -54,5 +54,21 @@ describe("textos públicos (docs/metodologia/publico/textos.json)", () => {
     const [a] = avisosDaTela("visao-geral", { dt_geracao: "2026-10-07", contas_parciais: true });
     expect(a?.texto).toContain("07/10/2026");
     expect(a?.nivel).toBe("atencao");
+  });
+});
+
+describe("textos do comparador (fonte única: textos.json › comparador)", () => {
+  const ui = textos.comparador.ui;
+  it("rótulos vêm do JSON, em camelCase", () => {
+    expect(TEXTOS_COMPARADOR.alterar).toBe(ui.alterar);
+    expect(TEXTOS_COMPARADOR.erro422).toBe(ui.erro_422);
+    expect(TEXTOS_COMPARADOR.seloIndicado).toBe(ui.selo_indicado);
+    expect(TEXTOS_COMPARADOR.notaGrupo.mbl_2022).toBe(textos.comparador.nota_grupo.mbl_2022);
+  });
+  it("placeholders {busca}, {n}, {total}, {contexto} são preenchidos", () => {
+    expect(TEXTOS_COMPARADOR.semResultado("silva")).toContain("“silva”");
+    expect(TEXTOS_COMPARADOR.semResultado("silva")).not.toContain("{");
+    expect(TEXTOS_COMPARADOR.refine(5, 40)).toBe("Mostrando 5 de 40 resultados. Digite mais para refinar.");
+    expect(TEXTOS_COMPARADOR.recorte("Deputado Federal · São Paulo")).toContain("Deputado Federal · São Paulo");
   });
 });

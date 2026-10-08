@@ -129,7 +129,9 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
   }
 
   const sincronizar = (): void => {
-    const { filtros } = store.obter();
+    const { filtros, tela } = store.obter();
+    // Na Evolução cada cartão (2022/2026) escolhe seu grupo ou candidatos; o grupo global só confundiria.
+    campoGrupo.hidden = contagem.hidden = tela === "evolucao";
     ano.marcar(filtros.ano);
     cargo.marcar(filtros.cargo);
     if (document.activeElement !== inputUf) inputUf.value = rotuloDaUf(filtros.uf);

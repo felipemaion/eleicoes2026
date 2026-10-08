@@ -12,7 +12,7 @@ import { carregar } from "./estados";
 import { montarMapa } from "./mapa-embutido";
 import { criarCartao } from "./comparador-cartao";
 import { tabelaCandidaturas, type CandidaturaFicha } from "./evolucao-candidaturas";
-import { TEXTOS_COMPARADOR as T } from "./textos-comparador";
+import { TEXTOS_COMPARADOR as T } from "../textos";
 import { ajuda, avisosUi, cabecalhoDaTela, fonteUi, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
@@ -113,7 +113,7 @@ export const tela: Tela = {
       limpar.addEventListener("click", () => { irPara({ de: "", para: "" }); });
       const personalizado = filtros.de !== "" || filtros.para !== "";
       const areaResultado = h("div");
-      destino.append(areaFrase, areaCartoes, ...(personalizado ? [h("p", {}, limpar)] : []), nota(`Recorte: ${contexto}. Mude cargo e UF na barra de filtros.`), areaResultado);
+      destino.append(areaFrase, areaCartoes, ...(personalizado ? [h("p", {}, limpar)] : []), nota(T.recorte(contexto)), areaResultado);
 
       const pararResultado = carregar(
         areaResultado,

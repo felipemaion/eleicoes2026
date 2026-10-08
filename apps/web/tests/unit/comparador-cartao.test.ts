@@ -93,7 +93,7 @@ describe("cartão de um lado", () => {
     const ops = [...document.querySelectorAll("[role=option]")];
     expect(ops.filter((o) => o.querySelector(".selo"))).toHaveLength(1);
     (ops.find((o) => o.querySelector(".selo")) as HTMLElement).dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
-    expect(q(".chip-candidato .selo").textContent).toBe("indicado MBL");
+    expect(q(".chip-candidato .selo").textContent).toBe("indicado pelo MBL");
   });
 
   it("Cancelar descarta o rascunho e fecha; erro do lado aparece no cartão", () => {

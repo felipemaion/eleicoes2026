@@ -68,7 +68,7 @@ nav a[aria-current="page"] { background: var(--cor-acento); color: var(--cor-tex
 .filtro-dica { color: var(--cor-texto-suave); font-weight: 400; margin-top: var(--esp-1); }
 .filtro-dica:empty { display: none; }
 .filtros-contagem { margin: 0; font-weight: 700; }
-.filtros-contagem:empty { display: none; }
+.filtros-contagem:empty, .filtro-grupo[hidden], .filtros-contagem[hidden] { display: none; }
 .filtros-limpar { justify-self: start; }
 
 /* Mapa focado no candidato. */
