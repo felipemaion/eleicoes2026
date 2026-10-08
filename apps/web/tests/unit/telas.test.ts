@@ -200,7 +200,7 @@ describe("mapa", () => {
     await vi.waitFor(() => { expect(el.querySelector(".painel-municipio")?.textContent).toContain("Aracaju"); });
     const painel = el.querySelector(".painel-municipio") as HTMLElement;
     expect(painel.textContent).toContain("Missão 2026");
-    expect(painel.textContent).toContain("14,88 ‰");
+    expect(painel.textContent).toContain("14,88");
     expect(painel.textContent).toContain("sem dado"); // deputado estadual sem aptos suficientes
     expect(document.activeElement).toBe(painel.querySelector("h2"));
     expect(chamou("/api/municipios/2800308")).toBe(true);

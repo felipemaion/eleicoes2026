@@ -12,6 +12,7 @@ import { iniciarCarga } from "../componentes/ui/sobreposicao";
 import { mostrarErro } from "./estados";
 import { geometria, niveisDisponiveis, UF_DA_DEMONSTRACAO } from "./mapa-embutido";
 import { criarPainelMapa } from "./painel-mapa";
+import { criarDivisoria } from "../componentes/ui/divisoria";
 import { desenharMunicipio, focarPainel } from "./painel-municipio";
 import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
@@ -81,6 +82,14 @@ export const tela: Tela = {
     dens.addEventListener("change", () => { densidade = dens.checked; void pontos(); });
 
     const avisos = h("div");
+    const layout = h("div", { className: "mapa-layout" });
+    // Largura do painel: padrão ≈ 24vw (18–30rem, como antes); o mapa nunca fica abaixo de 20rem.
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const divisoria = criarDivisoria({
+      layout, chave: "eleicoes2026.mapa.painel", rotulo: "Largura do painel de detalhe",
+      padrao: Math.min(30 * rem, Math.max(18 * rem, window.innerWidth * 0.24)), minPainel: 15 * rem, minMapa: 20 * rem,
+    });
+    layout.append(area, divisoria.elemento, painel);
     container.replaceChildren(
       titulo("Mapa"),
       cabecalhoDaTela("mapa"),
@@ -89,7 +98,7 @@ export const tela: Tela = {
       h("div", { className: "controles" }, ind.rotulo, ajudaInd, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
       status,
       avisoPontos,
-      h("div", { className: "mapa-layout" }, area, painel),
+      layout,
       // Avisos longos ficam abaixo do mapa: o mapa é o conteúdo principal e não deve sair da primeira tela.
       ...[avisosUi("mapa", {})].filter((x) => x !== null),
       rodape,
@@ -185,6 +194,6 @@ export const tela: Tela = {
     }, () => { /* a lista é opcional; o mapa do grupo funciona sem ela */ });
 
     void atualizar();
-    return () => { vivo = false; ctrlMun?.abort(); mapa.destruir(); container.replaceChildren(); };
+    return () => { vivo = false; divisoria.destruir(); ctrlMun?.abort(); mapa.destruir(); container.replaceChildren(); };
   },
 };

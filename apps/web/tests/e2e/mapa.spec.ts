@@ -147,3 +147,64 @@ test("erro de API não mostra a URL crua nem estoura a largura", async ({ page }
   const estoura = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(estoura).toBe(false);
 });
+
+test.describe("divisória mapa × painel", () => {
+  test.use({ viewport: { width: 1400, height: 900 } });
+  const larguras = (page: import("@playwright/test").Page) => page.evaluate(() => ({
+    canvas: document.querySelector<HTMLCanvasElement>(".mapa-quadro canvas")?.clientWidth ?? 0,
+    painel: document.querySelector<HTMLElement>(".painel-municipio")?.getBoundingClientRect().width ?? 0,
+  }));
+
+  test("arrastar muda as larguras, o canvas acompanha e setas/Home/dblclick/persistência funcionam", async ({ page }) => {
+    await page.goto("/#/mapa?uf=SE");
+    await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+    const sep = page.getByRole("separator");
+    await expect(sep).toHaveAttribute("aria-orientation", "vertical");
+    const antes = await larguras(page);
+    const c = await sep.boundingBox();
+    if (!c) throw new Error("divisória sem caixa");
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(c.x - 120, c.y + c.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(async () => {
+      const depois = await larguras(page);
+      expect(depois.painel).toBeGreaterThan(antes.painel + 80);
+      expect(depois.canvas).toBeLessThan(antes.canvas - 80);
+    }).toPass({ timeout: 5_000 });
+
+    const agora = Number(await sep.getAttribute("aria-valuenow"));
+    await sep.focus();
+    await page.keyboard.press("ArrowRight");
+    expect(Number(await sep.getAttribute("aria-valuenow"))).toBeLessThan(agora);
+    await page.keyboard.press("Home");
+    expect(Number(await sep.getAttribute("aria-valuenow"))).toBe(Number(await sep.getAttribute("aria-valuemin")));
+
+    await page.keyboard.press("End");
+    const guardada = await sep.getAttribute("aria-valuenow");
+    await page.reload();
+    await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("separator")).toHaveAttribute("aria-valuenow", guardada ?? "");
+
+    await page.getByRole("separator").dblclick();
+    expect(Number(await page.getByRole("separator").getAttribute("aria-valuenow"))).toBeLessThan(Number(guardada));
+  });
+
+  test("tela estreita: sem divisória", async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 900 });
+    await page.goto("/#/mapa?uf=SE");
+    await expect(page.getByRole("separator")).toBeHidden();
+  });
+
+  test("tabela do painel: nenhuma célula quebra linha", async ({ page }) => {
+    await page.goto("/#/mapa?uf=SE");
+    await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+    await page.locator(".mapa-quadro").focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".painel-municipio table").first()).toBeVisible();
+    const quebras = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>(".tabela-painel th, .tabela-painel td")]
+      .filter((c) => c.getBoundingClientRect().height > parseFloat(getComputedStyle(c).lineHeight) + 12).length);
+    expect(quebras).toBe(0);
+  });
+});

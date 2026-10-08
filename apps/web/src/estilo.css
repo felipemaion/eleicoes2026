@@ -189,17 +189,24 @@ h3 { font-size: 1rem; margin: var(--esp-3) 0 var(--esp-2); }
 .nota { font-size: var(--texto-pequeno); color: var(--cor-texto-suave); margin: var(--esp-2) 0; }
 .avisos { margin: var(--esp-3) 0; padding: var(--esp-1) var(--esp-3); border-left: 4px solid var(--cor-destaque); background: var(--cor-superficie); }
 .avisos p { margin: var(--esp-1) 0; }
-.mapa-layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(18rem, 24vw, 30rem); gap: var(--esp-3); align-items: start; }
+.mapa-layout { display: grid; grid-template-columns: minmax(0, 1fr) 1rem var(--painel-largura, clamp(18rem, 24vw, 30rem)); align-items: start; }
+.divisoria { align-self: stretch; cursor: col-resize; touch-action: none; position: relative; border-radius: var(--raio); }
+.divisoria::before { content: ""; position: absolute; inset-block: 0; left: 50%; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--cor-borda); }
+.divisoria:hover::before, .divisoria.arrastando::before { background: var(--cor-destaque); }
+.divisoria:focus-visible { outline: 3px solid var(--cor-destaque); outline-offset: 0; }
+.painel-municipio { min-width: 0; }
+.painel-municipio .tabela-rolavel { margin-bottom: var(--esp-2); }
+.tabela-painel { border-collapse: collapse; width: 100%; font-size: var(--texto-pequeno); }
+.tabela-painel th, .tabela-painel td { padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--cor-borda); text-align: left; white-space: nowrap; }
+.tabela-painel th.numero, .tabela-painel td.numero { text-align: right; font-variant-numeric: tabular-nums; }
 .painel-municipio { padding: var(--esp-3); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); overflow-wrap: anywhere; }
-.painel-municipio table { border-collapse: collapse; width: 100%; }
-.painel-municipio th, .painel-municipio td { padding: 0.15rem 0.5rem; border-bottom: 1px solid var(--cor-borda); text-align: left; }
 .mapas-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--esp-3); }
 .mapas-3 figure { margin: 0; min-width: 0; }
 .mapas-3 figcaption { font-weight: 600; margin-bottom: var(--esp-1); }
 .ficha h2 { margin-top: var(--esp-3); }
 .grafico { max-width: 100%; height: auto; }
 .ranking { max-width: 64rem; }
-@media (max-width: 1100px) { .mapa-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .mapa-layout { grid-template-columns: minmax(0, 1fr); gap: var(--esp-3); } .divisoria { display: none; } }
 
 /* Textos públicos (T-W05) */
 .subtitulo { max-width: 70ch; color: var(--cor-texto-suave); margin-block: 0 var(--esp-3); }
