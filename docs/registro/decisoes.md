@@ -10,3 +10,4 @@
 | 2026-10-07 | Repo público `felipemaion/eleicoes2026`, MIT, autoria só do Felipe | pedido explícito | Felipe (ADR 0006) |
 | 2026-10-07 | 4 agentes (dados/analise Opus/backend/frontend) em tmux com worktrees | pedido; padrão do facc | orquestrador |
 | 2026-10-07 | Repo público criado vazio; Issues #1–#17 abertas (labels papel/fase); push da `main` fica com o Felipe | Felipe preferiu publicar o código depois; a guarda pre-push não é contornada | Felipe |
+| 2026-10-07 | Lista MBL 2022 = 4 indicados (Kim, Guto, Renato Battista, Cristiano Beraldo) + candidatos do Missão 2026 que disputaram 2022 (18 candidaturas); Beraldo entra também no grupo `mbl_2026` | pedido do Felipe | Felipe |

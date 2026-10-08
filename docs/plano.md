@@ -32,7 +32,7 @@ Primeira leva em paralelo: **T-D01, T-A01, T-B01, T-W01**.
 ## F2 — tarefas
 | ID | Papel | Tarefa |
 |---|---|---|
-| T-D06 | dados | casamento da lista MBL 2022 (**aguarda arquivo do Felipe**) |
+| T-D06 | dados | reproduzir no ETL a lista MBL 2022 já gerada (`data/reference/mbl_2022.csv`) com `pessoa_id` |
 | T-B03 | backend | endpoints com dados reais, cache/ETag |
 | T-W04 | frontend | telas: visão geral, mapa, gastos, evolução, ficha do candidato |
 | T-A04 | analise | conferência dos números contra totais oficiais do TSE |
