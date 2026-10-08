@@ -59,3 +59,8 @@ def test_varredura_inclui_presidente_e_candidatos_majoritarios(
     )
     assert any(c == "/api/mapa/pontos" and p.get("uf") is None for c, p in pedidos)
     assert any(c == "/api/comparativo" and "pessoas" in p for c, p in pedidos)
+
+
+def test_varredura_cobre_redes(api: TestClient, varredura: ModuleType) -> None:
+    caminhos = {c for c, _ in varredura.pedidos(_get(api), ("SP",))}
+    assert {"/api/redes", "/api/redes/correlacoes", "/api/redes/serie"} <= caminhos

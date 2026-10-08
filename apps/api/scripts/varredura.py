@@ -105,6 +105,8 @@ def pedidos(
                 base = {"grupo": g["id"], "cargo": cargo, "uf": uf}
                 yield "/api/candidatos", base
                 yield "/api/gastos", base
+                yield "/api/redes", base  # grupo de 2022 → 422 esperado (sem coleta)
+                yield "/api/redes/correlacoes", base
                 yield "/api/mapa/pontos", {**base, "ano": g["ano"]}
                 for nivel in NIVEIS:
                     for ind in ("penetracao", "votos"):
@@ -133,6 +135,8 @@ def pedidos(
         yield "/api/busca", {"q": q}
         for g in grupos:
             yield "/api/busca", {"q": q, "grupo": g["id"]}
+    for g in grupos:  # correlação por cargo × UF
+        yield "/api/redes/correlacoes", {"grupo": g["id"], "por_uf": True}
     yield "/api/evolucao/pessoas", {}
     for cargo in CARGOS:
         yield "/api/evolucao/pessoas", {"cargo": cargo}
@@ -153,6 +157,7 @@ def _por_candidato(
         for i in [*majoritarios, *_amostra(outros, AMOSTRA_MINIMA)]:
             ano, sq, cargo = i["ano"], i["sq_candidato"], i["cargo"]
             yield f"/api/candidatos/{ano}/{sq}", {}
+            yield "/api/redes/serie", {"sq": sq}  # 404 esperado: sem coleta com seguidores
             for uf in (None, i["sg_uf"] if i["sg_uf"] != "BR" else ufs[0]):
                 alvo = {"ano": ano, "cargo": cargo, "uf": uf, "sq_candidato": sq}
                 yield "/api/mapa", alvo
