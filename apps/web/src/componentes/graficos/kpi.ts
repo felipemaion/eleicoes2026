@@ -10,11 +10,15 @@ export interface Kpi {
   unidade?: string;
   /** Chave de ajuda (indicador); a tela decide o que desenhar via `opcoes.ajuda`. */
   ajuda?: string;
+  /** Chave de procedência; a tela decide o que desenhar via `opcoes.fonte`. */
+  fonte?: string;
 }
 
 export interface OpcoesKpi {
   /** Nó do "?" para a chave; o componente não conhece os textos públicos. */
   ajuda?: (chave: string) => Node;
+  /** Nó do "fonte" para a chave. */
+  fonte?: (chave: string) => Node;
 }
 
 const FORMATOS = { inteiro: formatarNumero, moeda: formatarMoeda, percentual: formatarPercentual, permil: formatarPermil, pontos: formatarPontos } as const;
@@ -30,6 +34,7 @@ export function render(container: HTMLElement, dados: readonly Kpi[], opcoes: Op
       const dt = document.createElement("dt");
       dt.textContent = k.rotulo;
       if (k.ajuda !== undefined && opcoes.ajuda) dt.append(" ", opcoes.ajuda(k.ajuda));
+      if (k.fonte !== undefined && opcoes.fonte) dt.append(" ", opcoes.fonte(k.fonte));
       const dd = document.createElement("dd");
       dd.textContent = FORMATOS[k.formato](k.valor);
       cartao.append(dt, dd);
