@@ -319,11 +319,15 @@ describe("evolução — escolha de candidatos", () => {
     expect(urlComparativo()).not.toContain("pessoas=");
     expect(el.querySelector(".pessoa-item")?.textContent).toMatch(/ANA SOUZA.*2022.*NOVO.*2026.*MISSÃO/s);
   });
-  it("marcar uma pessoa grava a seleção no hash (fonte de verdade)", async () => {
+  it("marcar pessoas só monta o rascunho (sem refazer mapas); 'Comparar selecionados' grava no hash", async () => {
     window.location.hash = "";
     await desenhar("evolucao");
     await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item input[type=checkbox]")).toHaveLength(3); });
-    (el.querySelector(".pessoa-item input[type=checkbox]") as HTMLInputElement).click();
+    const caixas = el.querySelectorAll<HTMLInputElement>(".pessoa-item input[type=checkbox]");
+    caixas[0]?.click();
+    expect(window.location.hash).not.toContain("pessoas=");
+    expect(el.querySelector(".selecao-contagem")?.textContent).toContain("1 selecionado");
+    (el.querySelector("button[data-acao=comparar]") as HTMLButtonElement).click();
     expect(decodeURIComponent(window.location.hash)).toContain(`pessoas=${A}`);
   });
   it("com seleção no hash, o comparativo recebe pessoas repetido e a tabela traz 2022 × 2026", async () => {
