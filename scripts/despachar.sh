@@ -22,7 +22,7 @@ fi
 
 "$RAIZ/scripts/agent-title.sh" "$PAPEL" inicio "$TAREFA" "$DESCRICAO" >/dev/null
 
-msg="[Do orquestrador Eleicoes2026 (tmux Eleicoes2026:orq)] Nova tarefa $TAREFA — $DESCRICAO. Leia $BRIEF (caminho relativo a raiz do repo; você está na sua worktree, onde o arquivo também existe após git pull/rebase da main). Siga CLAUDE.md e sua definição de agente. Ao terminar, escreva o handoff em docs/registro/handoffs/$PAPEL-$TAREFA.md e responda só 'pronto $TAREFA'."
+msg="[Do orquestrador Eleicoes2026 (tmux Eleicoes2026:orq)] Nova tarefa $TAREFA — $DESCRICAO. Leia o brief em $RAIZ/$BRIEF (caminho absoluto no checkout principal; ainda pode não estar na main). Siga CLAUDE.md e sua definição de agente. Ao terminar, escreva o handoff em docs/registro/handoffs/$PAPEL-$TAREFA.md e responda só 'pronto $TAREFA'."
 tmux send-keys -t "$alvo" -l "$msg"
 sleep 0.5
 tmux send-keys -t "$alvo" Enter
