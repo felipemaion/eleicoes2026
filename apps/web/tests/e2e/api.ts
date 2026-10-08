@@ -9,6 +9,7 @@ export async function simularApi(page: Page, sobrescrever: Record<string, { stat
   const rotas: Record<string, string> = {
     "/api/meta": "meta", "/api/grupos": "grupos", "/api/candidatos": "candidatos", "/api/candidatos/ufs": "ufs", "/api/busca": "busca", "/api/mapa": "mapa", "/api/mapa/pontos": "mapa-pontos",
     "/api/gastos": "gastos", "/api/comparativo": "comparativo", "/api/candidatos/2026/1": "ficha", "/api/evolucao/pessoas": "pessoas", "/api/municipios/2800308": "municipio",
+    "/api/redes": "redes", "/api/redes/correlacoes": "redes-correlacoes", "/api/redes/serie": "redes-serie",
   };
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());

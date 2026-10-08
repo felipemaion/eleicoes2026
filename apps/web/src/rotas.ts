@@ -11,6 +11,7 @@ export const ROTULOS_TELA: Readonly<Record<Tela, string>> = {
   "visao-geral": "Visão geral",
   mapa: "Mapa",
   gastos: "Financiamento",
+  redes: "Redes sociais",
   evolucao: "Evolução 2022×2026",
   candidato: "Candidato",
   "como-ler": "Como ler este painel",

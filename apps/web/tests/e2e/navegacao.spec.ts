@@ -3,9 +3,9 @@ import { simularApi } from "./api";
 
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
-const TELAS = ["Visão geral", "Mapa", "Financiamento", "Evolução 2022×2026", "Candidato"];
+const TELAS = ["Visão geral", "Mapa", "Financiamento", "Redes sociais", "Evolução 2022×2026", "Candidato"];
 
-test("navega entre as 5 telas por mouse e teclado", async ({ page }) => {
+test("navega entre as 6 telas por mouse e teclado", async ({ page }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Telas" });
   for (const nome of TELAS) await expect(nav.getByRole("link", { name: nome })).toBeVisible();

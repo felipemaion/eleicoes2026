@@ -36,6 +36,17 @@ export type RespostaUfs = S["UfsDisponiveis"];
 export type Fonte = S["Fonte"];
 export type LinkOficial = S["Link"];
 export type GastosFicha = S["GastosCandidato"];
+export type RespostaRedes = S["Redes"];
+export type RedeCandidato = S["RedeCandidato"];
+export type PerfilRede = S["PerfilRede"];
+export type JanelaRede = S["JanelaRede"];
+export type RespostaCorrelacoes = S["Correlacoes"];
+export type RecorteCorrelacao = S["RecorteCorrelacao"];
+export type ParCorrelacao = S["ParCorrelacao"];
+export type PontoDispersao = S["PontoDispersao"];
+export type RespostaSerieRedes = S["SerieRedes"];
+export type SerieConta = S["SerieConta"];
+export type FonteRede = S["FonteRede"];
 
 /** Valores aceitos pela API (enums do OpenAPI). */
 export type CargoApi = S["Cargo"];

@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { simularApi } from "./api";
 
-const TELAS = ["visao-geral", "mapa?uf=SE", "gastos", "evolucao", "candidato", "como-ler"] as const;
+const TELAS = ["visao-geral", "mapa?uf=SE", "gastos", "redes?uf=SE", "evolucao", "candidato", "como-ler"] as const;
 
 for (const rota of TELAS) {
   test(`axe (WCAG 2.2 AA) sem violações: #/${rota}`, async ({ page }) => {

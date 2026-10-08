@@ -1,0 +1,198 @@
+{
+ "grupo": "missao_2026",
+ "ano": 2026,
+ "cargo": "DEPUTADO FEDERAL",
+ "uf": "SE",
+ "por_uf": false,
+ "recortes": [
+  {
+   "cargo": "DEPUTADO FEDERAL",
+   "uf": "SE",
+   "n_candidatos": 10,
+   "pares": [
+    {
+     "id": "seguidores_votos",
+     "rotulo": "Seguidores × votos",
+     "x": "seguidores",
+     "y": "votos",
+     "n": 10,
+     "n_excluidos": 4,
+     "rho": 0.47,
+     "ic_inf": 0.02,
+     "ic_sup": 0.79,
+     "n_bootstrap_validos": 1998,
+     "nivel_ic": 0.95,
+     "n_minimo": 10
+    },
+    {
+     "id": "engajamento_votos",
+     "rotulo": "Engajamento × votos",
+     "x": "engajamento_mediano",
+     "y": "votos",
+     "n": 10,
+     "n_excluidos": 4,
+     "rho": -0.31,
+     "ic_inf": -0.75,
+     "ic_sup": 0.27,
+     "n_bootstrap_validos": 1998,
+     "nivel_ic": 0.95,
+     "n_minimo": 10
+    },
+    {
+     "id": "ritmo_votos",
+     "rotulo": "Posts por semana × votos",
+     "x": "posts_semana_campanha",
+     "y": "votos",
+     "n": 10,
+     "n_excluidos": 4,
+     "rho": 0.52,
+     "ic_inf": 0.05,
+     "ic_sup": 0.84,
+     "n_bootstrap_validos": 1998,
+     "nivel_ic": 0.95,
+     "n_minimo": 10
+    }
+   ],
+   "ajuste": {
+    "intercepto": 1.45,
+    "inclinacao": 0.5566,
+    "n": 10
+   },
+   "pontos": [
+    {
+     "sq_candidato": 1,
+     "nm_urna": "Ana Souza",
+     "sg_uf": "SE",
+     "username": "anasouza_14",
+     "seguidores": 52000,
+     "votos": 18200,
+     "razao_obs_esperado": 1.532,
+     "foto_url": "/fotos/2026/1.webp",
+     "link": "https://www.instagram.com/anasouza_14/"
+    },
+    {
+     "sq_candidato": 2,
+     "nm_urna": "Bruno Lima",
+     "sg_uf": "SE",
+     "username": "brunolima_14",
+     "seguidores": 18000,
+     "votos": 9100,
+     "razao_obs_esperado": 1.383,
+     "foto_url": "/fotos/2026/2.webp",
+     "link": "https://www.instagram.com/brunolima_14/"
+    },
+    {
+     "sq_candidato": 3,
+     "nm_urna": "Carla Mendes",
+     "sg_uf": "SE",
+     "username": "carlamendes_14",
+     "seguidores": 9500,
+     "votos": 3100,
+     "razao_obs_esperado": 0.672,
+     "foto_url": "/fotos/2026/3.webp",
+     "link": "https://www.instagram.com/carlamendes_14/"
+    },
+    {
+     "sq_candidato": 4,
+     "nm_urna": "Diego Prado",
+     "sg_uf": "SE",
+     "username": "diegoprado_14",
+     "seguidores": 31000,
+     "votos": 5200,
+     "razao_obs_esperado": 0.584,
+     "foto_url": "/fotos/2026/4.webp",
+     "link": "https://www.instagram.com/diegoprado_14/"
+    },
+    {
+     "sq_candidato": 5,
+     "nm_urna": "Elisa Rocha",
+     "sg_uf": "SE",
+     "username": "elisarocha_14",
+     "seguidores": 4200,
+     "votos": 2600,
+     "razao_obs_esperado": 0.888,
+     "foto_url": "/fotos/2026/5.webp",
+     "link": "https://www.instagram.com/elisarocha_14/"
+    },
+    {
+     "sq_candidato": 6,
+     "nm_urna": "Fábio Nunes",
+     "sg_uf": "SE",
+     "username": "fabionunes_14",
+     "seguidores": 12000,
+     "votos": 11800,
+     "razao_obs_esperado": 2.247,
+     "foto_url": "/fotos/2026/6.webp",
+     "link": "https://www.instagram.com/fabionunes_14/"
+    },
+    {
+     "sq_candidato": 7,
+     "nm_urna": "Gabi Torres",
+     "sg_uf": "SE",
+     "username": "gabitorres_14",
+     "seguidores": 76000,
+     "votos": 9400,
+     "razao_obs_esperado": 0.641,
+     "foto_url": "/fotos/2026/7.webp",
+     "link": "https://www.instagram.com/gabitorres_14/"
+    },
+    {
+     "sq_candidato": 8,
+     "nm_urna": "Hugo Alves",
+     "sg_uf": "SE",
+     "username": "hugoalves_14",
+     "seguidores": 2600,
+     "votos": 1800,
+     "razao_obs_esperado": 0.803,
+     "foto_url": "/fotos/2026/8.webp",
+     "link": "https://www.instagram.com/hugoalves_14/"
+    },
+    {
+     "sq_candidato": 9,
+     "nm_urna": "Iara Campos",
+     "sg_uf": "SE",
+     "username": "iaracampos_14",
+     "seguidores": 15500,
+     "votos": 6900,
+     "razao_obs_esperado": 1.139,
+     "foto_url": "/fotos/2026/9.webp",
+     "link": "https://www.instagram.com/iaracampos_14/"
+    },
+    {
+     "sq_candidato": 10,
+     "nm_urna": "João Pires",
+     "sg_uf": "SE",
+     "username": "joaopires_14",
+     "seguidores": 8300,
+     "votos": 4400,
+     "razao_obs_esperado": 1.029,
+     "foto_url": "/fotos/2026/10.webp",
+     "link": "https://www.instagram.com/joaopires_14/"
+    }
+   ]
+  }
+ ],
+ "coletado_em": "2026-10-08T12:00:00Z",
+ "avisos": [
+  "redes_nao_causalidade"
+ ],
+ "dt_geracao": "2026-10-06",
+ "fontes": [
+  {
+   "dataset": "redes_perfis",
+   "arquivo_oficial_url": "https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/business-discovery",
+   "dt_geracao": "2026-10-08T12:00:00+00:00",
+   "coluna_regra": "followers_count, media_count e posts (timestamp, like_count, comments_count, media_type) da conta analisada",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Instagram — API oficial da Meta, coletado em 08/10/2026"
+  },
+  {
+   "dataset": "rede_social_candidato",
+   "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/rede_social_candidato_2026.zip",
+   "dt_geracao": "2026-10-06",
+   "coluna_regra": "DS_URL declarada pelo candidato normalizada para o username",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Perfis declarados pelos candidatos ao TSE (cadastro)"
+  }
+ ]
+}

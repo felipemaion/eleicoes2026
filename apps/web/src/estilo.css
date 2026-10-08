@@ -324,3 +324,24 @@ circle.marca.com-link { cursor: pointer; }
 .tabela-comparativo-receitas caption { text-align: left; color: var(--cor-texto-suave); padding-block: var(--esp-2); }
 .tabela-comparativo-receitas :is(th, td) { padding: var(--esp-2) var(--esp-3); border-bottom: 1px solid var(--cor-borda); text-align: right; white-space: nowrap; }
 .tabela-comparativo-receitas :is(th[scope=row], thead th:first-child) { text-align: left; white-space: normal; }
+
+/* ---- Redes sociais (T-W24) ---- */
+.resumo-redes { font-size: 1.05rem; font-weight: 600; margin-block: var(--esp-2); }
+.legenda-esperado { display: flex; flex-wrap: wrap; gap: var(--esp-1) var(--esp-3); font-size: var(--texto-pequeno); margin: var(--esp-2) 0; }
+.legenda-esperado .chave::before { content: "●"; margin-right: var(--esp-1); }
+.legenda-esperado .chave.acima::before { color: #0072b2; }
+.legenda-esperado .chave.abaixo::before { color: #d55e00; }
+.legenda-esperado .chave.neutro::before { color: var(--cor-texto-suave); }
+.leitura-correlacao p { margin: var(--esp-1) 0; }
+.outras-relacoes { margin-block: var(--esp-3); }
+.outras-relacoes h4 { margin: var(--esp-3) 0 0; }
+.foco-cartao { display: flex; gap: var(--esp-3); align-items: flex-start; padding: var(--esp-3); border: 1px solid var(--cor-borda); border-radius: var(--raio); background: var(--cor-superficie); }
+.foco-nome { font-size: 1.1rem; }
+.foco-status.indisponivel { font-weight: 600; }
+.foco-links { margin: var(--esp-1) 0 0; overflow-wrap: anywhere; }
+.busca-redes-resultados { list-style: none; margin: 0 0 var(--esp-2); padding: 0; display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.rankings-redes { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--esp-4); }
+.rankings-redes h3 { margin-top: var(--esp-2); }
+.serie-numero strong { font-size: 2rem; }
+.serie-resumo { margin-block: var(--esp-2); }
+@media (max-width: 40rem) { .foco-cartao { flex-direction: column; } .rankings-redes { grid-template-columns: 1fr; } }
