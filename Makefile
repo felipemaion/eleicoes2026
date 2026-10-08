@@ -1,5 +1,5 @@
 # Alvos do Eleicoes2026. Alvos de pacote passam a funcionar quando o pacote é criado (ver docs/plano.md).
-.PHONY: setup test lint etl dev openapi agentes relatorio check-tooling
+.PHONY: setup test lint etl publicar-dados dev openapi agentes relatorio check-tooling
 
 setup:
 	git config core.hooksPath .githooks
@@ -20,10 +20,15 @@ check-tooling:
 	uv run pytest scripts/tests
 
 etl:
-	uv run etl baixar --ano $(ANO) && uv run etl processar --ano $(ANO)
+	uv run etl baixar --ano $(ANO) && uv run etl processar --ano $(ANO) && uv run etl geo
+
+publicar-dados:
+	./scripts/publicar-dados.sh $(DIR)
 
 dev:
-	@echo "API: uv run uvicorn api.main:app --reload --port 8000 | web: cd apps/web && pnpm dev"
+	@trap 'kill 0' INT TERM; \
+	ELEICOES_DIR_DADOS=$${ELEICOES_DIR_DADOS:-data/processed} uv run uvicorn api.main:app_producao --factory --reload --port 8000 & \
+	(cd apps/web && pnpm dev) & wait
 
 openapi:
 	uv run python -m api.openapi > docs/api/openapi.json

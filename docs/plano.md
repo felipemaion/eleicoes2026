@@ -36,3 +36,11 @@ Primeira leva em paralelo: **T-D01, T-A01, T-B01, T-W01**.
 | T-B03 | backend | endpoints com dados reais, cache/ETag |
 | T-W04 | frontend | telas: visão geral, mapa, gastos, evolução, ficha do candidato |
 | T-A04 | analise | conferência dos números contra totais oficiais do TSE |
+
+## Status em 2026-10-08
+- **F0–F2 concluídas**; **F3 publicada**: https://eleicoes2026.maionesys.com (deploy automático na `main`).
+- Integrados: T-D01..T-D04, T-A01, T-A02, T-A04..T-A06, T-B01..T-B04, T-W01..T-W08, lista MBL 2022.
+- Em andamento: T-D05 (densidade por local/H3 — `/api/mapa/pontos` responde 503 até subir), T-A07
+  (rótulos de receita de 2026).
+- Conferência com o TSE: diferença zero (`docs/metodologia/conferencia.md`).
+- Custo de desenvolvimento: `docs/registro/RELATORIO.md`.
