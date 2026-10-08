@@ -88,3 +88,71 @@ Armadilhas descobertas nos arquivos reais (2022 e 2026, layout idêntico):
   MG, `(52051, zona 144, local 1023)`; 2026: MG, PA e RS, um cada).
 - Nulos: `#NULO`/`#NE`/`#NI` em qualquer coluna; `-1`/`-3`/`-4` só em colunas inteiras.
   CPF/título `-4` = não divulgável → `pessoa_id` nulo.
+
+## Prestação de contas e IPCA (T-D03)
+`uv run etl baixar --ano 2022 --fonte prestacao_contas --fonte ipca` e
+`uv run etl processar --ano 2022|2026 --dataset contas` / `uv run etl processar --dataset ipca`
+→ `data/processed/{receitas_candidatos,despesas_contratadas_candidatos,despesas_pagas_candidatos}/ano=<ano>/<UF>.parquet`
+e `data/processed/ipca/ipca.parquet`. Contratos em `packages/contratos/src/contratos/contas.py`.
+Tempo medido: 2022 + 2026 (≈1,5 GB de CSV descompactado) em ~10 s.
+
+O ZIP de cada ano traz, por dataset, `_UF.csv` ×27, `_BR.csv` (presidente) e `_BRASIL.csv` (união, ignorado
+como em T-D02), além de `receitas_candidatos_doador_originario_*` (fora do escopo, também ignorado).
+
+**Grão = lançamentos agregados**, não o lançamento cru: `SQ_RECEITA`/`SQ_DESPESA` **não são chaves** (2022:
+674.944 linhas de receita para 665.131 pares prestador×receita; 301 linhas são cópias exatas) e o CSV traz CPF/nome
+de doadores e fornecedores. O Parquet tem um registro por candidatura × prestação × rótulos, com
+`vr_*` (soma), `qt_lancamentos` (nº de linhas do CSV) e `dt_geracao`. Totais de controle: soma em centavos
+de `vr_*` e soma de `qt_lancamentos` = valores do CSV em texto. Nenhuma coluna de pessoa chega ao Parquet.
+
+Armadilhas descobertas (2022 e 2026, layout idêntico):
+- `ST_TURNO` (→ `nr_turno`) e `CD_ELEICAO` vêm em cada lançamento (2022: 544 presidente, 546 geral; 2026: 6257, 6259).
+- **`SQ_PRESTADOR_CONTAS` ↔ `SQ_CANDIDATO` é 1:1** (2022: 27.958; 2026: 19.209 candidaturas com contas).
+  `despesas_pagas` **não traz `SQ_CANDIDATO`**: o ETL liga pelo mapa de receitas + despesas contratadas do
+  mesmo ano; prestador sem elo ou com 2 candidatos é **erro** (nos dados reais: 0 órfãos).
+- Prestações (`tp_prestacao_contas`): 2022 = FINAL, PARCIAL, REGULARIZAÇÃO DA OMISSÃO, RELATÓRIO FINANCEIRO;
+  2026 = FINAL, PARCIAL, RELATÓRIO FINANCEIRO. `dt_geracao` máxima: 2022 = 2026-10-04; 2026 = **2026-10-07**
+  (**contas de 2026 parciais**: 1.350 FINAL, 256.000 PARCIAL, 410.711 RELATÓRIO FINANCEIRO nas pagas).
+- Rótulos nulos (`#NULO`) são linhas **de valor R$ 0,00** (sem movimento): receitas com fonte/origem nulas
+  (2022: 2.979; 2026: 2.421) e despesas contratadas com origem nula (2022: 4.946; 2026: 4.544). Ficam no
+  Parquet (o total de linhas bate), mas `classificar_receitas` rejeita `None`: **filtrar `vr = 0`/nulos antes**.
+- Valores são decimais com vírgula, podem ser negativos (estorno); somados com sinal.
+- Rótulos `ds_*` seguem **brutos**: o ETL só apara e colapsa espaços (caixa e acento intactos); a classificação
+  é de `indicadores.financeiro`.
+
+### Valores distintos (lançamentos por rótulo; insumo para fechar a tabela de classificação)
+`ds_fonte_receita` — 2022: OUTROS RECURSOS 567.864 · FUNDO ESPECIAL 88.228 · FUNDO PARTIDARIO 15.873 · nulo 2.979.
+2026: OUTROS RECURSOS 116.940 · FUNDO ESPECIAL 37.663 · FUNDO PARTIDARIO 14.330 · nulo 2.421.
+
+`ds_origem_receita` — comuns: Recursos de pessoas físicas · Recursos de partido político · Recursos de outros
+candidatos · Recursos próprios · Recursos de Financiamento Coletivo · Recursos de origens não identificadas ·
+Doações pela Internet · nulo. Só em **2022**: Rendimentos de aplicações financeiras (569) · Comercialização de
+Bens com OR (138) · Comercialização de Bens com FEFC (4). Só em **2026** (novos): **Fundo Especial de
+Financiamento de Campanha (46) · Fundo Partidário (5) · Doações para Campanha (31)** — a *origem* repete o nome
+de um fundo e "Doações para Campanha" não existe em 2022.
+
+`ds_natureza_receita` — FINANCEIRO · ESTIMÁVEL (2022: 539.581 / 135.363; 2026: 108.160 / 63.194).
+
+`ds_fonte_despesa` (pagas) — Fundo Especial de Financiamento de Campanha · Outros Recursos · Fundo Partidário.
+
+`ds_origem_despesa` (contratadas e pagas; 2022 = 41 rótulos, 2026 = 42 + nulo nas contratadas): Atividades de
+militância e mobilização de rua · Despesas com pessoal · Encargos financeiros, taxas bancárias e/ou op. cartão de
+crédito · Publicidade por materiais impressos · Combustíveis e lubrificantes · Serviços prestados por terceiros ·
+Publicidade por adesivos · Cessão ou locação de veículos · Alimentação · Despesa com Impulsionamento de Conteúdos ·
+Materiais de expediente · Diversas a especificar · Correspondências e despesas postais · Serviços contábeis ·
+Serviços advocatícios · Locação/cessão de bens imóveis · Publicidade por jornais e revistas · Produção de
+programas de rádio, televisão ou vídeo · Despesas com transporte ou deslocamento · Produção de jingles, vinhetas
+e slogans · Locação/cessão de bens móveis (exceto veículos) · **Doações financeiras a outros candidatos/partidos**
+(repasse, não custo — spec §4.2) · Serviços próprios prestados por terceiros · Despesas com Hospedagem · Criação
+e inclusão de páginas na internet · Eventos de promoção da candidatura · Publicidade por carros de som · Taxa de
+Administração de Financiamento Coletivo · Água · Pré-instalação física de comitê de campanha · Impostos,
+contribuições e taxas · Comícios · Energia elétrica · Pesquisas ou testes eleitorais · Passagem Aérea ·
+Aquisição/Doação de bens móveis ou imóveis · Telefone · Reembolsos de gastos realizados por eleitores · Encargos
+sociais · Despesa com geradores de energia · Multas eleitorais. Só em **2026**: *Segurança e prevenção,
+repressão e combate à violência política*.
+
+### IPCA (BCB SGS 433)
+`ipca.parquet`: `mes` ("AAAA-MM"), `variacao` (% mensal, como o BCB publica) e `indice` (acumulado, base 100
+em dez/1979). Fator entre meses = `indice[base]/indice[origem]` (= Π(1+v/100), vetor `deflacao_ipca`). Mês
+faltante/repetido na série **falha** o processamento. Última observação baixada em 2026-10-07: **2026-08**
+(set/2026 sai ≈ 09/10/2026; a emenda do ADR 0007 manda usar o último mês disponível como base).

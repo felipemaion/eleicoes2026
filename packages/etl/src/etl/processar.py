@@ -72,6 +72,8 @@ class Contexto:
 
     ano: int
     sal: str | None
+    raiz_raw: Path | None = None
+    raiz_proc: Path | None = None
 
 
 Regra = Callable[[pl.LazyFrame, Contexto], pl.LazyFrame]
@@ -157,6 +159,63 @@ def _agregar_locais(lf: pl.LazyFrame, _: Contexto) -> pl.LazyFrame:
     )  # fmt: skip
 
 
+def _normalizar_rotulos(lf: pl.LazyFrame) -> pl.LazyFrame:
+    """Rótulos ``ds_*``: só espaços (borda e repetidos) — caixa e acento seguem brutos."""
+    cols = [c for c in lf.collect_schema().names() if c.startswith("ds_")]
+    return lf.with_columns(pl.col(c).str.strip_chars().str.replace_all(r"\s+", " ") for c in cols)
+
+
+def _agregar(lf: pl.LazyFrame, ct: Contrato, valor: str) -> pl.LazyFrame:
+    """Lançamentos → um registro por candidatura × prestação × rótulos (``ct.colunas``)."""
+    chaves = [c for c in ct.colunas if c not in (valor, "qt_lancamentos", "dt_geracao")]
+    return _normalizar_rotulos(lf).group_by(chaves).agg(
+        pl.col(valor).sum(),
+        pl.len().cast(pl.Int32).alias("qt_lancamentos"),
+        pl.col("dt_geracao").max(),
+    )  # fmt: skip
+
+
+def _mapa_prestador(ctx: Contexto) -> pl.DataFrame:
+    """``sq_prestador_contas → sq_candidato`` das receitas e despesas contratadas do ano."""
+    if ctx.raiz_raw is None or ctx.raiz_proc is None:
+        raise ErroProcessamento("despesas pagas exigem raiz_raw/raiz_proc no contexto")
+    partes = []
+    for nome in ("receitas_candidatos", "despesas_contratadas_candidatos"):
+        pasta = ctx.raiz_proc / nome / f"ano={ctx.ano}"
+        if not list(pasta.glob("*.parquet")):
+            processar_fonte(nome, ctx.ano, ctx.raiz_raw, ctx.raiz_proc)
+        partes.append(
+            pl.scan_parquet(pasta / "*.parquet").select("sq_prestador_contas", "sq_candidato")
+        )
+    mapa = pl.concat(partes).unique().collect()
+    ambiguos = mapa.group_by("sq_prestador_contas").len().filter(pl.col("len") > 1)
+    if ambiguos.height:
+        raise ErroProcessamento(
+            f"{ambiguos.height} prestador(es) ligado(s) a mais de um candidato: "
+            f"{ambiguos['sq_prestador_contas'].head(5).to_list()}"
+        )
+    return mapa
+
+
+def _despesas_pagas(lf: pl.LazyFrame, ctx: Contexto) -> pl.LazyFrame:
+    """Liga cada pagamento à candidatura por ``SQ_PRESTADOR_CONTAS``; sem elo → erro."""
+    mapa = _mapa_prestador(ctx).lazy()
+    ligado = lf.join(mapa, on="sq_prestador_contas", how="left")
+    sem = ligado.filter(pl.col("sq_candidato").is_null()).select("sq_prestador_contas").unique()
+    orfaos = sem.collect()
+    if orfaos.height:
+        raise ErroProcessamento(
+            f"{orfaos.height} prestador(es) de despesa paga sem candidatura: "
+            f"{orfaos['sq_prestador_contas'].head(5).to_list()}"
+        )
+    return _agregar(ligado, CONTRATOS["despesas_pagas_candidatos"], "vr_pagto_despesa")
+
+
+def _agregador(nome: str, valor: str) -> Regra:
+    ct = CONTRATOS[nome]
+    return lambda lf, _ctx: _agregar(lf, ct, valor)
+
+
 @dataclass(frozen=True)
 class Fonte:
     """Como processar uma fonte: contrato, soma de controle e regra opcional."""
@@ -166,6 +225,10 @@ class Fonte:
     linhas_1a1: bool = True  # saída tem tantas linhas quanto a entrada?
     extras: tuple[str, ...] = ()
     regra: Regra | None = None
+    controle_decimal: tuple[str, ...] = ()  # somas em centavos (R$), exatas
+    contagem: str | None = None  # coluna cuja soma deve igualar o nº de linhas do CSV
+    zip_id: str | None = None  # id no catálogo, quando o ZIP traz vários datasets
+    prefixo: str | None = None  # prefixo dos membros do dataset dentro do ZIP
 
 
 FONTES: dict[str, Fonte] = {
@@ -192,7 +255,32 @@ FONTES: dict[str, Fonte] = {
         extras=("nr_secao",),
         regra=_agregar_locais,
     ),
+    **{
+        nome: Fonte(
+            CONTRATOS[nome],
+            controle_decimal=(valor,),
+            contagem="qt_lancamentos",
+            zip_id="prestacao_contas",
+            prefixo=nome,
+            regra=regra,
+        )
+        for nome, valor, regra in (
+            ("receitas_candidatos", "vr_receita", _agregador("receitas_candidatos", "vr_receita")),
+            (
+                "despesas_contratadas_candidatos",
+                "vr_despesa_contratada",
+                _agregador("despesas_contratadas_candidatos", "vr_despesa_contratada"),
+            ),
+            ("despesas_pagas_candidatos", "vr_pagto_despesa", _despesas_pagas),
+        )
+    },
 }
+
+CONTAS: tuple[str, ...] = (
+    "receitas_candidatos",
+    "despesas_contratadas_candidatos",
+    "despesas_pagas_candidatos",
+)
 
 
 def _crosswalk(raiz_raw: Path, raiz_proc: Path, ano: int) -> pl.LazyFrame:
@@ -220,37 +308,52 @@ def _conferir_municipios(saida: pl.LazyFrame, membro: str) -> None:
 def _esperado_do_texto(csv: Path, fonte: Fonte, membro: str) -> dict[str, int]:
     """Totais de controle calculados do CSV **em texto**, independentes do parser.
 
-    Soma só valores ≥ 0 (``-1/-3/-4`` são sentinelas, não quantidades) e registra quantos
-    valores foram sentinela ou não numéricos por coluna.
+    Inteiros: soma só valores ≥ 0 (``-1/-3/-4`` são sentinelas, não quantidades) e registra
+    quantos foram sentinela ou não numéricos por coluna. Decimais (R$): soma em centavos,
+    com sinal (estorno é negativo de verdade).
     """
+    origem = fonte.contrato.origem
     exprs: list[pl.Expr] = [pl.len().alias("__n")]
     for c in fonte.controle:
-        v = pl.col(fonte.contrato.origem.get(c, c.upper())).str.strip_chars()
+        v = pl.col(origem.get(c, c.upper())).str.strip_chars()
         n = v.cast(pl.Int64, strict=False)
         exprs += [
             n.filter(n >= 0).sum().alias(c),
             (n < 0).sum().alias(f"__sentinela_{c}"),
             (n.is_null()).sum().alias(f"__nulo_{c}"),
         ]
+    for c in fonte.controle_decimal:
+        v = pl.col(origem.get(c, c.upper())).str.strip_chars().str.replace(",", ".")
+        centavos = (v.cast(pl.Float64, strict=False) * 100).round().cast(pl.Int64)
+        exprs += [centavos.sum().alias(c), centavos.is_null().sum().alias(f"__nulo_{c}")]
     r = scan_texto(csv).select(exprs).collect().row(0, named=True)
-    for c in fonte.controle:
+    for c in (*fonte.controle, *fonte.controle_decimal):
         LOG.info(
             "%s: %s → %d sentinela(s) negativa(s), %d nulo(s)/não numérico(s)",
-            membro, c, r[f"__sentinela_{c}"], r[f"__nulo_{c}"],
+            membro, c, r.get(f"__sentinela_{c}", 0), r[f"__nulo_{c}"],
         )  # fmt: skip
-    return {"__n": r["__n"], **{c: r[c] or 0 for c in fonte.controle}}
+    colunas = (*fonte.controle, *fonte.controle_decimal)
+    return {"__n": r["__n"], **{c: r[c] or 0 for c in colunas}}
 
 
 def _controle(csv: Path, saida: pl.LazyFrame, fonte: Fonte, membro: str) -> None:
-    """Total de controle: soma(CSV em texto) == soma(saída) e, quando 1:1, nº de linhas."""
+    """Total de controle: soma(CSV em texto) == soma(saída) e nº de linhas (1:1 ou contagem)."""
     esperado = _esperado_do_texto(csv, fonte, membro)
+    linhas = pl.col(fonte.contagem).sum() if fonte.contagem else pl.len()
     obtido = (
-        saida.select(pl.len().alias("__n"), *[pl.col(c).sum().alias(c) for c in fonte.controle])
+        saida.select(
+            linhas.alias("__n"),
+            *[pl.col(c).sum().alias(c) for c in fonte.controle],
+            *[
+                (pl.col(c) * 100).round().cast(pl.Int64).sum().alias(c)
+                for c in fonte.controle_decimal
+            ],
+        )
         .collect()
         .row(0, named=True)
     )
     obtido = {k: (v or 0) for k, v in obtido.items()}
-    if not fonte.linhas_1a1:
+    if not fonte.linhas_1a1 and not fonte.contagem:
         esperado.pop("__n")
         obtido.pop("__n")
     if esperado != obtido:
@@ -321,11 +424,11 @@ def processar_fonte(
     if fonte not in FONTES:
         raise ErroProcessamento(f"fonte sem processador: {fonte}")
     spec = FONTES[fonte]
-    [alvo] = alvos(ano, [fonte])
+    [alvo] = alvos(ano, [spec.zip_id or fonte])
     zip_path = raiz_raw / alvo.destino
     if not zip_path.exists():
         raise ErroProcessamento(f"{zip_path} não existe; rode `etl baixar` antes")
-    ctx = Contexto(ano, sal)
+    ctx = Contexto(ano, sal, raiz_raw, raiz_proc)
     cross = (
         _crosswalk(raiz_raw, raiz_proc, ano) if "cd_mun_ibge" in spec.contrato.derivadas else None
     )
@@ -338,7 +441,7 @@ def processar_fonte(
     nomes: list[str] = []
     geracoes: list[str] = []
     try:
-        for membro in membros_dados(zip_path):
+        for membro in membros_dados(zip_path, spec.prefixo):
             nome = (
                 "municipio_tse_ibge.parquet"
                 if fonte == CROSSWALK

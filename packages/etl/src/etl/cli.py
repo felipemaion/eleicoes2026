@@ -14,8 +14,9 @@ from contratos import ContratoViolado
 
 from etl.download import Baixador, DownloadError
 from etl.fontes.catalogo import CATALOGO, alvos
+from etl.ipca import processar_ipca
 from etl.manifesto import Manifesto
-from etl.processar import FONTES, ErroProcessamento, processar_fonte
+from etl.processar import CONTAS, FONTES, ErroProcessamento, processar_fonte
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -29,8 +30,13 @@ def _parser() -> argparse.ArgumentParser:
     b.add_argument("--verificar", action="store_true", help="só confere sha256 local (sem rede)")
     b.add_argument("--forcar", action="store_true", help="ignora o cache")
     c = sub.add_parser("processar", help="ZIPs brutos → Parquet validado em data/processed")
-    c.add_argument("--ano", type=int, required=True)
+    c.add_argument("--ano", type=int, help="obrigatório, salvo com --dataset ipca")
     c.add_argument("--fonte", action="append", choices=sorted(FONTES), help="repetível")
+    c.add_argument(
+        "--dataset",
+        choices=("contas", "ipca"),
+        help="contas = receitas + despesas contratadas e pagas; ipca = série SGS 433 (sem ano)",
+    )
     c.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     c.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
     return p
@@ -40,7 +46,18 @@ def _processar(args: argparse.Namespace) -> int:
     manifesto = Manifesto(args.raiz_raw / "manifesto.json")
     sal = os.environ.get("PESSOA_ID_SAL") or None
     falhas = 0
-    for fonte in args.fonte or list(FONTES):
+    if args.dataset == "ipca":
+        try:
+            print(f"processado ipca: {processar_ipca(args.raiz_raw, args.raiz_processed)}")
+        except (ErroProcessamento, ContratoViolado) as e:
+            print(f"FALHA ipca: {e}", file=sys.stderr)
+            return 1
+        return 0
+    if args.ano is None:
+        print("erro: --ano é obrigatório", file=sys.stderr)
+        return 2
+    selecionadas = list(CONTAS) if args.dataset == "contas" else args.fonte or list(FONTES)
+    for fonte in selecionadas:
         try:
             saidas = processar_fonte(
                 fonte, args.ano, args.raiz_raw, args.raiz_processed, manifesto=manifesto, sal=sal

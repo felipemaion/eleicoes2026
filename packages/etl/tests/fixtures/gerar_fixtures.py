@@ -99,6 +99,69 @@ def _anonimizar(cab: list[str], linha: list[str], i: int) -> list[str]:
     return [d[c] for c in cab]
 
 
+# Pessoas físicas (doadores, fornecedores, vice) e texto livre: nunca entram em fixture.
+PII_CONTAS = {
+    "NR_CPF_CANDIDATO": "-4", "NR_CPF_VICE_CANDIDATO": "-4", "NR_CPF_CNPJ_DOADOR": "-1",
+    "NM_DOADOR": "#NULO", "NM_DOADOR_RFB": "#NULO", "NR_CPF_CNPJ_FORNECEDOR": "-1",
+    "NM_FORNECEDOR": "#NULO", "NM_FORNECEDOR_RFB": "#NULO", "DS_RECEITA": "#NULO",
+    "DS_DESPESA": "#NULO", "NR_RECIBO_DOACAO": "#NULO",
+}  # fmt: skip
+CONTAS = ("receitas_candidatos", "despesas_contratadas_candidatos", "despesas_pagas_candidatos")
+
+
+def _contas(sqs: set[str]) -> None:
+    """Prestação de contas de poucas candidaturas (as menores) do recorte, mais 40 linhas do
+    ``_BR``; pagas filtradas por SQ_PRESTADOR_CONTAS. Doadores/fornecedores anonimizados."""
+    origem = BRUTO / f"prestacao_contas/prestacao_de_contas_eleitorais_candidatos_{ANO}.zip"
+    destino = SAIDA / f"prestacao_de_contas_eleitorais_candidatos_{ANO}.zip"
+    with zipfile.ZipFile(origem) as zin:
+
+        def ler(nome: str, suf: str) -> tuple[list[str], list[list[str]]]:
+            it = _linhas(zin, f"{nome}_{ANO}_{suf}.csv")
+            return next(it), list(it)
+
+        dados = {(n, suf): ler(n, suf) for n in CONTAS for suf in (UF, "BR")}
+
+    def por_cand(nome: str) -> dict[str, int]:
+        cab, linhas = dados[(nome, UF)]
+        k = cab.index("SQ_CANDIDATO")
+        cont: dict[str, int] = {}
+        for x in linhas:
+            if x[k] in sqs:
+                cont[x[k]] = cont.get(x[k], 0) + 1
+        return cont
+
+    rec, con = por_cand("receitas_candidatos"), por_cand("despesas_contratadas_candidatos")
+    ambos = sorted(set(rec) & set(con), key=lambda q: (rec[q] + con[q], q))
+    mantidos = set(ambos[:8])
+    cab_br, linhas_br = dados[("receitas_candidatos", "BR")]
+    k_br = cab_br.index("SQ_CANDIDATO")
+    presidente = linhas_br[0][k_br]
+    mantidos.add(presidente)
+
+    prestadores: set[str] = set()
+    with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as zout:
+        for nome in CONTAS:  # pagas por último: precisa dos prestadores das outras duas
+            todas: list[list[str]] = []
+            for suf in (UF, "BR"):
+                cab, linhas = dados[(nome, suf)]
+                i = {c: k for k, c in enumerate(cab)}
+                if nome == "despesas_pagas_candidatos":
+                    sel = [x for x in linhas if x[i["SQ_PRESTADOR_CONTAS"]] in prestadores]
+                    sel = sel[:40] if suf == "BR" else sel
+                else:
+                    sel = [x for x in linhas if x[i["SQ_CANDIDATO"]] in mantidos]
+                    sel = sel[:40] if suf == "BR" else sel
+                    prestadores |= {x[i["SQ_PRESTADOR_CONTAS"]] for x in sel}
+                for x in sel:
+                    for c, v in PII_CONTAS.items():
+                        if c in i:
+                            x[i[c]] = v
+                _escrever(zout, f"{nome}_{ANO}_{suf}.csv", cab, sel)
+                todas += sel
+            _escrever(zout, f"{nome}_{ANO}_BRASIL.csv", cab, todas)  # união: deve ser ignorada
+
+
 def main() -> None:
     nome = lambda k, suf: f"{k}_{ANO}_{suf}.csv"  # noqa: E731
     # votação candidato (define o conjunto de candidatos mantidos)
@@ -108,6 +171,7 @@ def main() -> None:
         _recorte(BRUTO / ZIPS[k], SAIDA / f"{k}_{ANO}.zip", [nome(k, UF), nome(k, "BR")], None)
     k = "consulta_cand"
     _recorte(BRUTO / ZIPS[k], SAIDA / f"{k}_{ANO}.zip", [nome(k, UF), nome(k, "BR")], sqs)
+    _contas(sqs)
     k = "consulta_vagas"
     _recorte(BRUTO / ZIPS[k], SAIDA / f"{k}_{ANO}.zip", [nome(k, UF), nome(k, "BR")], None)
     # locais: um único CSV, filtrado por município
