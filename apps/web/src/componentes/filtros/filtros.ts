@@ -3,7 +3,7 @@
  * "Limpar". O estado vive no store (e, por ele, no hash); nada recarrega a página.
  */
 import { criarCliente, foiCancelada, type ClienteApi } from "../../dados/cliente";
-import { paramsDeFiltros } from "../../dados/adaptadores";
+import { cargoDaApi, paramsDeFiltros } from "../../dados/adaptadores";
 import { cargoNacional, contagemTexto, opcoesDeUf, resumoDeGrupo, rotuloDaUf, ROTULO_CARGO } from "../../filtros-logica";
 import { ANOS, CARGOS, FILTROS_PADRAO, GRUPOS, type Filtros, type Store, type Uf } from "../../store";
 import { criarCombobox } from "../ui/combobox";
@@ -48,13 +48,15 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
   const inputUf = criar("input", { id: idUf, name: "uf", type: "text", placeholder: "Brasil ou digite o estado" });
   const dicaUf = criar("small", { className: "filtro-dica" });
   const campoUf = criar("div", { className: "filtro-uf" }, criar("label", { htmlFor: idUf, textContent: "Estado (UF)" }), inputUf, dicaUf);
+  // UFs com candidatura no recorte (grupo + cargo); `undefined` enquanto a API não respondeu.
+  let ufsDisponiveis: ReadonlySet<string> | undefined;
   let opcoesUf = opcoesDeUf("");
   const cbUf = criarCombobox(inputUf, {
     rotuloLista: "Estados",
     aoEscolher: (item) => { store.definir({ uf: item.id as Uf }); },
   });
   const listarUfs = (consulta: string): void => {
-    opcoesUf = opcoesDeUf(consulta);
+    opcoesUf = opcoesDeUf(consulta, ufsDisponiveis);
     cbUf.definirItens(opcoesUf.map((o) => ({ id: o.valor, desenhar: (li) => { li.textContent = o.texto; } })));
   };
   inputUf.addEventListener("input", () => { listarUfs(inputUf.value); cbUf.abrir(); });
@@ -97,6 +99,27 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
     }, 250);
   }
 
+  let ctrlUfs: AbortController | null = null;
+  let chaveUfs = "";
+  function carregarUfs(f: Filtros): void {
+    // Presidente não tem UF; o recorte das UFs depende só de grupo e cargo.
+    if (cargoNacional(f.cargo)) { chaveUfs = ""; ufsDisponiveis = undefined; return; }
+    const chave = `${f.grupo}|${f.cargo}`;
+    if (chave === chaveUfs) return;
+    chaveUfs = chave;
+    ctrlUfs?.abort();
+    const c = (ctrlUfs = new AbortController());
+    cliente.ufs({ grupo: f.grupo, cargo: cargoDaApi(f.cargo) }, c.signal).then(
+      (r) => {
+        ufsDisponiveis = new Set(r.itens.map((i) => i.uf));
+        // Dependência: a UF escolhida não tem candidatura neste cargo → volta ao Brasil em vez de mostrar tela vazia.
+        const atual = store.obter().filtros.uf;
+        if (atual !== "BR" && !ufsDisponiveis.has(atual)) store.definir({ uf: "BR" });
+      },
+      (e: unknown) => { if (!foiCancelada(e)) { chaveUfs = ""; console.error("UFs do recorte indisponíveis:", e); } },
+    );
+  }
+
   const sincronizar = (): void => {
     const { filtros } = store.obter();
     ano.marcar(filtros.ano);
@@ -109,9 +132,10 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
     descGrupo.textContent = resumoDeGrupo(filtros.grupo);
     limpar.hidden = igualAoPadrao(filtros);
     contar(filtros);
+    carregarUfs(filtros);
   };
   sincronizar();
   const cancelar = store.assinar(sincronizar);
   container.replaceChildren(form);
-  return () => { cancelar(); clearTimeout(timer); ctrl?.abort(); cbUf.destruir(); container.replaceChildren(); };
+  return () => { cancelar(); clearTimeout(timer); ctrl?.abort(); ctrlUfs?.abort(); cbUf.destruir(); container.replaceChildren(); };
 }

@@ -35,7 +35,7 @@ describe("busca global", () => {
     input.value = "kim"; input.dispatchEvent(new Event("input"));
     await vi.advanceTimersByTimeAsync(300);
     expect(buscar).toHaveBeenCalledTimes(1);
-    expect(buscar).toHaveBeenCalledWith({ q: "kim", limite: "8" }, expect.anything());
+    expect(buscar).toHaveBeenCalledWith({ q: "kim", limite: "40" }, expect.anything());
   });
   it("sugestões mostram nome com trecho destacado e a linha de contexto", async () => {
     const { input } = montar();

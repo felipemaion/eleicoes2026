@@ -81,3 +81,28 @@ test("tema claro opcional lembrado e com a mesma estrutura", async ({ page }) =>
   await page.getByRole("button", { name: "Tema escuro" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-tema", "claro");
 });
+
+test("celular: filtros recolhidos mostram o conteúdo logo, e o botão resume e abre os filtros", async ({ page }) => {
+  await simularApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/visao-geral?cargo=senador&uf=SE");
+  const botao = page.getByRole("button", { name: /Filtros/ });
+  await expect(botao).toBeVisible();
+  await expect(botao).toHaveAttribute("aria-expanded", "false");
+  await expect(botao).toContainText("Senador");
+  await expect(botao).toContainText("SE");
+  await expect(page.locator("form.filtros")).toBeHidden();
+  const topo = await page.locator("main h1").evaluate((e) => e.getBoundingClientRect().top);
+  expect(topo).toBeLessThan(400);
+  await botao.click();
+  await expect(botao).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("form.filtros")).toBeVisible();
+});
+
+test("desktop: sem botão de filtros, a lateral fica sempre aberta", async ({ page }) => {
+  await simularApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#/visao-geral");
+  await expect(page.locator("form.filtros")).toBeVisible();
+  await expect(page.locator(".lateral-alternar")).toBeHidden();
+});

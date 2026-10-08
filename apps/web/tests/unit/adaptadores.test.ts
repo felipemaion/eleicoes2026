@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  barrasMunicipios, cargoDaApi, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
+  barrasMunicipios, cargoDaApi, filtrosDoCandidato, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
   mapaDeDiferenca, paramsComCargo, paramsDeFiltros, penetracaoDosAnos, rankingDeCandidatos, receitaEmpilhada, soNumeros,
 } from "../../src/dados/adaptadores";
 import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
@@ -133,5 +133,17 @@ describe("candidato", () => {
     const b = barrasMunicipios(F, 5);
     expect(b).toHaveLength(5);
     expect(b[0]?.valor).toBeGreaterThanOrEqual(b[4]?.valor ?? Infinity);
+  });
+});
+
+describe("filtrosDoCandidato", () => {
+  const base = { ano: 2026, cargo: "GOVERNADOR", sg_uf: "RJ" } as const;
+  it("deriva cargo, UF, ano e grupo da candidatura", () => {
+    expect(filtrosDoCandidato(base)).toEqual({ cargo: "governador", uf: "RJ", ano: 2026, grupo: "missao_2026" });
+    expect(filtrosDoCandidato({ ano: 2022, cargo: "DEPUTADO FEDERAL", sg_uf: "SP" })).toEqual({ cargo: "deputado_federal", uf: "SP", ano: 2022, grupo: "mbl_2022" });
+  });
+  it("presidente (UF BR) vira Brasil; cargo fora da lista de filtros não altera o cargo", () => {
+    expect(filtrosDoCandidato({ ano: 2026, cargo: "PRESIDENTE", sg_uf: "BR" })).toMatchObject({ cargo: "presidente", uf: "BR" });
+    expect(filtrosDoCandidato({ ano: 2026, cargo: "DEPUTADO DISTRITAL", sg_uf: "DF" })).not.toHaveProperty("cargo");
   });
 });

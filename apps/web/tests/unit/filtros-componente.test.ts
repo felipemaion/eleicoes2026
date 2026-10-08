@@ -6,11 +6,12 @@ import { criarStore } from "../../src/store";
 beforeEach(() => { vi.useFakeTimers(); document.body.innerHTML = '<div id="x"></div>'; });
 afterEach(() => { vi.useRealTimers(); document.body.innerHTML = ""; });
 
-function montar(total = 547) {
+function montar(total = 547, ufsDisponiveis: string[] = ["SE", "SP"]) {
   const candidatos = vi.fn(() => Promise.resolve({ total, limite: 1, offset: 0, itens: [], kpis: null }));
+  const ufs = vi.fn(() => Promise.resolve({ dt_geracao: "2026-10-07", itens: ufsDisponiveis.map((u) => ({ uf: u, candidaturas: 1 })) }));
   const store = criarStore();
-  const fim = render(document.getElementById("x") as HTMLElement, store, { candidatos } as unknown as ClienteApi);
-  return { store, candidatos, fim };
+  const fim = render(document.getElementById("x") as HTMLElement, store, { candidatos, ufs } as unknown as ClienteApi);
+  return { store, candidatos, ufs, fim };
 }
 const radio = (grupo: string, texto: string): HTMLInputElement => {
   const r = [...document.querySelectorAll<HTMLInputElement>(`input[type=radio][name=${grupo}]`)].find((i) => i.labels?.[0]?.textContent === texto);
@@ -18,6 +19,34 @@ const radio = (grupo: string, texto: string): HTMLInputElement => {
   return r;
 };
 const uf = (): HTMLInputElement => document.querySelector<HTMLInputElement>("input[name=uf]") as HTMLInputElement;
+
+describe("filtros dependentes (UFs com candidatura)", () => {
+  it("pede /candidatos/ufs do recorte (grupo + cargo) e só oferece essas UFs", async () => {
+    const { ufs } = montar(1, ["SE"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ufs).toHaveBeenCalledWith({ grupo: "missao_2026", cargo: "DEPUTADO FEDERAL" }, expect.anything());
+    uf().dispatchEvent(new Event("focus"));
+    const itens = [...document.querySelectorAll("[role=option]")].map((o) => o.textContent);
+    expect(itens).toEqual(["Brasil", "Sergipe (SE)"]);
+  });
+  it("trocar o cargo refaz a consulta; UF sem candidatura volta para Brasil", async () => {
+    const { store, ufs } = montar(1, ["SP"]);
+    store.definir({ uf: "SE" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.obter().filtros.uf).toBe("BR");
+    radio("cargo", "Senador").click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ufs).toHaveBeenLastCalledWith({ grupo: "missao_2026", cargo: "SENADOR" }, expect.anything());
+  });
+  it("não consulta para presidente (UF travada em Brasil)", async () => {
+    const { ufs, store } = montar();
+    await vi.advanceTimersByTimeAsync(0);
+    ufs.mockClear();
+    store.definir({ cargo: "presidente" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(ufs).not.toHaveBeenCalled();
+  });
+});
 
 describe("filtros", () => {
   it("ano e cargo são segmentos (rádios) refletindo o store; clicar muda o estado sem recarregar", () => {

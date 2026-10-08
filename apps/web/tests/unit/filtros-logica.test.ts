@@ -54,6 +54,11 @@ describe("busca de UF", () => {
     expect(opcoesDeUf("pa").map((o) => o.valor)).toEqual(expect.arrayContaining(["PA", "PB", "PR"]));
     expect(opcoesDeUf("zzz")).toEqual([]);
   });
+  it("com UFs disponíveis, só lista as que têm candidatura (Brasil sempre)", () => {
+    const so = opcoesDeUf("", new Set(["SE", "SP"])).map((o) => o.valor);
+    expect(so).toEqual(["BR", "SE", "SP"]);
+    expect(opcoesDeUf("s", new Set(["SE", "AC"])).map((o) => o.valor)).toEqual(["BR", "SE"]);
+  });
   it("sigla exata vem antes das demais", () => {
     expect(opcoesDeUf("pa")[0]?.valor).toBe("PA");
   });

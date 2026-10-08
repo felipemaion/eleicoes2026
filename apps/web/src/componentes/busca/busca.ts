@@ -3,7 +3,7 @@ import { foiCancelada, type ClienteApi } from "../../dados/cliente";
 import type { CandidaturaBusca } from "../../dados/contrato";
 import type { Filtros } from "../../store";
 import { criarCombobox, type ItemCombobox } from "../ui/combobox";
-import { destacarTrecho, hashDaCandidatura, linhaDaSugestao, paramsDaBusca } from "./busca-logica";
+import { destacarTrecho, hashDaCandidatura, linhaDaSugestao, MAX_SUGESTOES, ordenarSugestoes, paramsDaBusca } from "./busca-logica";
 
 export interface OpcoesBusca {
   cliente: ClienteApi;
@@ -83,8 +83,8 @@ export function render(container: HTMLElement, opcoes: OpcoesBusca): () => void 
     try {
       const r = await opcoes.cliente.busca(paramsDaBusca(q, opcoes.filtros()), c.signal);
       if (n !== minha) return;
-      itensAtuais = r.itens;
-      const itens: ItemCombobox[] = r.itens.map((x) => ({ id: `${String(x.ano)}:${String(x.sq_candidato)}`, desenhar: (li) => { desenharItem(li, x, q); } }));
+      itensAtuais = ordenarSugestoes(r.itens, q).slice(0, MAX_SUGESTOES);
+      const itens: ItemCombobox[] = itensAtuais.map((x) => ({ id: `${String(x.ano)}:${String(x.sq_candidato)}`, desenhar: (li) => { desenharItem(li, x, q); } }));
       cb.definirItens(itens);
       if (itens.length === 0) { mensagem(`Nenhum candidato encontrado para “${q}”. Tente só o sobrenome ou o número de urna.`); return; }
       cb.abrir();

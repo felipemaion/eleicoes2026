@@ -3,6 +3,8 @@ import "./estilo.css";
 import { render as renderBusca } from "./componentes/busca/busca";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
+import { ROTULO_CARGO } from "./filtros-logica";
+import { definirAjustadorDeRecorte } from "./telas/recorte";
 import { criarSobreposicao, definirSobreposicaoGlobal } from "./componentes/ui/sobreposicao";
 import { cssDasCores, TEMAS } from "./paletas";
 import { ligarStoreAoHash, rotaExiste, ROTULOS_TELA } from "./rotas";
@@ -65,8 +67,18 @@ function montar(raiz: HTMLElement): void {
   ligarTema(botaoTema);
   const lateral = el("aside", { className: "lateral" });
   lateral.setAttribute("aria-label", "Filtros");
-  const areaFiltros = el("div");
-  lateral.append(el("h2", { textContent: "Filtros" }), areaFiltros);
+  const areaFiltros = el("div", { id: "area-filtros" });
+  // Só no celular: sem o botão os filtros ocupam a primeira tela inteira e empurram o conteúdo para baixo.
+  const alternar = el("button", { type: "button", className: "lateral-alternar" });
+  alternar.setAttribute("aria-controls", "area-filtros");
+  alternar.setAttribute("aria-expanded", "false");
+  alternar.addEventListener("click", () => {
+    const aberto = lateral.dataset["aberto"] !== "sim";
+    lateral.dataset["aberto"] = aberto ? "sim" : "nao";
+    alternar.setAttribute("aria-expanded", String(aberto));
+  });
+  lateral.dataset["aberto"] = "nao";
+  lateral.append(el("h2", { textContent: "Filtros" }), alternar, areaFiltros);
 
   const principal = el("main", { id: "principal", tabIndex: -1 });
   const rodape = el("footer");
@@ -94,8 +106,9 @@ function montar(raiz: HTMLElement): void {
   });
   let telaAnterior: string | null = null;
   let em404 = false;
-  const desenhar = (e: Readonly<Estado>): void => {
-    if (em404) return;
+  const desenhar = (e: Readonly<Estado>, ajuste = false): void => {
+    // Ajuste de recorte (filtros seguindo o candidato) não refaz a tela: ela já está desenhada com esse candidato.
+    if (em404 || ajuste) return;
     for (const { chave, a } of itens) {
       a.href = `#/${chave}`;
       if (chave === e.tela) a.setAttribute("aria-current", "page");
@@ -107,6 +120,13 @@ function montar(raiz: HTMLElement): void {
     if (telaAnterior !== null && telaAnterior !== e.tela) principal.querySelector("h1")?.focus();
     telaAnterior = e.tela;
   };
+  definirAjustadorDeRecorte((f) => { store.ajustar(f); });
+  const resumo = (e: Readonly<Estado>): void => {
+    const f = e.filtros;
+    alternar.textContent = `Filtros: ${ROTULO_CARGO[f.cargo]} · ${f.uf === "BR" ? "Brasil" : f.uf} · ${String(f.ano)} ▾`;
+  };
+  resumo(store.obter());
+  store.assinar(resumo);
   store.assinar(desenhar);
   ligarStoreAoHash(store, window);
 

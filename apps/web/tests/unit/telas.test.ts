@@ -244,8 +244,8 @@ describe("gastos — hover, busca e referência", () => {
     await desenhar("gastos");
     await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
     el.querySelector('circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
-    for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "não eleito"]) expect(balao()).toContain(t);
-    expect(chamou("/api/candidatos?")).toBe(true);
+    for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "eleito", "62,5%"]) expect(balao()).toContain(t);
+    expect(chamou("/api/candidatos?")).toBe(false);
   });
   it("mostra a mediana de custo por voto como linha de referência", async () => {
     await desenhar("gastos");
@@ -378,6 +378,28 @@ describe("evolução — escolha de candidatos", () => {
     const carla = [...el.querySelectorAll<HTMLElement>(".pessoa-item")].find((x) => x.textContent.includes("CARLA")) as HTMLElement;
     expect(carla.querySelector<HTMLInputElement>("input")?.disabled).toBe(true);
     expect(carla.textContent).toMatch(/não concorreu ao mesmo cargo|fora do comparativo/i);
+  });
+});
+
+describe("recorte segue o candidato", () => {
+  it("ficha aberta ajusta cargo/UF/ano dos filtros ao candidato (deep-link só com cand=)", async () => {
+    const { definirAjustadorDeRecorte } = await import("../../src/telas/recorte");
+    const ajustar = vi.fn();
+    definirAjustadorDeRecorte(ajustar);
+    await desenhar("candidato", estado("candidato", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelector(".ficha")).not.toBeNull(); });
+    expect(ajustar).toHaveBeenCalledWith(expect.objectContaining({ cargo: "deputado_federal", uf: "SE", ano: 2026 }));
+    // a lista do seletor vem do recorte do próprio candidato, não do filtro padrão
+    expect(chamou("uf=SE")).toBe(true);
+    definirAjustadorDeRecorte(null);
+  });
+  it("mapa com candidato também ajusta", async () => {
+    const { definirAjustadorDeRecorte } = await import("../../src/telas/recorte");
+    const ajustar = vi.fn();
+    definirAjustadorDeRecorte(ajustar);
+    await desenhar("mapa", estado("mapa", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(ajustar).toHaveBeenCalled(); });
+    definirAjustadorDeRecorte(null);
   });
 });
 

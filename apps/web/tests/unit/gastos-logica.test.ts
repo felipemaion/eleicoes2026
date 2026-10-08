@@ -1,16 +1,13 @@
 import { describe, expect, it } from "vitest";
-import candidatos from "../fixtures/api/candidatos.json";
 import gastos from "../fixtures/api/gastos.json";
 import { idsQueCasam, medianaCustoVoto, pontosDeGastos } from "../../src/dados/gastos-logica";
-import type { RespostaCandidatos, RespostaGastos } from "../../src/dados/contrato";
-import { listaTipada } from "../fixtures/api/tipado";
+import type { RespostaGastos } from "../../src/dados/contrato";
 
 const G: RespostaGastos = gastos;
-const C: RespostaCandidatos = listaTipada(candidatos);
 
 describe("pontosDeGastos", () => {
-  it("junta gasto e candidatura por sq_candidato e monta as linhas do tooltip", () => {
-    const [ana] = pontosDeGastos(G, C.itens, "contratado");
+  it("monta as linhas do tooltip só com /gastos (partido, resultado, % público)", () => {
+    const [ana] = pontosDeGastos(G, "contratado");
     expect(ana).toMatchObject({ id: "1", rotulo: "Ana Souza", custo: 223000, votos: 18049 });
     const d = Object.fromEntries(ana?.detalhe ?? []);
     expect(d["Partido"]).toContain("MISSÃO");
@@ -20,20 +17,22 @@ describe("pontosDeGastos", () => {
     expect(d["Despesa paga"]).toMatch(/180\.000/);
     expect(d["Custo por voto (contratado)"]).toMatch(/12,36/);
     expect(d["Votos"]).toBe("18.049");
-    expect(d["Resultado"]).toBeDefined();
+    expect(d["Resultado"]).toBe("eleito");
+    expect(d["% recursos públicos"]).toMatch(/62,5/);
   });
   it("base 'pago' troca o custo do eixo e o custo por voto exibido", () => {
-    const [ana] = pontosDeGastos(G, C.itens, "pago");
+    const [ana] = pontosDeGastos(G, "pago");
     expect(ana?.custo).toBe(180000);
   });
-  it("candidato sem candidatura na lista segue com 'Partido' indisponível, nunca omitido em silêncio", () => {
-    const [ana] = pontosDeGastos(G, [], "contratado");
-    expect(Object.fromEntries(ana?.detalhe ?? [])["Partido"]).toBe("indisponível");
+  it("sem % público (null) o tooltip diz 'sem receita' em vez de omitir", () => {
+    const [, bruno] = pontosDeGastos(G, "contratado");
+    expect(Object.fromEntries(bruno?.detalhe ?? [])["% recursos públicos"]).toBe("indisponível");
+    expect(Object.fromEntries(bruno?.detalhe ?? [])["Resultado"]).toBe("não eleito");
   });
   it("custo por voto vira 'sem votos' quando não há voto", () => {
     const um = G.por_candidato[0] ?? (() => { throw new Error("fixture sem gastos"); })();
     const g: RespostaGastos = { ...G, por_candidato: [{ ...um, custo: { ...um.custo, votos: 0, custo_voto_contratado: null } }] };
-    expect(Object.fromEntries(pontosDeGastos(g, C.itens, "contratado")[0]?.detalhe ?? [])["Custo por voto (contratado)"]).toBe("sem votos");
+    expect(Object.fromEntries(pontosDeGastos(g, "contratado")[0]?.detalhe ?? [])["Custo por voto (contratado)"]).toBe("sem votos");
   });
 });
 

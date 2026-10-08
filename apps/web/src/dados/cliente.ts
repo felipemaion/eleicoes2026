@@ -4,7 +4,7 @@
  * malformado falha alto em vez de virar gráfico errado.
  */
 import type {
-  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos,
+  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos, RespostaUfs,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
@@ -28,6 +28,8 @@ export interface ClienteApi {
   comparativo(p: Params, sinal?: AbortSignal): Promise<RespostaComparativo>;
   municipio(ibge: string, sinal?: AbortSignal): Promise<RespostaMunicipio>;
   pessoas(p: Params, sinal?: AbortSignal): Promise<RespostaPessoas>;
+  /** UFs com candidaturas no recorte (ano/grupo + cargo): alimenta o filtro de UF dependente. */
+  ufs(p: Params, sinal?: AbortSignal): Promise<RespostaUfs>;
 }
 
 function ehObjeto(x: unknown): x is Record<string, unknown> {
@@ -77,6 +79,7 @@ export function criarCliente(base = "/api"): ClienteApi {
     pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
     gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),
     comparativo: (p, sinal) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para"), sinal),
+    ufs: (p, sinal) => obter(`/candidatos/ufs${query(p)}`, comChaves<RespostaUfs>("itens"), sinal),
     pessoas: (p, sinal) => obter(`/evolucao/pessoas${query(p)}`, comChaves<RespostaPessoas>("itens", "total"), sinal),
     municipio: (ibge, sinal) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos"), sinal),
   };

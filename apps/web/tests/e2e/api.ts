@@ -7,7 +7,7 @@ const lerFixture = (nome: string): string => readFileSync(new URL(`../fixtures/a
 export async function simularApi(page: Page, sobrescrever: Record<string, { status: number; corpo?: string }> = {}): Promise<string[]> {
   const urls: string[] = [];
   const rotas: Record<string, string> = {
-    "/api/meta": "meta", "/api/grupos": "grupos", "/api/candidatos": "candidatos", "/api/busca": "busca", "/api/mapa": "mapa", "/api/mapa/pontos": "mapa-pontos",
+    "/api/meta": "meta", "/api/grupos": "grupos", "/api/candidatos": "candidatos", "/api/candidatos/ufs": "ufs", "/api/busca": "busca", "/api/mapa": "mapa", "/api/mapa/pontos": "mapa-pontos",
     "/api/gastos": "gastos", "/api/comparativo": "comparativo", "/api/candidatos/2026/1": "ficha", "/api/evolucao/pessoas": "pessoas", "/api/municipios/2800308": "municipio",
   };
   await page.route("**/api/**", async (route) => {

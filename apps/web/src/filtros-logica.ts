@@ -44,10 +44,11 @@ export const rotuloDaUf = (uf: Uf): string => (uf === "BR" ? "Brasil" : `${NOME_
 
 const semAcento = (s: string): string => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Opções do seletor de UF filtradas pelo que se digitou (nome sem acento ou sigla); sigla exata primeiro. */
-export function opcoesDeUf(consulta: string): OpcaoUf[] {
+/** Opções do seletor de UF (limitadas às `disponiveis`, se dadas) filtradas pelo que se digitou (nome sem acento ou sigla); sigla exata primeiro. */
+export function opcoesDeUf(consulta: string, disponiveis?: ReadonlySet<string>): OpcaoUf[] {
   const q = semAcento(consulta.trim());
-  const todas: OpcaoUf[] = [{ valor: "BR", texto: "Brasil" }, ...UFS.map((u) => ({ valor: u, texto: rotuloDaUf(u) }))];
+  // Brasil sempre existe (é o recorte agregado); as demais só se o recorte tiver candidatura nelas.
+  const todas: OpcaoUf[] = [{ valor: "BR", texto: "Brasil" }, ...UFS.filter((u) => disponiveis === undefined || disponiveis.has(u)).map((u) => ({ valor: u, texto: rotuloDaUf(u) }))];
   if (q === "") return todas;
   const acha = todas.filter((o) => semAcento(o.texto).includes(q) || o.valor.toLowerCase() === q);
   return [...acha.filter((o) => o.valor.toLowerCase() === q), ...acha.filter((o) => o.valor.toLowerCase() !== q)];

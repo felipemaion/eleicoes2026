@@ -14,6 +14,26 @@ describe("store", () => {
   });
 });
 
+describe("store.ajustar (recorte derivado do candidato)", () => {
+  it("atualiza os filtros e avisa com ajuste=true, para a tela não se redesenhar", () => {
+    const store = criarStore();
+    const ouvinte = vi.fn();
+    store.assinar(ouvinte);
+    store.ajustar({ cargo: "governador", uf: "RJ" });
+    expect(store.obter().filtros).toMatchObject({ cargo: "governador", uf: "RJ" });
+    expect(ouvinte).toHaveBeenCalledWith(expect.anything(), true);
+    store.ajustar({ cargo: "governador", uf: "RJ" });
+    expect(ouvinte).toHaveBeenCalledTimes(1);
+  });
+  it("o hash acompanha o ajuste sem empilhar histórico", () => {
+    const store = criarStore();
+    const janela = { location: { hash: "" }, history: { replaceState: vi.fn((_a: unknown, _b: string, h: string) => { janela.location.hash = h; }) }, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    ligarStoreAoHash(store, janela as unknown as Window);
+    store.ajustar({ cargo: "senador", uf: "MS" });
+    expect(janela.location.hash).toBe("#/visao-geral?uf=MS&cargo=senador");
+  });
+});
+
 describe("hash", () => {
   it("formata só o que difere do padrão", () => {
     expect(formatarHash("mapa", FILTROS_PADRAO)).toBe("#/mapa");
