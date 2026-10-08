@@ -1,6 +1,6 @@
 {
   "versao": 1,
-  "atualizado_em": "2026-10-07",
+  "atualizado_em": "2026-10-08",
   "fonte_metodologica": "docs/metodologia/indicadores.md",
   "limites": {
     "titulo": 60,
@@ -188,7 +188,7 @@
       "como_ler": "Fundo Eleitoral (FEFC) e Fundo Partidário são dinheiro público repassado pelos partidos. Pessoas físicas incluem doações pela internet; recursos próprios são do próprio candidato; financiamento coletivo é a 'vaquinha' online. As barras somam toda a receita declarada, em dinheiro e estimável.",
       "unidade": "R$; fatias em %",
       "denominador": "receita total declarada (financeira + estimável)",
-      "cuidado": "Contas de 2026 são parciais até a prestação final. Transferências entre candidatos do mesmo grupo são descontadas no total do grupo para não contar duas vezes.",
+      "cuidado": "Contas de 2026 são parciais até a prestação final. Repasses entre candidatos do mesmo grupo são descontados no total do grupo para não contar duas vezes; quando o doador não é informado, o valor aparece à parte.",
       "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
       "vetor": "receitas",
       "spec": "receita-por-fonte"
@@ -291,6 +291,116 @@
       "fonte": "Cálculo do painel sobre os dados do TSE de 2022 e 2026",
       "vetor": "quebras_comuns",
       "spec": "quebras-comuns"
+    },
+    "pct_pessoa_fisica": {
+      "titulo": "% de doações de pessoas",
+      "resumo": "Parte da receita que veio de doações de pessoas físicas, incluindo a vaquinha online (financiamento coletivo).",
+      "como_ler": "Mostra quanto a campanha dependeu de eleitores e apoiadores que doaram. O financiamento coletivo entra aqui porque, pela lei, é doação de pessoa física feita por uma plataforma. 30 % quer dizer que 3 de cada 10 reais vieram de pessoas.",
+      "unidade": "%",
+      "denominador": "receita total declarada",
+      "cuidado": "Contas de 2026 parciais: a fatia pode mudar até a prestação final. Recursos do próprio candidato ficam fora (veja % de autofinanciamento).",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "composicao-receita"
+    },
+    "receitas_estimaveis": {
+      "titulo": "Receitas estimáveis",
+      "resumo": "Bens e serviços doados à campanha e avaliados em dinheiro, como uso de carro, imóvel ou trabalho.",
+      "como_ler": "Nem toda receita é dinheiro na conta: parte é doação de bens ou serviços, com valor estimado. O painel mostra o total com e sem essa parte. 10 % estimável quer dizer que 1 de cada 10 reais declarados não passou pela conta bancária.",
+      "unidade": "R$ e % da receita total",
+      "denominador": "receita total declarada",
+      "cuidado": "O valor estimado é declarado pela campanha. O mesmo bem aparece como receita e como despesa, por isso não altera o saldo.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "composicao-receita"
+    },
+    "concentracao_fontes": {
+      "titulo": "Concentração das fontes",
+      "resumo": "Mede se a campanha dependeu de uma só fonte de dinheiro ou de várias.",
+      "como_ler": "O número efetivo de fontes diz a quantas fontes de mesmo peso a campanha equivale. 1 é uma fonte só (por exemplo, só o Fundo Eleitoral); 3 é como se o dinheiro viesse de três fontes iguais. O máximo é 8, o número de categorias do painel.",
+      "unidade": "número efetivo de fontes (1 a 8)",
+      "denominador": "receita total declarada, dividida em 8 categorias de fonte",
+      "cuidado": "O índice depende de como as fontes são agrupadas; só compare valores calculados com as mesmas 8 categorias.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "composicao-receita"
+    },
+    "receitas_grupo": {
+      "titulo": "Receita do grupo",
+      "resumo": "Soma das receitas dos candidatos do grupo, sem contar duas vezes o dinheiro que um repassou ao outro.",
+      "como_ler": "Quando um candidato repassa dinheiro a outro do mesmo grupo, o valor aparece como receita dos dois. O painel desconta esses repasses internos do total do grupo. Repasses de candidatos de fora do grupo continuam contando.",
+      "unidade": "R$",
+      "denominador": "soma das receitas dos membros, menos os repasses entre eles",
+      "cuidado": "Se o TSE não informa quem fez o repasse, o valor fica no total e aparece à parte: a receita real do grupo está entre o total e o total menos esse valor.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas_grupo",
+      "spec": "receitas-grupo"
+    },
+    "receita_por_voto": {
+      "titulo": "Receita por voto",
+      "resumo": "Receita da campanha dividida pelos votos nominais obtidos.",
+      "como_ler": "Quanto dinheiro a campanha tinha para cada voto que conquistou. Para um grupo, soma-se a receita e divide-se pela soma dos votos; a mediana mostra o candidato típico. Valores de 2022 aparecem corrigidos pela inflação.",
+      "unidade": "R$ por voto (2022 em R$ de {mes_base_ipca}, corrigido pelo IPCA)",
+      "denominador": "votos nominais válidos do candidato ou grupo",
+      "cuidado": "Contas de 2026 parciais: o valor tende a subir até a prestação final. Mostra associação, não que o dinheiro causou os votos. Candidato sem votos fica sem valor.",
+      "fonte": "TSE — receitas de candidatos e votação nominal",
+      "vetor": "receita_por_voto",
+      "spec": "receita-por-voto"
+    },
+    "receita_por_mil_aptos": {
+      "titulo": "Receita por mil eleitores",
+      "resumo": "Receita da campanha para cada mil eleitores aptos do estado onde o candidato concorreu.",
+      "como_ler": "Mede o peso do dinheiro da campanha diante do tamanho do eleitorado, o que permite comparar estados grandes e pequenos. R$ 100 por mil eleitores quer dizer 10 centavos por eleitor apto.",
+      "unidade": "R$ por mil eleitores aptos (2022 em R$ de {mes_base_ipca})",
+      "denominador": "eleitores aptos da UF (do Brasil, para presidente), contados uma vez",
+      "cuidado": "Contas de 2026 parciais. Para o grupo, soma-se a receita dos candidatos da UF e divide-se pelo eleitorado da UF uma única vez.",
+      "fonte": "TSE — receitas de candidatos e eleitorado apto",
+      "vetor": "receita_por_voto",
+      "spec": "receita-por-voto"
+    },
+    "saldo_campanha": {
+      "titulo": "Saldo da campanha",
+      "resumo": "Receita menos despesa: quanto sobrou ou faltou para a campanha.",
+      "como_ler": "Saldo positivo é sobra; negativo quer dizer que a campanha contratou mais do que arrecadou. O saldo em caixa compara o dinheiro recebido com o que já foi pago. Repasses a outros candidatos contam como uso do dinheiro.",
+      "unidade": "R$",
+      "denominador": "não se aplica (diferença entre receita e despesa)",
+      "cuidado": "Com contas parciais, saldo positivo costuma ser despesa ainda não lançada, e não sobra. Sobras do Fundo Eleitoral são devolvidas ao Tesouro na prestação final.",
+      "fonte": "TSE — receitas, despesas contratadas e pagas de candidatos",
+      "vetor": "saldo_campanha",
+      "spec": "saldo-campanha"
+    },
+    "pct_receita_gasta": {
+      "titulo": "% da receita gasta",
+      "resumo": "Despesa contratada como fatia da receita da campanha.",
+      "como_ler": "100 % quer dizer que a campanha contratou exatamente o que arrecadou. Acima de 100 % contratou mais do que recebeu; abaixo, sobrou dinheiro ou ainda há despesa por lançar.",
+      "unidade": "%",
+      "denominador": "receita total declarada",
+      "cuidado": "Contas de 2026 parciais: o percentual tende a subir até a prestação final. Sem receita declarada, fica sem valor.",
+      "fonte": "TSE — receitas e despesas contratadas de candidatos",
+      "vetor": "saldo_campanha",
+      "spec": "saldo-campanha"
+    },
+    "distribuicao_receita": {
+      "titulo": "Receita por candidato",
+      "resumo": "Média e mediana da receita dos candidatos do grupo, para comparar grupos de tamanhos diferentes.",
+      "como_ler": "A média divide a receita do grupo entre os candidatos com contas; a mediana é o valor do candidato do meio. Quando poucos concentram o dinheiro, a média fica bem acima da mediana: aí, a mediana descreve melhor o candidato típico.",
+      "unidade": "R$ por candidato (2022 em R$ de {mes_base_ipca})",
+      "denominador": "candidatos do grupo com prestação de contas",
+      "cuidado": "Candidato que ainda não prestou contas fica de fora (não conta como zero). Em 2026 isso pode reduzir bastante o número de candidatos considerados.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "distribuicao_receita",
+      "spec": "distribuicao-receita"
+    },
+    "comparacao_receitas": {
+      "titulo": "Receitas: 2022 × 2026",
+      "resumo": "Variação das receitas entre os grupos de 2022 e 2026, com 2022 corrigido pela inflação.",
+      "como_ler": "Valores de 2022 são corrigidos pelo IPCA antes da comparação. A variação aparece em reais e em %; para fatias (como % público), a diferença é em pontos percentuais. Prefira comparar por candidato ou por mil eleitores, porque os grupos têm tamanhos diferentes.",
+      "unidade": "R$ de {mes_base_ipca}; % ou p.p.",
+      "denominador": "valor de 2022 corrigido pelo IPCA",
+      "cuidado": "2022 já tem prestação final e 2026 ainda é parcial: enquanto o aviso estiver ativo, queda de receita é esperada e não quer dizer que o grupo arrecadou menos.",
+      "fonte": "TSE — receitas de candidatos; BCB — IPCA (série 433)",
+      "vetor": "comparacao_receitas",
+      "spec": "comparacao-receitas"
     }
   },
   "telas": {
@@ -340,19 +450,30 @@
     },
     "gastos": {
       "titulo": "Quanto custaram as campanhas",
-      "subtitulo": "Receitas por fonte, despesas e custo por voto dos candidatos do grupo, com valores de 2022 corrigidos pela inflação.",
+      "subtitulo": "Receitas por fonte, receita por voto, saldo, despesas e custo por voto dos candidatos do grupo, com 2022 corrigido pela inflação.",
       "nota_rodape": "Fonte: TSE (prestação de contas de candidatos) e BCB (IPCA, série 433). Contas de 2026 geradas em {dt_geracao}. Valores de 2022 em R$ de {mes_base_ipca}.",
       "indicadores": [
         "receitas",
         "pct_publico",
         "pct_autofinanciamento",
+        "pct_pessoa_fisica",
+        "receitas_estimaveis",
+        "concentracao_fontes",
+        "receitas_grupo",
+        "distribuicao_receita",
+        "receita_por_voto",
+        "receita_por_mil_aptos",
+        "saldo_campanha",
+        "pct_receita_gasta",
         "custo_por_voto",
         "divida",
-        "deflacao_ipca"
+        "deflacao_ipca",
+        "comparacao_receitas"
       ],
       "avisos": [
         "contas_parciais",
-        "ipca"
+        "ipca",
+        "repasses_grupo"
       ]
     },
     "evolucao": {
@@ -442,6 +563,11 @@
     "senado_fora_evolucao": {
       "titulo": "Senado fora da comparação",
       "texto": "Em 2022 cada estado elegeu um senador (um voto por eleitor) e em 2026 elege dois (dois votos). As taxas não são comparáveis, por isso o Senado não aparece na evolução.",
+      "nivel": "info"
+    },
+    "repasses_grupo": {
+      "titulo": "Repasses entre candidatos",
+      "texto": "No total do grupo, o dinheiro repassado de um candidato a outro do mesmo grupo é contado uma vez só. Quando o TSE não informa quem repassou, o valor aparece à parte.",
       "nivel": "info"
     }
   },
@@ -541,6 +667,14 @@
     "turno": {
       "termo": "1º e 2º turno",
       "definicao": "Para governador e presidente pode haver 2º turno. O painel nunca soma turnos e compara anos só pelo 1º turno."
+    },
+    "recurso_estimavel": {
+      "termo": "Recurso estimável",
+      "definicao": "Doação de bens ou serviços à campanha (uso de carro, imóvel, trabalho), declarada com um valor estimado em reais. Não passa pela conta bancária da campanha."
+    },
+    "repasse_entre_candidatos": {
+      "termo": "Repasse entre candidatos",
+      "definicao": "Dinheiro que uma campanha transfere a outra, inclusive do Fundo Eleitoral. Aparece como despesa de quem repassa e receita de quem recebe."
     }
   }
 }

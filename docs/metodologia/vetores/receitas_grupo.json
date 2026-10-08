@@ -1,0 +1,115 @@
+{
+  "indicador": "receitas_grupo",
+  "spec": "docs/metodologia/indicadores.md#receitas-grupo",
+  "versao": 1,
+  "descricao": "Receita do grupo sem repasses internos: linhas de membros cuja ORIGEM é repasse de candidato (Recursos de outros candidatos; 2026: FEFC/FP/Doações para Campanha com fonte Outros Recursos) e cujo sq_candidato_doador é membro saem do total — inclusive o FEFC repassado (fonte FEFC). Repasse com doador nulo fica no total e é reportado à parte. Não membros (z) são ignorados.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "repasses_internos_externos_e_desconhecidos",
+      "entrada": {
+        "receitas": [
+          {
+            "sq_candidato": "a",
+            "ds_fonte_receita": "FUNDO ESPECIAL",
+            "ds_origem_receita": "Recursos de partido político",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 10000.0,
+            "sq_candidato_doador": null
+          },
+          {
+            "sq_candidato": "a",
+            "ds_fonte_receita": "OUTROS RECURSOS",
+            "ds_origem_receita": "Recursos de pessoas físicas",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 2000.0,
+            "sq_candidato_doador": null
+          },
+          {
+            "sq_candidato": "b",
+            "ds_fonte_receita": "FUNDO ESPECIAL",
+            "ds_origem_receita": "Recursos de outros candidatos",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 3000.0,
+            "sq_candidato_doador": "a"
+          },
+          {
+            "sq_candidato": "b",
+            "ds_fonte_receita": "OUTROS RECURSOS",
+            "ds_origem_receita": "Recursos de outros candidatos",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 500.0,
+            "sq_candidato_doador": "x"
+          },
+          {
+            "sq_candidato": "b",
+            "ds_fonte_receita": "OUTROS RECURSOS",
+            "ds_origem_receita": "Fundo Especial de Financiamento de Campanha",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 400.0,
+            "sq_candidato_doador": "a"
+          },
+          {
+            "sq_candidato": "b",
+            "ds_fonte_receita": "OUTROS RECURSOS",
+            "ds_origem_receita": "Doações para Campanha",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 100.0,
+            "sq_candidato_doador": null
+          },
+          {
+            "sq_candidato": "z",
+            "ds_fonte_receita": "FUNDO ESPECIAL",
+            "ds_origem_receita": "Recursos de partido político",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 99999.0,
+            "sq_candidato_doador": null
+          }
+        ],
+        "membros": [
+          "a",
+          "b"
+        ]
+      },
+      "saida": {
+        "por_categoria": {
+          "fefc": 10000.0,
+          "pessoa_fisica": 2000.0,
+          "outros_candidatos": 600.0
+        },
+        "receita_total": 12600.0,
+        "receita_financeira": 12600.0,
+        "receita_estimavel": 0.0,
+        "receita_repasses_candidatos": 600.0,
+        "receita_sem_repasses": 12000.0,
+        "pct_publico": 79.36507936507937,
+        "pct_autofinanciamento": 0.0,
+        "pct_pessoa_fisica": 15.873015873015873,
+        "pct_estimavel": 0.0,
+        "hhi_fontes": 0.6573444192491811,
+        "n_efetivo_fontes": 1.5212725182062095,
+        "receita_repasses_internos": 3400.0,
+        "receita_repasses_doador_desconhecido": 100.0
+      }
+    },
+    {
+      "nome": "sem_coluna_doador_falha",
+      "entrada": {
+        "receitas": [
+          {
+            "sq_candidato": "a",
+            "ds_fonte_receita": "OUTROS RECURSOS",
+            "ds_origem_receita": "Recursos próprios",
+            "ds_natureza_receita": "FINANCEIRO",
+            "vr_receita": 1.0
+          }
+        ],
+        "membros": [
+          "a"
+        ]
+      },
+      "erro": "ValueError: receitas_grupo: colunas ausentes"
+    }
+  ]
+}

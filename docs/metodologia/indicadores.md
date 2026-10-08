@@ -327,7 +327,8 @@ Fonte: prestação de contas de candidatos (`receitas_candidatos`, `despesas_con
   `pct_autofinanciamento = 100 × recursos_proprios / receita_total`. Total 0 → `null`.
 - **Recorte:** candidato, grupo (Σ), cargo, UF. Não é espacial.
 - **Limitações:** transferências entre candidatos do mesmo grupo aparecem como receita de um e
-  despesa de outro — no agregado do grupo, excluir `outros_candidatos` cujo doador é do grupo.
+  despesa de outro — no agregado do grupo, excluir os **repasses** (pela origem, não pela
+  categoria) cujo doador é do grupo ([§4.6](#receitas-grupo)).
 - Vetor: `vetores/receitas.json`
 
 <a id="custo-por-voto"></a>
@@ -350,6 +351,149 @@ Fonte: prestação de contas de candidatos (`receitas_candidatos`, `despesas_con
   (1 + v_m / 100)`; `valor_base = valor × fator`. Mês ausente → erro.
 - Origem set/2022, base set/2026 ([decisão 1.6](#decisoes)).
 - Vetor: `vetores/deflacao_ipca.json`
+
+<a id="indicadores-de-receita"></a>
+### 4.4 Indicadores de receita — conjunto e porquê (T-A08)
+
+A despesa diz quanto a campanha **custou**; a receita diz **de quem ela dependeu**. O conjunto
+abaixo responde, nessa ordem: quanto entrou (total, financeiro × estimável, a preços de 2026), de
+onde (fonte/origem, % público, % próprio, % pessoa física, concentração), quanto rendeu em votos e
+em alcance (por voto, por mil aptos), o que sobrou (saldo, % gasto), como se distribui no grupo
+(média × mediana) e como mudou de 2022 para 2026. Nada é inventado: são razões simples sobre
+`VR_RECEITA`, o HHI/N efetivo de Laakso–Taagepera aplicado às fontes (mesma lógica da
+concentração espacial, §3.2) e a deflação da §4.3.
+
+| Indicador | Fórmula (por candidato; grupo = Σ numerador / Σ denominador) | Seção · vetor |
+|---|---|---|
+| `receita_total` (nominal e em R$ do mês-base) | `Σ vr_receita`; 2022 × fator IPCA | 4.1 · `receitas` |
+| `receita_<categoria>` (fonte/origem) | Σ por categoria (8, tabela 4.1) | 4.1 · `receitas` |
+| `pct_publico`, `pct_autofinanciamento` | 4.1 | 4.1 · `receitas` |
+| `receita_financeira`, `receita_estimavel`, `pct_estimavel` | natureza FINANCEIRO / ESTIMÁVEL; `100 × estimável / total` | 4.5 · `receitas` |
+| `pct_pessoa_fisica` | `100 × (pessoa_fisica + financiamento_coletivo) / total` | 4.5 · `receitas` |
+| `hhi_fontes`, `n_efetivo_fontes` | `Σ_c s_c²`, `1 / HHI` sobre as 8 categorias | 4.5 · `receitas` |
+| `receita_repasses_candidatos`, `receita_sem_repasses` | repasses de outros candidatos (pela origem); `total − repasses` | 4.6 · `receitas` |
+| receita do grupo sem repasses internos | 4.6 | 4.6 · `receitas_grupo` |
+| `receita_por_voto`, `receita_por_mil_aptos` | `total / votos`; `1000 × total / aptos` | 4.7 · `receita_por_voto` |
+| `saldo_contratado`, `saldo_financeiro`, `pct_receita_gasta` | receita − despesa; `100 × contratada / total` | 4.8 · `saldo_campanha` |
+| média, mediana, p25, p75, máximo por candidato | sobre candidatos com contas | 4.9 · `distribuicao_receita` |
+| Δ e var. % 2022→2026 | 2022 deflacionado antes da diferença | 4.10 · `comparacao_receitas` |
+
+Valem para todos: **2026 é parcial** (selo + `dt_geracao`; ver §4); a receita é a da prestação
+mais recente por prestador; **sem contas ≠ receita zero** (candidato sem nenhuma linha de receita
+nem de despesa fica `null` e sai dos agregados com contagem explícita, como no custo por voto);
+valores monetários de 2022 sempre em R$ do mês-base (§4.3), com o mês declarado na tela.
+**Não é espacial:** o TSE não localiza a receita; nada de receita em mapa por município.
+
+<a id="composicao-receita"></a>
+### 4.5 Composição da receita: % pessoa física, estimáveis e concentração das fontes
+- **Definições.** `receita_estimavel = Σ vr_receita` das linhas de natureza ESTIMÁVEL (bens e
+  serviços doados, avaliados em dinheiro — Res. TSE 23.607/2019); `pct_estimavel = 100 ×
+  estimável / total`. `pct_pessoa_fisica = 100 × (pessoa_fisica + financiamento_coletivo) /
+  total`: o financiamento coletivo é **modalidade de doação de pessoa física** (Lei 9.504/1997,
+  art. 23 §4º IV), só intermediada por plataforma; a categoria continua separada na barra por
+  fonte. Com `s_c = receita_c / receita_total` nas 8 categorias da tabela 4.1:
+  `hhi_fontes = Σ s_c²` ∈ [1/8, 1]; `n_efetivo_fontes = 1 / hhi_fontes` ∈ [1, 8] — "de quantas
+  fontes de igual peso a campanha equivale" (Laakso–Taagepera 1979; Herfindahl–Hirschman).
+- **Denominador:** `receita_total` (financeira + estimável). Total 0 → todos `null`.
+- **Unidade:** %; HHI adimensional; N efetivo em "fontes".
+- **Limitações:** o HHI depende da granularidade das categorias (comparar só com a mesma tabela,
+  que cobre 2022 e 2026). `outros_candidatos` mistura dinheiro de várias origens do doador. Valor
+  negativo de `vr_receita` (não ocorre em 2022 nem em 2026, conferido em 07/10/2026) **falha**:
+  quebraria fatias e HHI.
+- Vetor: `vetores/receitas.json` (v3)
+
+<a id="receitas-grupo"></a>
+### 4.6 Repasses entre candidatos e receita do grupo sem dupla contagem
+- **Repasse de candidato** é reconhecido pela **origem**, não pela categoria: origem "Recursos de
+  outros candidatos" (qualquer fonte) e, em 2026, as origens 1003020x que chegam com fonte Outros
+  Recursos ("Fundo Especial de Financiamento de Campanha", "Fundo Partidário", "Doações para
+  Campanha"; §4.1). Motivo: o FEFC repassado por outro candidato chega com **fonte FEFC** e cai
+  na categoria `fefc` — filtrar por `categoria == outros_candidatos` (regra anterior) deixava
+  passar o grosso dos repasses (2022: R$ 162 mi de FEFC e R$ 6,7 mi de FP repassados entre
+  candidatos, contra R$ 28,8 mi em Outros Recursos; dados de 07/10/2026).
+- **Por candidato:** `receita_repasses_candidatos = Σ` das linhas de repasse;
+  `receita_sem_repasses = receita_total − receita_repasses_candidatos` (dinheiro que não veio de
+  outra campanha). Ambos saem de `resumo_receitas`.
+- **Grupo:** `receita_grupo = Σ receitas dos membros − repasses cujo doador
+  (`sq_candidato_doador`) é membro`. O repasse interno é receita de um e despesa (repasse) de
+  outro; somar dupla-contaria. Saem também `receita_repasses_internos` (o descontado) e
+  `receita_repasses_doador_desconhecido` (repasse com doador nulo: **fica** no total e pode ser
+  interno — a tela mostra a faixa `[total − desconhecido, total]`). Os demais indicadores do
+  grupo (%, HHI) são recalculados sobre o total sem internos.
+- **Pendência de dados:** o contrato `receitas_candidatos` agrega as linhas e hoje **não** guarda
+  `sq_candidato_doador` (existe no CSV do TSE, §7); a API passa a coluna nula, então todo repasse
+  aparece como "doador desconhecido" — visível, não escondido. Pedido ao orquestrador: o `dados`
+  incluir `sq_candidato_doador` (identificador de candidatura, não é dado pessoal) na chave de
+  agregação das receitas. A coluna ausente faz a função **falhar**.
+- Vetor: `vetores/receitas_grupo.json`
+
+<a id="receita-por-voto"></a>
+### 4.7 Receita por voto e receita por mil eleitores aptos
+- **Fórmulas:** `receita_por_voto = receita_total / votos` (votos nominais válidos; `votos = 0`
+  → `null`). `receita_por_mil_aptos = 1000 × receita_total / aptos`, com `aptos` = eleitorado
+  apto da **circunscrição** (UF para deputados, senador e governador; Brasil para presidente).
+- **Grupo:** `Σ receita / Σ votos` sobre candidatos **com contas e votos > 0** (agregado, não
+  média de razões), mais a **mediana** por candidato (cauda pesada) e as contagens de excluídos —
+  mesma regra do custo por voto (§4.2). Por mil aptos no grupo: Σ receita dos membros na UF /
+  aptos da UF (o eleitorado entra **uma vez**); `brasil` = Σ receita / Σ aptos das UFs com membro.
+- **Por que os dois.** Receita por voto mede quanto dinheiro houve por voto conquistado (irmã do
+  custo por voto); receita por mil aptos mede o **peso financeiro** da campanha diante do
+  eleitorado — comparável entre UFs de tamanhos muito diferentes e entre 2022 e 2026. Identidade:
+  `receita_por_mil_aptos = receita_por_voto × penetração (‰)`.
+- **Unidade:** R$/voto e R$ por mil aptos (2022 em R$ do mês-base). **Escala:** log.
+- **Limitações:** receita ≠ gasto (há sobra e dívida, §4.8); 2026 parcial puxa os dois para
+  baixo até a prestação final; é associação, não efeito causal do dinheiro sobre o voto.
+- Vetor: `vetores/receita_por_voto.json`
+
+<a id="saldo-campanha"></a>
+### 4.8 Saldo e % da receita gasta
+- **Fórmulas:** `saldo_contratado = receita_total − despesa_contratada`;
+  `saldo_financeiro = receita_financeira − despesa_paga` (aproxima o caixa: estimáveis não passam
+  pela conta bancária); `pct_receita_gasta = 100 × despesa_contratada / receita_total`
+  (receita 0 → `null`; acima de 100 % = contratou mais do que arrecadou).
+- **Despesa aqui inclui os repasses** a outros candidatos/partidos
+  (`despesa_campanha(…, incluir_transferencias=True)`): para o saldo, repassar é uso do dinheiro
+  recebido; no custo por voto (§4.2) não é. Estimáveis entram nos dois lados do saldo contratado
+  (o bem doado é receita e despesa estimável; agregado de 2022: receita R$ 6,64 bi × contratada
+  R$ 6,36 bi).
+- `despesa_paga` nula com contratada não nula → 0 (como §4.2); sem despesa contratada → `null`.
+- **Recorte:** candidato; grupo = Σ. **Unidade:** R$; %.
+- **Limitações:** em 2026 parcial, saldo positivo é sobretudo **atraso de lançamento** de
+  despesa, não sobra — mostrar só com o selo "contas parciais". Sobra de FEFC é devolvida ao
+  Tesouro na prestação final (Res. TSE 23.607/2019).
+- Vetor: `vetores/saldo_campanha.json`
+
+<a id="distribuicao-receita"></a>
+### 4.9 Receita por candidato no grupo: média, mediana e quartis
+- **Fórmulas** sobre os candidatos do grupo **com contas** (receita não nula; 0 entra):
+  `media = Σ / n_com_contas`, `mediana`, `p25`, `p75` (interpolação linear, = `numpy` padrão),
+  `maximo`; `n_candidatos` conta todos os membros, `n_com_contas` os que entram.
+- **Por quê.** Grupos de tamanhos diferentes (Missão 2026 × MBL 2022) só se comparam **por
+  candidato** (§5.3). A receita tem cauda muito pesada (poucos concentram o FEFC): a média diz
+  "quanto o grupo tinha por candidato", a mediana "quanto tinha o candidato típico" — mostrar os
+  dois, nunca só a média.
+- **Recorte:** grupo × cargo × ano (um cargo por vez). **Unidade:** R$.
+- **Limitações:** 2026 parcial aumenta `n_candidatos − n_com_contas`; ninguém com contas → tudo
+  `null` (não 0).
+- Vetor: `vetores/distribuicao_receita.json`
+
+<a id="comparacao-receitas"></a>
+### 4.10 Comparação de receitas 2022 → 2026
+- **Fórmulas:** para cada coluna monetária `c` (receita total, por categoria, por voto, por mil
+  aptos, média/mediana por candidato): `c_2022' = c_2022 × fator_IPCA(set/2022 → mês-base)`
+  (§4.3) **antes** da diferença; `delta_c = c_2026 − c_2022'`;
+  `var_pct_c = 100 × (c_2026 / c_2022' − 1)` (2022 nulo ou 0 → `null`). Colunas percentuais
+  (`pct_*`): sem correção, só `delta` em **p.p.** A função corrige a coluna — o chamador não
+  passa 2022 já corrigido (evita corrigir duas vezes).
+- **Comparabilidade:** mesmo cargo; grupos de tamanhos diferentes comparados **por candidato**
+  (§4.9) ou por mil aptos (§4.7), nunca pelo total bruto sozinho; mesma tabela de categorias nos
+  dois anos.
+- **Limitações:** 2022 é prestação **final**, 2026 é **parcial** até a final — enquanto o selo
+  estiver ativo, Δ negativo de receita é esperado e não significa queda. O TSE não publica
+  retratos da prestação de 2022 na mesma distância da eleição, então não há comparação "na mesma
+  data". O montante do FEFC muda entre ciclos (2022: R$ 4,96 bi), o que mexe no `pct_publico` de
+  todos os grupos.
+- Vetor: `vetores/comparacao_receitas.json`
 
 ---
 
@@ -426,7 +570,7 @@ CD_ELEICAO, SG_UF, CD_MUNICIPIO (TSE → IBGE), NR_ZONA, CD_CARGO, ST_VOTO_EM_TR
 | H3, densidade | `votacao_secao_{ANO}_{UF}` | `NR_SECAO, NR_LOCAL_VOTACAO, NR_VOTAVEL, QT_VOTOS` |
 | H3 (aptos) | `detalhe_votacao_secao` | `NR_SECAO, QT_APTOS` |
 | H3 (coordenadas) | `eleitorado_local_votacao` | `NR_ZONA, NR_LOCAL_VOTACAO, CD_MUNICIPIO, NR_LATITUDE, NR_LONGITUDE` |
-| Receitas | `receitas_candidatos_{ANO}_{UF}` | `SQ_CANDIDATO, SQ_PRESTADOR_CONTAS, TP_PRESTACAO_CONTAS, DT_PRESTACAO_CONTAS, DS_FONTE_RECEITA, DS_ORIGEM_RECEITA, DS_NATUREZA_RECEITA, SQ_CANDIDATO_DOADOR, VR_RECEITA, DT_RECEITA` |
+| Receitas | `receitas_candidatos_{ANO}_{UF}` | `SQ_CANDIDATO, SQ_PRESTADOR_CONTAS, TP_PRESTACAO_CONTAS, DT_PRESTACAO_CONTAS, DS_FONTE_RECEITA, DS_ORIGEM_RECEITA, DS_NATUREZA_RECEITA, SQ_CANDIDATO_DOADOR` (**manter na agregação**, §4.6) `VR_RECEITA, DT_RECEITA` |
 | Despesa contratada | `despesas_contratadas_candidatos_{ANO}_{UF}` | `SQ_CANDIDATO, SQ_PRESTADOR_CONTAS, DS_ORIGEM_DESPESA, SQ_CANDIDATO_FORNECEDOR, VR_DESPESA_CONTRATADA, DT_DESPESA` |
 | Despesa paga | `despesas_pagas_candidatos_{ANO}_{UF}` | `SQ_PRESTADOR_CONTAS` (sem `SQ_CANDIDATO`!), `DS_FONTE_DESPESA, DS_ORIGEM_DESPESA, DS_ESPECIE_RECURSO, VR_PAGTO_DESPESA, DT_PAGTO_DESPESA` |
 | Mesmos candidatos | `consulta_cand` | CPF → `pessoa_id` (hash, ADR 0004), `SQ_CANDIDATO` |
@@ -521,7 +665,7 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
   Repasse excluído da despesa: só "Doações financeiras a outros candidatos/partidos" até o `dados`
   publicar os valores distintos de `DS_ORIGEM_DESPESA` (pendência).
 - **Grupos:** `grupos.agregar_grupo` recusa cargos ou turnos misturados; `receitas_grupo` exclui
-  receita de "outros candidatos" cujo doador é membro do grupo.
+  os repasses (reconhecidos pela origem, §4.6) cujo doador é membro do grupo.
 - **Revisão (T-A06):** `votos_nominais` recusa `nr_turno`/`cd_cargo` com mais de um valor (salvo
   se a coluna estiver nas `chaves`). Custo por voto: `despesa_paga` nula com contratada não nula
   = **0** (nenhuma linha em `despesas_pagas` = nada pago); sem contas, segue nulo.
@@ -545,6 +689,9 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
   *Journal of Political Economy* 105(5): 889–927.
 - Laakso, M.; Taagepera, R. (1979). "Effective" number of parties. *Comparative Political Studies*
   12(1): 3–27.
+- Hirschman, A. O. (1964). The paternity of an index. *American Economic Review* 54(5): 761 (HHI).
+- Lei 9.504/1997 (Lei das Eleições), art. 23 §4º IV (financiamento coletivo como doação de pessoa física); arts. 16-C e 16-D (FEFC).
+- Res. TSE 23.607/2019 (arrecadação, gastos e prestação de contas; recursos estimáveis; devolução de sobras do FEFC).
 - Marshall, R. J. (1991). Mapping disease and mortality rates using empirical Bayes estimators.
   *Applied Statistics* 40(2): 283–294.
 - Moran, P. A. P. (1950). Notes on continuous stochastic phenomena. *Biometrika* 37: 17–23.

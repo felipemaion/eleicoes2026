@@ -16,7 +16,7 @@ from indicadores._colunas import (
     NR_TURNO,
 )
 from indicadores._comum import exigir_colunas, exigir_valor_unico
-from indicadores.financeiro import resumo_receitas
+from indicadores.financeiro import expr_repasse_candidato, resumo_receitas
 
 SITUACAO_APTA = "APTO"
 
@@ -73,18 +73,39 @@ def n_candidatos(
 def receitas_grupo(
     receitas: pl.DataFrame, membros: Sequence[object], entidade: str = "sq_candidato"
 ) -> pl.DataFrame:
-    """Resumo de receitas do grupo sem as transferências internas (spec §4.1, limitações).
+    """Resumo de receitas do grupo sem os repasses internos (spec §4.6). Uma linha.
 
-    Receita de "outros candidatos" cujo doador (`sq_candidato_doador`) é membro do grupo é
-    receita de um e despesa de outro — no agregado, sairia duplicada. Uma linha.
+    Repasse de candidato é reconhecido pela **origem** (`financeiro.expr_repasse_candidato`),
+    não pela categoria — o FEFC repassado chega com fonte FEFC. Repasse cujo doador
+    (`sq_candidato_doador`) é membro é receita de um e despesa de outro: sai do total
+    (`receita_repasses_internos`). Repasse com doador nulo **fica** e é reportado em
+    `receita_repasses_doador_desconhecido` (pode ser interno; a tela mostra a faixa).
 
     Args:
         receitas: saída de `financeiro.classificar_receitas` com `sq_candidato_doador`.
+
+    Raises:
+        ValueError: coluna ausente (sem `sq_candidato_doador` não há como deduplicar).
     """
-    exigir_colunas(receitas, [entidade, "categoria", "sq_candidato_doador"], "receitas_grupo")
+    exigir_colunas(
+        receitas,
+        [entidade, "categoria", "ds_origem_receita", "vr_receita", "sq_candidato_doador"],
+        "receitas_grupo",
+    )
     lista = list(membros)
-    interna = (pl.col("categoria") == "outros_candidatos") & pl.col("sq_candidato_doador").is_in(
-        lista
-    ).fill_null(False)
-    dos_membros = receitas.filter(pl.col(entidade).is_in(lista) & ~interna)
-    return resumo_receitas(dos_membros, por=())
+    dos_membros = receitas.filter(pl.col(entidade).is_in(lista))
+    repasse = expr_repasse_candidato(dos_membros)
+    doador = pl.col("sq_candidato_doador")
+    interna = repasse & doador.is_in(lista).fill_null(False)
+    desconhecido = repasse & doador.is_null()
+    valor = pl.col("vr_receita")
+    extras = dos_membros.select(
+        valor.filter(interna).sum().cast(pl.Float64).alias("receita_repasses_internos"),
+        valor.filter(desconhecido)
+        .sum()
+        .cast(pl.Float64)
+        .alias("receita_repasses_doador_desconhecido"),
+    )
+    return pl.concat(
+        [resumo_receitas(dos_membros.filter(~interna), por=()), extras], how="horizontal"
+    )

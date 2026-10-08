@@ -1,0 +1,96 @@
+{
+  "indicador": "comparacao_receitas",
+  "spec": "docs/metodologia/indicadores.md#comparacao-receitas",
+  "versao": 1,
+  "descricao": "2022→2026: colunas monetárias de 2022 corrigidas pelo IPCA (fator do mês de origem ao mês-base) ANTES da diferença; delta = 2026 − 2022 corrigido; var_pct = 100 × (2026 / 2022 corrigido − 1), 2022 = 0 ou nulo → null. Colunas percentuais: só delta, em p.p., sem correção. Fator aqui = (1,0059)(1,0041)(1,0062) (set→dez/2022, série ilustrativa).",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "monetarias_e_percentuais",
+      "entrada": {
+        "linhas": [
+          {
+            "grupo": "g",
+            "receita_total_2022": 100000.0,
+            "receita_total_2026": 150000.0,
+            "receita_por_voto_2022": 10.0,
+            "receita_por_voto_2026": 8.0,
+            "pct_publico_2022": 40.0,
+            "pct_publico_2026": 65.5
+          },
+          {
+            "grupo": "h",
+            "receita_total_2022": 0.0,
+            "receita_total_2026": 500.0,
+            "receita_por_voto_2022": null,
+            "receita_por_voto_2026": 2.0,
+            "pct_publico_2022": null,
+            "pct_publico_2026": 10.0
+          }
+        ],
+        "monetarias": [
+          "receita_total",
+          "receita_por_voto"
+        ],
+        "percentuais": [
+          "pct_publico"
+        ],
+        "ipca_variacao_mensal": {
+          "2022-10": 0.59,
+          "2022-11": 0.41,
+          "2022-12": 0.62
+        },
+        "mes_origem": "2022-09",
+        "mes_base": "2022-12"
+      },
+      "saida": [
+        {
+          "grupo": "g",
+          "receita_total_2022": 101628.6339978,
+          "delta_receita_total": 48371.3660022,
+          "var_pct_receita_total": 47.59619813766967,
+          "receita_por_voto_2022": 10.16286339978,
+          "delta_receita_por_voto": -2.162863399780001,
+          "var_pct_receita_por_voto": -21.28202765990952,
+          "pct_publico_2022": 40.0,
+          "delta_pct_publico": 25.5
+        },
+        {
+          "grupo": "h",
+          "receita_total_2022": 0.0,
+          "delta_receita_total": 500.0,
+          "var_pct_receita_total": null,
+          "receita_por_voto_2022": null,
+          "delta_receita_por_voto": null,
+          "var_pct_receita_por_voto": null,
+          "pct_publico_2022": null,
+          "delta_pct_publico": null
+        }
+      ]
+    },
+    {
+      "nome": "coluna_ausente_falha",
+      "entrada": {
+        "linhas": [
+          {
+            "grupo": "g",
+            "receita_total_2026": 1.0
+          }
+        ],
+        "monetarias": [
+          "receita_total"
+        ],
+        "percentuais": [],
+        "ipca_variacao_mensal": {
+          "2022-10": 0.59,
+          "2022-11": 0.41,
+          "2022-12": 0.62
+        },
+        "mes_origem": "2022-09",
+        "mes_base": "2022-12"
+      },
+      "erro": "ValueError: comparar_receitas: colunas ausentes"
+    }
+  ]
+}
