@@ -25,6 +25,8 @@ export interface OpcoesDispersao {
   destaque?: ReadonlySet<string>;
   /** Linha de custo por voto constante (votos = custo ÷ cpv; reta de inclinação 1 em escala log-log). */
   referencia?: { custoPorVoto: number; rotulo: string };
+  /** O que o eixo horizontal mede ("custo de campanha" por padrão; "receita de campanha" na dispersão de receitas). */
+  grandeza?: string;
 }
 
 export interface GraficoDispersao extends Grafico<readonly PontoCustoVoto[]> {
@@ -84,13 +86,16 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   const y = scaleLog().domain(dominioLog(dados.map((d) => d.votos))).range([h - BAIXO - CALHA, TOPO]).nice();
   const xZero = ESQ + CALHA / 2 - 4;
   const yZero = h - BAIXO - CALHA / 2 + 4;
+  const grandeza = o.grandeza ?? "custo de campanha";
+  const Grandeza = grandeza.charAt(0).toUpperCase() + grandeza.slice(1);
+  const palavra = grandeza.split(" ")[0] ?? "valor";
   const nZero = dados.filter((d) => d.custo <= 0 || d.votos <= 0).length;
 
   const svg = criarSvg(
     w,
     h,
-    `${o.titulo}. Dispersão de ${String(dados.length)} candidatos, custo de campanha (eixo horizontal) por votos (eixo vertical), ambos em escala logarítmica.` +
-      (nZero > 0 ? ` ${String(nZero)} com custo ou votos zero, marcados à parte na faixa "0".` : ""),
+    `${o.titulo}. Dispersão de ${String(dados.length)} candidatos, ${grandeza} (eixo horizontal) por votos (eixo vertical), ambos em escala logarítmica.` +
+      (nZero > 0 ? ` ${String(nZero)} com ${palavra} ou votos zero, marcados à parte na faixa "0".` : ""),
   );
   const gx = select(svg).append("g").attr("class", "eixo-x").attr("transform", `translate(0,${String(h - BAIXO)})`);
   gx.call(axisBottom(x).ticks(5).tickFormat((v) => formatarCompacto(+v)));
@@ -103,7 +108,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   svg.append(
     textoSvg(xZero, h - BAIXO + 16, "0", { class: "tick-zero", "text-anchor": "middle", fill: "var(--cor-texto-suave)" }),
     textoSvg(ESQ - 8, yZero, "0", { class: "tick-zero", "text-anchor": "end", fill: "var(--cor-texto-suave)" }),
-    textoSvg((ESQ + w - DIR) / 2, h - 6, "Custo de campanha (R$, escala log)", { "text-anchor": "middle" }),
+    textoSvg((ESQ + w - DIR) / 2, h - 6, `${Grandeza} (R$, escala log)`, { "text-anchor": "middle" }),
     textoSvg(14, h / 2, "Votos (escala log)", { "text-anchor": "middle", transform: `rotate(-90 14 ${String(h / 2)})` }),
   );
 
@@ -121,7 +126,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
       stroke: zeroX || zeroY ? COR.zero : COR.principal,
       "stroke-width": 2,
     });
-    const aviso = [zeroX ? "custo zero" : "", zeroY ? "votos zero" : ""].filter(Boolean).join(", ");
+    const aviso = [zeroX ? `${palavra} zero` : "", zeroY ? "votos zero" : ""].filter(Boolean).join(", ");
     marcaAcessivel(c, `${d.rotulo}: ${formatarMoeda(d.custo)}, ${formatarNumero(d.votos)} votos${aviso ? ` (${aviso})` : ""}`);
     const linhas = [...(d.detalhe ?? [["Custo", formatarMoeda(d.custo)], ["Votos", formatarNumero(d.votos)]]), ...(aviso ? [["Atenção", aviso] as const] : [])];
     c.dataset["tooltip"] = [d.rotulo, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
@@ -144,7 +149,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   substituir(container,
     svg,
     ...(o.referencia ? [Object.assign(document.createElement("p"), { className: "nota", textContent: `Linha tracejada: ${o.referencia.rotulo}. Acima dela, o candidato rendeu mais votos por real que a mediana.` })] : []),
-    tabelaAlternativa(o.titulo, ["Candidato", "Custo", "Votos", "Observação"], dados.map((d) => [d.rotulo, formatarMoeda(d.custo), formatarNumero(d.votos), d.custo <= 0 || d.votos <= 0 ? "valor zero fora da escala log" : ""])),
+    tabelaAlternativa(o.titulo, ["Candidato", Grandeza.split(" ")[0] ?? "Valor", "Votos", "Observação"], dados.map((d) => [d.rotulo, formatarMoeda(d.custo), formatarNumero(d.votos), d.custo <= 0 || d.votos <= 0 ? "valor zero fora da escala log" : ""])),
   );
 }
 

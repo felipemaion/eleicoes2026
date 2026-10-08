@@ -10,7 +10,7 @@ export interface Rota {
 export const ROTULOS_TELA: Readonly<Record<Tela, string>> = {
   "visao-geral": "Visão geral",
   mapa: "Mapa",
-  gastos: "Gastos",
+  gastos: "Financiamento",
   evolucao: "Evolução 2022×2026",
   candidato: "Candidato",
   "como-ler": "Como ler este painel",

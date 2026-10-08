@@ -197,8 +197,11 @@ export interface paths {
          * Evolução 2022→2026
          * @description Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.
          *
-         *     Dois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,
-         *     `sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.
+         *     Ou `comparacao` (atalho para um par de grupos), ou um valor por lado, combináveis:
+         *     `grupo_2022`/`sq_2022` × `grupo_2026`/`sq_2026` (ou `pessoas`, que preenche os dois lados).
+         *     Lado sem grupo nem candidatos → 422 `lado_vazio`; grupo e candidatos no mesmo lado →
+         *     `lado_ambiguo`; grupo do ano errado → `grupo_ano_errado`; `comparacao` com lados →
+         *     `comparacao_e_selecao`; sem candidaturas no cargo/UF → `sem_par_comparavel`.
          */
         get: operations["comparativo_api_comparativo_get"];
         put?: never;
@@ -480,16 +483,21 @@ export interface components {
             mesmos_candidatos: boolean;
             /**
              * N De
-             * @description Candidaturas aptas do lado 'de'; null = situação não publicada.
+             * @description Candidaturas do lado 'de' que seguem na disputa (aptas ou sem situação).
              */
-            n_de: number | null;
-            /** N Para */
-            n_para: number | null;
+            n_de: number;
+            /**
+             * N Para
+             * @description Idem para o lado 'para' (2026 chega sem situação do TSE).
+             */
+            n_para: number;
             kpis: components["schemas"]["KpisComparativo"];
             /** @description Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas). */
             escala_sugerida: components["schemas"]["EscalaSugerida"];
             /** Municipios */
             municipios: components["schemas"]["EvolucaoMunicipio"][];
+            /** @description Receitas 2022→2026 deflacionadas; null se algum lado não tem contas. */
+            receitas: components["schemas"]["ComparativoReceitas"] | null;
             /** Dt Geracao */
             dt_geracao: string;
             /**
@@ -497,6 +505,38 @@ export interface components {
              * @description Procedência dos números (arquivo, regra, spec).
              */
             fontes: components["schemas"]["Fonte"][];
+        };
+        /**
+         * ComparativoReceitas
+         * @description Receitas do grupo 'de' × 'para', 2022 deflacionado ao mês-base.
+         */
+        ComparativoReceitas: {
+            /**
+             * Base Ipca
+             * @description Mês-base (AAAA-MM) em que o ano 'de' foi corrigido.
+             */
+            base_ipca: string;
+            /** Contas Parciais De */
+            contas_parciais_de: boolean;
+            /**
+             * Contas Parciais Para
+             * @description 2026 parcial: queda de receita é esperada até a prestação final (§4.10).
+             */
+            contas_parciais_para: boolean;
+            /**
+             * Monetarios
+             * @description receita_total, receita_<categoria>, receita_por_voto, receita_por_mil_aptos, receita_media_candidato, receita_mediana_candidato.
+             */
+            monetarios: {
+                [key: string]: components["schemas"]["IndicadorComparado"];
+            };
+            /**
+             * Percentuais
+             * @description pct_publico, pct_autofinanciamento, pct_pessoa_fisica, pct_estimavel.
+             */
+            percentuais: {
+                [key: string]: components["schemas"]["IndicadorComparado"];
+            };
         };
         /**
          * Detalhe
@@ -522,6 +562,28 @@ export interface components {
              * @description Nome do município (também nas chaves `IBGE-zona`); null no H3 ou se o município não consta do cadastro.
              */
             nome?: string | null;
+        };
+        /**
+         * DistribuicaoReceita
+         * @description Receita **líquida** por candidato com receita; cauda pesada, então média e mediana (§4.9).
+         */
+        DistribuicaoReceita: {
+            /** N Candidatos */
+            n_candidatos: number;
+            /** N Com Contas */
+            n_com_contas: number;
+            /** Soma */
+            soma: number | null;
+            /** Media */
+            media: number | null;
+            /** Mediana */
+            mediana: number | null;
+            /** P25 */
+            p25: number | null;
+            /** P75 */
+            p75: number | null;
+            /** Maximo */
+            maximo: number | null;
         };
         /**
          * EscalaSugerida
@@ -590,6 +652,22 @@ export interface components {
             votos_de: number | null;
             /** Votos Para */
             votos_para: number | null;
+        };
+        /**
+         * FaixaReceita
+         * @description Intervalo honesto da receita do grupo quando há repasse de doador desconhecido (§4.6).
+         */
+        FaixaReceita: {
+            /**
+             * Minima
+             * @description Total − repasses de candidato com doador desconhecido.
+             */
+            minima: number;
+            /**
+             * Maxima
+             * @description Total (todos os repasses desconhecidos são externos).
+             */
+            maxima: number;
         };
         /**
          * FichaCandidato
@@ -689,8 +767,11 @@ export interface components {
              * @description `ds_sit_tot_turno`; null até a apuração.
              */
             resultado: string | null;
-            /** Receita Total */
-            receita_total: number;
+            /**
+             * Receita Total
+             * @description Receita **bruta** do candidato; null se não há linha de receita (≠ zero).
+             */
+            receita_total: number | null;
             /**
              * Pct Publico
              * @description FEFC + Fundo Partidário, % da receita do candidato.
@@ -698,6 +779,48 @@ export interface components {
             pct_publico: number | null;
             /** Pct Autofinanciamento */
             pct_autofinanciamento: number | null;
+            /**
+             * Pct Pessoa Fisica
+             * @description Pessoa física + financiamento coletivo, %.
+             */
+            pct_pessoa_fisica: number | null;
+            /**
+             * N Efetivo Fontes
+             * @description 1 / HHI das categorias de receita (§4.5).
+             */
+            n_efetivo_fontes: number | null;
+            /**
+             * Receita Repasses Candidatos
+             * @description Recebido de outros candidatos (§4.6).
+             */
+            receita_repasses_candidatos: number | null;
+            /** Receita Sem Repasses */
+            receita_sem_repasses: number | null;
+            /**
+             * Receita Por Voto
+             * @description R$/voto = receita **bruta** ÷ votos (§4.7); null com 0 votos.
+             */
+            receita_por_voto: number | null;
+            /**
+             * Receita Por Mil Aptos
+             * @description R$ de receita **bruta** por mil aptos da circunscrição.
+             */
+            receita_por_mil_aptos: number | null;
+            /**
+             * Saldo Contratado
+             * @description receita **bruta** − despesa contratada, com repasses (§4.8).
+             */
+            saldo_contratado: number | null;
+            /**
+             * Saldo Financeiro
+             * @description receita financeira bruta − despesa paga.
+             */
+            saldo_financeiro: number | null;
+            /**
+             * Pct Receita Gasta
+             * @description 100 × despesa contratada ÷ receita bruta.
+             */
+            pct_receita_gasta: number | null;
             custo: components["schemas"]["ResumoCustoCandidato"];
         };
         /**
@@ -715,21 +838,41 @@ export interface components {
          *         "votos": 1180
          *       },
          *       "ano": 2026,
+         *       "aptos": 15000,
          *       "cargo": "DEPUTADO FEDERAL",
          *       "contas_parciais": true,
          *       "dt_geracao": "2026-10-06",
          *       "fontes": [],
          *       "grupo": "missao_2026",
          *       "por_candidato": [],
+         *       "receita_por_mil_aptos": 7866.7,
+         *       "receita_por_voto": {
+         *         "candidatos_sem_contas_excluidos": 0,
+         *         "candidatos_sem_voto_excluidos": 0,
+         *         "mediana_receita_por_voto": 96.4,
+         *         "receita_por_voto": 100
+         *       },
          *       "receitas": {
+         *         "faixa_receita": {
+         *           "maxima": 118000,
+         *           "minima": 118000
+         *         },
+         *         "n_efetivo_fontes": 2.1,
          *         "pct_autofinanciamento": 8.47,
+         *         "pct_pessoa_fisica": 21.2,
          *         "pct_publico": 67.8,
          *         "por_categoria": {
          *           "fefc": 70000,
          *           "fundo_partidario": 10000
          *         },
          *         "receita_financeira": 116000,
+         *         "receita_repasses_internos": 7000,
          *         "receita_total": 118000
+         *       },
+         *       "saldo": {
+         *         "pct_receita_gasta": 84.3,
+         *         "saldo_contratado": 19600,
+         *         "saldo_financeiro": 39600
          *       },
          *       "uf": "SP"
          *     }
@@ -744,7 +887,21 @@ export interface components {
             /** Uf */
             uf: string | null;
             agregado: components["schemas"]["ResumoCustoGrupo"];
-            receitas: components["schemas"]["ResumoReceitasOut"];
+            /** @description Receita **líquida** de repasses internos; null se ninguém tem receita. */
+            receitas: components["schemas"]["ResumoReceitasOut"] | null;
+            receita_por_voto: components["schemas"]["ReceitaPorVotoGrupo"];
+            distribuicao_receita: components["schemas"]["DistribuicaoReceita"];
+            saldo: components["schemas"]["SaldoGrupo"];
+            /**
+             * Receita Por Mil Aptos
+             * @description 1000 × receita **líquida** do grupo ÷ eleitorado de todas as circunscrições do grupo no cargo, contado uma vez (§4.7), inclusive as sem contas; null com mais de um cargo.
+             */
+            receita_por_mil_aptos: number | null;
+            /**
+             * Aptos
+             * @description Eleitorado usado em `receita_por_mil_aptos`.
+             */
+            aptos: number | null;
             /** Por Candidato */
             por_candidato: components["schemas"]["GastoCandidato"][];
             /** Contas Parciais */
@@ -820,16 +977,41 @@ export interface components {
             custo_voto_pago_com_repasses: number | null;
             /**
              * Receita Total
-             * @description Σ das receitas da campanha (todas as fontes).
+             * @description Σ das receitas **brutas** do candidato (inclui o que recebeu de outros candidatos); null se não há nenhuma linha de receita (≠ receita zero).
              */
-            receita_total: number;
+            receita_total: number | null;
             /**
              * Receita Por Fonte
              * @description Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…
              */
             receita_por_fonte: {
                 [key: string]: number;
-            };
+            } | null;
+            /**
+             * Receita Por Voto
+             * @description R$/voto = receita bruta ÷ votos (§4.7).
+             */
+            receita_por_voto: number | null;
+            /**
+             * Receita Por Mil Aptos
+             * @description R$ de receita bruta por mil aptos da circunscrição.
+             */
+            receita_por_mil_aptos: number | null;
+            /**
+             * Saldo Contratado
+             * @description receita bruta − despesa contratada, com repasses (§4.8).
+             */
+            saldo_contratado: number | null;
+            /**
+             * Saldo Financeiro
+             * @description receita financeira bruta − despesa paga, com repasses.
+             */
+            saldo_financeiro: number | null;
+            /**
+             * Pct Receita Gasta
+             * @description 100 × despesa contratada (com repasses) ÷ receita bruta.
+             */
+            pct_receita_gasta: number | null;
             /**
              * Explicacao Repasses
              * @description Por que há dois custos por voto e qual a diferença entre eles.
@@ -916,6 +1098,34 @@ export interface components {
          * @enum {string}
          */
         Indicador: "penetracao" | "pct_validos" | "votos";
+        /**
+         * IndicadorComparado
+         * @description Um indicador de receita nos dois anos (spec §4.10).
+         */
+        IndicadorComparado: {
+            /**
+             * De Nominal
+             * @description Valor do ano 'de' como o TSE publicou.
+             */
+            de_nominal: number | null;
+            /**
+             * De
+             * @description Valor do ano 'de' em R$ do mês-base (monetário) ou igual ao nominal (%).
+             */
+            de: number | null;
+            /** Para */
+            para: number | null;
+            /**
+             * Delta
+             * @description para − de (R$ do mês-base, ou p.p. nos percentuais).
+             */
+            delta: number | null;
+            /**
+             * Var Pct
+             * @description 100 × (para / de − 1); só monetários.
+             */
+            var_pct: number | null;
+        };
         /**
          * KpisComparativo
          * @description Os mesmos indicadores sobre o recorte inteiro (Σ votos / Σ base, não média de AMCs).
@@ -1268,6 +1478,20 @@ export interface components {
             dt_geracao: string;
         };
         /**
+         * ReceitaPorVotoGrupo
+         * @description Receita por voto do grupo: Σ receita **líquida** ÷ Σ votos, só com receita e voto (§4.7).
+         */
+        ReceitaPorVotoGrupo: {
+            /** Receita Por Voto */
+            receita_por_voto: number | null;
+            /** Mediana Receita Por Voto */
+            mediana_receita_por_voto: number | null;
+            /** Candidatos Sem Voto Excluidos */
+            candidatos_sem_voto_excluidos: number;
+            /** Candidatos Sem Contas Excluidos */
+            candidatos_sem_contas_excluidos: number;
+        };
+        /**
          * ResultadoBusca
          * @description Corpo de GET /busca.
          * @example {
@@ -1461,17 +1685,47 @@ export interface components {
         };
         /**
          * ResumoReceitasOut
-         * @description Receita por categoria (§4.1) e dependência de recursos públicos.
+         * @description Receita por categoria (§4.1), composição (§4.5) e repasses entre candidatos (§4.6).
          */
         ResumoReceitasOut: {
             /** Por Categoria */
             por_categoria: {
                 [key: string]: number;
             };
-            /** Receita Total */
-            receita_total: number;
+            /**
+             * Receita Total
+             * @description Σ das receitas. No grupo é **líquida** de repasses internos (§4.6).
+             */
+            receita_total: number | null;
             /** Receita Financeira */
-            receita_financeira: number;
+            receita_financeira: number | null;
+            /**
+             * Receita Estimavel
+             * @description Bens e serviços doados, não passam pela conta.
+             */
+            receita_estimavel: number | null;
+            /**
+             * Receita Repasses Candidatos
+             * @description Σ recebido de outros candidatos.
+             */
+            receita_repasses_candidatos: number | null;
+            /**
+             * Receita Sem Repasses
+             * @description receita_total − repasses de candidatos.
+             */
+            receita_sem_repasses: number | null;
+            /**
+             * Receita Repasses Internos
+             * @description Só no grupo: repasses entre membros, descontados do total (§4.6).
+             */
+            receita_repasses_internos: number | null;
+            /**
+             * Receita Repasses Doador Desconhecido
+             * @description Só no grupo: repasses sem doador identificado; ficam no total.
+             */
+            receita_repasses_doador_desconhecido: number | null;
+            /** @description Só no grupo; ver `FaixaReceita`. */
+            faixa_receita: components["schemas"]["FaixaReceita"] | null;
             /**
              * Pct Publico
              * @description FEFC + Fundo Partidário, % da receita total.
@@ -1479,6 +1733,46 @@ export interface components {
             pct_publico: number | null;
             /** Pct Autofinanciamento */
             pct_autofinanciamento: number | null;
+            /**
+             * Pct Pessoa Fisica
+             * @description Pessoas físicas + financiamento coletivo, % da receita total (§4.5).
+             */
+            pct_pessoa_fisica: number | null;
+            /** Pct Estimavel */
+            pct_estimavel: number | null;
+            /**
+             * Hhi Fontes
+             * @description Σ (parte da categoria)²; 1 = uma fonte só.
+             */
+            hhi_fontes: number | null;
+            /**
+             * N Efetivo Fontes
+             * @description 1 / HHI: nº de fontes equivalentes.
+             */
+            n_efetivo_fontes: number | null;
+        };
+        /**
+         * SaldoGrupo
+         * @description Saldo (§4.8) dos candidatos com receita: receita **bruta** menos despesa com repasses.
+         *
+         *     Bruta porque o repasse interno é receita de um e despesa de outro: os dois se anulam.
+         */
+        SaldoGrupo: {
+            /**
+             * Saldo Contratado
+             * @description receita − despesa contratada.
+             */
+            saldo_contratado: number | null;
+            /**
+             * Saldo Financeiro
+             * @description receita financeira − despesa paga.
+             */
+            saldo_financeiro: number | null;
+            /**
+             * Pct Receita Gasta
+             * @description 100 × despesa contratada ÷ receita.
+             */
+            pct_receita_gasta: number | null;
         };
         /**
          * Saude
@@ -1878,7 +2172,7 @@ export interface operations {
                 /** @description Id em `comparacoes` (ex.: evolucao_mbl). */
                 comparacao?: string | null;
                 uf?: components["schemas"]["UF"] | null;
-                /** @description Só pessoas que concorreram nos dois anos (pessoa_id). */
+                /** @description Só pessoas que concorreram nos dois anos (pessoa_id). Vale com grupos nos dois lados; com um lado de grupo e outro de candidatos → 422. */
                 mesmos_candidatos?: boolean;
                 /** @description Seleção do usuário: `pessoa_id_publico` (de /busca ou /evolucao/pessoas); compara as candidaturas delas em 2022 e 2026. Exclusivo com `comparacao`. */
                 pessoas?: string[] | null;
@@ -1886,6 +2180,10 @@ export interface operations {
                 sq_2022?: number[] | null;
                 /** @description Seleção: `sq_candidato` de 2026. */
                 sq_2026?: number[] | null;
+                /** @description Lado 2022 = grupo (id de 2022 em /grupos). Exclusivo com `sq_2022`. */
+                grupo_2022?: string | null;
+                /** @description Lado 2026 = grupo (id de 2026 em /grupos). Exclusivo com `sq_2026`. */
+                grupo_2026?: string | null;
             };
             header?: never;
             path?: never;

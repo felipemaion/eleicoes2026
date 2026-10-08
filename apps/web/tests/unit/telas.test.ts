@@ -222,19 +222,19 @@ describe("mapa", () => {
 describe("gastos", () => {
   it("KPIs, dispersão, empilhado e avisos de contas parciais e deflator", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelectorAll("svg.grafico")).toHaveLength(2); });
+    await vi.waitFor(() => { expect(el.querySelectorAll("svg.grafico")).toHaveLength(3); });
     expect(el.textContent).toMatch(/Contas de 2026 parciais/);
     expect(el.textContent).toMatch(/set\/2026/);
     expect(el.querySelector("dl.kpis")?.textContent).toMatch(/R\$/);
   });
   it("alternar contratado/pago redesenha a dispersão", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
-    const antes = el.querySelector("circle.marca")?.getAttribute("aria-label");
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")).not.toBeNull(); });
+    const antes = el.querySelector(".grafico-despesa circle.marca")?.getAttribute("aria-label");
     const sel = el.querySelector<HTMLSelectElement>("select[name=base]") as HTMLSelectElement;
     sel.value = "pago";
     sel.dispatchEvent(new Event("change"));
-    await vi.waitFor(() => { expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).not.toBe(antes); });
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")?.getAttribute("aria-label")).not.toBe(antes); });
   });
 });
 
@@ -242,24 +242,24 @@ describe("gastos — hover, busca e referência", () => {
   const balao = (): string => document.querySelector(".tooltip-flutuante:not([hidden])")?.textContent ?? "";
   it("cada ponto abre tooltip com partido, UF, cargo, votos, despesas, custo por voto e resultado", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
-    el.querySelector('circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")).not.toBeNull(); });
+    el.querySelector('.grafico-despesa circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
     for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "eleito", "62,5%"]) expect(balao()).toContain(t);
     expect(chamou("/api/candidatos?")).toBe(false);
   });
   it("mostra a mediana de custo por voto como linha de referência", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelector("line.referencia")).not.toBeNull(); });
-    expect(el.querySelector(".referencia-rotulo")?.textContent).toMatch(/mediana/i);
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa line.referencia")).not.toBeNull(); });
+    expect(el.querySelector(".grafico-despesa .referencia-rotulo")?.textContent).toMatch(/mediana/i);
   });
   it("a busca realça o candidato no gráfico (sem acento) e avisa quando não acha", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")).not.toBeNull(); });
     const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
     q.value = "bruno";
     q.dispatchEvent(new Event("input"));
-    expect(el.querySelector('circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
-    expect(el.querySelector('circle[data-id="1"]')?.classList.contains("atenuado")).toBe(true);
+    expect(el.querySelector('.grafico-despesa circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
+    expect(el.querySelector('.grafico-despesa circle[data-id="1"]')?.classList.contains("atenuado")).toBe(true);
     expect(el.querySelector(".busca-gastos-estado")?.textContent).toContain("1 candidato");
     q.value = "zzzz";
     q.dispatchEvent(new Event("input"));
@@ -268,20 +268,68 @@ describe("gastos — hover, busca e referência", () => {
   });
   it("a mudança de base mantém o destaque da busca", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")).not.toBeNull(); });
     const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
     q.value = "ana";
     q.dispatchEvent(new Event("input"));
     const sel = el.querySelector<HTMLSelectElement>("select[name=base]") as HTMLSelectElement;
     sel.value = "pago";
     sel.dispatchEvent(new Event("change"));
-    expect(el.querySelector('circle[data-id="1"]')?.classList.contains("destaque")).toBe(true);
+    expect(el.querySelector('.grafico-despesa circle[data-id="1"]')?.classList.contains("destaque")).toBe(true);
   });
   it("barras de receita têm hover com fonte e valor", async () => {
     await desenhar("gastos");
     await vi.waitFor(() => { expect(el.querySelector("rect.marca")).not.toBeNull(); });
     el.querySelector("rect.marca")?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 5, clientY: 5 }));
     expect(balao()).toMatch(/R\$/);
+  });
+});
+
+describe("financiamento — receitas", () => {
+  const balao = (): string => document.querySelector(".tooltip-flutuante:not([hidden])")?.textContent ?? "";
+  it("tela chama-se Financiamento e mostra KPIs de receita com fonte e ajuda", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-receita circle.marca")).not.toBeNull(); });
+    expect(el.querySelector("h1")?.textContent).toBe("Financiamento");
+    const kpis = el.querySelector("dl.kpis")?.textContent ?? "";
+    for (const t of ["Receita total do grupo", "Receita por voto", "% pessoas físicas", "Saldo da campanha"]) expect(kpis).toContain(t);
+    expect(el.querySelectorAll("dl.kpis .fonte-linha").length).toBeGreaterThan(5);
+  });
+  it("faixa honesta de receita quando há repasse de doador desconhecido", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.textContent).toMatch(/entre R\$\s280\.000,00 e R\$\s290\.000,00/); });
+  });
+  it("dispersão de receita: hover com receita, saldo e foto; mediana de receita por voto como referência", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-receita circle.marca")).not.toBeNull(); });
+    el.querySelector('.grafico-receita circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
+    for (const t of ["Ana Souza", "Receita total", "Receita por voto", "Saldo (receita − despesa contratada)", "% pessoas físicas"]) expect(balao()).toContain(t);
+    expect(document.querySelector(".tooltip-flutuante:not([hidden]) img")).not.toBeNull();
+    expect(el.querySelector(".grafico-receita .referencia-rotulo")?.textContent).toMatch(/mediana.*receita por voto/i);
+  });
+  it("a busca realça o candidato nas duas dispersões", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector(".grafico-receita circle.marca")).not.toBeNull(); });
+    const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
+    q.value = "bruno";
+    q.dispatchEvent(new Event("input"));
+    expect(el.querySelector('.grafico-receita circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
+    expect(el.querySelector('.grafico-despesa circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
+  });
+  it("comparação 2022×2026: tabela com 2022 corrigido, mês-base e variação", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("table.tabela-comparativo-receitas")).not.toBeNull(); });
+    const t = el.querySelector("table.tabela-comparativo-receitas")?.textContent ?? "";
+    expect(t).toContain("set/2026");
+    expect(t).toMatch(/Receita total.*260\.000,00.*200\.000,00.*290\.000,00.*\+11,5%/);
+    expect(t).toMatch(/\+46,2 p\.p\./);
+    expect(el.textContent).toMatch(/contas de 2026 ainda são parciais/);
+  });
+  it("sem receita declarada: avisa em vez de desenhar zeros", async () => {
+    simularApi({ "/api/gastos": { ...gastos, receitas: null, por_candidato: gastos.por_candidato.map((c) => ({ ...c, receita_total: null })) } });
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.textContent).toMatch(/Nenhum candidato do recorte tem receita declarada/); });
+    expect(el.querySelector(".grafico-receita")).toBeNull();
   });
 });
 

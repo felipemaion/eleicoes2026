@@ -1023,5 +1023,42 @@
       "coluna_regra": "Δ penetração por AMC (depois − antes)",
       "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#votacao_candidato_munzona"
     }
-  ]
+  ],
+  "receitas": {
+    "base_ipca": "2026-09",
+    "contas_parciais_de": false,
+    "contas_parciais_para": true,
+    "monetarios": {
+      "receita_total": {
+        "de_nominal": 200000,
+        "de": 260000,
+        "para": 290000,
+        "delta": 30000,
+        "var_pct": 11.5
+      },
+      "receita_por_voto": {
+        "de_nominal": 6.0,
+        "de": 7.8,
+        "para": 8.74,
+        "delta": 0.94,
+        "var_pct": 12.1
+      },
+      "receita_mediana_candidato": {
+        "de_nominal": 50000,
+        "de": 65000,
+        "para": 80000,
+        "delta": 15000,
+        "var_pct": 23.1
+      }
+    },
+    "percentuais": {
+      "pct_publico": {
+        "de_nominal": 40.0,
+        "de": 40.0,
+        "para": 86.2,
+        "delta": 46.2,
+        "var_pct": null
+      }
+    }
+  }
 }
