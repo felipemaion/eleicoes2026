@@ -173,11 +173,11 @@
       "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#votacao_candidato_munzona"
     },
     {
-      "dataset": "despesas_contratadas_candidatos",
-      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/despesas_contratadas_candidatos/despesas_contratadas_candidatos_2026.zip",
+      "dataset": "prestacao_contas",
+      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/prestacao_contas/prestacao_contas_2026.zip",
       "dt_geracao": "2026-10-07",
       "coluna_regra": "VR_DESPESA_CONTRATADA e VR_DESPESA_PAGA",
-      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#despesas_contratadas_candidatos"
+      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#prestacao_contas"
     }
   ]
 }
