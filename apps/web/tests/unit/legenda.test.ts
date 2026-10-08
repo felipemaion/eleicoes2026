@@ -10,7 +10,7 @@ describe("criarLegenda", () => {
     const svg = criarLegenda(e, meta, { formatar: (v) => `${(v * 100).toFixed(0)}%` });
     expect(svg.tagName.toLowerCase()).toBe("svg");
     expect(svg.getAttribute("role")).toBe("img");
-    const texto = svg.textContent ?? "";
+    const texto = svg.textContent;
     expect(texto).toContain("% dos votos válidos");
     expect(texto).toContain("votos válidos do município");
   });

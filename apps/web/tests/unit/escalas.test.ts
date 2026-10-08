@@ -120,16 +120,16 @@ describe("validarCoropletico", () => {
   const base: MetaIndicador = { nome: "Penetração", tipo: "taxa", unidade: "% dos votos válidos", denominador: "votos válidos do município" };
 
   it("aceita taxa, razão e diferença", () => {
-    for (const tipo of ["taxa", "razao", "diferenca"] as const) expect(() => validarCoropletico({ ...base, tipo })).not.toThrow();
+    for (const tipo of ["taxa", "razao", "diferenca"] as const) expect(() => { validarCoropletico({ ...base, tipo }); }).not.toThrow();
   });
 
   it("recusa absoluto e sugere símbolos proporcionais", () => {
-    expect(() => validarCoropletico({ ...base, tipo: "absoluto" })).toThrow(ErroCoropleticoAbsoluto);
-    expect(() => validarCoropletico({ ...base, tipo: "absoluto" })).toThrow(/símbolos proporcionais/);
+    expect(() => { validarCoropletico({ ...base, tipo: "absoluto" }); }).toThrow(ErroCoropleticoAbsoluto);
+    expect(() => { validarCoropletico({ ...base, tipo: "absoluto" }); }).toThrow(/símbolos proporcionais/);
   });
 
   it("exige unidade e denominador", () => {
-    expect(() => validarCoropletico({ ...base, denominador: "" })).toThrow(/denominador/);
-    expect(() => validarCoropletico({ ...base, unidade: " " })).toThrow(/unidade/);
+    expect(() => { validarCoropletico({ ...base, denominador: "" }); }).toThrow(/denominador/);
+    expect(() => { validarCoropletico({ ...base, unidade: " " }); }).toThrow(/unidade/);
   });
 });
