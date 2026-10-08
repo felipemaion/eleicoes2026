@@ -1019,6 +1019,29 @@
               "default": 50,
               "title": "Limite"
             }
+          },
+          {
+            "name": "pessoas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{12}$"
+                  },
+                  "maxItems": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`pessoa_id_publico` que devem vir na resposta mesmo fora da página (`limite`) do recorte.",
+              "title": "Pessoas"
+            },
+            "description": "`pessoa_id_publico` que devem vir na resposta mesmo fora da página (`limite`) do recorte."
           }
         ],
         "responses": {
@@ -1919,9 +1942,47 @@
             "type": "string",
             "title": "Cargo"
           },
+          "partido": {
+            "$ref": "#/components/schemas/Partido"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado",
+            "description": "`ds_sit_tot_turno`; null até a apuração."
+          },
           "receita_total": {
             "type": "number",
             "title": "Receita Total"
+          },
+          "pct_publico": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Publico",
+            "description": "FEFC + Fundo Partidário, % da receita do candidato."
+          },
+          "pct_autofinanciamento": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Autofinanciamento"
           },
           "custo": {
             "$ref": "#/components/schemas/ResumoCustoCandidato"
@@ -1933,7 +1994,11 @@
           "nm_urna",
           "sg_uf",
           "cargo",
+          "partido",
+          "resultado",
           "receita_total",
+          "pct_publico",
+          "pct_autofinanciamento",
           "custo"
         ],
         "title": "GastoCandidato",

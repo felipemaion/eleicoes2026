@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.fontes import Fonte, fontes
 from api.repositorio.base import Repositorio
+from api.servicos.candidatos import Partido
 from api.servicos.contas import ResumoCustoCandidato, ResumoCustoGrupo, ResumoReceitasOut, contas_de
 from api.servicos.grupos import Catalogo, candidaturas_do_grupo
 
@@ -15,7 +16,13 @@ class GastoCandidato(BaseModel):
     nm_urna: str
     sg_uf: str
     cargo: str
+    partido: Partido
+    resultado: str | None = Field(description="`ds_sit_tot_turno`; null até a apuração.")
     receita_total: float
+    pct_publico: float | None = Field(
+        description="FEFC + Fundo Partidário, % da receita do candidato."
+    )
+    pct_autofinanciamento: float | None
     custo: ResumoCustoCandidato
 
 
@@ -89,7 +96,11 @@ def montar_gastos(
                 nm_urna=c.candidatura.nm_urna,
                 sg_uf=c.candidatura.sg_uf,
                 cargo=c.candidatura.ds_cargo,
+                partido=Partido(numero=c.candidatura.nr_partido, sigla=c.candidatura.sg_partido),
+                resultado=c.candidatura.ds_sit_tot_turno,
                 receita_total=c.receita_total,
+                pct_publico=c.pct_publico,
+                pct_autofinanciamento=c.pct_autofinanciamento,
                 custo=c.custo,
             )
             for c in contas.por_candidato

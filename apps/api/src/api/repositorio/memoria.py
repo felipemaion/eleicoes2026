@@ -173,6 +173,7 @@ class RepositorioMemoria:
         termo: str | None = None,
         uf: str | None = None,
         cargo: str | None = None,
+        publicos: Sequence[str] | None = None,
         limite: int,
     ) -> tuple[int, list[ParDePessoa]]:
         """Junta por `pessoa_id` as candidaturas dos dois anos."""
@@ -184,6 +185,7 @@ class RepositorioMemoria:
             if b.ano == ano_para and b.pessoa_id == a.pessoa_id
             if (cargo is None or (a.ds_cargo == cargo and b.ds_cargo == cargo))
             and (uf is None or uf in (a.sg_uf, b.sg_uf))
+            and (publicos is None or id_publico(a.pessoa_id) in publicos)
             and (not termo or _casa(a, termo) or _casa(b, termo))
         ]
         pares.sort(key=lambda p: (p.para.nm_urna, p.para.sq_candidato, p.de.sq_candidato))

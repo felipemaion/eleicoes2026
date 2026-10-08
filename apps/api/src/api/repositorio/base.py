@@ -96,11 +96,13 @@ class Repositorio(Protocol):
         termo: str | None = None,
         uf: str | None = None,
         cargo: str | None = None,
+        publicos: Sequence[str] | None = None,
         limite: int,
     ) -> tuple[int, list[ParDePessoa]]:
         """(total, página) de pessoas com candidatura nos dois anos, ligadas por `pessoa_id`.
 
-        `cargo` exige o mesmo cargo nos dois anos; `uf` casa em qualquer um dos lados.
+        `cargo` exige o mesmo cargo nos dois anos; `uf` casa em qualquer um dos lados;
+        `publicos` restringe a esses `pessoa_id_publico`.
         """
         ...
 
