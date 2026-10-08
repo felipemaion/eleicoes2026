@@ -148,3 +148,21 @@ test("ficha: gastos completos, links oficiais e 'fonte' acessível por teclado",
   await page.keyboard.press("Escape");
   await expect(painel).toBeHidden();
 });
+
+test("evolução: balão de ajuda de um KPI quebra linha e fica dentro da caixa e da tela", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await page.goto("/#/evolucao");
+  const botao = page.locator(".kpi-fim .ajuda-botao").first();
+  await expect(botao).toBeVisible();
+  await botao.hover();
+  const balao = page.locator(".ajuda-painel:visible").first();
+  await expect(balao).toBeVisible();
+  const m = await balao.evaluate((e) => {
+    const r = e.getBoundingClientRect();
+    return { sw: e.scrollWidth, cw: e.clientWidth, esq: r.left, dir: r.right, vw: document.documentElement.clientWidth, ws: getComputedStyle(e).whiteSpace };
+  });
+  expect(m.ws).toBe("normal");
+  expect(m.sw).toBeLessThanOrEqual(m.cw);
+  expect(m.esq).toBeGreaterThanOrEqual(0);
+  expect(m.dir).toBeLessThanOrEqual(m.vw);
+});

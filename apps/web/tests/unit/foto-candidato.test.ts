@@ -102,7 +102,7 @@ describe("tooltip da dispersão (T-W17)", () => {
     const cab = d.querySelector(".tooltip-cabeca");
     expect(cab?.querySelector("img")).not.toBeNull();
     expect(cab?.querySelector(".tooltip-titulo")?.textContent).toBe("Kim");
-    expect(cab?.nextElementSibling?.className).toBe("tooltip-lista");
+    expect(cab?.nextElementSibling?.classList.contains("tooltip-lista--dados")).toBe(true);
   });
 });
 
