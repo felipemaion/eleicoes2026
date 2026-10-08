@@ -23,7 +23,8 @@ Arquitetura em [`docs/arquitetura.md`](docs/arquitetura.md).
 - **Gastos**: custo por voto (contratado e pago, sem repasses), receita por fonte, % de dinheiro público.
 - **Evolução 2022×2026**: MBL 2022 (18 candidaturas, `data/reference/mbl_2022.csv`) → MBL 2026 / Missão 2026,
   mapas lado a lado e de diferença por AMC, swing, retenção e ganho.
-- **Candidato**: ficha individual. **Como ler este painel**: metodologia em linguagem simples.
+- **Candidato**: ficha com gastos completos, links oficiais do TSE e a fonte de cada número.
+- Busca global (`/`), filtros dependentes, mapa focado na região do candidato, hover com detalhes. **Como ler este painel**: metodologia em linguagem simples.
 
 Números conferidos contra o TSE: ver [`docs/metodologia/conferencia.md`](docs/metodologia/conferencia.md).
 
