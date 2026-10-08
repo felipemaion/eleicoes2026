@@ -48,6 +48,8 @@ jobs:
           tags: |
             ${{ env.IMAGEM }}:latest
             ${{ env.IMAGEM }}:${{ github.sha }}
+          build-args: |
+            VERSAO_APP=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

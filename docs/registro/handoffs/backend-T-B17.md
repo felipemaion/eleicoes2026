@@ -9,7 +9,7 @@
 - `Makefile` `dev`: `ELEICOES_VERSAO_APP=dev` por padrão. `conftest.py`: `"teste"`. `openapi.py`: `"openapi"`.
 - OpenAPI inalterado (`info.version` segue `VERSAO` = 0.1.0, contrato estável).
 
-## PENDÊNCIA PARA O ORQUESTRADOR (fora do meu território)
+## deploy.yml (feito, commit ci: separado, autorizado pelo orquestrador)
 `.github/workflows/deploy.yml`, passo `docker/build-push-action@v6`, precisa de:
 ```yaml
 build-args: |
