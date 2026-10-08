@@ -22,6 +22,10 @@ class DadosIndisponiveis(Exception):  # noqa: N818 - nome de domínio
     """Os dados processados não puderam ser abertos."""
 
 
+class MemoriaInsuficiente(Exception):  # noqa: N818 - nome de domínio
+    """A consulta excedeu o limite de memória/temporários do DuckDB (vira 503, nunca 500)."""
+
+
 class Repositorio(Protocol):
     """Leituras somente-leitura sobre os dados processados.
 
