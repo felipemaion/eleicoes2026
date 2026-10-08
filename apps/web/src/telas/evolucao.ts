@@ -29,7 +29,13 @@ export const tela: Tela = {
       parar();
       parar = carregar(
         conteudo,
-        () => Promise.all([cliente.comparativo({ ...paramsComCargo(filtros), comparacao: comparacao || undefined }), cliente.grupos()]),
+        async () => {
+          // `comparacao` é obrigatória na API: sem escolha do usuário, usa a primeira comparação declarada.
+          const g = await cliente.grupos();
+          comparacao = comparacao || g.comparacoes[0]?.id || "";
+          const c = await cliente.comparativo({ ...paramsComCargo(filtros), comparacao: comparacao || undefined });
+          return [c, g] as const;
+        },
         ([c]) => (c.municipios.length === 0 ? "Sem dados comparáveis entre 2022 e 2026 para estes filtros." : null),
         ([c, g], destino) => {
           comparacao = comparacao || g.comparacoes[0]?.id || "";

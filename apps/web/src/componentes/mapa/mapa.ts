@@ -72,6 +72,8 @@ export interface Mapa {
 maplibregl.setWorkerUrl(urlWorker);
 
 const PROTOCOLO_PMTILES = "pmtiles";
+/** Menor zoom com feições nos PMTiles (`zoom_min` do ETL). Abaixo disso o mapa fica vazio, sem erro algum. */
+const ZOOM_MIN_PMTILES = 3;
 const IMAGEM_HACHURA = "hachura-n-baixo";
 let protocoloRegistrado = false;
 function registrarPmtiles(): void {
@@ -131,6 +133,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     style: estiloBase(),
     bounds: limitesIniciais(opcoes.fontes[opcoes.nivelInicial ?? "municipio"] ?? opcoes.fontes.municipio),
     fitBoundsOptions: { padding: 24 },
+    // Em tela estreita o enquadramento do Brasil cairia em zoom < 3, onde os tiles não têm polígonos.
+    ...(Object.values(opcoes.fontes).some((f) => f.tipo === "pmtiles") ? { minZoom: ZOOM_MIN_PMTILES } : {}),
     attributionControl: { compact: true },
     cooperativeGestures: false,
     // O teclado é do quadro (setas percorrem as áreas); o canvas não deve virar um 2º foco.
@@ -365,6 +369,40 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     if (tabela.open && tabelaPendente) { const f = tabelaPendente; tabelaPendente = null; f(); }
   });
 
+  /** Enquadra as áreas com valor (ex.: a UF filtrada). PMTiles não trazem limites por UF; saem das feições já carregadas. */
+  function enquadrarValores(n: Nivel, ids: ReadonlySet<string>): void {
+    const f = opcoes.fontes[n];
+    if (f?.tipo !== "pmtiles" || ids.size === 0) return;
+    const caixa: Limites = [Infinity, Infinity, -Infinity, -Infinity];
+    const alcancar = (c: unknown): void => {
+      if (!Array.isArray(c)) return;
+      if (typeof c[0] === "number" && typeof c[1] === "number") {
+        caixa[0] = Math.min(caixa[0], c[0]); caixa[1] = Math.min(caixa[1], c[1]);
+        caixa[2] = Math.max(caixa[2], c[0]); caixa[3] = Math.max(caixa[3], c[1]);
+      } else c.forEach(alcancar);
+    };
+    for (const x of mapa.querySourceFeatures(idFonte(n), { sourceLayer: f.camadaFonte })) {
+      if (ids.has(String(x.properties[f.idPropriedade]))) alcancar((x.geometry as { coordinates?: unknown }).coordinates);
+    }
+    if (caixa.every(Number.isFinite)) mapa.fitBounds(caixa, { padding: 24, duration: 0 });
+  }
+
+  let tentativasEnquadrar = 0;
+  /** Espera os tiles chegarem (idle) e enquadra; tenta poucas vezes para não girar em tela sem feição. */
+  function agendarEnquadramento(n: Nivel, ids: ReadonlySet<string>): void {
+    const id = ++tentativasEnquadrar;
+    const tentar = (k: number): void => {
+      if (id !== tentativasEnquadrar || n !== nivel) return;
+      mapa.once("idle", () => {
+        if (id !== tentativasEnquadrar) return;
+        const antes = mapa.getBounds().toString();
+        enquadrarValores(n, ids);
+        if (k < 3 && mapa.getBounds().toString() === antes) tentar(k + 1);
+      });
+    };
+    tentar(0);
+  }
+
   function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala, detalhes?: Readonly<Record<string, DetalheParcial>>): void {
     const f = garantirNivel(n);
     const fonte = idFonte(n);
@@ -387,7 +425,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       if (detalhes) detalhesPorNivel.set(nivel, { ...detalhes });
       metaAtual = meta;
       const n = nivel;
-      quandoPronto(() => { aplicarValores(n, finitos, escala, detalhes); });
+      quandoPronto(() => { aplicarValores(n, finitos, escala, detalhes); agendarEnquadramento(n, new Set(Object.keys(finitos))); });
       areaLegenda.replaceChildren(legenda, legendaHachura());
       const resumo = document.createElement("summary");
       resumo.textContent = `Tabela de valores: ${meta.nome}`;
