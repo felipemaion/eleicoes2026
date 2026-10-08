@@ -4,11 +4,10 @@
  * ganhar os endpoints: rode `pnpm gen:api` e reexporte de `./gerado/api` aqui, sem mexer
  * em adaptadores nem telas. Não espalhe tipos de resposta fora deste arquivo.
  */
-export interface Meta {
-  /** Data de geração dos arquivos do TSE (DT_GERACAO), ISO 8601. */
-  dt_geracao: string | null;
-  fonte: string;
-}
+import type { components } from "./gerado/api";
+
+/** Já existe no OpenAPI: vem do gerado (`pnpm gen:api`), não é escrito à mão. */
+export type Meta = components["schemas"]["Meta"];
 
 export interface Grupo {
   id: string;

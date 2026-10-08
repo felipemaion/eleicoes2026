@@ -28,7 +28,7 @@ function ehObjeto(x: unknown): x is Record<string, unknown> {
 
 function ehMeta(x: unknown): x is Meta {
   if (!ehObjeto(x)) return false;
-  return typeof x["fonte"] === "string" && (x["dt_geracao"] === null || typeof x["dt_geracao"] === "string");
+  return typeof x["dt_geracao"] === "string" && Array.isArray(x["anos"]) && Array.isArray(x["ufs"]) && Array.isArray(x["grupos"]);
 }
 
 /** Cria o guarda que exige um objeto com estas chaves. */

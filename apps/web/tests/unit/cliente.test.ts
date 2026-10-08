@@ -6,17 +6,16 @@ function simular(corpo: unknown, ok = true): void {
 }
 afterEach(() => { vi.unstubAllGlobals(); });
 
+const META = { anos: [2022, 2026], ufs: ["SE"], cargos: ["deputado_federal"], grupos: [], dt_geracao: "2026-10-07T10:00:00" };
 describe("cliente.meta", () => {
-  it("aceita resposta válida", async () => {
-    simular({ dt_geracao: "2026-10-07T10:00:00", fonte: "TSE" });
-    await expect(criarCliente().meta()).resolves.toEqual({ dt_geracao: "2026-10-07T10:00:00", fonte: "TSE" });
-  });
-  it("aceita dt_geracao nulo", async () => {
-    simular({ dt_geracao: null, fonte: "TSE" });
-    await expect(criarCliente().meta()).resolves.toMatchObject({ dt_geracao: null });
+  it("aceita resposta no formato do OpenAPI gerado", async () => {
+    simular(META);
+    await expect(criarCliente().meta()).resolves.toEqual(META);
   });
   it("rejeita formato inesperado em vez de repassar", async () => {
     simular({ fonte: 3 });
+    await expect(criarCliente().meta()).rejects.toThrow(/inesperada/);
+    simular({ ...META, dt_geracao: null });
     await expect(criarCliente().meta()).rejects.toThrow(/inesperada/);
     simular(null);
     await expect(criarCliente().meta()).rejects.toThrow(/inesperada/);

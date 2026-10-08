@@ -67,7 +67,7 @@ function montar(raiz: HTMLElement): void {
 
   criarCliente()
     .meta()
-    .then((m) => { fonte.textContent = `Fonte: ${m.fonte}. dt_geracao: ${m.dt_geracao ?? "indisponível"}.`; })
+    .then((m) => { fonte.textContent = `Fonte: TSE (dados abertos), IBGE e BCB. dt_geracao: ${m.dt_geracao}.`; })
     .catch(() => { fonte.textContent = "Fonte: TSE (dados abertos), IBGE e BCB. dt_geracao: indisponível (API fora do ar)."; });
 }
 
