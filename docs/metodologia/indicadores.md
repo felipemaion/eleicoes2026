@@ -297,17 +297,31 @@ Fonte: prestação de contas de candidatos (`receitas_candidatos`, `despesas_con
 
   | Categoria | Regra |
   |---|---|
-  | `fefc` | `DS_FONTE_RECEITA` = Fundo Especial (FEFC) |
-  | `fundo_partidario` | `DS_FONTE_RECEITA` = Fundo Partidário |
-  | `pessoa_fisica` | origem "Recursos de pessoas físicas" (inclui doação pela internet) |
+  | `fefc` | `DS_FONTE_RECEITA` = Fundo Especial (FEFC); ou fonte Outros Recursos com origem "Fundo Especial de Financiamento de Campanha" (2026) |
+  | `fundo_partidario` | `DS_FONTE_RECEITA` = Fundo Partidário; ou fonte Outros Recursos com origem "Fundo Partidário" (2026) |
+  | `pessoa_fisica` | origem "Recursos de pessoas físicas" ou "Doações pela Internet" |
   | `recursos_proprios` | origem "Recursos próprios" |
   | `financiamento_coletivo` | origem "Recursos de Financiamento Coletivo" |
   | `partido_outros_recursos` | origem "Recursos de partido político" com fonte Outros Recursos |
-  | `outros_candidatos` | origem "Recursos de outros candidatos" |
-  | `outros` | rendimentos, comercialização, origem não identificada |
+  | `outros_candidatos` | origem "Recursos de outros candidatos"; ou "Doações para Campanha" (2026) |
+  | `outros` | rendimentos de aplicações financeiras, "Comercialização de Bens com OR/FEFC" (2022), origens não identificadas |
 
-  Rótulo fora da tabela → **erro** (o ETL lista os valores distintos de 2022 e 2026 e a tabela é
-  fechada com o `dados`; nada cai em "outros" por omissão).
+  Rótulos comparados normalizados (caixa, acento, espaços). Rótulo fora da tabela → **erro**
+  (nada cai em "outros" por omissão). A tabela cobre **100% das combinações reais** de
+  fonte × origem × natureza de 2022 e 2026 (47, fixture
+  `packages/indicadores/tests/fixtures/rotulos_receita_2022_2026.json`, T-A07). Linhas com
+  fonte/origem nulas são sempre de R$ 0,00 (sem movimento): **filtrar antes** de classificar.
+  Natureza: "FINANCEIRO" e "ESTIMÁVEL" (rótulos do TSE; "ESTIMADO" aceito como sinônimo).
+
+  **Origens novas de 2026 (códigos 10030201/02/03).** Em todos os 82 lançamentos o doador é outro
+  candidato (CNPJ de campanha, CNAE "atividades de organizações políticas", `SQ_CANDIDATO_DOADOR`
+  preenchido): é repasse entre candidatos, detalhado pela origem do dinheiro do doador, e chega com
+  fonte "Outros Recursos". Quando a origem nomeia um fundo, o dinheiro é **público** e conta em
+  `fefc`/`fundo_partidario` — coerente com o repasse de outro candidato que já chega com fonte FEFC
+  (fonte manda) e com o objetivo do `pct_publico`. "Doações para Campanha" é dinheiro privado do
+  doador → `outros_candidatos`. Magnitude (dados de 07/10/2026): FEFC R$ 159 mil, FP R$ 5,6 mil,
+  doações R$ 6,7 mil — < 0,01% do FEFC recebido. Na "Comercialização de Bens com FEFC" (2022) quem
+  paga é o comprador; o fundo só custeou o bem → `outros`, não `fefc`.
 - **Fórmulas:** `receita_total = Σ VR_RECEITA` (financeira + estimável);
   `receita_financeira` à parte; `pct_publico = 100 × (fefc + fundo_partidario) / receita_total`;
   `pct_autofinanciamento = 100 × recursos_proprios / receita_total`. Total 0 → `null`.

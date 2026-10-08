@@ -38,12 +38,20 @@ _ORIGENS: dict[str, str] = {
     "RECURSOS DE FINANCIAMENTO COLETIVO": "financiamento_coletivo",
     "RECURSOS DE PARTIDO POLITICO": "partido_outros_recursos",
     "RECURSOS DE OUTROS CANDIDATOS": "outros_candidatos",
+    # 2026 (códigos 1003020x): repasse de outro candidato detalhado pela origem do dinheiro, com
+    # fonte "Outros Recursos". Quando a origem nomeia um fundo, o recurso é público (spec §4.1).
+    "FUNDO ESPECIAL DE FINANCIAMENTO DE CAMPANHA": "fefc",
+    "FUNDO PARTIDARIO": "fundo_partidario",
+    "DOACOES PARA CAMPANHA": "outros_candidatos",
     "RENDIMENTOS DE APLICACOES FINANCEIRAS": "outros",
-    "COMERCIALIZACAO DE BENS OU REALIZACAO DE EVENTOS": "outros",
+    # Só 2022. Quem paga é o comprador; o fundo só custeou o bem vendido — não é recurso público.
+    "COMERCIALIZACAO DE BENS COM OR": "outros",
+    "COMERCIALIZACAO DE BENS COM FEFC": "outros",
     "RECURSOS DE ORIGENS NAO IDENTIFICADAS": "outros",
 }
-_NATUREZAS: dict[str, bool] = {"FINANCEIRO": True, "ESTIMADO": False}
-"""Natureza da receita normalizada → é financeira?"""
+_NATUREZAS: dict[str, bool] = {"FINANCEIRO": True, "ESTIMAVEL": False, "ESTIMADO": False}
+"""Natureza da receita normalizada → é financeira? O TSE grava "ESTIMÁVEL"; "ESTIMADO" fica como
+sinônimo porque a view da API ainda converte um no outro (T-B03)."""
 
 ORIGENS_DESPESA_TRANSFERENCIA = frozenset({"DOACOES FINANCEIRAS A OUTROS CANDIDATOS/PARTIDOS"})
 """`DS_ORIGEM_DESPESA` que são repasse a terceiros, não custo da própria campanha (spec §4.2)."""
@@ -68,7 +76,8 @@ def _categoria(fonte: str | None, origem: str | None) -> str:
         raise ValueError(f"ds_fonte_receita desconhecida: {fonte!r}")
     if origem is None or normalizar_rotulo(origem) not in _ORIGENS:
         raise ValueError(f"ds_origem_receita desconhecida: {origem!r}")
-    # A fonte manda: o FEFC chega ao candidato com origem "Recursos de partido político".
+    # A fonte manda: o FEFC chega ao candidato com origem "Recursos de partido político". Só com
+    # fonte "Outros Recursos" a origem decide — inclusive a origem que nomeia um fundo (2026).
     return _FONTES[normalizar_rotulo(fonte)] or _ORIGENS[normalizar_rotulo(origem)]
 
 

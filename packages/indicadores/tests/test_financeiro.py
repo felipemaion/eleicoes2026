@@ -177,9 +177,7 @@ def test_rotulos_reais_2022_2026_classificados_conforme_spec() -> None:
 
 def test_rotulos_reais_naturezas_aceitas_no_resumo() -> None:
     resumo = financeiro.resumo_receitas(financeiro.classificar_receitas(_tabela_real()), por=())
-    estimaveis = sum(
-        1 for c in _ROTULOS_REAIS if c["ds_natureza_receita"] != "FINANCEIRO"
-    )
+    estimaveis = sum(1 for c in _ROTULOS_REAIS if c["ds_natureza_receita"] != "FINANCEIRO")
     assert resumo["receita_total"][0] == len(_ROTULOS_REAIS)
     assert resumo["receita_financeira"][0] == len(_ROTULOS_REAIS) - estimaveis
 
