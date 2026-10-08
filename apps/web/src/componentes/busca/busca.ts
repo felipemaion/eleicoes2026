@@ -2,6 +2,7 @@
 import { foiCancelada, type ClienteApi } from "../../dados/cliente";
 import type { CandidaturaBusca } from "../../dados/contrato";
 import type { Filtros } from "../../store";
+import { figuraCandidato } from "../ui/foto-candidato";
 import { criarCombobox, type ItemCombobox } from "../ui/combobox";
 import { destacarTrecho, hashDaCandidatura, linhaDaSugestao, MAX_SUGESTOES, ordenarSugestoes, paramsDaBusca } from "./busca-logica";
 
@@ -31,7 +32,10 @@ function desenharItem(li: HTMLElement, c: CandidaturaBusca, consulta: string): v
   const contexto = document.createElement("span");
   contexto.className = "busca-contexto";
   contexto.textContent = linhaDaSugestao(c);
-  li.append(nome, contexto);
+  const textos = document.createElement("span");
+  textos.className = "busca-textos";
+  textos.append(nome, contexto);
+  li.append(figuraCandidato(c.nm_urna, c.foto_url, 32, 40), textos);
 }
 
 export function render(container: HTMLElement, opcoes: OpcoesBusca): () => void {

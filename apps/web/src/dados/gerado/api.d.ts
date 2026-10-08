@@ -301,6 +301,13 @@ export interface components {
          * @description Candidato com votos e taxas na sua circunscrição (cargo × UF).
          */
         CandidatoResumo: {
+            /**
+             * Foto Url
+             * @description Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura.
+             */
+            foto_url: string | null;
+            /** @description Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026. */
+            link_tse_candidato: components["schemas"]["Link"];
             /** Ano */
             ano: number;
             /** Sq Candidato */
@@ -349,6 +356,13 @@ export interface components {
          * @description Candidatura achada: o bastante para listar, escolher e enquadrar o mapa.
          */
         CandidaturaBusca: {
+            /**
+             * Foto Url
+             * @description Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura.
+             */
+            foto_url: string | null;
+            /** @description Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026. */
+            link_tse_candidato: components["schemas"]["Link"];
             /** Ano */
             ano: number;
             /** Sq Candidato */
@@ -654,6 +668,13 @@ export interface components {
          * @description Contas de um candidato do grupo.
          */
         GastoCandidato: {
+            /**
+             * Foto Url
+             * @description Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura.
+             */
+            foto_url: string | null;
+            /** @description Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026. */
+            link_tse_candidato: components["schemas"]["Link"];
             /** Sq Candidato */
             sq_candidato: number;
             /** Nm Urna */

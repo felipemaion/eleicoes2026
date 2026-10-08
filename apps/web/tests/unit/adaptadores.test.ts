@@ -5,7 +5,7 @@ import {
 } from "../../src/dados/adaptadores";
 import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
 import { FILTROS_PADRAO } from "../../src/store";
-import { fichaTipada, listaTipada } from "../fixtures/api/tipado";
+import { fichaTipada, gastosTipados, listaTipada } from "../fixtures/api/tipado";
 import candidatos from "../fixtures/api/candidatos.json";
 import comparativo from "../fixtures/api/comparativo.json";
 import ficha from "../fixtures/api/ficha.json";
@@ -13,7 +13,7 @@ import gastos from "../fixtures/api/gastos.json";
 import mapa from "../fixtures/api/mapa.json";
 
 const C: RespostaCandidatos = listaTipada(candidatos);
-const G: RespostaGastos = gastos;
+const G: RespostaGastos = gastosTipados(gastos);
 const M: RespostaMapa = mapa;
 const CMP: RespostaComparativo = comparativo;
 const F: Ficha = fichaTipada(ficha);

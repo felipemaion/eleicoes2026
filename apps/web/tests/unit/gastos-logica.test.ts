@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import gastos from "../fixtures/api/gastos.json";
+import { gastosTipados } from "../fixtures/api/tipado";
 import { idsQueCasam, medianaCustoVoto, pontosDeGastos } from "../../src/dados/gastos-logica";
 import type { RespostaGastos } from "../../src/dados/contrato";
 
-const G: RespostaGastos = gastos;
+const G: RespostaGastos = gastosTipados(gastos);
 
 describe("pontosDeGastos", () => {
   it("monta as linhas do tooltip só com /gastos (partido, resultado, % público)", () => {

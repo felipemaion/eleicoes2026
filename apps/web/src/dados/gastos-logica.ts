@@ -12,6 +12,7 @@ export function pontosDeGastos(g: RespostaGastos, base: "contratado" | "pago"): 
     const cpv = base === "contratado" ? c.custo.custo_voto_contratado : c.custo.custo_voto_pago;
     return {
       id: String(c.sq_candidato), rotulo: c.nm_urna, votos: c.custo.votos, custo,
+      foto: c.foto_url, linkTse: c.link_tse_candidato,
       detalhe: [
         ["Partido", `${c.partido.sigla} (${String(c.partido.numero)})`],
         ["UF", c.sg_uf],

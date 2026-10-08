@@ -46,7 +46,15 @@
       },
       "resultado": "ELEITO",
       "pct_publico": 62.5,
-      "pct_autofinanciamento": 5.0
+      "pct_autofinanciamento": 5.0,
+      "foto_url": "/fotos/2026/1.webp",
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1",
+        "verificado": true,
+        "nota": null
+      }
     },
     {
       "sq_candidato": 2,
@@ -68,7 +76,15 @@
       },
       "resultado": "NÃO ELEITO",
       "pct_publico": null,
-      "pct_autofinanciamento": null
+      "pct_autofinanciamento": null,
+      "foto_url": "/fotos/2026/2.webp",
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/2",
+        "verificado": true,
+        "nota": null
+      }
     },
     {
       "sq_candidato": 3,
@@ -90,7 +106,15 @@
       },
       "resultado": "NÃO ELEITO",
       "pct_publico": null,
-      "pct_autofinanciamento": null
+      "pct_autofinanciamento": null,
+      "foto_url": null,
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/3",
+        "verificado": true,
+        "nota": null
+      }
     }
   ],
   "contas_parciais": true,

@@ -5,6 +5,7 @@ import type { CandidaturaBusca } from "../../src/dados/contrato";
 const renan: CandidaturaBusca = {
   ano: 2026, sq_candidato: 280002540694, nm_urna: "RENAN SANTOS", nome: "RENAN SANTOS", numero: 1414, cargo: "PRESIDENTE", uf: "BR",
   partido: { numero: 14, sigla: "MISSÃO" }, votos: 2675887, resultado: "NÃO ELEITO", indicado: false, pessoa_id_publico: "x", abrangencia: { tipo: "pais", uf: null },
+  foto_url: null, link_tse_candidato: { tipo: "divulgacand_candidato", rotulo: "TSE", url: "https://divulgacandcontas.tse.jus.br/x", verificado: true, nota: null },
 };
 
 describe("destacarTrecho", () => {

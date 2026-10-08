@@ -1,5 +1,6 @@
 import { axisBottom, axisLeft, scaleLog, select, type ScaleLogarithmic } from "d3";
 import { formatarCompacto, formatarMoeda, formatarNumero } from "../../formato";
+import { abrirNoTse, avisoLinkTse, type LinkTse } from "../ui/foto-candidato";
 import { corpoRico, criarFlutuante, ligarMarca } from "../ui/tooltip";
 import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
@@ -10,6 +11,10 @@ export interface PontoCustoVoto {
   votos: number;
   /** Linhas do tooltip (rótulo, valor); o título é o próprio rótulo. */
   detalhe?: readonly (readonly [string, string])[];
+  /** URL da foto; `null` = candidatura sem foto (placeholder); ausente = o tooltip não mostra foto. */
+  foto?: string | null;
+  /** Página do candidato no TSE: clique/Enter no círculo abre em nova aba. */
+  linkTse?: LinkTse;
 }
 
 export interface OpcoesDispersao {
@@ -120,7 +125,18 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
     marcaAcessivel(c, `${d.rotulo}: ${formatarMoeda(d.custo)}, ${formatarNumero(d.votos)} votos${aviso ? ` (${aviso})` : ""}`);
     const linhas = [...(d.detalhe ?? [["Custo", formatarMoeda(d.custo)], ["Votos", formatarNumero(d.votos)]]), ...(aviso ? [["Atenção", aviso] as const] : [])];
     c.dataset["tooltip"] = [d.rotulo, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
-    ligarMarca(c, tooltipDispersao(), () => corpoRico({ titulo: d.rotulo, linhas }));
+    const link = d.linkTse;
+    ligarMarca(c, tooltipDispersao(), () => corpoRico({
+      titulo: d.rotulo, linhas,
+      ...(d.foto !== undefined ? { foto: { nome: d.rotulo, url: d.foto } } : {}),
+      ...(link ? { rodape: avisoLinkTse(link) } : {}),
+    }));
+    if (link) {
+      c.setAttribute("role", "link");
+      c.classList.add("com-link");
+      c.addEventListener("click", () => { abrirNoTse(link.url); });
+      c.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); abrirNoTse(link.url); } });
+    }
     svg.append(c);
   }
 

@@ -22,6 +22,14 @@
       "abrangencia": {
         "tipo": "uf",
         "uf": "SE"
+      },
+      "foto_url": "/fotos/2026/1.webp",
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1",
+        "verificado": true,
+        "nota": null
       }
     },
     {
@@ -43,6 +51,14 @@
       "abrangencia": {
         "tipo": "uf",
         "uf": "SE"
+      },
+      "foto_url": "/fotos/2026/2.webp",
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/2",
+        "verificado": true,
+        "nota": null
       }
     },
     {
@@ -64,6 +80,14 @@
       "abrangencia": {
         "tipo": "uf",
         "uf": "SE"
+      },
+      "foto_url": null,
+      "link_tse_candidato": {
+        "tipo": "divulgacand_candidato",
+        "rotulo": "Página do candidato no TSE",
+        "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/3",
+        "verificado": true,
+        "nota": null
       }
     }
   ],

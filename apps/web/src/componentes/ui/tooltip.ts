@@ -4,16 +4,22 @@
  *  - `ligarPainel`: gatilho (botão "?") + painel já no DOM; abre por hover/foco/toque, fecha com Esc.
  *  - `criarFlutuante`: um balão compartilhado para marcas de gráficos/mapa (conteúdo trocado a cada hover).
  */
+import { figuraCandidato } from "./foto-candidato";
 import { posicionar, type Ancora } from "./posicionamento";
 
 export interface ConteudoRico {
   titulo: string;
   linhas: readonly (readonly [rotulo: string, valor: string])[];
+  /** Foto do candidato (`url: null` → placeholder com iniciais). */
+  foto?: { nome: string; url: string | null };
+  /** Linhas finais, fora da lista (ex.: "Clique para abrir no TSE"). */
+  rodape?: readonly string[];
 }
 
 /** Monta o corpo padrão (título + lista de definição) de um tooltip. */
 export function corpoRico(c: ConteudoRico): DocumentFragment {
   const f = document.createDocumentFragment();
+  if (c.foto) f.append(figuraCandidato(c.foto.nome, c.foto.url));
   const t = document.createElement("strong");
   t.className = "tooltip-titulo";
   t.textContent = c.titulo;
@@ -27,6 +33,12 @@ export function corpoRico(c: ConteudoRico): DocumentFragment {
     dl.append(dt, dd);
   }
   f.append(t, dl);
+  for (const linha of c.rodape ?? []) {
+    const p = document.createElement("p");
+    p.className = "tooltip-rodape";
+    p.textContent = linha;
+    f.append(p);
+  }
   return f;
 }
 
