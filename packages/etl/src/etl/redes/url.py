@@ -51,7 +51,7 @@ def _de_url(texto: str) -> tuple[bool, str | None]:
 
 
 def username_instagram(texto: str) -> str | None:
-    """Username normalizado (minúsculo, sem ``@``) se ``texto`` é perfil do Instagram; senão ``None``.
+    """Username normalizado (minúsculo, sem ``@``) de um perfil do Instagram; senão ``None``.
 
     Aceita URL de perfil e forma solta (``@handle``, ``instagram: handle``). Rejeita post, reel,
     canal, id numérico, nome com espaço e qualquer texto que cite outra rede.
