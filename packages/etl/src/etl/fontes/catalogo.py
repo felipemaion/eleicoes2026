@@ -9,7 +9,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 CDN_TSE = "https://cdn.tse.jus.br/estatistica/sead/odsele"
-IBGE_MALHAS = "https://servicodados.ibge.gov.br/api/v3/malhas/estados"
+IBGE_API = "https://servicodados.ibge.gov.br/api/v3"
+# A API v3 de malhas não traz municípios criados recentemente (Boa Esperança do Norte/MT);
+# o shapefile oficial da Malha Municipal Digital 2025 traz os 5.571.
+IBGE_MALHAS_MUN = (
+    "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/"
+    "malhas_municipais/municipio_2025/Brasil"
+)
+IBGE_AREAS = (
+    "https://geoftp.ibge.gov.br/organizacao_do_territorio/estrutura_territorial/"
+    "areas_territoriais/2025"
+)
 BCB_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs"
 
 # 26 UFs + DF + ZZ (exterior), como nos arquivos por seção do TSE.
@@ -79,15 +89,28 @@ CATALOGO: dict[str, Fonte] = {
             por_ano=False,
         ),
         Fonte(
-            id="malha_ibge",
+            id="malha_municipios",
+            origem="ibge",
+            url_modelo=f"{IBGE_MALHAS_MUN}/BR_Municipios_2025.zip",
+            destino_modelo="ibge/BR_Municipios_2025.zip",
+            por_ano=False,
+        ),
+        Fonte(
+            id="malha_ufs",
             origem="ibge",
             url_modelo=(
-                f"{IBGE_MALHAS}/{{uf}}?formato=application/vnd.geo%2Bjson"
-                "&intrarregiao=municipio&qualidade=minima"
+                f"{IBGE_API}/malhas/paises/BR?formato=application/vnd.geo%2Bjson"
+                "&intrarregiao=UF&qualidade=intermediaria"
             ),
-            destino_modelo="ibge/malha_{uf}.geojson",
+            destino_modelo="ibge/malha_ufs.geojson",
             por_ano=False,
-            por_uf=True,
+        ),
+        Fonte(
+            id="areas_ibge",
+            origem="ibge",
+            url_modelo=f"{IBGE_AREAS}/AR_BR_RG_UF_RGINT_RGI_MUN_2025.xls",
+            destino_modelo="ibge/areas_territoriais_2025.xls",
+            por_ano=False,
         ),
         Fonte(
             id="ipca",

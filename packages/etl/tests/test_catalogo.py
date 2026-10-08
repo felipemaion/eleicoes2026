@@ -27,8 +27,8 @@ def test_fontes_sem_ano() -> None:
     assert m.url == f"{BASE}/municipio_tse_ibge/municipio_tse_ibge.zip"
     [i] = alvos(2026, ["ipca"])
     assert "sgs.433" in i.url
-    [g] = alvos(2026, ["malha_ibge"], uf="SP")
-    assert "estados/SP?" in g.url
+    [g] = alvos(2026, ["malha_municipios"])
+    assert g.url.endswith("municipio_2025/Brasil/BR_Municipios_2025.zip")
 
 
 def test_destinos_unicos() -> None:
@@ -47,3 +47,11 @@ def test_destinos_unicos() -> None:
 def test_entradas_invalidas(args: tuple[int, list[str] | None, str | None], msg: str) -> None:
     with pytest.raises(ValueError, match=msg):
         alvos(*args)
+
+
+def test_areas_e_malha_ufs_no_catalogo() -> None:
+    [a] = alvos(2026, ["areas_ibge"])
+    assert a.url.endswith("AR_BR_RG_UF_RGINT_RGI_MUN_2025.xls")
+    [u] = alvos(2026, ["malha_ufs"])
+    assert "paises/BR" in u.url
+    assert "intrarregiao=UF" in u.url
