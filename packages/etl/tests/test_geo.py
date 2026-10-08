@@ -58,14 +58,14 @@ def test_ler_malha_simplifica_com_a_tolerancia_pedida(tmp_path: Path) -> None:
 
 def test_camada_municipios_traz_nome_e_exige_todos() -> None:
     mun = pl.DataFrame(
-        {"cd_mun_ibge": [1, 2], "nm_municipio": ["A", "B"]},
-        schema_overrides={"cd_mun_ibge": pl.Int32},
+        {"cd_mun_ibge": [1, 2], "nm_municipio": ["A", "B"], "cd_amc": [10, 10]},
+        schema_overrides={"cd_mun_ibge": pl.Int32, "cd_amc": pl.Int32},
     )
     malha = [(1, box(0, 0, 1, 1)), (2, box(1, 0, 2, 1))]
     feats = camada_municipios(malha, mun)
     assert [f["properties"] for f in feats] == [
-        {"cd_mun_ibge": 1, "nm": "A"},
-        {"cd_mun_ibge": 2, "nm": "B"},
+        {"cd_mun_ibge": 1, "nome": "A", "cd_amc": 10},
+        {"cd_mun_ibge": 2, "nome": "B", "cd_amc": 10},
     ]
     with pytest.raises(ErroGeo, match="2"):
         camada_municipios(malha[:1], mun)
@@ -86,10 +86,11 @@ def _locais() -> pl.DataFrame:
 
 def test_camada_zonas_id_e_relatorio() -> None:
     poligonos = {1: box(0, 0, 2, 1)}
-    feats, rel = camada_zonas(_locais(), poligonos)
+    feats, rel = camada_zonas(_locais(), poligonos, {1: "Alfa"})
     ids = sorted(f["properties"]["id"] for f in feats)
     assert ids == ["1-1", "1-2"]
-    assert all(set(f["properties"]) == {"cd_mun_ibge", "nr_zona", "id"} for f in feats)
+    assert all(set(f["properties"]) == {"cd_mun_ibge", "nr_zona", "id", "nome"} for f in feats)
+    assert {f["properties"]["nome"] for f in feats} == {"Alfa — zona 1", "Alfa — zona 2"}
     assert rel.locais_sem_municipio == 1  # exterior (cd_mun_ibge nulo)
     assert rel.zonas_sem_poligono == []
 
@@ -113,12 +114,21 @@ def test_gerar_pmtiles_nome_com_hash_e_manifesto(tmp_path: Path) -> None:
         ],
     )
     saida = tmp_path / "tiles"
-    pm = gerar_pmtiles({"municipios": arq}, saida, zoom_min=3, zoom_max=6)
+    pm = gerar_pmtiles(
+        {"municipios": arq}, saida, ids={"municipios": "cd_mun_ibge"}, zoom_min=3, zoom_max=6
+    )
     assert pm.name.startswith("municipios.")
     assert pm.suffix == ".pmtiles"
     man = json.loads((saida / "manifesto.json").read_text())
     assert man["arquivo"] == pm.name
-    assert man["camadas"] == ["municipios"]
+    assert man["camadas"] == {
+        "municipios": {
+            "arquivo": pm.name,
+            "camada": "municipios",
+            "id": "cd_mun_ibge",
+            "limites": [-50, -10, -49, -9],
+        }
+    }
     assert len(pm.name.split(".")[1]) == 12
     show = subprocess.run(  # noqa: S603
         [shutil.which("pmtiles") or "pmtiles", "show", str(pm)],
@@ -128,6 +138,8 @@ def test_gerar_pmtiles_nome_com_hash_e_manifesto(tmp_path: Path) -> None:
     )
     assert "municipios" in show.stdout
     # idempotente: mesma entrada, mesmo nome; sobras antigas removidas
-    pm2 = gerar_pmtiles({"municipios": arq}, saida, zoom_min=3, zoom_max=6)
+    pm2 = gerar_pmtiles(
+        {"municipios": arq}, saida, ids={"municipios": "cd_mun_ibge"}, zoom_min=3, zoom_max=6
+    )
     assert pm2.name == pm.name
     assert len(list(saida.glob("*.pmtiles"))) == 1
