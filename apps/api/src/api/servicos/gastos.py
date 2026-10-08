@@ -1,7 +1,8 @@
 """Caso de uso /gastos: custo por voto, receita por fonte e dependência de recursos públicos."""
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from api.fontes import Fonte, fontes
 from api.repositorio.base import Repositorio
 from api.servicos.contas import ResumoCustoCandidato, ResumoCustoGrupo, ResumoReceitasOut, contas_de
 from api.servicos.grupos import Catalogo, candidaturas_do_grupo
@@ -31,6 +32,7 @@ class Gastos(BaseModel):
     contas_parciais: bool
     base_ipca: str | None
     dt_geracao: str
+    fontes: list[Fonte] = Field(description="Procedência dos números (arquivo, regra, spec).")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -61,6 +63,7 @@ class Gastos(BaseModel):
                     "contas_parciais": True,
                     "base_ipca": None,
                     "dt_geracao": "2026-10-06",
+                    "fontes": [],
                 }
             ]
         }
@@ -94,4 +97,10 @@ def montar_gastos(
         contas_parciais=contas.parcial,
         base_ipca=contas.base_ipca,
         dt_geracao=repo.dt_geracao(),
+        fontes=fontes(
+            ["prestacao_contas", "votacao_candidato_munzona"]
+            + (["ipca"] if contas.base_ipca else []),
+            ano=grupo.ano,
+            dt_geracao=repo.dt_geracao(),
+        ),
     )

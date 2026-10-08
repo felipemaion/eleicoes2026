@@ -1377,6 +1377,14 @@
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes",
+            "description": "Procedência dos números (arquivo, regra, spec)."
           }
         },
         "type": "object",
@@ -1393,7 +1401,8 @@
           "kpis",
           "escala_sugerida",
           "municipios",
-          "dt_geracao"
+          "dt_geracao",
+          "fontes"
         ],
         "title": "Comparativo",
         "description": "Corpo de GET /comparativo.",
@@ -1407,6 +1416,7 @@
               "rotulo": "MBL 2022"
             },
             "dt_geracao": "2026-10-06",
+            "fontes": [],
             "kpis": {
               "delta_penetracao": 37.1,
               "ganho_absoluto": 720,
@@ -1695,7 +1705,7 @@
           "gastos": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ResumoCustoCandidato"
+                "$ref": "#/components/schemas/GastosCandidato"
               },
               {
                 "type": "null"
@@ -1733,6 +1743,22 @@
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "type": "array",
+            "title": "Links",
+            "description": "Links oficiais do TSE (votos, perfil, contas, dados abertos); cada um diz se foi `verificado` e, se não, o que conferir."
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes",
+            "description": "Procedência dos números da ficha."
           }
         },
         "type": "object",
@@ -1745,10 +1771,51 @@
           "receitas",
           "contas_parciais",
           "base_ipca",
-          "dt_geracao"
+          "dt_geracao",
+          "links",
+          "fontes"
         ],
         "title": "FichaCandidato",
         "description": "Ficha completa: votação, geografia e finanças."
+      },
+      "Fonte": {
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "title": "Dataset",
+            "description": "Id do dataset no catálogo (ex.: `votacao_candidato_munzona`)."
+          },
+          "arquivo_oficial_url": {
+            "type": "string",
+            "title": "Arquivo Oficial Url",
+            "description": "URL do arquivo oficial (ZIP no CDN do TSE etc.)."
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao",
+            "description": "`DT_GERACAO` dos dados publicados pelo TSE."
+          },
+          "coluna_regra": {
+            "type": "string",
+            "title": "Coluna Regra",
+            "description": "Coluna(s) usada(s) e regra aplicada sobre elas."
+          },
+          "metodologia_url": {
+            "type": "string",
+            "title": "Metodologia Url",
+            "description": "Seção da spec que define o número (GitHub)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "dataset",
+          "arquivo_oficial_url",
+          "dt_geracao",
+          "coluna_regra",
+          "metodologia_url"
+        ],
+        "title": "Fonte",
+        "description": "De onde vem um número: arquivo oficial, momento da geração e regra aplicada."
       },
       "GastoCandidato": {
         "properties": {
@@ -1851,6 +1918,14 @@
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes",
+            "description": "Procedência dos números (arquivo, regra, spec)."
           }
         },
         "type": "object",
@@ -1864,7 +1939,8 @@
           "por_candidato",
           "contas_parciais",
           "base_ipca",
-          "dt_geracao"
+          "dt_geracao",
+          "fontes"
         ],
         "title": "Gastos",
         "description": "Corpo de GET /gastos.",
@@ -1884,6 +1960,7 @@
             "cargo": "DEPUTADO FEDERAL",
             "contas_parciais": true,
             "dt_geracao": "2026-10-06",
+            "fontes": [],
             "grupo": "missao_2026",
             "por_candidato": [],
             "receitas": {
@@ -1899,6 +1976,134 @@
             "uf": "SP"
           }
         ]
+      },
+      "GastosCandidato": {
+        "properties": {
+          "despesa_contratada": {
+            "type": "number",
+            "title": "Despesa Contratada",
+            "description": "R$ da própria campanha, sem repasses."
+          },
+          "despesa_paga": {
+            "type": "number",
+            "title": "Despesa Paga",
+            "description": "R$ pagos da própria campanha, sem repasses."
+          },
+          "divida": {
+            "type": "number",
+            "title": "Divida",
+            "description": "contratada − paga (§4.2)."
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "custo_voto_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Contratado",
+            "description": "R$/voto = despesa contratada ÷ votos nominais. Exclui repasses a outros candidatos/partidos (§4.2). null se votos = 0."
+          },
+          "custo_voto_pago": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Pago",
+            "description": "R$/voto pago; exclui repasses a outros candidatos/partidos (§4.2)."
+          },
+          "repasses_contratados": {
+            "type": "number",
+            "title": "Repasses Contratados",
+            "description": "R$ contratados como doação a outros candidatos/partidos (fora do custo)."
+          },
+          "repasses_pagos": {
+            "type": "number",
+            "title": "Repasses Pagos",
+            "description": "R$ pagos nesses repasses."
+          },
+          "despesa_total_contratada": {
+            "type": "number",
+            "title": "Despesa Total Contratada",
+            "description": "Despesa própria + repasses (contratada): tudo que a campanha comprometeu."
+          },
+          "despesa_total_paga": {
+            "type": "number",
+            "title": "Despesa Total Paga",
+            "description": "Despesa própria + repasses (paga)."
+          },
+          "custo_voto_contratado_com_repasses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Contratado Com Repasses",
+            "description": "despesa total contratada ÷ votos. Maior ou igual ao custo sem repasses: a diferença é o dinheiro repassado a terceiros. null se votos = 0."
+          },
+          "custo_voto_pago_com_repasses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Pago Com Repasses"
+          },
+          "receita_total": {
+            "type": "number",
+            "title": "Receita Total",
+            "description": "Σ das receitas da campanha (todas as fontes)."
+          },
+          "receita_por_fonte": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Receita Por Fonte",
+            "description": "Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…"
+          },
+          "explicacao_repasses": {
+            "type": "string",
+            "title": "Explicacao Repasses",
+            "description": "Por que há dois custos por voto e qual a diferença entre eles."
+          }
+        },
+        "type": "object",
+        "required": [
+          "despesa_contratada",
+          "despesa_paga",
+          "divida",
+          "votos",
+          "custo_voto_contratado",
+          "custo_voto_pago",
+          "repasses_contratados",
+          "repasses_pagos",
+          "despesa_total_contratada",
+          "despesa_total_paga",
+          "custo_voto_contratado_com_repasses",
+          "custo_voto_pago_com_repasses",
+          "receita_total",
+          "receita_por_fonte",
+          "explicacao_repasses"
+        ],
+        "title": "GastosCandidato",
+        "description": "Finanças da campanha: despesa, repasses, receita e custo por voto com e sem repasses."
       },
       "Grupo": {
         "properties": {
@@ -2204,6 +2409,57 @@
         "title": "KpisGrupo",
         "description": "Grupo como candidato coletivo no recorte (cargo × UF): soma única, nunca de cargos."
       },
+      "Link": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "votos_oficiais",
+              "divulgacand_lista",
+              "divulgacand_candidato",
+              "divulgacand_ficha_json",
+              "dados_abertos_votos",
+              "dados_abertos_contas"
+            ],
+            "title": "Tipo"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "verificado": {
+            "type": "boolean",
+            "title": "Verificado",
+            "description": "true = aberto e conferido; false = padrão a conferir."
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota",
+            "description": "Obrigatória quando `verificado = false`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "rotulo",
+          "url",
+          "verificado",
+          "nota"
+        ],
+        "title": "Link",
+        "description": "Um link oficial, com a honestidade de dizer se foi conferido."
+      },
       "ListaCandidatos": {
         "properties": {
           "total": {
@@ -2235,6 +2491,14 @@
               }
             ],
             "description": "Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam cargos) ou sem candidaturas."
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes",
+            "description": "Procedência dos números (arquivo, regra, spec)."
           }
         },
         "type": "object",
@@ -2243,12 +2507,22 @@
           "limite",
           "offset",
           "itens",
-          "kpis"
+          "kpis",
+          "fontes"
         ],
         "title": "ListaCandidatos",
         "description": "Página de candidatos.",
         "examples": [
           {
+            "fontes": [
+              {
+                "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+                "coluna_regra": "QT_VOTOS_NOMINAIS_VALIDOS com destinação 'Válido'.",
+                "dataset": "votacao_candidato_munzona",
+                "dt_geracao": "2026-10-06",
+                "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md#21-votos-nominais"
+              }
+            ],
             "itens": [
               {
                 "abrangencia": {
@@ -2407,6 +2681,14 @@
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes",
+            "description": "Procedência dos números (arquivo, regra, spec)."
           }
         },
         "type": "object",
@@ -2420,7 +2702,8 @@
           "unidade",
           "denominador",
           "n_candidaturas",
-          "dt_geracao"
+          "dt_geracao",
+          "fontes"
         ],
         "title": "Mapa",
         "description": "Corpo de GET /mapa. Chaves: IBGE (município), `IBGE-zona`, ou índice H3.",
@@ -2447,6 +2730,7 @@
               ],
               "tipo": "sequencial"
             },
+            "fontes": [],
             "indicador": "penetracao",
             "n_candidaturas": 2,
             "nivel": "municipio",

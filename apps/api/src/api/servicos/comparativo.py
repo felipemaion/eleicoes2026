@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Cargo, Indicador
 from api.erros import nao_encontrado, parametro_invalido
+from api.fontes import Fonte, fontes
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
 from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
@@ -71,6 +72,7 @@ class Comparativo(BaseModel):
     )
     municipios: list[EvolucaoMunicipio]
     dt_geracao: str
+    fontes: list[Fonte] = Field(description="Procedência dos números (arquivo, regra, spec).")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -97,6 +99,7 @@ class Comparativo(BaseModel):
                     },
                     "municipios": [],
                     "dt_geracao": "2026-10-06",
+                    "fontes": [],
                 }
             ]
         }
@@ -326,4 +329,13 @@ def montar_comparativo(
             for e in por_amc.to_dicts()
         ],
         dt_geracao=repo.dt_geracao(),
+        fontes=[
+            f
+            for ano in (de.ano, para.ano)
+            for f in fontes(
+                ["votacao_candidato_munzona", "detalhe_votacao_munzona"],
+                ano=ano,
+                dt_geracao=repo.dt_geracao(),
+            )
+        ],
     )
