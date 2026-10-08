@@ -84,6 +84,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/candidatos/ufs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * UFs com candidaturas
+         * @description UFs com candidaturas no recorte (`ano` ou `grupo`, mais `cargo`), com contagem.
+         *
+         *     Presidente devolve só `BR`. Exige `ano` ou `grupo`; o grupo define o ano.
+         */
+        get: operations["candidatos_ufs_api_candidatos_ufs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/candidatos/{ano}/{sq_candidato}": {
         parameters: {
             query?: never;
@@ -640,8 +662,21 @@ export interface components {
             sg_uf: string;
             /** Cargo */
             cargo: string;
+            partido: components["schemas"]["Partido"];
+            /**
+             * Resultado
+             * @description `ds_sit_tot_turno`; null até a apuração.
+             */
+            resultado: string | null;
             /** Receita Total */
             receita_total: number;
+            /**
+             * Pct Publico
+             * @description FEFC + Fundo Partidário, % da receita do candidato.
+             */
+            pct_publico: number | null;
+            /** Pct Autofinanciamento */
+            pct_autofinanciamento: number | null;
             custo: components["schemas"]["ResumoCustoCandidato"];
         };
         /**
@@ -1442,6 +1477,41 @@ export interface components {
          * @enum {string}
          */
         UF: "AC" | "AL" | "AM" | "AP" | "BA" | "CE" | "DF" | "ES" | "GO" | "MA" | "MG" | "MS" | "MT" | "PA" | "PB" | "PE" | "PI" | "PR" | "RJ" | "RN" | "RO" | "RR" | "RS" | "SC" | "SE" | "SP" | "TO";
+        /**
+         * UfDisponivel
+         * @description UF com candidaturas no recorte.
+         */
+        UfDisponivel: {
+            /**
+             * Uf
+             * @description Sigla da UF; `BR` para presidente (candidatura nacional).
+             */
+            uf: string;
+            /**
+             * Candidaturas
+             * @description Candidaturas do recorte nessa UF.
+             */
+            candidaturas: number;
+        };
+        /**
+         * UfsDisponiveis
+         * @description Corpo de GET /candidatos/ufs.
+         * @example {
+         *       "dt_geracao": "2026-10-06",
+         *       "itens": [
+         *         {
+         *           "candidaturas": 1,
+         *           "uf": "BR"
+         *         }
+         *       ]
+         *     }
+         */
+        UfsDisponiveis: {
+            /** Itens */
+            itens: components["schemas"]["UfDisponivel"][];
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1576,6 +1646,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListaCandidatos"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    candidatos_ufs_api_candidatos_ufs_get: {
+        parameters: {
+            query?: {
+                ano?: components["schemas"]["Ano"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+                /** @description Id do grupo; exclusivo com sq_candidato. */
+                grupo?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UfsDisponiveis"];
                 };
             };
             /** @description Validation Error */
@@ -1835,6 +1939,8 @@ export interface operations {
                 /** @description Exige este cargo nos dois anos. */
                 cargo?: components["schemas"]["Cargo"] | null;
                 limite?: number;
+                /** @description `pessoa_id_publico` que devem vir na resposta mesmo fora da página (`limite`) do recorte. */
+                pessoas?: string[] | null;
             };
             header?: never;
             path?: never;

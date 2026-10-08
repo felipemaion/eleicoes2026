@@ -37,6 +37,14 @@ describe("formatação pt-BR", () => {
 });
 
 describe("kpi", () => {
+  it("põe o chip de fonte na linha própria (nunca quebra o título ao lado do ?)", () => {
+    kpi.render(el, [{ rotulo: "Custo por voto contratado", valor: 1, formato: "moeda", ajuda: "a", fonte: "f" }], {
+      ajuda: () => document.createTextNode("?"),
+      fonte: () => Object.assign(document.createElement("span"), { className: "fonte", textContent: "fonte" }),
+    });
+    expect(el.querySelector(".kpi > dt .fonte")).toBeNull();
+    expect(el.querySelector(".kpi > dd.fonte-linha .fonte")).not.toBeNull();
+  });
   it("renderiza um cartão por indicador com valor formatado", () => {
     const g = kpi.render(el, [
       { rotulo: "Votos", valor: 12345, formato: "inteiro" },

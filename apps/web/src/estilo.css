@@ -149,6 +149,8 @@ footer p { margin: var(--esp-1) 0; }
 .kpi:hover{background:var(--cor-superficie-alta);border-color:var(--cor-destaque)}
 .kpi>dt{color:var(--cor-texto-suave);font-size:.85rem}
 .kpi>dd{margin:0;font-size:1.6rem;font-weight:700;color:var(--cor-destaque)}
+.kpi>dd.fonte-linha{margin:.35rem 0 0;font-size:.75rem;font-weight:400}
+.fonte,.fonte-botao{white-space:nowrap}
 .kpi>dd.unidade{margin:0;font-weight:600;font-size:.85rem;color:var(--cor-texto-suave)}
 .grafico .marca{cursor:pointer;transition:filter .12s}
 .grafico .marca:hover{filter:brightness(1.2);stroke:var(--cor-texto);stroke-width:1.5}

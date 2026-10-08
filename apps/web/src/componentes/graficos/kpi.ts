@@ -34,7 +34,6 @@ export function render(container: HTMLElement, dados: readonly Kpi[], opcoes: Op
       const dt = document.createElement("dt");
       dt.textContent = k.rotulo;
       if (k.ajuda !== undefined && opcoes.ajuda) dt.append(" ", opcoes.ajuda(k.ajuda));
-      if (k.fonte !== undefined && opcoes.fonte) dt.append(" ", opcoes.fonte(k.fonte));
       const dd = document.createElement("dd");
       dd.textContent = FORMATOS[k.formato](k.valor);
       cartao.append(dt, dd);
@@ -44,6 +43,13 @@ export function render(container: HTMLElement, dados: readonly Kpi[], opcoes: Op
         u.className = "unidade";
         u.textContent = k.unidade;
         cartao.append(u);
+      }
+      if (k.fonte !== undefined && opcoes.fonte) {
+        // Linha própria: ao lado do título o chip quebrava de linha em cartões estreitos.
+        const f = document.createElement("dd");
+        f.className = "fonte-linha";
+        f.append(opcoes.fonte(k.fonte));
+        cartao.append(f);
       }
       lista.append(cartao);
     }

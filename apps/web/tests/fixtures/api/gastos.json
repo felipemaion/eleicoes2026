@@ -39,7 +39,14 @@
         "votos": 18049,
         "custo_voto_contratado": 12.36,
         "custo_voto_pago": 9.97
-      }
+      },
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "resultado": "ELEITO",
+      "pct_publico": 62.5,
+      "pct_autofinanciamento": 5.0
     },
     {
       "sq_candidato": 2,
@@ -54,7 +61,14 @@
         "votos": 11991,
         "custo_voto_contratado": 7.51,
         "custo_voto_pago": 5.84
-      }
+      },
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "resultado": "NÃO ELEITO",
+      "pct_publico": null,
+      "pct_autofinanciamento": null
     },
     {
       "sq_candidato": 3,
@@ -69,7 +83,14 @@
         "votos": 3155,
         "custo_voto_contratado": 9.51,
         "custo_voto_pago": 7.92
-      }
+      },
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "resultado": "NÃO ELEITO",
+      "pct_publico": null,
+      "pct_autofinanciamento": null
     }
   ],
   "contas_parciais": true,

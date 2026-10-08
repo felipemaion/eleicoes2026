@@ -1,31 +1,27 @@
 /** Lógica pura da tela de gastos: junta gasto × candidatura e prepara o que o gráfico e o tooltip mostram. */
 import type { PontoCustoVoto } from "../componentes/graficos/dispersao";
-import { formatarMoeda, formatarNumero } from "../formato";
-import type { Candidato, RespostaGastos } from "./contrato";
+import { formatarMoeda, formatarNumero, formatarPontos } from "../formato";
+import type { RespostaGastos } from "./contrato";
 
 const semAcento = (s: string): string => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/**
- * Um ponto por candidato com gasto. `/gastos` não traz partido nem resultado: vêm de `/candidatos`
- * (mesmo recorte). Sem correspondência o campo diz "indisponível" — não some do tooltip.
- */
-export function pontosDeGastos(g: RespostaGastos, candidatos: readonly Candidato[], base: "contratado" | "pago"): PontoCustoVoto[] {
-  const porSq = new Map(candidatos.map((c) => [c.sq_candidato, c]));
+/** Um ponto por candidato com gasto; partido, resultado e % público vêm do próprio `/gastos`. */
+export function pontosDeGastos(g: RespostaGastos, base: "contratado" | "pago"): PontoCustoVoto[] {
   return g.por_candidato.map((c) => {
-    const cand = porSq.get(c.sq_candidato);
     const custo = base === "contratado" ? c.custo.despesa_contratada : c.custo.despesa_paga;
     const cpv = base === "contratado" ? c.custo.custo_voto_contratado : c.custo.custo_voto_pago;
     return {
       id: String(c.sq_candidato), rotulo: c.nm_urna, votos: c.custo.votos, custo,
       detalhe: [
-        ["Partido", cand ? `${cand.partido.sigla} (${String(cand.partido.numero)})` : "indisponível"],
+        ["Partido", `${c.partido.sigla} (${String(c.partido.numero)})`],
         ["UF", c.sg_uf],
         ["Cargo", c.cargo.toLowerCase()],
         ["Votos", formatarNumero(c.custo.votos)],
         ["Despesa contratada", formatarMoeda(c.custo.despesa_contratada)],
         ["Despesa paga", formatarMoeda(c.custo.despesa_paga)],
         [`Custo por voto (${base})`, cpv === null ? "sem votos" : formatarMoeda(cpv)],
-        ["Resultado", cand?.resultado?.toLowerCase() ?? "ainda não definido"],
+        ["% recursos públicos", c.pct_publico === null ? "indisponível" : formatarPontos(c.pct_publico)],
+        ["Resultado", c.resultado?.toLowerCase() ?? "ainda não definido"],
       ],
     };
   });

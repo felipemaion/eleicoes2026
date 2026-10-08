@@ -244,8 +244,8 @@ describe("gastos — hover, busca e referência", () => {
     await desenhar("gastos");
     await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
     el.querySelector('circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
-    for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "não eleito"]) expect(balao()).toContain(t);
-    expect(chamou("/api/candidatos?")).toBe(true);
+    for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "eleito", "62,5%"]) expect(balao()).toContain(t);
+    expect(chamou("/api/candidatos?")).toBe(false);
   });
   it("mostra a mediana de custo por voto como linha de referência", async () => {
     await desenhar("gastos");

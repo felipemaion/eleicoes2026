@@ -17,15 +17,9 @@ export const tela: Tela = {
     container.replaceChildren(titulo("Gastos"), cabecalhoDaTela("gastos"), conteudo);
     const parar = carregar(
       conteudo,
-      async () => {
-        const cliente = criarCliente();
-        const p = paramsDeFiltros(filtros);
-        // Partido e resultado não vêm em /gastos: a lista de candidatos do mesmo recorte completa o tooltip.
-        const [g, c] = await Promise.all([cliente.gastos(p), cliente.candidatos({ ...p, limite: "500" })]);
-        return { g, candidatos: c.itens };
-      },
-      ({ g }) => (g.por_candidato.length === 0 ? "Sem gastos declarados para estes filtros." : null),
-      ({ g, candidatos }, destino) => {
+      () => criarCliente().gastos(paramsDeFiltros(filtros)),
+      (g) => (g.por_candidato.length === 0 ? "Sem gastos declarados para estes filtros." : null),
+      (g, destino) => {
         let base: "contratado" | "pago" = "contratado";
         const kpis: Kpi[] = [];
         const { agregado: ag, receitas: rc } = g;
@@ -39,7 +33,7 @@ export const tela: Tela = {
         const areaReceita = h("div");
         const k = renderKpi(areaKpi, kpis, { ajuda: (k) => ajuda(k, ctx), fonte: () => fonteUi(g.fontes, ["prestacao_contas"]) });
         let consulta = "";
-        const pontos = (): ReturnType<typeof pontosDeGastos> => pontosDeGastos(g, candidatos, base);
+        const pontos = (): ReturnType<typeof pontosDeGastos> => pontosDeGastos(g, base);
         const referencia = (): { custoPorVoto: number; rotulo: string } | undefined => {
           const m = medianaCustoVoto(pontos());
           return m === null ? undefined : { custoPorVoto: m, rotulo: `mediana ${formatarMoeda(m)} por voto (${base})` };

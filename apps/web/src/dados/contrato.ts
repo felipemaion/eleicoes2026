@@ -30,6 +30,7 @@ export type MunicipioComparado = S["EvolucaoMunicipio"];
 export type RespostaMunicipio = S["ResumoMunicipio"];
 export type PessoaEvolucao = S["PessoaEvolucao"];
 export type RespostaPessoas = S["ListaPessoas"];
+export type RespostaUfs = S["UfsDisponiveis"];
 export type Fonte = S["Fonte"];
 export type LinkOficial = S["Link"];
 export type GastosFicha = S["GastosCandidato"];
