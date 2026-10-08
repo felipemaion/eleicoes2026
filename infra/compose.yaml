@@ -2,6 +2,8 @@
 # Sem `ports:`: o Caddy alcança `eleicoes2026-api:8000` pela rede externa `proxy`.
 # Local/espelho: em produção o compose é do Oracle e a imagem vem do GitHub Actions (ghcr.io).
 # Local:  docker compose -f infra/compose.yaml up -d --build
+name: eleicoes2026
+
 services:
   api:
     container_name: eleicoes2026-api
