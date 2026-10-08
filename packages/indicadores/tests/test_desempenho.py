@@ -94,3 +94,33 @@ def test_votacao_partido_com_qe_zero_e_nulo() -> None:
     assert linha["quociente_eleitoral"] == 0
     assert linha["votacao_em_qe"] is None
     assert linha["quociente_partidario"] is None
+
+
+def _votacao_dois(coluna: str, valores: list[int]) -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            "sq_candidato": ["c1", "c1"],
+            "cd_mun_ibge": [1, 1],
+            coluna: valores,
+            "nm_tipo_destinacao_votos": ["Válido", "Válido"],
+            "qt_votos_nominais": [10, 20],
+            "qt_votos_nominais_validos": [10, 20],
+        }
+    )
+
+
+@pytest.mark.parametrize(("coluna", "regra"), [("nr_turno", "turno"), ("cd_cargo", "cargo")])
+def test_votos_nominais_recusa_turnos_ou_cargos_misturados(coluna: str, regra: str) -> None:
+    # Somar 1º e 2º turno (ou dois cargos) dupla-contaria o eleitor (spec §0, §1.3).
+    with pytest.raises(ValueError, match=f"um {regra} por vez"):
+        desempenho.votos_nominais(_votacao_dois(coluna, [1, 2]))
+
+
+def test_votos_nominais_aceita_turno_unico_ou_turno_nas_chaves() -> None:
+    assert desempenho.votos_nominais(_votacao_dois("nr_turno", [1, 1]))[
+        "votos_nominais_validos"
+    ].to_list() == [30]
+    por_turno = desempenho.votos_nominais(
+        _votacao_dois("nr_turno", [1, 2]), chaves=("sq_candidato", "cd_mun_ibge", "nr_turno")
+    )
+    assert por_turno["votos_nominais_validos"].to_list() == [10, 20]

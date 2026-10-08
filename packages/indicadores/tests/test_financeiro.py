@@ -129,3 +129,16 @@ def test_mes_mal_formado_falha() -> None:
 def test_virada_de_ano() -> None:
     serie = financeiro.serie_ipca({"2022-12": 1.0, "2023-01": 1.0})
     assert financeiro.fator_ipca(serie, "2022-11", "2023-01") == pytest.approx(1.0201)
+
+
+def test_custo_sem_pagamento_lancado_conta_pago_como_zero() -> None:
+    # Prestador com despesa contratada e nenhuma linha em despesas_pagas: pagou 0, não "sem dado".
+    df = pl.DataFrame(
+        {"despesa_contratada": [1000.0, None], "despesa_paga": [None, None], "votos": [100, 50]}
+    )
+    linhas = financeiro.custo_por_voto(df).to_dicts()
+    assert linhas[0]["custo_voto_pago"] == 0.0
+    assert linhas[0]["divida"] == 1000.0
+    # Sem contas (contratada nula) continua indefinido.
+    assert linhas[1]["custo_voto_pago"] is None
+    assert linhas[1]["divida"] is None

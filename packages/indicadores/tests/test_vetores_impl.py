@@ -179,7 +179,10 @@ def _evolucao(entrada: dict[str, Any]) -> list[dict[str, Any]]:
         {"cd_mun_ibge": [int(k) for k in entrada["amc"]], "amc": list(entrada["amc"].values())}
     )
     df = evolucao.evolucao(
-        pl.DataFrame(entrada["ano_2022"]), pl.DataFrame(entrada["ano_2026"]), amc
+        pl.DataFrame(entrada["ano_2022"]),
+        pl.DataFrame(entrada["ano_2026"]),
+        amc,
+        cd_cargo=entrada["cd_cargo"],
     )
     return _linhas(df.sort("amc"))
 
