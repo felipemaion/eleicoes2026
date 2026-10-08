@@ -1,0 +1,33 @@
+# Layout de produção (same-origin) para conferir localmente: `caddy run --config apps/web/Caddyfile`
+# após `pnpm build`. O Caddy do servidor (agente Oracle) deve reproduzir estas três rotas.
+# `file_server` já responde Range (206), exigido pelos PMTiles.
+:8080 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy localhost:8000
+	}
+
+	# Arquivos com hash no nome: cache imutável. O manifesto não tem hash e é sempre revalidado.
+	handle /tiles/manifesto.json {
+		root * ../../data/processed
+		header Cache-Control "no-cache"
+		file_server
+	}
+	handle /tiles/* {
+		root * ../../data/processed
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	handle /assets/* {
+		root * dist
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	handle {
+		root * dist
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

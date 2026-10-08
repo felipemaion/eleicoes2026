@@ -4,7 +4,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["dist", "node_modules", "playwright-report", "test-results", "eslint.config.js"] },
+  { ignores: ["dist", "node_modules", "playwright-report", "test-results", "eslint.config.js", "scripts-dev"] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {

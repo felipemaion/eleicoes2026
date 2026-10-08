@@ -8,6 +8,7 @@ import type { DetalheParcial } from "../componentes/mapa/mapa";
 import type { Filtros } from "../store";
 import { indicadorDe } from "../textos";
 import { PALETAS } from "../paletas";
+import { marcarNBaixo } from "./n-baixo";
 import type { Candidato, CargoApi, Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "./contrato";
 
 /** Chave do filtro (`deputado_federal`) → valor do enum do OpenAPI (`DEPUTADO FEDERAL`). */
@@ -112,8 +113,9 @@ export function escalaDoMapa(r: RespostaMapa): MapaPronto {
   const valores = soNumeros(r.valores);
   const q = r.escala_sugerida.quebras;
   const escala = q !== null && q.length > 0 ? escalaLimiar(q, amostrar(PALETAS.sequencial, q.length + 1)) : escalaQuantil(Object.values(valores));
+  const baixo = marcarNBaixo(Object.fromEntries(Object.entries(r.detalhes).map(([id, d]) => [id, { votos: d.votos, eleitorado: d.aptos }])));
   const detalhes = Object.fromEntries(
-    Object.entries(r.detalhes).map(([id, d]) => [id, { votos: d.votos, eleitorado: d.aptos, ...(d.taxa === null ? {} : { taxa: d.taxa }) }]),
+    Object.entries(r.detalhes).map(([id, d]) => [id, { votos: d.votos, eleitorado: d.aptos, nBaixo: baixo[id] ?? false, ...(d.taxa === null ? {} : { taxa: d.taxa }) }]),
   );
   return { escala, meta, valores, detalhes, aviso: r.escala_sugerida.aviso ?? null };
 }

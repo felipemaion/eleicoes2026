@@ -23,6 +23,13 @@ function escolher<T extends string | number>(validos: readonly T[], bruto: strin
   return validos.find((v) => String(v) === bruto) ?? padrao;
 }
 
+/** `false` só para `#/algo` que não é uma tela: aí o app mostra a página 404 em vez de cair na visão geral. */
+export function rotaExiste(hash: string): boolean {
+  if (!hash.startsWith("#/")) return true;
+  const caminho = hash.slice(2).split("?")[0] ?? "";
+  return caminho === "" || (TELAS as readonly string[]).includes(caminho);
+}
+
 /** Hash vazio = rota padrão; hash que não começa com `#/` (âncora como `#principal`) não é rota → null. */
 export function lerHash(hash: string): Rota | null {
   if (hash !== "" && hash !== "#" && !hash.startsWith("#/")) return null;

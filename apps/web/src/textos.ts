@@ -78,12 +78,9 @@ export const notaRodape = (t: TelaComTextos, c: Contexto): string => preencher(d
 export interface Aviso extends AvisoTexto { chave: string }
 export interface ContextoAvisos extends Contexto { contas_parciais?: boolean }
 
-/** `n_baixo` fala de áreas hachuradas, que o mapa ainda não desenha: não prometer o que não existe. */
-const AINDA_SEM_RECURSO = new Set(["n_baixo"]);
 
 export function avisosDaTela(t: TelaComTextos, c: ContextoAvisos): Aviso[] {
   return daTela(t).avisos
-    .filter((k) => !AINDA_SEM_RECURSO.has(k))
     .filter((k) => (k === "contas_parciais" ? c.contas_parciais === true : k === "ipca" ? c.mes_base_ipca !== undefined : true))
     .map((chave) => {
       const a = T.avisos[chave];

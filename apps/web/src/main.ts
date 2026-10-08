@@ -3,10 +3,13 @@ import "./estilo.css";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
 import { cssDasCores } from "./paletas";
-import { ligarStoreAoHash, ROTULOS_TELA } from "./rotas";
+import { ligarStoreAoHash, rotaExiste, ROTULOS_TELA } from "./rotas";
 import { criarStore, TELAS, type Estado } from "./store";
 import { TELAS_POR_CHAVE } from "./telas";
 import { criarGerenciadorDeTelas } from "./telas/ciclo";
+
+const FONTES = "Fontes: TSE (dados abertos), IBGE e BCB.";
+const REPOSITORIO = "https://github.com/felipemaion/eleicoes2026";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}): HTMLElementTagNameMap[K] {
   return Object.assign(document.createElement(tag), props);
@@ -23,7 +26,7 @@ function montar(raiz: HTMLElement): void {
   const nav = el("nav");
   nav.setAttribute("aria-label", "Telas");
   const lista = el("ul");
-  const links = TELAS.map((chave) => {
+  const itens = TELAS.map((chave) => {
     const a = el("a", { textContent: ROTULOS_TELA[chave] });
     const item = el("li");
     item.append(a);
@@ -36,8 +39,12 @@ function montar(raiz: HTMLElement): void {
 
   const principal = el("main", { id: "principal", tabIndex: -1 });
   const rodape = el("footer");
-  const fonte = el("p", { textContent: "Fonte: TSE (dados abertos), IBGE e BCB. dt_geracao: carregando…" });
-  rodape.append(fonte);
+  const fonte = el("p", { textContent: `${FONTES} dt_geracao: carregando…` });
+  const links = el("p");
+  const aMetodologia = el("a", { textContent: "Metodologia", href: "#/como-ler" });
+  const aRepo = el("a", { textContent: "Código no GitHub", href: REPOSITORIO, rel: "noopener" });
+  links.append(aMetodologia, " · ", aRepo);
+  rodape.append(fonte, links);
   raiz.append(cabecalho, principal, rodape);
 
   renderFiltros(areaFiltros, store);
@@ -49,8 +56,10 @@ function montar(raiz: HTMLElement): void {
     principal.focus();
   });
   let telaAnterior: string | null = null;
+  let em404 = false;
   const desenhar = (e: Readonly<Estado>): void => {
-    for (const { chave, a } of links) {
+    if (em404) return;
+    for (const { chave, a } of itens) {
       a.href = `#/${chave}`;
       if (chave === e.tela) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
@@ -63,12 +72,32 @@ function montar(raiz: HTMLElement): void {
   };
   store.assinar(desenhar);
   ligarStoreAoHash(store, window);
-  desenhar(store.obter());
+
+  // Rota de hash desconhecida: página 404 com saída para a visão geral (o estado da store não muda).
+  const verificarRota = (): boolean => {
+    const existe = rotaExiste(window.location.hash);
+    if (!existe && !em404) {
+      em404 = true;
+      gerenciador.destruir();
+      telaAnterior = null;
+      const h1 = el("h1", { textContent: "Página não encontrada", tabIndex: -1 });
+      const voltar = el("a", { textContent: "Ir para a visão geral", href: "#/visao-geral" });
+      principal.replaceChildren(h1, el("p", { textContent: `Não existe a tela "${window.location.hash.slice(2).split("?")[0] ?? ""}". ` }), voltar);
+      document.title = "Página não encontrada — Eleições 2026";
+      h1.focus();
+    } else if (existe && em404) {
+      em404 = false;
+      desenhar(store.obter());
+    }
+    return existe;
+  };
+  window.addEventListener("hashchange", verificarRota);
+  if (verificarRota()) desenhar(store.obter());
 
   criarCliente()
     .meta()
-    .then((m) => { fonte.textContent = `Fonte: TSE (dados abertos), IBGE e BCB. dt_geracao: ${m.dt_geracao}.`; })
-    .catch(() => { fonte.textContent = "Fonte: TSE (dados abertos), IBGE e BCB. dt_geracao: indisponível (API fora do ar)."; });
+    .then((m) => { fonte.textContent = `${FONTES} dt_geracao: ${m.dt_geracao}.`; })
+    .catch(() => { fonte.textContent = `${FONTES} dt_geracao: indisponível (API fora do ar).`; });
 }
 
 const raiz = document.getElementById("app");

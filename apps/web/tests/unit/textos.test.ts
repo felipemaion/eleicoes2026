@@ -37,13 +37,13 @@ describe("textos públicos (docs/metodologia/publico/textos.json)", () => {
     expect(subtituloDaTela("visao-geral")).toMatch(/Missão/);
     expect(notaRodape("gastos", { dt_geracao: "2026-10-07", mes_base_ipca: "2026-09" })).toMatch(/07\/10\/2026.*set\/2026/);
   });
-  it("avisos: contas parciais só com a flag; IPCA só com mês-base; n_baixo fora (sem hachura ainda)", () => {
+  it("avisos: contas parciais só com a flag; IPCA só com mês-base; n_baixo no mapa (que tem hachura)", () => {
     const base = { dt_geracao: "2026-10-07", contas_parciais: false, mes_base_ipca: undefined };
     expect(avisosDaTela("gastos", base).map((a) => a.chave)).toEqual([]);
     expect(avisosDaTela("gastos", { ...base, contas_parciais: true, mes_base_ipca: "2026-09" }).map((a) => a.chave)).toEqual(["contas_parciais", "ipca"]);
     const mapa = avisosDaTela("mapa", base).map((a) => a.chave);
     expect(mapa).toContain("rezoneamento");
-    expect(mapa).not.toContain("n_baixo");
+    expect(mapa).toContain("n_baixo");
   });
   it("aviso preenche dt_geracao no texto", () => {
     const [a] = avisosDaTela("visao-geral", { dt_geracao: "2026-10-07", contas_parciais: true });
