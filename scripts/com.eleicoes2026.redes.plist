@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Snapshot diário das redes sociais (T-D08). NÃO instalar sem o orquestrador.
+
+  __REPO__ = checkout que guarda data/ e .env (ex.: /Users/maion/Projects/Eleicoes2026).
+  Instalar:
+    sed "s|__REPO__|$PWD|g" scripts/com.eleicoes2026.redes.plist > ~/Library/LaunchAgents/com.eleicoes2026.redes.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.eleicoes2026.redes.plist
+  Rodar já (teste):  launchctl kickstart -k gui/$(id -u)/com.eleicoes2026.redes
+  Remover:           launchctl bootout gui/$(id -u)/com.eleicoes2026.redes
+  O Mac precisa estar ligado e acordado às 03:00 (ou o launchd roda ao acordar).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.eleicoes2026.redes</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__REPO__/scripts/redes-diario.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO__</string>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+  <!-- data/raw não é versionado nem publicado (publicar-dados.sh só envia data/processed) -->
+  <key>StandardOutPath</key><string>__REPO__/data/raw/meta-launchd.log</string>
+  <key>StandardErrorPath</key><string>__REPO__/data/raw/meta-launchd.log</string>
+</dict>
+</plist>

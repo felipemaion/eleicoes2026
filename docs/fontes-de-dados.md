@@ -227,3 +227,57 @@ faltante/repetido na série **falha** o processamento. Última observação baix
   em 2026), recorta para 160×200 (proporção 4:5, âncora no topo para preservar o rosto), WebP q70, em
   `data/processed/fotos/<ano>/<sq>.webp` + `fotos/manifesto.json` (`sq` → `arquivo`, `origem`, `sha256`,
   `sha256_origem`). Idempotente pelo sha256 do JPEG de origem. Servido em `/fotos/<ano>/<sq>.webp`.
+
+## Redes sociais: Instagram (T-D08, ADR 0008)
+Única exceção à regra "só TSE/IBGE/BCB": as **métricas** vêm da API oficial da Meta; os **perfis** vêm do TSE.
+
+### URLs declaradas (TSE) → `redes_candidatos`
+- **Arquivo**: `https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/rede_social_candidato_{ANO}.zip`
+  (fonte `rede_social_candidato`; **não** está dentro de `consulta_cand_AAAA.zip`). Contém
+  `rede_social_candidato_AAAA_<UF>.csv` (+ `_BR`), `_BRASIL.csv` (**união** dos anteriores: não ler junto) e
+  `leiame.pdf`. Colunas: `DT_GERACAO, HH_GERACAO, AA_ELEICAO, SG_UF, CD_TIPO_ELEICAO, NM_TIPO_ELEICAO,
+  CD_ELEICAO, DS_ELEICAO, SQ_CANDIDATO, NR_ORDEM_REDE_SOCIAL, DS_URL`. 2026 (08/10): 63.213 linhas.
+- **`DS_URL` é texto livre, sem validação**: URL com `?igsh=`/`utm_`, `@handle`, `INSTAGRAM: handle`,
+  `handle - instagram`, caixa alta, `instagran`, links de post/reel/canal/`uid`, nomes com espaço e outras
+  redes. Uma linha por URL; o candidato pode declarar vários perfis (pessoal, campanha, partido).
+- **Parser** (`etl.redes.url.username_instagram`): devolve o username (minúsculo, sem `@`, 1–30 de
+  `[a-z0-9._]`) só se o texto aponta para **um perfil** do Instagram; rejeita post/reel/canal/`uid`/stories,
+  nome com espaço, texto que cite outra rede e qualquer ambiguidade. `@handle` solto é aceito como Instagram
+  (é o uso dominante no cadastro); `@handle (tiktok)` não.
+- **Saída** `data/processed/redes_candidatos/ano=AAAA/redes_candidatos.parquet`: uma linha por
+  candidatura × perfil distinto dos grupos `missao_2026` ∪ `mbl_2026` (lidos de `config/grupos.yaml`, Beraldo
+  incluído). `principal` = o de menor `NR_ORDEM_REDE_SOCIAL`; os demais ficam (`principal = false`) para a
+  análise decidir. Chave `(ano_eleicao, sq_candidato, rede, username)`. Sem CPF.
+- **2026-10-08**: 548 candidatos nos grupos · 544 com Instagram · 4 sem · 637 perfis (74 candidatos com mais
+  de um perfil) · 8 URLs que citam Instagram rejeitadas. Um mesmo `username` pode ser de dois `sq`
+  (registros duplicados da mesma pessoa): a coleta gasta uma consulta e grava um snapshot por `sq`.
+- **Conferência** (`etl redes-divergencias`): compara com `candidatos.missao.org.br` — o HTML (Next.js)
+  embute a lista como JSON (`sq`, `instagram`, `seguidores`). **Só relatório** em
+  `data/reference/redes_divergencias_missao.csv`; o site nunca alimenta dado publicado.
+
+### Coleta (Instagram Graph API, Business Discovery)
+- **Credenciais**: `.env` (`META_TOKEN`, `META_APP_ID`, `META_APP_SECRET`), fora do git. O token vai no
+  cabeçalho `Authorization: Bearer`, **nunca na URL** nem em log/manifesto/fixture (única exceção da própria
+  API: `debug_token` aceita `input_token` só na query; o cliente não imprime URLs).
+- **Conta do app**: descoberta por `GET me/accounts?fields=instagram_business_account` (id não fica no código).
+- **Chamada**: `GET /v26.0/{ig_id}?fields=business_discovery.username(U){username,name,biography,
+  followers_count,follows_count,media_count,media.limit(50)[.after(C)]{id,timestamp,media_type,
+  media_product_type,like_count,comments_count,permalink}}`.
+- **Paginação**: a Business Discovery **não manda `paging.next`**, só `paging.cursors.after` (ausente na
+  última página). Páginas vêm da mais nova para a mais antiga; para-se ao cruzar 01/01/2026 ou ao alcançar um
+  post já conhecido (reler a 1ª página atualiza curtidas/comentários dos recentes).
+- **Erros**: código 110/100 (subcódigo 2207013) = perfil **inexistente ou pessoal** — a API **não
+  distingue** os dois (mesma resposta); vira `nao_encontrado` (`nao_comercial` só se a mensagem disser).
+  Perfil indisponível é relido a cada 7 dias (não gasta chamada diária). 190/102/10/2xx = token/permissão →
+  **falha alto**. 4/17/32/613/80004 = limite → backoff 60·2ⁿ s; persistindo, sai com código 3 (retomável).
+  O uso do app vem em `x-app-usage.call_count` (% da janela de 1 h): ≥95% pausa 5 min antes da próxima.
+- **Cache**: cada resposta em `data/raw/meta/AAAA-MM-DD/<username>/<cursor>.json`; repetir no mesmo dia não
+  chama a API nem duplica linhas.
+- **Saídas** (`data/processed/redes/`): `redes_perfis.parquet` (um registro por coleta — **série de
+  snapshots**; a API não tem histórico de seguidores de terceiros, a série começa em 08/10/2026),
+  `redes_posts.parquet` (um registro por `(username, media_id)`, com a última leitura; `like_count` nulo
+  quando oculto, nunca zero) e `manifesto.json` (por rodada: início/fim UTC, `versao_api`, chamadas, perfis
+  por status). Posts só desde 01/01/2026. `timestamp`/`coletado_em` em UTC.
+- **Token**: vence em 07/12/2026. A cada coleta, `debug_token` confere; ≤15 dias avisa no stderr, vencido falha.
+- **Rodar**: `make redes` (TSE + coleta). Diário: `scripts/redes-diario.sh` + `scripts/com.eleicoes2026.redes.plist`
+  (instruções no próprio arquivo; **não instalar sem o orquestrador**).

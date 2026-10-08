@@ -363,6 +363,7 @@ dependencies = [
     { name = "pillow" },
     { name = "polars" },
     { name = "pyshp" },
+    { name = "pyyaml" },
     { name = "shapely" },
 ]
 
@@ -381,6 +382,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=11" },
     { name = "polars", specifier = ">=1.10" },
     { name = "pyshp", specifier = ">=3.1.6" },
+    { name = "pyyaml", specifier = ">=6" },
     { name = "shapely", specifier = ">=2.2.0" },
 ]
 

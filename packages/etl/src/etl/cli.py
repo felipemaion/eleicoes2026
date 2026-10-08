@@ -8,9 +8,11 @@ import logging
 import os
 import sys
 from collections.abc import Sequence
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
+import polars as pl
 from contratos import ContratoViolado
 
 from etl.download import Baixador, DownloadError
@@ -22,6 +24,11 @@ from etl.manifesto import Manifesto
 from etl.municipios import ErroMunicipios
 from etl.pipeline_geo import construir_geo
 from etl.processar import CONTAS, FONTES, ErroProcessamento, processar_fonte
+from etl.redes.coleta import coletar
+from etl.redes.divergencias import baixar_site, comparar, extrair_do_site
+from etl.redes.execucao import carregar_env, conferir_token
+from etl.redes.meta import ClienteMeta, ErroLimite, ErroMeta
+from etl.redes.tse import ErroRedes, processar_redes_tse
 from etl.secao import ALERTA_SEM_COORDENADA, processar_secao
 
 
@@ -64,7 +71,118 @@ def _parser() -> argparse.ArgumentParser:
     f.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     f.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
     f.add_argument("--baixar", action="store_true", help="baixa os ZIPs antes de processar")
+    r = sub.add_parser("redes-tse", help="URLs de redes sociais do TSE → redes_candidatos")
+    r.add_argument("--ano", type=int, default=2026)
+    r.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    r.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    r.add_argument(
+        "--repo", type=Path, default=Path("."), help="raiz com config/ e data/reference/"
+    )
+    r.add_argument("--baixar", action="store_true", help="baixa o ZIP do TSE antes de processar")
+    k = sub.add_parser("redes-coletar", help="snapshot do Instagram (Business Discovery)")
+    k.add_argument("--ano", type=int, default=2026)
+    k.add_argument("--limite", type=int, help="no máximo N usernames (medição, lotes)")
+    k.add_argument("--username", action="append", help="repetível; restringe a estes perfis")
+    k.add_argument("--env", type=Path, default=Path(".env"))
+    k.add_argument("--hoje", type=date.fromisoformat, default=None, help=argparse.SUPPRESS)
+    k.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    k.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    d = sub.add_parser("redes-divergencias", help="TSE × candidatos.missao.org.br (só relatório)")
+    d.add_argument("--ano", type=int, default=2026)
+    d.add_argument("--html", type=Path, help="HTML já baixado (padrão: baixa do site)")
+    d.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    d.add_argument(
+        "--saida", type=Path, default=Path("data/reference/redes_divergencias_missao.csv")
+    )
     return p
+
+
+def _redes_divergencias(args: argparse.Namespace) -> int:
+    base = args.raiz_processed
+    redes = base / "redes_candidatos" / f"ano={args.ano}" / "redes_candidatos.parquet"
+    cands = sorted((base / "consulta_cand" / f"ano={args.ano}").glob("*.parquet"))
+    if not redes.exists() or not cands:
+        print(
+            "FALHA redes-divergencias: rode o ETL de consulta_cand e `etl redes-tse`",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        html = args.html.read_text(encoding="utf-8") if args.html else baixar_site()
+    except (OSError, httpx.HTTPError) as e:
+        print(f"FALHA redes-divergencias: {type(e).__name__}", file=sys.stderr)
+        return 1
+    nomes = (
+        pl.scan_parquet(cands)
+        .select("sq_candidato", "nm_urna_candidato", "sg_uf")
+        .unique("sq_candidato")
+        .collect()
+    )
+    relatorio = comparar(pl.read_parquet(redes), extrair_do_site(html), nomes)
+    args.saida.parent.mkdir(parents=True, exist_ok=True)
+    relatorio.write_csv(args.saida)
+    print(
+        json.dumps(
+            relatorio["divergencia"].value_counts().sort("divergencia").to_dicts(),
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+def _redes_tse(args: argparse.Namespace) -> int:
+    try:
+        if args.baixar:
+            manifesto = Manifesto(args.raiz_raw / "manifesto.json")
+            with httpx.Client(timeout=httpx.Timeout(30.0, read=300.0)) as cliente:
+                baixador = Baixador(args.raiz_raw, manifesto, cliente)
+                for alvo in alvos(args.ano, ["rede_social_candidato"]):
+                    print(f"{baixador.baixar(alvo).value}: {alvo.destino}", flush=True)
+        stats = processar_redes_tse(args.ano, args.raiz_raw, args.raiz_processed, repo=args.repo)
+    except (ErroRedes, ContratoViolado, DownloadError) as e:
+        print(f"FALHA redes-tse: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _redes_coletar(args: argparse.Namespace) -> int:
+    """Códigos de saída: 0 ok · 1 falha (token, permissão, dados) · 3 limite — retomar depois."""
+    env = carregar_env(args.env)
+    if not env.get("META_TOKEN"):
+        print("FALHA redes-coletar: META_TOKEN ausente (.env ou ambiente)", file=sys.stderr)
+        return 1
+    arquivo = args.raiz_processed / "redes_candidatos" / f"ano={args.ano}"
+    arquivo /= "redes_candidatos.parquet"
+    if not arquivo.exists():
+        print(f"FALHA redes-coletar: {arquivo} não existe — rode `etl redes-tse`", file=sys.stderr)
+        return 1
+    candidatos = pl.read_parquet(arquivo)
+    if args.username:
+        candidatos = candidatos.filter(pl.col("username").is_in(args.username))
+    try:
+        cliente = ClienteMeta(env["META_TOKEN"])
+        conferir_token(cliente, env, args.hoje or datetime.now(UTC).date())
+        stats = coletar(
+            cliente,
+            cliente.conta_instagram(),
+            candidatos,
+            raiz_raw=args.raiz_raw,
+            raiz_processed=args.raiz_processed,
+            agora=lambda: datetime.now(UTC),
+            limite=args.limite,
+        )
+    except ErroLimite as e:
+        print(
+            f"LIMITE redes-coletar: {e}. O progresso foi gravado; retome (make redes).",
+            file=sys.stderr,
+        )
+        return 3
+    except (ErroMeta, ContratoViolado) as e:
+        print(f"FALHA redes-coletar: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+    return 0
 
 
 def _fotos(args: argparse.Namespace) -> int:
@@ -164,6 +282,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _geo(args)
     if args.comando == "fotos":
         return _fotos(args)
+    if args.comando == "redes-tse":
+        return _redes_tse(args)
+    if args.comando == "redes-divergencias":
+        return _redes_divergencias(args)
+    if args.comando == "redes-coletar":
+        return _redes_coletar(args)
     if args.comando == "secao":
         return _secao(args)
     if args.comando == "processar":

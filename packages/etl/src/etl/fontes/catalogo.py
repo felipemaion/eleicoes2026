@@ -81,6 +81,8 @@ CATALOGO: dict[str, Fonte] = {
         _tse("detalhe_votacao_secao", "detalhe_votacao_secao", "detalhe_votacao_secao"),
         _tse("eleitorado_local_votacao", "eleitorado_locais_votacao", "eleitorado_local_votacao"),
         _tse("consulta_vagas", "consulta_vagas", "consulta_vagas"),
+        # Redes sociais declaradas na candidatura (texto livre; ver etl.redes.url)
+        _tse("rede_social_candidato", "consulta_cand", "rede_social_candidato"),
         _tse("perfil_eleitorado", "perfil_eleitorado", "perfil_eleitorado"),
         _tse(
             "prestacao_contas",
