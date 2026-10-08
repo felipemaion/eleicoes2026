@@ -1,0 +1,57 @@
+{
+  "indicador": "n_baixo",
+  "spec": "docs/metodologia/indicadores.md#n-baixo",
+  "versao": 1,
+  "descricao": "n_baixo = E < 20, E = aptos × taxa_referência (taxa do mesmo candidato/grupo na UF). aptos=0 → n_baixo=true.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "limiar_20_esperados",
+      "entrada": [
+        {
+          "cd_mun_ibge": 1000001,
+          "aptos": 10000,
+          "taxa_referencia": 0.07
+        },
+        {
+          "cd_mun_ibge": 1000002,
+          "aptos": 2000,
+          "taxa_referencia": 0.0075
+        },
+        {
+          "cd_mun_ibge": 1000003,
+          "aptos": 200,
+          "taxa_referencia": 0.07
+        },
+        {
+          "cd_mun_ibge": 1000004,
+          "aptos": 0,
+          "taxa_referencia": 0.07
+        }
+      ],
+      "saida": [
+        {
+          "cd_mun_ibge": 1000001,
+          "esperado": 700.0,
+          "n_baixo": false
+        },
+        {
+          "cd_mun_ibge": 1000002,
+          "esperado": 15.0,
+          "n_baixo": true
+        },
+        {
+          "cd_mun_ibge": 1000003,
+          "esperado": 14.0,
+          "n_baixo": true
+        },
+        {
+          "cd_mun_ibge": 1000004,
+          "esperado": 0.0,
+          "n_baixo": true
+        }
+      ]
+    }
+  ]
+}

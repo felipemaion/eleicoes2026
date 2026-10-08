@@ -1,0 +1,101 @@
+{
+  "indicador": "votos_nominais",
+  "spec": "docs/metodologia/indicadores.md#votos-nominais",
+  "versao": 1,
+  "descricao": "Soma zona→município de votos nominais válidos; trânsito somado; anulados e convertidos em legenda separados.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "agregacao_zona_municipio_com_destinacoes",
+      "entrada": {
+        "votacao_candidato_munzona": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "nr_zona": 1,
+            "st_voto_em_transito": "N",
+            "nm_tipo_destinacao_votos": "Válido",
+            "qt_votos_nominais": 600,
+            "qt_votos_nominais_validos": 600
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "nr_zona": 2,
+            "st_voto_em_transito": "N",
+            "nm_tipo_destinacao_votos": "Válido",
+            "qt_votos_nominais": 95,
+            "qt_votos_nominais_validos": 95
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "nr_zona": 2,
+            "st_voto_em_transito": "S",
+            "nm_tipo_destinacao_votos": "Válido",
+            "qt_votos_nominais": 5,
+            "qt_votos_nominais_validos": 5
+          },
+          {
+            "sq_candidato": "c5",
+            "cd_mun_ibge": 1000001,
+            "nr_zona": 1,
+            "st_voto_em_transito": "N",
+            "nm_tipo_destinacao_votos": "Anulado sub judice",
+            "qt_votos_nominais": 30,
+            "qt_votos_nominais_validos": 0
+          },
+          {
+            "sq_candidato": "c6",
+            "cd_mun_ibge": 1000001,
+            "nr_zona": 1,
+            "st_voto_em_transito": "N",
+            "nm_tipo_destinacao_votos": "Válido (legenda)",
+            "qt_votos_nominais": 12,
+            "qt_votos_nominais_validos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000002,
+            "nr_zona": 3,
+            "st_voto_em_transito": "N",
+            "nm_tipo_destinacao_votos": "Válido",
+            "qt_votos_nominais": 0,
+            "qt_votos_nominais_validos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000001,
+          "votos_nominais_validos": 700,
+          "votos_anulados": 0,
+          "votos_convertidos_legenda": 0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000002,
+          "votos_nominais_validos": 0,
+          "votos_anulados": 0,
+          "votos_convertidos_legenda": 0
+        },
+        {
+          "sq_candidato": "c5",
+          "cd_mun_ibge": 1000001,
+          "votos_nominais_validos": 0,
+          "votos_anulados": 30,
+          "votos_convertidos_legenda": 0
+        },
+        {
+          "sq_candidato": "c6",
+          "cd_mun_ibge": 1000001,
+          "votos_nominais_validos": 0,
+          "votos_anulados": 0,
+          "votos_convertidos_legenda": 12
+        }
+      ]
+    }
+  ]
+}

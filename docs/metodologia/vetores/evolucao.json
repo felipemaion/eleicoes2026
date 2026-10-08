@@ -1,0 +1,96 @@
+{
+  "indicador": "evolucao",
+  "spec": "docs/metodologia/indicadores.md#evolucao-2022-2026",
+  "versao": 1,
+  "descricao": "Por AMC (área mínima comparável: município IBGE, desmembramentos agregados ao de origem). Δ penetração (‰, âncora), swing (p.p. de válidos), retenção = v26/v22 (null se v22=0), ganho absoluto.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "tres_amcs_com_desmembramento_e_v22_zero",
+      "entrada": {
+        "amc": {
+          "1000001": 1000001,
+          "1000002": 1000002,
+          "1000005": 1000002,
+          "1000003": 1000003
+        },
+        "ano_2022": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "validos": 7000,
+            "votos": 700
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2500,
+            "validos": 1900,
+            "votos": 300
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "validos": 400,
+            "votos": 0
+          }
+        ],
+        "ano_2026": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10500,
+            "validos": 7300,
+            "votos": 840
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "validos": 1500,
+            "votos": 150
+          },
+          {
+            "cd_mun_ibge": 1000005,
+            "aptos": 600,
+            "validos": 450,
+            "votos": 90
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 520,
+            "validos": 410,
+            "votos": 26
+          }
+        ]
+      },
+      "saida": [
+        {
+          "amc": 1000001,
+          "penetracao_2022": 70.0,
+          "penetracao_2026": 80.0,
+          "delta_penetracao": 10.0,
+          "swing_pp": 1.5068493151,
+          "retencao": 1.2,
+          "ganho_absoluto": 140
+        },
+        {
+          "amc": 1000002,
+          "penetracao_2022": 120.0,
+          "penetracao_2026": 92.3076923077,
+          "delta_penetracao": -27.6923076923,
+          "swing_pp": -3.4817813765,
+          "retencao": 0.8,
+          "ganho_absoluto": -60
+        },
+        {
+          "amc": 1000003,
+          "penetracao_2022": 0.0,
+          "penetracao_2026": 50.0,
+          "delta_penetracao": 50.0,
+          "swing_pp": 6.3414634146,
+          "retencao": null,
+          "ganho_absoluto": 26
+        }
+      ]
+    }
+  ]
+}

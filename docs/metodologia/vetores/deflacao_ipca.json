@@ -1,0 +1,53 @@
+{
+  "indicador": "deflacao_ipca",
+  "spec": "docs/metodologia/indicadores.md#deflacao-ipca",
+  "versao": 1,
+  "descricao": "valor_base = valor × Π_{m=origem+1}^{base} (1 + v_m/100), v_m = SGS 433 (variação % mensal). Projeto: origem set/2022, base set/2026. Mês faltante na série = erro.",
+  "tolerancia_absoluta": 1e-06,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "tres_meses",
+      "entrada": {
+        "valor": 1000.0,
+        "mes_origem": "2022-09",
+        "mes_base": "2022-12",
+        "ipca_variacao_mensal": {
+          "2022-10": 0.59,
+          "2022-11": 0.41,
+          "2022-12": 0.62
+        }
+      },
+      "saida": {
+        "fator": 1.01628634,
+        "valor_base": 1016.286339978
+      }
+    },
+    {
+      "nome": "origem_igual_base",
+      "entrada": {
+        "valor": 1000.0,
+        "mes_origem": "2022-09",
+        "mes_base": "2022-09",
+        "ipca_variacao_mensal": {}
+      },
+      "saida": {
+        "fator": 1.0,
+        "valor_base": 1000.0
+      }
+    },
+    {
+      "nome": "mes_faltante_falha",
+      "entrada": {
+        "valor": 1000.0,
+        "mes_origem": "2022-09",
+        "mes_base": "2022-12",
+        "ipca_variacao_mensal": {
+          "2022-10": 0.59,
+          "2022-12": 0.62
+        }
+      },
+      "erro": "ValueError: IPCA ausente para 2022-11"
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "indicador": "suavizacao_eb",
+  "spec": "docs/metodologia/indicadores.md#suavizacao-bayesiana-empirica",
+  "versao": 1,
+  "descricao": "EB global de Marshall (1991) por momentos: b=Σv/Σn; s²=Σn_i(r_i−b)²/Σn; a=max(s²−b/n̄,0); w_i=a/(a+b/n_i); θ_i = w_i r_i + (1−w_i) b. Taxas em proporção (multiplicar por 1000 para ‰). Áreas com n=0 ficam fora.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "quatro_municipios",
+      "entrada": [
+        {
+          "cd_mun_ibge": 1000001,
+          "votos": 700,
+          "aptos": 10000
+        },
+        {
+          "cd_mun_ibge": 1000002,
+          "votos": 300,
+          "aptos": 2000
+        },
+        {
+          "cd_mun_ibge": 1000003,
+          "votos": 0,
+          "aptos": 500
+        },
+        {
+          "cd_mun_ibge": 1000004,
+          "votos": 5,
+          "aptos": 100
+        }
+      ],
+      "saida": {
+        "b": 0.0797619048,
+        "a": 0.001092876,
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "taxa_bruta": 0.07,
+            "peso": 0.9927545312,
+            "taxa_eb": 0.0700707296
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "taxa_bruta": 0.15,
+            "peso": 0.9647930203,
+            "taxa_eb": 0.1475271288
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "taxa_bruta": 0.0,
+            "peso": 0.872625496,
+            "taxa_eb": 0.0101596331
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "taxa_bruta": 0.05,
+            "peso": 0.5780898596,
+            "taxa_eb": 0.0625568494
+          }
+        ]
+      }
+    },
+    {
+      "nome": "sem_variancia_entre_areas_a_zero",
+      "entrada": [
+        {
+          "cd_mun_ibge": 1000001,
+          "votos": 10,
+          "aptos": 1000
+        },
+        {
+          "cd_mun_ibge": 1000002,
+          "votos": 20,
+          "aptos": 2000
+        },
+        {
+          "cd_mun_ibge": 1000003,
+          "votos": 30,
+          "aptos": 3000
+        }
+      ],
+      "saida": {
+        "b": 0.01,
+        "a": 0.0,
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "taxa_bruta": 0.01,
+            "peso": 0.0,
+            "taxa_eb": 0.01
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "taxa_bruta": 0.01,
+            "peso": 0.0,
+            "taxa_eb": 0.01
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "taxa_bruta": 0.01,
+            "peso": 0.0,
+            "taxa_eb": 0.01
+          }
+        ]
+      }
+    }
+  ]
+}

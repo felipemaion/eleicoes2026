@@ -1,0 +1,89 @@
+{
+  "indicador": "por_candidato",
+  "spec": "docs/metodologia/indicadores.md#por-candidato-e-mesmos-candidatos",
+  "versao": 1,
+  "descricao": "Normalização por candidatura apta do grupo no cargo; recorte 'mesmos candidatos' = pessoa_id presente nos dois anos.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "grupos_de_tamanhos_diferentes",
+      "entrada": {
+        "grupo_2022": {
+          "votos": 60000,
+          "aptos": 3000000,
+          "n_candidatos": 6
+        },
+        "grupo_2026": {
+          "votos": 90000,
+          "aptos": 3100000,
+          "n_candidatos": 15
+        }
+      },
+      "saida": {
+        "votos_por_candidato_2022": 10000.0,
+        "votos_por_candidato_2026": 6000.0,
+        "penetracao_2022": 20.0,
+        "penetracao_2026": 29.0322580645,
+        "penetracao_por_candidato_2022": 3.3333333333,
+        "penetracao_por_candidato_2026": 1.935483871
+      }
+    },
+    {
+      "nome": "grupo_sem_candidatos",
+      "entrada": {
+        "grupo": {
+          "votos": 0,
+          "aptos": 1000,
+          "n_candidatos": 0
+        }
+      },
+      "saida": {
+        "votos_por_candidato": null,
+        "penetracao_por_candidato": null
+      }
+    },
+    {
+      "nome": "mesmos_candidatos",
+      "entrada": {
+        "ano_2022": [
+          {
+            "pessoa_id": "p1",
+            "votos": 20000
+          },
+          {
+            "pessoa_id": "p2",
+            "votos": 15000
+          },
+          {
+            "pessoa_id": "p3",
+            "votos": 25000
+          }
+        ],
+        "ano_2026": [
+          {
+            "pessoa_id": "p1",
+            "votos": 30000
+          },
+          {
+            "pessoa_id": "p3",
+            "votos": 10000
+          },
+          {
+            "pessoa_id": "p9",
+            "votos": 50000
+          }
+        ]
+      },
+      "saida": {
+        "pessoa_ids": [
+          "p1",
+          "p3"
+        ],
+        "votos_2022": 45000,
+        "votos_2026": 40000,
+        "retencao": 0.8888888889
+      }
+    }
+  ]
+}

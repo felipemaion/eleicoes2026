@@ -1,0 +1,235 @@
+{
+  "indicador": "lq",
+  "spec": "docs/metodologia/indicadores.md#quociente-locacional",
+  "versao": 1,
+  "descricao": "LQ_ci = (v_ci/V_c)/(v_i/V), v_i e V = válidos do cargo. null se V_c=0 ou v_i=0.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "u1_c1",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "votos": 700
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000002,
+            "votos": 300
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000001,
+          "lq": 0.89
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000002,
+          "lq": 1.78
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000003,
+          "lq": 0.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000004,
+          "lq": null
+        }
+      ]
+    },
+    {
+      "nome": "u1_c2",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000003,
+            "votos": 40
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000001,
+          "lq": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000002,
+          "lq": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000003,
+          "lq": 22.25
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000004,
+          "lq": null
+        }
+      ]
+    },
+    {
+      "nome": "u1_c4",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000001,
+          "lq": null
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000002,
+          "lq": null
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000003,
+          "lq": null
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000004,
+          "lq": null
+        }
+      ]
+    }
+  ]
+}

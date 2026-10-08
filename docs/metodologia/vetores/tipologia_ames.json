@@ -1,0 +1,91 @@
+{
+  "indicador": "tipologia_ames",
+  "spec": "docs/metodologia/indicadores.md#tipologia-de-ames",
+  "versao": 1,
+  "descricao": "Eixos: concentração = índice G; dominância = D de Ames. Corte = mediana do cargo×UF entre candidaturas com votos ≥ 10% do QE (todas as legendas). Acima da mediana (estrito) = concentrado/dominante.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "seis_candidatos_um_abaixo_do_limiar",
+      "entrada": {
+        "quociente_eleitoral": 2967,
+        "candidatos": [
+          {
+            "sq_candidato": "t1",
+            "votos": 5000,
+            "indice_g": 0.3,
+            "dominancia_ames": 0.2
+          },
+          {
+            "sq_candidato": "t2",
+            "votos": 4000,
+            "indice_g": 0.05,
+            "dominancia_ames": 0.25
+          },
+          {
+            "sq_candidato": "t3",
+            "votos": 3000,
+            "indice_g": 0.4,
+            "dominancia_ames": 0.02
+          },
+          {
+            "sq_candidato": "t4",
+            "votos": 2000,
+            "indice_g": 0.02,
+            "dominancia_ames": 0.01
+          },
+          {
+            "sq_candidato": "t5",
+            "votos": 1000,
+            "indice_g": 0.1,
+            "dominancia_ames": 0.08
+          },
+          {
+            "sq_candidato": "t6",
+            "votos": 100,
+            "indice_g": 0.9,
+            "dominancia_ames": 0.5
+          }
+        ]
+      },
+      "saida": {
+        "limiar_votos": 296.7,
+        "mediana_g": 0.1,
+        "mediana_dominancia": 0.08,
+        "candidatos": [
+          {
+            "sq_candidato": "t1",
+            "tipo": "concentrado-dominante",
+            "na_populacao_referencia": true
+          },
+          {
+            "sq_candidato": "t2",
+            "tipo": "disperso-dominante",
+            "na_populacao_referencia": true
+          },
+          {
+            "sq_candidato": "t3",
+            "tipo": "concentrado-compartilhado",
+            "na_populacao_referencia": true
+          },
+          {
+            "sq_candidato": "t4",
+            "tipo": "disperso-compartilhado",
+            "na_populacao_referencia": true
+          },
+          {
+            "sq_candidato": "t5",
+            "tipo": "disperso-compartilhado",
+            "na_populacao_referencia": true
+          },
+          {
+            "sq_candidato": "t6",
+            "tipo": "concentrado-dominante",
+            "na_populacao_referencia": false
+          }
+        ]
+      }
+    }
+  ]
+}

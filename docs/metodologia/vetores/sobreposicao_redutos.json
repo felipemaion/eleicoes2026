@@ -1,0 +1,86 @@
+{
+  "indicador": "sobreposicao_redutos",
+  "spec": "docs/metodologia/indicadores.md#sobreposicao-de-redutos",
+  "versao": 1,
+  "descricao": "ρ de Spearman (postos médios em empates) entre LQ 2022 e 2026 por AMC; reduto = LQ ≥ 2 e não n_baixo; Jaccard dos conjuntos.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "seis_amcs",
+      "entrada": [
+        {
+          "amc": 1000001,
+          "lq_2022": 2.5,
+          "lq_2026": 3.1,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000002,
+          "lq_2022": 1.0,
+          "lq_2026": 0.8,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000003,
+          "lq_2022": 0.5,
+          "lq_2026": 0.5,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000004,
+          "lq_2022": 0.0,
+          "lq_2026": 0.4,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000005,
+          "lq_2022": 3.0,
+          "lq_2026": 2.0,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000006,
+          "lq_2022": 0.2,
+          "lq_2026": 0.5,
+          "n_baixo": true
+        }
+      ],
+      "saida": {
+        "spearman": 0.927633657,
+        "redutos_2022": [
+          1000001,
+          1000005
+        ],
+        "redutos_2026": [
+          1000001,
+          1000005
+        ],
+        "jaccard": 1.0
+      }
+    },
+    {
+      "nome": "sem_redutos_e_variancia_zero",
+      "entrada": [
+        {
+          "amc": 1000001,
+          "lq_2022": 1.0,
+          "lq_2026": 1.0,
+          "n_baixo": false
+        },
+        {
+          "amc": 1000002,
+          "lq_2022": 1.0,
+          "lq_2026": 1.0,
+          "n_baixo": false
+        }
+      ],
+      "saida": {
+        "spearman": null,
+        "redutos_2022": [],
+        "redutos_2026": [],
+        "jaccard": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "indicador": "moran_lisa",
+  "spec": "docs/metodologia/indicadores.md#moran-global-e-lisa",
+  "versao": 1,
+  "descricao": "Moran I e LISA (Anselin 1995) com W de contiguidade rainha padronizada por linha, sobre taxas EB. Vetor cobre a estatística (determinística); pseudo-p por permutação (999, semente fixa) não entra no vetor.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "cadeia_crescente_autocorrelacao_positiva",
+      "entrada": {
+        "valores": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ],
+        "vizinhos": {
+          "0": [
+            1
+          ],
+          "1": [
+            0,
+            2
+          ],
+          "2": [
+            1,
+            3
+          ],
+          "3": [
+            2
+          ]
+        }
+      },
+      "saida": {
+        "moran_i": 0.4,
+        "lisa": [
+          0.6,
+          0.2,
+          0.2,
+          0.6
+        ],
+        "quadrante": [
+          "baixo-baixo",
+          "baixo-baixo",
+          "alto-alto",
+          "alto-alto"
+        ]
+      }
+    },
+    {
+      "nome": "alternada_autocorrelacao_negativa",
+      "entrada": {
+        "valores": [
+          1.0,
+          4.0,
+          1.0,
+          4.0
+        ],
+        "vizinhos": {
+          "0": [
+            1
+          ],
+          "1": [
+            0,
+            2
+          ],
+          "2": [
+            1,
+            3
+          ],
+          "3": [
+            2
+          ]
+        }
+      },
+      "saida": {
+        "moran_i": -1.0,
+        "lisa": [
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ],
+        "quadrante": [
+          "baixo-alto",
+          "alto-baixo",
+          "baixo-alto",
+          "alto-baixo"
+        ]
+      }
+    }
+  ]
+}

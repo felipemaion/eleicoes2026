@@ -1,0 +1,35 @@
+{
+  "indicador": "votos_km2",
+  "spec": "docs/metodologia/indicadores.md#votos-por-km2",
+  "versao": 1,
+  "descricao": "Votos ÷ área (km²) do município — só contexto (tooltip), nunca camada principal.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "basico_e_area_zero",
+      "entrada": [
+        {
+          "cd_mun_ibge": 1000001,
+          "votos": 700,
+          "area_km2": 140.0
+        },
+        {
+          "cd_mun_ibge": 1000009,
+          "votos": 10,
+          "area_km2": 0.0
+        }
+      ],
+      "saida": [
+        {
+          "cd_mun_ibge": 1000001,
+          "votos_km2": 5.0
+        },
+        {
+          "cd_mun_ibge": 1000009,
+          "votos_km2": null
+        }
+      ]
+    }
+  ]
+}
