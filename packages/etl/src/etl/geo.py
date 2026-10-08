@@ -53,7 +53,10 @@ def ler_malha(caminho: Path, *, tolerancia: float = 0.0005) -> list[tuple[int, B
 def camada_municipios(
     malha: list[tuple[int, BaseGeometry]], municipios: pl.DataFrame
 ) -> list[Feature]:
-    """Features com ``cd_mun_ibge`` (int) e ``nm``; falha se algum município não tiver geometria."""
+    """Features com ``cd_mun_ibge``, ``nome`` e ``cd_amc`` (AMC, usada no mapa de evolução).
+
+    Falha se algum município não tiver geometria.
+    """
     por_cod = dict(malha)
     faltam = sorted(set(municipios["cd_mun_ibge"].to_list()) - set(por_cod))
     if faltam:
@@ -61,17 +64,19 @@ def camada_municipios(
     return [
         {
             "type": "Feature",
-            "properties": {"cd_mun_ibge": cod, "nm": nm},
+            "properties": {"cd_mun_ibge": cod, "nome": nm, "cd_amc": amc},
             "geometry": mapping(por_cod[cod]),
         }
-        for cod, nm in municipios.sort("cd_mun_ibge")
-        .select("cd_mun_ibge", "nm_municipio")
+        for cod, nm, amc in municipios.sort("cd_mun_ibge")
+        .select("cd_mun_ibge", "nm_municipio", "cd_amc")
         .iter_rows()
     ]
 
 
 def camada_zonas(
-    locais: pl.DataFrame, poligonos: dict[int, BaseGeometry]
+    locais: pl.DataFrame,
+    poligonos: dict[int, BaseGeometry],
+    nomes_municipio: dict[int, str] | None = None,
 ) -> tuple[list[Feature], RelatorioZonas]:
     """Voronoi por município a partir de ``locais`` (colunas de eleitorado_local_votacao)."""
     rel = RelatorioZonas()
@@ -91,6 +96,7 @@ def camada_zonas(
             if lat is not None and lon is not None
         ]
         declaradas = set(grupo["nr_zona"].to_list())
+        nm = (nomes_municipio or {}).get(cod)
         zonas = zonas_do_municipio(poligonos[cod], itens)
         rel.zonas_sem_poligono += [f"{cod}-{z}" for z in sorted(declaradas - set(zonas))]
         for z, geom in sorted(zonas.items()):
@@ -100,7 +106,12 @@ def camada_zonas(
             feats.append(
                 {
                     "type": "Feature",
-                    "properties": {"cd_mun_ibge": cod, "nr_zona": z, "id": f"{cod}-{z}"},
+                    "properties": {
+                        "cd_mun_ibge": cod,
+                        "nr_zona": z,
+                        "id": f"{cod}-{z}",
+                        "nome": f"{nm} — zona {z}" if nm else f"Zona {z}",
+                    },
                     "geometry": mapping(geom),
                 }
             )
@@ -112,10 +123,31 @@ def escrever_geojsonseq(caminho: Path, features: list[Feature]) -> None:
     caminho.write_text("\n".join(json.dumps(f, ensure_ascii=False) for f in features) + "\n")
 
 
+def _limites(arquivo: Path) -> list[float]:
+    """``[oeste, sul, leste, norte]`` das feições de um GeoJSONSeq."""
+    caixas = [
+        shape(json.loads(linha)["geometry"]).bounds
+        for linha in arquivo.read_text().splitlines()
+        if linha
+    ]
+    if not caixas:
+        raise ErroGeo(f"{arquivo.name} sem feições")
+    oeste, sul, leste, norte = zip(*caixas, strict=True)
+    return [min(oeste), min(sul), max(leste), max(norte)]
+
+
 def gerar_pmtiles(
-    camadas: dict[str, Path], saida: Path, *, zoom_min: int = 3, zoom_max: int = 10
+    camadas: dict[str, Path],
+    saida: Path,
+    *,
+    ids: dict[str, str],
+    zoom_min: int = 3,
+    zoom_max: int = 10,
 ) -> Path:
     """GeoJSONSeq por camada → ``municipios.<hash12>.pmtiles`` + ``manifesto.json``.
+
+    ``ids`` diz qual propriedade identifica a feição em cada camada; o manifesto
+    (``camadas.<nome>`` = arquivo, camada, id, limites) é o contrato com o web.
 
     O hash é do conteúdo do PMTiles: URL nova a cada mudança, cache eterno no Caddy.
     """
@@ -148,7 +180,15 @@ def gerar_pmtiles(
                 "arquivo": final.name,
                 "sha256": sha.hexdigest(),
                 "bytes": final.stat().st_size,
-                "camadas": list(camadas),
+                "camadas": {
+                    nome: {
+                        "arquivo": final.name,
+                        "camada": nome,
+                        "id": ids[nome],
+                        "limites": _limites(arq),
+                    }
+                    for nome, arq in camadas.items()
+                },
                 "zoom": [zoom_min, zoom_max],
                 "gerado_em": datetime.now(UTC).isoformat(timespec="seconds"),
             },

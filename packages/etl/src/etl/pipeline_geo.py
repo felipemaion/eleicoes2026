@@ -76,12 +76,13 @@ def construir_geo(raiz_raw: Path, raiz_proc: Path, saida: Path) -> dict[str, obj
         camadas[nome] = trabalho / f"{nome}.geojsonl"
         escrever_geojsonseq(camadas[nome], feats)
 
+    nomes = dict(mun.select("cd_mun_ibge", "nm_municipio").iter_rows())
     stats: dict[str, object] = {"municipios": mun.height, "ufs": len(feats_uf)}
     for ano in ANOS_ZONAS:
         locais = pl.read_parquet(
             raiz_proc / "eleitorado_local_votacao" / f"ano={ano}" / "*.parquet"
         )
-        feats, rel = camada_zonas(locais, poligonos)
+        feats, rel = camada_zonas(locais, poligonos, nomes)
         camadas[f"zonas_{ano}"] = trabalho / f"zonas_{ano}.geojsonl"
         escrever_geojsonseq(camadas[f"zonas_{ano}"], feats)
         stats[f"zonas_{ano}"] = {
@@ -89,6 +90,10 @@ def construir_geo(raiz_raw: Path, raiz_proc: Path, saida: Path) -> dict[str, obj
             "sem_poligono": rel.zonas_sem_poligono,
             "locais_sem_municipio": rel.locais_sem_municipio,
         }
-    pm = gerar_pmtiles(camadas, saida)
+    ids = {
+        n: ("cd_mun_ibge" if n == "municipios" else "cd_uf" if n == "ufs" else "id")
+        for n in camadas
+    }
+    pm = gerar_pmtiles(camadas, saida, ids=ids)
     stats["pmtiles"] = {"arquivo": pm.name, "bytes": pm.stat().st_size}
     return stats
