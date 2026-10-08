@@ -68,7 +68,8 @@ def test_campos_e_limites_dos_indicadores(textos: dict[str, Any]) -> None:
     for chave, ind in textos["indicadores"].items():
         for campo in CAMPOS_INDICADOR:
             valor = ind.get(campo)
-            assert isinstance(valor, str) and valor.strip(), f"{chave}.{campo} vazio"
+            assert isinstance(valor, str), f"{chave}.{campo} não é texto"
+            assert valor.strip(), f"{chave}.{campo} vazio"
             if campo in limites:
                 assert len(valor) <= limites[campo], (
                     f"{chave}.{campo} tem {len(valor)} caracteres (máx. {limites[campo]})"
@@ -89,7 +90,8 @@ def test_telas_completas_e_com_limites(textos: dict[str, Any]) -> None:
     for nome, tela in textos["telas"].items():
         for campo in CAMPOS_TELA:
             valor = tela.get(campo)
-            assert isinstance(valor, str) and valor.strip(), f"tela {nome}.{campo} vazio"
+            assert isinstance(valor, str), f"tela {nome}.{campo} não é texto"
+            assert valor.strip(), f"tela {nome}.{campo} vazio"
             assert len(valor) <= limites[campo], f"tela {nome}.{campo} acima do limite"
         for aviso in tela["avisos"]:
             assert aviso in textos["avisos"], f"tela {nome} cita aviso inexistente {aviso!r}"
@@ -102,7 +104,8 @@ def test_avisos_padronizados(textos: dict[str, Any]) -> None:
     for obrigatorio in AVISOS_OBRIGATORIOS:
         assert obrigatorio in textos["avisos"], f"aviso obrigatório ausente: {obrigatorio}"
     for chave, aviso in textos["avisos"].items():
-        assert aviso["titulo"].strip() and aviso["texto"].strip(), f"aviso {chave} vazio"
+        assert aviso["titulo"].strip(), f"aviso {chave} sem título"
+        assert aviso["texto"].strip(), f"aviso {chave} sem texto"
         assert len(aviso["titulo"]) <= limites["titulo"]
         assert len(aviso["texto"]) <= limites["aviso"], f"aviso {chave} acima do limite"
         assert aviso["nivel"] in {"info", "atencao"}
@@ -129,7 +132,8 @@ def test_placeholders_declarados(textos: dict[str, Any]) -> None:
 
 def test_sem_espacos_sobrando(textos: dict[str, Any]) -> None:
     for s in _textos_de(textos):
-        assert s == s.strip() and "  " not in s, f"espaço sobrando em {s!r}"
+        assert s == s.strip(), f"espaço nas pontas em {s!r}"
+        assert "  " not in s, f"espaço duplo em {s!r}"
 
 
 def test_pagina_como_ler_existe_e_cobre_os_avisos() -> None:
