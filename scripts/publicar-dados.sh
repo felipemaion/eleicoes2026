@@ -26,7 +26,8 @@ if find "$ORIGEM" -name '*.csv' -o -name '.etl-*' | grep -q .; then
 fi
 
 echo "== datasets"
-"$RSYNC" -az --delete --exclude 'tiles/' \
+# Fotos: só o manifesto vai para datasets/ (a API consulta quais existem); as imagens vão para public/fotos/.
+"$RSYNC" -az --delete --exclude 'tiles/' --exclude 'fotos/20*/' \
   -e "ssh -i $HOME/.ssh/eleicoes-rsync-datasets -o IdentitiesOnly=yes" \
   "$ORIGEM/" "$DESTINO:"
 
@@ -36,5 +37,11 @@ if [ -d "$ORIGEM/tiles" ]; then
   "$RSYNC" -az --delete --include 'manifesto.json' --include '*.pmtiles' --exclude '*' \
     -e "ssh -i $HOME/.ssh/eleicoes-rsync-public -o IdentitiesOnly=yes" \
     "$ORIGEM/tiles/" "$DESTINO:tiles/"
+fi
+if [ -d "$ORIGEM/fotos" ]; then
+  echo "== fotos"
+  "$RSYNC" -az --delete --include '20*/' --include '20*/*.webp' --exclude '*' \
+    -e "ssh -i $HOME/.ssh/eleicoes-rsync-public -o IdentitiesOnly=yes" \
+    "$ORIGEM/fotos/" "$DESTINO:fotos/"
 fi
 echo "publicado. A API relê os dados no próximo deploy/restart (dt_geracao em /api/health)."

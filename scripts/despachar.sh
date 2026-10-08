@@ -17,7 +17,8 @@ alvo="$("$RAIZ/scripts/pane-do-papel.sh" "$PAPEL")"
 
 if [ "$LIMPAR" = "--limpar" ]; then
   tmux send-keys -t "$alvo" "/clear" C-m
-  sleep 2
+  # O /clear leva alguns segundos; mensagem enviada antes disso se perde.
+  sleep 6
 fi
 
 "$RAIZ/scripts/agent-title.sh" "$PAPEL" inicio "$TAREFA" "$DESCRICAO" >/dev/null

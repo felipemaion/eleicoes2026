@@ -81,11 +81,11 @@ jobs:
           printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
       - name: rsync do bundle (preserva tiles/)
         # O destino é imposto pelo servidor (rrsync preso a public/). --delete remove assets antigos,
-        # mas tiles/ é excluído para não apagar os PMTiles enviados pelo ETL.
+        # mas tiles/ e fotos/ são excluídos: vêm do ETL local (publicar-dados.sh).
         env:
           ALVO: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
         run: >
-          rsync -az --delete --exclude 'tiles/'
+          rsync -az --delete --exclude 'tiles/' --exclude 'fotos/'
           -e "ssh -i ~/.ssh/rsync -o IdentitiesOnly=yes"
           dist/ "$ALVO:"
 
