@@ -39,7 +39,7 @@ REDES_PERFIS = Contrato(
         "username": pl.Utf8, "status": pl.Utf8, "followers_count": pl.Int64,
         "follows_count": pl.Int64, "media_count": pl.Int64, "coletado_em": _UTC,
     },
-    chave=("sq_candidato", "ano_eleicao", "rede", "coletado_em"),
+    chave=("sq_candidato", "ano_eleicao", "rede", "username", "coletado_em"),
     nao_nulas=("sq_candidato", "ano_eleicao", "rede", "username", "status", "coletado_em"),
     faixas={
         "followers_count": (0, 10**10), "follows_count": (0, 10**10), "media_count": (0, 10**8),

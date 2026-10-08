@@ -17,6 +17,7 @@ from etl.redes.meta import ClienteMeta, ErroMeta
 
 TAM_PAGINA = 2  # a API real devolve até 50; páginas pequenas exercitam o cursor
 DESDE = date(2026, 1, 1)
+TOKEN = "tok-secreto-xyz"  # noqa: S105 - valor sintético
 
 
 def _post(i: int, dia: str, **extra: Any) -> dict[str, Any]:
@@ -46,7 +47,9 @@ class Grafo:
     def __call__(self, req: httpx.Request) -> httpx.Response:
         self.pedidos.append(req)
         if req.url.path.endswith("/me/accounts"):
-            return httpx.Response(200, json={"data": [{"instagram_business_account": {"id": "IG"}}]})
+            return httpx.Response(
+                200, json={"data": [{"instagram_business_account": {"id": "IG"}}]}
+            )
         campos = req.url.params["fields"]
         username = re.search(r"username\(([^)]+)\)", campos)
         assert username
@@ -125,7 +128,7 @@ def _rodar(
     **kw: Any,
 ) -> dict[str, Any]:
     cliente = ClienteMeta(
-        "tok", http=httpx.Client(transport=httpx.MockTransport(grafo)), dormir=lambda _: None
+        TOKEN, http=httpx.Client(transport=httpx.MockTransport(grafo)), dormir=lambda _: None
     )
     return coletar(
         cliente,
@@ -247,7 +250,7 @@ def test_manifesto_registra_versao_da_api_horario_e_nunca_o_token(
 ) -> None:
     _rodar(grafo, tmp_path, _candidatos((1, "ana")), DIA1)
     bruto = (tmp_path / "proc/redes/manifesto.json").read_text(encoding="utf-8")
-    assert "tok" not in bruto.replace("total", "")  # o token sintético é "tok"
+    assert TOKEN not in bruto
     [coleta] = json.loads(bruto)["coletas"]
     assert coleta["versao_api"] == "v26.0"
     assert coleta["iniciada_em"] == "2026-10-08T15:00:00+00:00"
