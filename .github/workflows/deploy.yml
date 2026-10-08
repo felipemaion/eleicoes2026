@@ -17,7 +17,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 env:
   IMAGEM: ghcr.io/felipemaion/eleicoes2026-api
@@ -26,6 +25,12 @@ jobs:
   imagem-api:
     name: Imagem da API (arm64)
     runs-on: ubuntu-24.04-arm
+    # Só a main publica :latest (o servidor faz pull dessa tag); o environment também é restrito à main.
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -49,6 +54,7 @@ jobs:
   web:
     name: Bundle web
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     environment: production
     defaults:
       run:
@@ -66,32 +72,42 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Chave e known_hosts
+        env:
+          CHAVE: ${{ secrets.RSYNC_SSH_KEY }}
+          HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.RSYNC_SSH_KEY }}" > ~/.ssh/rsync && chmod 600 ~/.ssh/rsync
-          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "$CHAVE" > ~/.ssh/rsync && chmod 600 ~/.ssh/rsync
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
       - name: rsync do bundle (preserva tiles/)
         # O destino é imposto pelo servidor (rrsync preso a public/). --delete remove assets antigos,
         # mas tiles/ é excluído para não apagar os PMTiles enviados pelo ETL.
+        env:
+          ALVO: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
         run: >
           rsync -az --delete --exclude 'tiles/'
           -e "ssh -i ~/.ssh/rsync -o IdentitiesOnly=yes"
-          dist/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:"
+          dist/ "$ALVO:"
 
   deploy:
     name: Deploy no servidor
     needs: [imagem-api, web]
-    if: ${{ !failure() && !cancelled() }}
+    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Chave e known_hosts
+        env:
+          CHAVE: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
-          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "$CHAVE" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$HOSTS" > ~/.ssh/known_hosts
       - name: Dispara deploy.sh (forced-command; gate de health no servidor)
-        run: ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" deploy
+        env:
+          ALVO: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "$ALVO" deploy
       - name: Verificação pública
         run: |
           curl -fsS https://eleicoes2026.maionesys.com/api/health
