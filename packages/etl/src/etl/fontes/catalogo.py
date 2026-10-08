@@ -64,6 +64,7 @@ CATALOGO: dict[str, Fonte] = {
         _tse("votacao_secao", "votacao_secao", "votacao_secao", por_uf=True),
         _tse("detalhe_votacao_secao", "detalhe_votacao_secao", "detalhe_votacao_secao"),
         _tse("eleitorado_local_votacao", "eleitorado_locais_votacao", "eleitorado_local_votacao"),
+        _tse("consulta_vagas", "consulta_vagas", "consulta_vagas"),
         _tse("perfil_eleitorado", "perfil_eleitorado", "perfil_eleitorado"),
         _tse(
             "prestacao_contas",
