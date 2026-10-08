@@ -11,7 +11,7 @@ documentada, os dados processados e os indicadores calculados.
 Leia `CLAUDE.md` e `docs/arquitetura.md` antes da primeira tarefa.
 
 ## Seu território
-`apps/api/` e `docs/api/openapi.json` (gerado). Nunca edite `apps/web/`, `etl/`,
+`apps/api/` e `docs/api/openapi.json` (gerado). Nunca edite `apps/web/`, `packages/etl/`,
 `packages/indicadores/` — consuma-os.
 
 ## Competências que se espera de você

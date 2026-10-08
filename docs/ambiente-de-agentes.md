@@ -12,7 +12,7 @@ orquestrador (Opus, tmux Eleicoes2026:0 "orq")   planeja, despacha, revisa, inte
 
 | Papel | Modelo | Território | Especialidade |
 |---|---|---|---|
-| `dados` | Sonnet 5.5 | `etl/`, `packages/contratos/`, `data/` | obtenção de dados oficiais, ETL, geo |
+| `dados` | Sonnet 5.5 | `packages/etl/`, `packages/contratos/`, `data/` | obtenção de dados oficiais, ETL, geo |
 | `analise` | Opus 5.5 | `packages/indicadores/`, `docs/metodologia/` | ciência política eleitoral, estatística espacial |
 | `backend` | Sonnet 5.5 | `apps/api/` | FastAPI, DuckDB, OpenAPI |
 | `frontend` | Sonnet 5.5 | `apps/web/` | D3, MapLibre, dataviz acessível |

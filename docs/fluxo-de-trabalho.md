@@ -16,6 +16,10 @@ httpx) → E2E Playwright (fluxos principais). Cobertura ≥ 80% por pacote.
 - Uma Issue por tarefa (`T-xxx` no título), com labels de papel e fase. PR com `Closes #N`,
   resumo, como testar, checklist.
 - Merge **squash** pelo orquestrador após CI verde e revisão.
+- Antes de entregar: `git fetch && git rebase origin/main`. Conflito em `uv.lock` ou
+  `pnpm-lock.yaml`: aceite a versão da main e regenere (`uv lock` / `pnpm install`) — nunca edite
+  lockfile à mão.
+- Dependência nova num pacote: `uv add --package <pacote> <dep>` (o workspace é um só).
 
 ## Gate de PR (orquestrador)
 1. Ler o handoff e o diff.

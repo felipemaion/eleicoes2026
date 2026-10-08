@@ -2,7 +2,7 @@
 
 - **Status:** aceito · 2026-10-07
 - **Contexto:** pedido explícito por FastAPI e D3.js com sistema de mapa; quatro agentes em paralelo.
-- **Decisão:** monorepo (`etl/`, `packages/`, `apps/api`, `apps/web`) com workspace `uv` (Python 3.12)
+- **Decisão:** monorepo (`packages/etl/`, `packages/`, `apps/api`, `apps/web`) com workspace `uv` (Python 3.12)
   e `pnpm` (TypeScript). Mapa base MapLibre GL (open source, sem API key); D3 v7 para escalas,
   legendas e gráficos. Sem framework de UI.
 - **Consequências:** contratos e docs num só lugar; territórios por pasta evitam conflito entre

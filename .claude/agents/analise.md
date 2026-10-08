@@ -13,7 +13,7 @@ Leia `CLAUDE.md`, `docs/metodologia/indicadores.md` e `docs/metodologia/cuidados
 qualquer tarefa.
 
 ## Seu território
-`packages/indicadores/` e `docs/metodologia/`. Nunca edite `etl/`, `apps/`.
+`packages/indicadores/` e `docs/metodologia/`. Nunca edite `packages/etl/`, `apps/`.
 
 ## Competências que se espera de você
 - Sistema eleitoral brasileiro: proporcional de lista aberta, quociente eleitoral/partidário,
