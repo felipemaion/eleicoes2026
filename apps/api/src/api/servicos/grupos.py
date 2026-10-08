@@ -39,10 +39,15 @@ class Catalogo:
     """Grupos e comparações carregados uma vez no lifespan (somente leitura depois)."""
 
     def __init__(
-        self, grupos: Mapping[str, DefinicaoGrupo], comparacoes: Mapping[str, Comparacao]
+        self,
+        grupos: Mapping[str, DefinicaoGrupo],
+        comparacoes: Mapping[str, Comparacao],
+        indicados: frozenset[int] = frozenset(),
     ) -> None:
         self.grupos = dict(grupos)
         self.comparacoes = dict(comparacoes)
+        # `sq_candidato` (de qualquer ano; os SQ do TSE não colidem) marcados `origem=indicado`.
+        self.indicados = indicados
 
     def grupo(self, grupo_id: str) -> DefinicaoGrupo:
         """Grupo pelo id; desconhecido → 422 (parâmetro inválido, não recurso ausente)."""
@@ -74,13 +79,31 @@ def _sqs_da_lista(raiz: Path, lista: Mapping[str, object]) -> frozenset[int]:
     return frozenset(sqs)
 
 
+def _sqs_indicados(raiz: Path, lista: Mapping[str, object]) -> frozenset[int]:
+    """SQs da coluna da lista cuja linha tem `origem=indicado` (listas sem `origem`: nenhum)."""
+    arquivo = raiz / str(lista["arquivo"])
+    coluna = str(lista["coluna"])
+    with arquivo.open(encoding="utf-8", newline="") as f:
+        leitor = csv.DictReader(f)
+        if "origem" not in (leitor.fieldnames or []):
+            return frozenset()  # a lista não classifica a origem: ninguém é "indicado" por ela
+        return frozenset(
+            int(linha[coluna])
+            for linha in leitor
+            if linha["origem"] == "indicado" and linha[coluna].strip()
+        )
+
+
 def carregar_catalogo(arquivo: Path, raiz: Path) -> Catalogo:
     """Lê grupos e comparações; CSV de lista é relativo a `raiz`. Arquivo ausente falha alto."""
     bruto = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
     grupos = {}
+    indicados: set[int] = set()
     for gid, g in bruto["grupos"].items():
         criterio = g["criterio"]
         lista = criterio.get("lista")
+        if lista:
+            indicados |= _sqs_indicados(raiz, lista)
         grupos[gid] = DefinicaoGrupo(
             id=gid,
             rotulo=g["rotulo"],
@@ -92,7 +115,7 @@ def carregar_catalogo(arquivo: Path, raiz: Path) -> Catalogo:
         cid: Comparacao(id=cid, rotulo=c["rotulo"], de=c["de"], para=c["para"])
         for cid, c in (bruto.get("comparacoes") or {}).items()
     }
-    return Catalogo(grupos, comparacoes)
+    return Catalogo(grupos, comparacoes, frozenset(indicados))
 
 
 def candidaturas_do_grupo(

@@ -164,6 +164,7 @@ def test_mapa_municipio_penetracao_do_grupo(api: TestClient) -> None:
         "aptos": 15000,
         "validos": 10500,
         "taxa": pytest.approx(1100 * 1000 / 15000),
+        "nome": "São Paulo",
     }
     escala = corpo["escala_sugerida"]
     assert isinstance(escala, dict)

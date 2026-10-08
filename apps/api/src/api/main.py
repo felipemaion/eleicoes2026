@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from api.aquecimento import Aquecimento
 from api.cache_http import instalar_cache
 from api.cache_servico import CacheLRU
 from api.config import VERSAO, Settings, obter_settings
@@ -32,6 +33,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
         app.state.cache = CacheLRU(cfg.cache_capacidade, cfg.calculos_simultaneos)
         app.state.catalogo = carregar_catalogo(cfg.arquivo_grupos, cfg.raiz_repositorio)
         app.state.repositorio = None
+        app.state.aquecimento = None
         try:
             app.state.repositorio = RepositorioDuckDB(
                 cfg.dir_dados,
@@ -43,9 +45,20 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
         except DadosIndisponiveis as erro:
             # Não derruba o processo: /api/health responde 503 e o deploy reverte.
             logger.error("dados indisponíveis: %s", erro)
+        if cfg.aquecer and app.state.repositorio is not None:
+            app.state.aquecimento = Aquecimento(
+                app.state.repositorio,
+                app.state.catalogo,
+                app.state.cache,
+                cfg.aquecimento_max_entradas,
+            )
+            app.state.aquecimento.start()  # segundo plano: o health não espera
         try:
             yield
         finally:
+            if app.state.aquecimento is not None:
+                app.state.aquecimento.parar()
+                app.state.aquecimento.join(timeout=30)  # antes de fechar o DuckDB
             if app.state.repositorio is not None:
                 app.state.repositorio.fechar()
 

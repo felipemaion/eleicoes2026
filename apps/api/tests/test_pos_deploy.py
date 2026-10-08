@@ -1,4 +1,4 @@
-"""T-B04: KPIs por grupo, `indicado`, nome do município no mapa, aquecimento e User-Agent do smoke."""
+"""T-B04: KPIs por grupo, `indicado`, nome no mapa, aquecimento e User-Agent do smoke."""
 
 import importlib.util
 import threading
@@ -7,10 +7,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 import pytest
+from api.aquecimento import Aquecimento
 from api.config import Settings
+from api.erros import ErroDominio
 from api.main import criar_app
 from fastapi.testclient import TestClient
-
 
 DF = "DEPUTADO FEDERAL"
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -65,7 +66,8 @@ def test_indicado_vem_da_origem_da_lista(api: TestClient) -> None:
         c["sq_candidato"]: c["indicado"]
         for c in api.get("/api/candidatos", params={"grupo": "mbl_2022"}).json()["itens"]
     }
-    assert m22[1] is True and m22[2] is False
+    assert m22[1] is True
+    assert m22[2] is False
 
 
 def test_ficha_tambem_traz_indicado(api: TestClient) -> None:
@@ -129,7 +131,7 @@ def test_smoke_envia_user_agent_explicito() -> None:
     vistos: list[str] = []
 
     class Handler(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:  # noqa: N802 - API do http.server
+        def do_GET(self) -> None:
             vistos.append(self.headers.get("User-Agent", ""))
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -145,10 +147,55 @@ def test_smoke_envia_user_agent_explicito() -> None:
     try:
         caminho = Path(__file__).resolve().parents[1] / "scripts" / "smoke.py"
         spec = importlib.util.spec_from_file_location("smoke_script", caminho)
-        assert spec and spec.loader
+        assert spec is not None
+        assert spec.loader is not None
         smoke = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(smoke)
         smoke._get(f"http://127.0.0.1:{servidor.server_port}", "/api/health")
     finally:
         servidor.shutdown()
     assert vistos == ["eleicoes2026-smoke/1.0"]
+
+
+# ------------------------------------------- aquecimento: ocupado e falhas
+def _aquecimento(api: TestClient) -> Aquecimento:
+    estado = api.app.state  # type: ignore[attr-defined]
+    return Aquecimento(estado.repositorio, estado.catalogo, estado.cache, 10)
+
+
+def test_aquecimento_espera_a_vez_quando_servidor_ocupado(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("api.aquecimento.ESPERA_OCUPADO_S", 0)
+    chamadas: list[int] = []
+
+    def consulta() -> None:
+        chamadas.append(1)
+        if len(chamadas) < 3:
+            raise ErroDominio(503, "servidor_ocupado", "ocupado")
+
+    _aquecimento(api)._executar(consulta)
+    assert len(chamadas) == 3
+
+
+def test_aquecimento_propaga_erro_que_nao_e_ocupado(api: TestClient) -> None:
+    def consulta() -> None:
+        raise ErroDominio(422, "x", "inválido")
+
+    with pytest.raises(ErroDominio):
+        _aquecimento(api)._executar(consulta)
+
+
+def test_falha_de_uma_consulta_e_contada_e_o_plano_segue(
+    api: TestClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    aq = _aquecimento(api)
+
+    def plano() -> Iterator[tuple[str, object]]:
+        yield "quebra", lambda: 1 / 0
+        yield "ok", lambda: None
+
+    aq._plano = plano  # type: ignore[method-assign]
+    aq.run()
+    assert (aq.erros, aq.aquecidas) == (1, 1)
+    assert "falhou quebra" in caplog.text

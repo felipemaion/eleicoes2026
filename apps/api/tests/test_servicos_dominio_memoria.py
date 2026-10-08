@@ -116,5 +116,5 @@ def test_ipca_ausente_para_2022_falha_alto() -> None:
 
 def test_ficha_inexistente_levanta_404() -> None:
     with pytest.raises(ErroDominio) as e:
-        montar_ficha(_repo(), 2026, 999, 10)
+        montar_ficha(_repo(), _catalogo(), 2026, 999, 10)
     assert e.value.status == 404

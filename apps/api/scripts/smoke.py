@@ -22,6 +22,8 @@ import urllib.request
 from collections.abc import Callable
 from typing import Any
 
+# A Cloudflare bloqueia o `Python-urllib` padrão (403/1010): identificar-se explicitamente.
+USER_AGENT = "eleicoes2026-smoke/1.0"
 KIM_2022, KIM_2026 = 295_460, 520_071
 LIMITE_FRIO_S, LIMITE_QUENTE_S = 2.0, 0.5
 DF = "DEPUTADO FEDERAL"
@@ -38,7 +40,8 @@ def _get(base: str, caminho: str, **params: object) -> tuple[int, Any, float]:
     url = f"{base}{caminho}" + (f"?{qs}" if qs else "")
     ini = time.perf_counter()
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:  # noqa: S310 - base controlada
+        pedido = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+        with urllib.request.urlopen(pedido, timeout=30) as r:  # noqa: S310 - base controlada
             return r.status, json.loads(r.read()), time.perf_counter() - ini
     except urllib.error.HTTPError as erro:
         bruto = erro.read().decode(errors="replace")

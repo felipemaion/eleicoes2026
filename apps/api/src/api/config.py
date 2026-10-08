@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     duck_temp_directory: Path = Path("/tmp/duck")  # noqa: S108 - tmpfs do contêiner
     # Cálculos pesados simultâneos; o excedente recebe 503 + Retry-After.
     calculos_simultaneos: int = 4
+    # Aquecimento do cache em segundo plano após abrir os dados (cache frio custa 2–3 s).
+    aquecer: bool = True
+    # Teto de consultas pré-calculadas: metade do LRU, para não expulsar o que já está quente.
+    aquecimento_max_entradas: int = 128
     cors_origens: list[str] = ["http://localhost:5173"]
 
 

@@ -6,9 +6,10 @@ from fastapi import APIRouter, Path, Query
 
 from api.deps import CacheDep, CatalogoDep, RepositorioDep
 from api.dominio import UF, Ano, Cargo, Indicador, Nivel
-from api.servicos.candidatos import FichaCandidato, ListaCandidatos, listar_candidatos, montar_ficha
-from api.servicos.comparativo import Comparativo, montar_comparativo
-from api.servicos.gastos import Gastos, montar_gastos
+from api.servicos.candidatos import FichaCandidato, ListaCandidatos, montar_ficha
+from api.servicos.comparativo import Comparativo
+from api.servicos.consultas import candidatos_em_cache, comparativo_em_cache, gastos_em_cache
+from api.servicos.gastos import Gastos
 from api.servicos.grupos import GruposResposta, listar_grupos
 from api.servicos.mapa import Mapa, Pontos, montar_mapa, montar_pontos
 from api.servicos.municipio import ResumoMunicipio, montar_resumo
@@ -45,13 +46,15 @@ def candidatos(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ListaCandidatos:
     """Votos, % dos válidos, penetração, resultado e partido, ordenados por votos."""
-    uf_v, cargo_v = (uf.value if uf else None), (cargo.value if cargo else None)
-    return cache.obter(
-        repo.dt_geracao(),
-        ("candidatos", grupo, uf_v, cargo_v, limite, offset),
-        lambda: listar_candidatos(
-            repo, catalogo, grupo_id=grupo, uf=uf_v, cargo=cargo_v, limite=limite, offset=offset
-        ),
+    return candidatos_em_cache(
+        repo,
+        catalogo,
+        cache,
+        grupo=grupo,
+        uf=uf.value if uf else None,
+        cargo=cargo.value if cargo else None,
+        limite=limite,
+        offset=offset,
     )
 
 
@@ -64,6 +67,7 @@ def candidatos(
 )
 def ficha(
     repo: RepositorioDep,
+    catalogo: CatalogoDep,
     cache: CacheDep,
     ano: Ano,
     sq_candidato: int,
@@ -73,7 +77,7 @@ def ficha(
     return cache.obter(
         repo.dt_geracao(),
         ("ficha", ano, sq_candidato, top),
-        lambda: montar_ficha(repo, ano.value, sq_candidato, top),
+        lambda: montar_ficha(repo, catalogo, ano.value, sq_candidato, top),
     )
 
 
@@ -160,11 +164,13 @@ def gastos(
     cargo: Cargo | None = None,
 ) -> Gastos:
     """Custo por voto (contratado/pago), receita por fonte, % público e % autofinanciamento."""
-    uf_v, cargo_v = (uf.value if uf else None), (cargo.value if cargo else None)
-    return cache.obter(
-        repo.dt_geracao(),
-        ("gastos", grupo, uf_v, cargo_v),
-        lambda: montar_gastos(repo, catalogo, grupo_id=grupo, uf=uf_v, cargo=cargo_v),
+    return gastos_em_cache(
+        repo,
+        catalogo,
+        cache,
+        grupo=grupo,
+        uf=uf.value if uf else None,
+        cargo=cargo.value if cargo else None,
     )
 
 
@@ -183,18 +189,14 @@ def comparativo(
     ] = False,
 ) -> Comparativo:
     """Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte."""
-    uf_v = uf.value if uf else None
-    return cache.obter(
-        repo.dt_geracao(),
-        ("comparativo", comparacao, cargo, uf_v, mesmos_candidatos),
-        lambda: montar_comparativo(
-            repo,
-            catalogo,
-            comparacao_id=comparacao,
-            cargo=cargo,
-            uf=uf_v,
-            mesmos_candidatos=mesmos_candidatos,
-        ),
+    return comparativo_em_cache(
+        repo,
+        catalogo,
+        cache,
+        comparacao=comparacao,
+        cargo=cargo,
+        uf=uf.value if uf else None,
+        mesmos_candidatos=mesmos_candidatos,
     )
 
 
