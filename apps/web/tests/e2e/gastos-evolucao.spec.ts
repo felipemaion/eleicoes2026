@@ -35,7 +35,7 @@ test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página d
   const ana = page.locator('circle.marca[data-id="1"]');
   await ana.hover();
   await expect(balao.locator("img")).toHaveAttribute("alt", "Foto de Ana Souza");
-  await expect(balao.locator("img")).toHaveAttribute("loading", "lazy");
+  await expect(balao.locator("img")).toHaveAttribute("loading", "eager");
   await expect(balao).toContainText("Clique para abrir no TSE");
   await ana.click();
   await ana.focus();
@@ -50,6 +50,27 @@ test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página d
     await sem.hover();
     await expect(balao.locator(".foto-candidato.sem-foto")).toBeVisible();
   }
+});
+
+test("gastos (T-W17): com UF a foto aparece, a tabela não quebra letra a letra e o balão cabe na viewport", async ({ page }) => {
+  await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
+  await page.setViewportSize({ width: 700, height: 800 });
+  await page.goto("/#/gastos?uf=SE");
+  const balao = page.locator(".tooltip-flutuante:not([hidden])");
+  const pontos = page.locator("circle.marca");
+  await expect(pontos.first()).toBeVisible();
+  // O ponto mais à direita é o que mais força o reposicionamento.
+  const xs = await pontos.evaluateAll((l) => l.map((c) => c.getBoundingClientRect().right));
+  await pontos.nth(xs.indexOf(Math.max(...xs))).hover();
+  await expect(balao.locator("img")).toBeVisible();
+  await expect(page.locator("circle.marca title")).toHaveCount(0);
+  const caixa = (await balao.boundingBox()) ?? { x: -1, width: 9999 };
+  expect(caixa.x).toBeGreaterThanOrEqual(0);
+  expect(caixa.x + caixa.width).toBeLessThanOrEqual(700);
+  const linha = balao.locator("dd").first();
+  const alt = await linha.evaluate((e) => ({ h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) }));
+  expect(alt.h).toBeLessThanOrEqual(alt.lh * 1.2);
+  expect((await linha.boundingBox())?.width ?? 0).toBeGreaterThan(40);
 });
 
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {

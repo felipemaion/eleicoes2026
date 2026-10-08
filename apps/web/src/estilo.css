@@ -136,9 +136,11 @@ footer p { margin: var(--esp-1) 0; }
 .tooltip[data-lado="baixo"]::before { top: -0.4rem; border-left: 1px solid var(--cor-destaque); border-top: 1px solid var(--cor-destaque); }
 .tooltip[data-lado="cima"]::before { bottom: -0.4rem; border-right: 1px solid var(--cor-destaque); border-bottom: 1px solid var(--cor-destaque); }
 .tooltip-flutuante, .tooltip-titulo { display: block; margin-bottom: 0.3rem; color: var(--cor-destaque); font-size: 0.95rem; }
-.tooltip-lista { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.75rem; margin: 0; }
-.tooltip-lista dt { color: var(--cor-texto-suave); }
-.tooltip-lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.tooltip-lista { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.75rem; margin: 0; }
+.tooltip-lista dt { color: var(--cor-texto-suave); white-space: nowrap; }
+.tooltip-lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tooltip-cabeca { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.3rem; }
+.tooltip-cabeca .tooltip-titulo { margin: 0; }
 
 /* Mapa */
 .mapa-area { min-height: 340px; display: grid; gap: var(--esp-2); margin-block: var(--esp-2); }
@@ -286,8 +288,7 @@ rect.marca:hover, rect.marca:focus-visible { stroke: var(--cor-destaque); stroke
 .tabela-pessoas tbody th { font-weight: 600; }
 
 /* Foto do candidato no tooltip e na busca: tamanho fixo (definido no elemento) para não pular o layout. */
-.foto-candidato { display: inline-flex; align-items: center; justify-content: center; float: left; margin: 0 0.6rem 0.3rem 0; border-radius: 0.35rem; overflow: hidden; background: var(--cor-borda); color: var(--cor-texto-suave); font-weight: 700; font-size: 1.4rem; }
+.foto-candidato { display: inline-flex; flex: none; align-items: center; justify-content: center; border-radius: 0.35rem; overflow: hidden; background: var(--cor-borda); color: var(--cor-texto-suave); font-weight: 700; font-size: 1.4rem; }
 .foto-candidato img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.tooltip-lista { clear: none; }
 .tooltip-rodape { clear: both; margin: 0.4rem 0 0; color: var(--cor-texto-suave); font-size: 0.85rem; }
 circle.marca.com-link { cursor: pointer; }

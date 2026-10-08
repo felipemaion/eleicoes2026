@@ -19,10 +19,16 @@ export interface ConteudoRico {
 /** Monta o corpo padrão (título + lista de definição) de um tooltip. */
 export function corpoRico(c: ConteudoRico): DocumentFragment {
   const f = document.createDocumentFragment();
-  if (c.foto) f.append(figuraCandidato(c.foto.nome, c.foto.url));
   const t = document.createElement("strong");
   t.className = "tooltip-titulo";
   t.textContent = c.titulo;
+  if (c.foto) {
+    // Foto à esquerda do título, em cabeçalho próprio: a lista de valores ocupa a largura toda (sem float).
+    const cab = document.createElement("div");
+    cab.className = "tooltip-cabeca";
+    cab.append(figuraCandidato(c.foto.nome, c.foto.url, 80, 100, "eager"), t);
+    f.append(cab);
+  } else f.append(t);
   const dl = document.createElement("dl");
   dl.className = "tooltip-lista";
   for (const [r, v] of c.linhas) {
@@ -32,7 +38,7 @@ export function corpoRico(c: ConteudoRico): DocumentFragment {
     dd.textContent = v;
     dl.append(dt, dd);
   }
-  f.append(t, dl);
+  f.append(dl);
   for (const linha of c.rodape ?? []) {
     const p = document.createElement("p");
     p.className = "tooltip-rodape";
@@ -116,6 +122,8 @@ export function ligarPainel(raiz: HTMLElement, gatilho: HTMLElement, painel: HTM
 export interface Flutuante {
   /** Mostra `conteudo` junto da âncora (coordenadas de viewport). */
   mostrar(conteudo: Node, ancora: Ancora): void;
+  /** Reposiciona o balão aberto sem trocar o conteúdo (não recria a foto a cada movimento do cursor). */
+  mover(ancora: Ancora): void;
   esconder(): void;
   readonly elemento: HTMLElement;
 }
@@ -139,6 +147,7 @@ export function criarFlutuante(pai: HTMLElement = document.body): Flutuante {
       el.hidden = false;
       encaixar(el, ancora);
     },
+    mover(ancora) { if (!el.hidden) encaixar(el, ancora); },
     esconder,
   };
 }
@@ -149,7 +158,7 @@ export const ancoraEm = (x: number, y: number): Ancora => ({ x, y, largura: 0, a
 /** Liga hover/foco de uma marca (SVG ou HTML) a um balão com o `conteudo`. */
 export function ligarMarca(marca: Element, flutuante: Flutuante, conteudo: () => Node): void {
   marca.addEventListener("mouseenter", (e) => { flutuante.mostrar(conteudo(), ancoraEm((e as MouseEvent).clientX, (e as MouseEvent).clientY)); });
-  marca.addEventListener("mousemove", (e) => { flutuante.mostrar(conteudo(), ancoraEm((e as MouseEvent).clientX, (e as MouseEvent).clientY)); });
+  marca.addEventListener("mousemove", (e) => { flutuante.mover(ancoraEm((e as MouseEvent).clientX, (e as MouseEvent).clientY)); });
   marca.addEventListener("mouseleave", () => { flutuante.esconder(); });
   marca.addEventListener("focus", () => { flutuante.mostrar(conteudo(), ancoraDe(marca)); });
   marca.addEventListener("blur", () => { flutuante.esconder(); });

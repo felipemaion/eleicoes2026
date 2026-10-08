@@ -124,6 +124,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
     const aviso = [zeroX ? "custo zero" : "", zeroY ? "votos zero" : ""].filter(Boolean).join(", ");
     marcaAcessivel(c, `${d.rotulo}: ${formatarMoeda(d.custo)}, ${formatarNumero(d.votos)} votos${aviso ? ` (${aviso})` : ""}`);
     const linhas = [...(d.detalhe ?? [["Custo", formatarMoeda(d.custo)], ["Votos", formatarNumero(d.votos)]]), ...(aviso ? [["Atenção", aviso] as const] : [])];
+    c.querySelector("title")?.remove(); // o tooltip rico substitui o nativo; o aria-label permanece
     c.dataset["tooltip"] = [d.rotulo, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
     const link = d.linkTse;
     ligarMarca(c, tooltipDispersao(), () => corpoRico({

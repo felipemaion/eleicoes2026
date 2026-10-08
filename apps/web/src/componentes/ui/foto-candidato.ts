@@ -9,8 +9,8 @@ export function iniciais(nome: string): string {
   return letras === "" ? "?" : letras;
 }
 
-/** Foto 80×100 (proporção do WebP 160×200 da API); tamanho fixo evita salto de layout. Sem URL, vira iniciais. */
-export function figuraCandidato(nome: string, url: string | null, largura = 80, altura = 100): HTMLElement {
+/** Foto 80×100 (proporção do WebP 160×200 da API); tamanho fixo evita salto de layout. Sem URL, vira iniciais. Tooltip usa `eager`: um balão efêmero com img lazy pode nunca chegar a carregar. */
+export function figuraCandidato(nome: string, url: string | null, largura = 80, altura = 100, carga: "lazy" | "eager" = "lazy"): HTMLElement {
   const f = document.createElement("span");
   f.className = "foto-candidato";
   f.style.width = `${String(largura)}px`;
@@ -25,7 +25,7 @@ export function figuraCandidato(nome: string, url: string | null, largura = 80, 
   const img = document.createElement("img");
   img.src = url;
   img.alt = `Foto de ${nome}`;
-  img.setAttribute("loading", "lazy");
+  img.setAttribute("loading", carga);
   img.setAttribute("decoding", "async");
   img.width = largura;
   img.height = altura;
