@@ -303,3 +303,14 @@ def test_comparar_receitas_nao_altera_entrada_nem_corrige_percentual() -> None:
     assert linha["delta_pct_x"] == 2.0
     assert "var_pct_pct_x" not in res.columns
     assert df["r_2022"].item() == 100.0
+
+
+def test_despesa_sem_agrupamento_e_origem_nula() -> None:
+    df = pl.DataFrame({"ds_origem_despesa": ["Publicidade"], "vr_despesa_contratada": [7.0]})
+    assert financeiro.despesa_campanha(df, "vr_despesa_contratada", por=()).item() == 7.0
+    nula = pl.DataFrame(
+        {"ds_origem_despesa": [None], "vr_despesa_contratada": [1.0]},
+        schema={"ds_origem_despesa": pl.String, "vr_despesa_contratada": pl.Float64},
+    )
+    with pytest.raises(ValueError, match="ds_origem_despesa nula"):
+        financeiro.despesa_campanha(nula, "vr_despesa_contratada", por=())
