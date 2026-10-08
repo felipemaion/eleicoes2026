@@ -14,6 +14,8 @@ export default defineConfig({
       "/api": "http://localhost:8000",
     },
   },
+  // Produção é same-origin na raiz (Caddy): `/api`, `/tiles`, `/assets`.
+  base: "/",
   build: { target: "es2022", sourcemap: true },
   test: { environment: "jsdom", include: ["tests/unit/**/*.test.ts"] },
   // Em dev o ETL grava os tiles em data/processed/tiles; em produção quem serve /tiles/ é o Caddy.

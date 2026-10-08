@@ -16,6 +16,21 @@ import { expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoe
 import { limitesDe, type Limites } from "./geo";
 import { textoTooltip, type DetalheLocal } from "./tooltip";
 
+/** Hachura diagonal 8×8 para áreas de n baixo; a cor vem do tema, então é lida na hora de desenhar. */
+function imagemHachura(cor: string): { width: number; height: number; data: Uint8Array } {
+  const t = 8;
+  const c = document.createElement("canvas");
+  c.width = t; c.height = t;
+  const g = c.getContext("2d");
+  if (!g) throw new Error("Canvas 2D indisponível: não dá para desenhar a hachura de n baixo.");
+  g.strokeStyle = cor; g.lineWidth = 1.5;
+  g.beginPath();
+  // Três segmentos cobrem os cantos para a diagonal emendar entre ladrilhos.
+  g.moveTo(-1, t + 1); g.lineTo(t + 1, -1); g.moveTo(-1, 1); g.lineTo(1, -1); g.moveTo(t - 1, t + 1); g.lineTo(t + 1, t - 1);
+  g.stroke();
+  return { width: t, height: t, data: new Uint8Array(g.getImageData(0, 0, t, t).data.buffer) };
+}
+
 /** Detalhe sem nome obrigatório: a API do mapa não manda nomes; eles vêm da geometria. */
 export type DetalheParcial = Omit<DetalheLocal, "nome"> & { nome?: string };
 
@@ -57,6 +72,7 @@ export interface Mapa {
 maplibregl.setWorkerUrl(urlWorker);
 
 const PROTOCOLO_PMTILES = "pmtiles";
+const IMAGEM_HACHURA = "hachura-n-baixo";
 let protocoloRegistrado = false;
 function registrarPmtiles(): void {
   if (protocoloRegistrado) return;
@@ -75,6 +91,17 @@ function cssVar(nome: string, padrao: string): string {
 
 function estiloBase(): StyleSpecification {
   return { version: 8, sources: {}, layers: [{ id: "fundo", type: "background", paint: { "background-color": cssVar("--cor-superficie", "#f4f6f8") } }] };
+}
+
+/** Chave da legenda para a hachura: o texto é o mesmo aviso público (textos.json › avisos.n_baixo). */
+function legendaHachura(): HTMLElement {
+  const p = document.createElement("p");
+  p.className = "legenda-hachura";
+  const amostra = document.createElement("span");
+  amostra.className = "amostra-hachura";
+  amostra.setAttribute("aria-hidden", "true");
+  p.append(amostra, "Hachurado: menos de 20 votos esperados — estimativa instável.");
+  return p;
 }
 
 export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
@@ -135,6 +162,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
   const idFonte = (n: Nivel): string => `geo-${n}`;
   const idFill = (n: Nivel): string => `fill-${n}`;
   const idLinha = (n: Nivel): string => `linha-${n}`;
+  const idHachura = (n: Nivel): string => `hachura-${n}`;
 
   function garantirNivel(n: Nivel): FonteGeometria {
     const f = opcoes.fontes[n];
@@ -145,6 +173,12 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     const camada = f.tipo === "pmtiles" ? { "source-layer": f.camadaFonte } : {};
     const destaque: ExpressionSpecification = ["case", ["boolean", ["feature-state", "destaque"], false], 3, 0.6];
     mapa.addLayer({ id: idFill(n), type: "fill", source: idFonte(n), ...camada, paint: { "fill-color": cssVar("--cor-superficie", "#d9d9d9"), "fill-opacity": 0.92 } }, camadaPontosAcima());
+    if (!mapa.hasImage(IMAGEM_HACHURA)) mapa.addImage(IMAGEM_HACHURA, imagemHachura(cssVar("--cor-texto", "#1b2430")));
+    // fill-pattern não aceita feature-state, mas fill-opacity aceita: a hachura existe em todos e só aparece onde nbaixo.
+    mapa.addLayer({
+      id: idHachura(n), type: "fill", source: idFonte(n), ...camada,
+      paint: { "fill-pattern": IMAGEM_HACHURA, "fill-opacity": ["case", ["boolean", ["feature-state", "nbaixo"], false], 0.55, 0] },
+    }, camadaPontosAcima());
     mapa.addLayer({ id: idLinha(n), type: "line", source: idFonte(n), ...camada, paint: { "line-color": cssVar("--cor-texto-suave", "#4a5360"), "line-width": destaque } }, camadaPontosAcima());
     adicionadas.add(n);
     stats.fontesCarregadas += 1;
@@ -309,7 +343,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     const cap = document.createElement("caption");
     cap.textContent = `${meta.nome} (${meta.unidade}); denominador: ${meta.denominador}`;
     const cab = document.createElement("tr");
-    for (const h of ["Área", "Taxa", "Votos", "Eleitorado"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; cab.append(th); }
+    for (const h of ["Área", "Taxa", "Votos", "Eleitorado", "Estimativa"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; cab.append(th); }
     const corpo = ordenados(n).map((id) => {
       const d = detalhes?.[id];
       const tr = document.createElement("tr");
@@ -317,7 +351,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       const th = document.createElement("th");
       th.scope = "row";
       th.textContent = c.titulo;
-      tr.append(th, ...c.linhas.map(([, v]) => { const td = document.createElement("td"); td.textContent = v; return td; }));
+      const celulas = [...c.linhas.map(([, v]) => v), d?.nBaixo === true ? "instável (n baixo)" : "ok"];
+      tr.append(th, ...celulas.map((v) => { const td = document.createElement("td"); td.textContent = v; return td; }));
       return tr;
     });
     t.append(cap, cab, ...corpo);
@@ -330,12 +365,12 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     if (tabela.open && tabelaPendente) { const f = tabelaPendente; tabelaPendente = null; f(); }
   });
 
-  function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala): void {
+  function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala, detalhes?: Readonly<Record<string, DetalheParcial>>): void {
     const f = garantirNivel(n);
     const fonte = idFonte(n);
     const sl = f.tipo === "pmtiles" ? { sourceLayer: f.camadaFonte } : {};
     mapa.removeFeatureState({ source: fonte, ...sl });
-    for (const [id, valor] of Object.entries(valores)) mapa.setFeatureState({ source: fonte, ...sl, id }, { valor });
+    for (const [id, valor] of Object.entries(valores)) mapa.setFeatureState({ source: fonte, ...sl, id }, { valor, nbaixo: detalhes?.[id]?.nBaixo === true });
     mapa.setPaintProperty(idFill(n), "fill-color", expressaoCor(escala) as ExpressionSpecification);
     destacado = null;
     stats.atualizacoesDeValores += 1;
@@ -352,8 +387,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       if (detalhes) detalhesPorNivel.set(nivel, { ...detalhes });
       metaAtual = meta;
       const n = nivel;
-      quandoPronto(() => { aplicarValores(n, finitos, escala); });
-      areaLegenda.replaceChildren(legenda);
+      quandoPronto(() => { aplicarValores(n, finitos, escala, detalhes); });
+      areaLegenda.replaceChildren(legenda, legendaHachura());
       const resumo = document.createElement("summary");
       resumo.textContent = `Tabela de valores: ${meta.nome}`;
       tabela.replaceChildren(resumo);
@@ -371,6 +406,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
         for (const n of adicionadas) {
           const v = n === novo ? "visible" : "none";
           mapa.setLayoutProperty(idFill(n), "visibility", v);
+          mapa.setLayoutProperty(idHachura(n), "visibility", v);
           mapa.setLayoutProperty(idLinha(n), "visibility", v);
         }
         if (anterior !== novo) mapa.fitBounds(limitesIniciais(opcoes.fontes[novo] as FonteGeometria), { padding: 24, duration: 0 });

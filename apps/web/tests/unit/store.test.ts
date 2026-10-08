@@ -73,3 +73,15 @@ describe("hash", () => {
     expect(o).not.toHaveBeenCalled();
   });
 });
+
+describe("rotaExiste (404 de hash)", () => {
+  it("só rota conhecida, vazia ou raiz é válida; âncora não é rota", async () => {
+    const { rotaExiste } = await import("../../src/rotas");
+    expect(rotaExiste("")).toBe(true);
+    expect(rotaExiste("#/")).toBe(true);
+    expect(rotaExiste("#/mapa?uf=SE")).toBe(true);
+    expect(rotaExiste("#/xyz")).toBe(false);
+    expect(rotaExiste("#/mapa/extra")).toBe(false);
+    expect(rotaExiste("#principal")).toBe(true);
+  });
+});

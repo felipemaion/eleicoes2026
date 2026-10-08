@@ -20,7 +20,8 @@ nav a[aria-current="page"] { background: var(--cor-destaque); color: var(--cor-f
 .filtros { display: flex; flex-wrap: wrap; gap: var(--esp-3); margin-top: var(--esp-3); }
 .filtros label { display: flex; flex-direction: column; font-size: var(--texto-pequeno); color: var(--cor-texto-suave); gap: var(--esp-1); }
 .filtros select { font: inherit; padding: var(--esp-1) var(--esp-2); color: var(--cor-texto); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); min-width: 0; }
-main { flex: 1; }
+/* min-height de uma tela: o rodapé nasce abaixo da dobra e não "pula" quando os dados chegam (CLS). */
+main { flex: 1; min-height: 100vh; }
 h1 { font-size: var(--texto-h1); margin: var(--esp-3) 0; }
 .conteudo-reservado {
   background: var(--cor-superficie); border: 1px dashed var(--cor-borda); border-radius: var(--raio);
@@ -29,7 +30,7 @@ h1 { font-size: var(--texto-h1); margin: var(--esp-3) 0; }
 footer { border-top: 1px solid var(--cor-borda); font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
 
 /* Mapa */
-.mapa-area { display: grid; gap: var(--esp-2); margin-block: var(--esp-3); }
+.mapa-area { min-height: 340px; display: grid; gap: var(--esp-2); margin-block: var(--esp-3); }
 .mapa-quadro { position: relative; height: min(70vh, 520px); min-height: 320px; border: 1px solid var(--cor-borda); background: var(--cor-superficie); }
 .mapa-quadro:focus-visible { outline: 3px solid var(--cor-destaque); outline-offset: 2px; }
 .mapa-legenda svg { max-width: 100%; height: auto; }
@@ -96,3 +97,7 @@ h3 { font-size: 1rem; margin: var(--esp-3) 0 var(--esp-2); }
 .painel-municipio caption { text-align: left; font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
 
 .estado:empty { display: none; }
+
+/* Chave da hachura de n baixo (mesma diagonal do padrão desenhado no mapa). */
+.legenda-hachura { display: flex; align-items: center; gap: 0.5rem; margin: 0.25rem 0 0; font-size: 0.8125rem; color: var(--cor-texto); }
+.amostra-hachura { flex: none; width: 1.25rem; height: 0.875rem; border: 1px solid var(--cor-borda); background: repeating-linear-gradient(135deg, var(--cor-texto) 0 1.5px, transparent 1.5px 5px); }

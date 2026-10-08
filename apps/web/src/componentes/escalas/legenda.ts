@@ -21,7 +21,7 @@ export function criarLegenda(escala: Escala, meta: MetaIndicador, opcoes: Opcoes
   const fmt = opcoes.formatar ?? formatarDecimal;
   const largura = opcoes.largura ?? 380;
   const n = escala.cores.length;
-  const w = (largura - 70) / n;
+  const w = (largura - 100) / n; // sobra espaço à direita para "sem dado" não ser cortado
   const svg = no("svg", { width: largura, height: 74, viewBox: `0 0 ${String(largura)} 74`, role: "img", class: "legenda" });
 
   const faixas = escala.cores.map((_, i) => {
