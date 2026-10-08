@@ -723,11 +723,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Só pessoas que concorreram nos dois anos (pessoa_id).",
+              "description": "Só pessoas que concorreram nos dois anos (pessoa_id). Vale com grupos nos dois lados; com um lado de grupo e outro de candidatos → 422.",
               "default": false,
               "title": "Mesmos Candidatos"
             },
-            "description": "Só pessoas que concorreram nos dois anos (pessoa_id)."
+            "description": "Só pessoas que concorreram nos dois anos (pessoa_id). Vale com grupos nos dois lados; com um lado de grupo e outro de candidatos → 422."
           },
           {
             "name": "pessoas",

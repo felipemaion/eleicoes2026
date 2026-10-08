@@ -232,7 +232,11 @@ def comparativo(
     ] = None,
     uf: UF | None = None,
     mesmos_candidatos: Annotated[
-        bool, Query(description="Só pessoas que concorreram nos dois anos (pessoa_id).")
+        bool,
+        Query(
+            description="Só pessoas que concorreram nos dois anos (pessoa_id). Vale com grupos "
+            "nos dois lados; com um lado de grupo e outro de candidatos → 422."
+        ),
     ] = False,
     pessoas: Annotated[
         list[IdPublico] | None,
