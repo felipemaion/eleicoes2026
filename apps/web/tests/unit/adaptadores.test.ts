@@ -47,9 +47,9 @@ describe("rankingDeCandidatos", () => {
 });
 
 describe("gastos", () => {
-  it("dispersão descarta custo/voto zero (escala log) e escolhe contratado ou pago", () => {
+  it("dispersão mantém zeros (o gráfico os põe na calha, nunca some candidato) e escolhe contratado ou pago", () => {
     const pts = dispersaoCustoVoto({ ...G, candidatos: [...G.candidatos, { id: "9", rotulo: "Zero", votos: 0, custo_contratado: 5, custo_pago: 0 }] }, "contratado");
-    expect(pts.map((p) => p.id)).toEqual(["1", "2", "3"]);
+    expect(pts.map((p) => p.id)).toEqual(["1", "2", "3", "9"]);
     expect(pts[0]).toMatchObject({ custo: 223000, votos: 18049 });
     expect(dispersaoCustoVoto(G, "pago")[0]?.custo).toBe(180000);
   });
