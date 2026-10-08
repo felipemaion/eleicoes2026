@@ -54,3 +54,27 @@ footer { border-top: 1px solid var(--cor-borda); font-size: var(--texto-pequeno)
 .legenda-item .amostra{display:inline-block;width:.9rem;height:.9rem;margin-right:.35rem;vertical-align:-.1rem;border:1px solid var(--cor-borda)}
 .multiplos{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem}
 .multiplos figure{margin:0}
+
+/* Telas (T-W04) */
+.controles { display: flex; flex-wrap: wrap; align-items: end; gap: var(--esp-3); margin-block: var(--esp-3); }
+.controles label { display: flex; flex-direction: column; gap: var(--esp-1); font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
+.controles label:has(input[type="checkbox"]) { flex-direction: row; align-items: center; gap: var(--esp-2); }
+.controles select, button { font: inherit; padding: var(--esp-1) var(--esp-2); color: var(--cor-texto); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); min-width: 0; max-width: 100%; }
+button { cursor: pointer; }
+h2 { font-size: 1.15rem; margin: var(--esp-4) 0 var(--esp-2); }
+h3 { font-size: 1rem; margin: var(--esp-3) 0 var(--esp-2); }
+.estado { padding: var(--esp-3); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); color: var(--cor-texto-suave); }
+.estado.erro { border-color: var(--cor-destaque); color: var(--cor-texto); }
+.estado p { margin: 0 0 var(--esp-2); }
+.nota { font-size: var(--texto-pequeno); color: var(--cor-texto-suave); margin: var(--esp-2) 0; }
+.avisos { margin: var(--esp-3) 0; padding: var(--esp-2) var(--esp-3) var(--esp-2) var(--esp-4); border-left: 4px solid var(--cor-destaque); background: var(--cor-superficie); }
+.mapa-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--esp-3); align-items: start; }
+.painel-municipio { padding: var(--esp-3); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); overflow-wrap: anywhere; }
+.painel-municipio table { border-collapse: collapse; width: 100%; }
+.painel-municipio th, .painel-municipio td { padding: 0.15rem 0.5rem; border-bottom: 1px solid var(--cor-borda); text-align: left; }
+.mapas-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--esp-3); }
+.mapas-3 figure { margin: 0; min-width: 0; }
+.mapas-3 figcaption { font-weight: 600; margin-bottom: var(--esp-1); }
+.ficha h2 { margin-top: var(--esp-3); }
+.grafico { max-width: 100%; height: auto; }
+@media (max-width: 760px) { .mapa-layout { grid-template-columns: minmax(0, 1fr); } }

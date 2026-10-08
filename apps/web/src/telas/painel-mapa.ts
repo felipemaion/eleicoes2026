@@ -21,6 +21,7 @@ export function paraGeoJson(pontos: readonly PontoVoto[]): FeatureCollection {
 }
 
 export function criarPainelMapa(area: HTMLElement, cliente: ClienteApi, rotulo: string): PainelMapa {
+  area.dataset["mapaPronto"] = "nao";
   const mapa = montarMapa(area, rotulo);
   let destruido = false;
   let seq = 0;
@@ -29,10 +30,19 @@ export function criarPainelMapa(area: HTMLElement, cliente: ClienteApi, rotulo: 
   return {
     async atualizar(params) {
       const minha = ++seq;
+      // Função (não expressão) para o TS não estreitar `destruido`: ele muda durante os awaits.
+      const obsoleto = (): boolean => destruido || minha !== seq;
       const [m, resposta] = await Promise.all([mapa, cliente.mapa(params)]);
-      if (destruido || minha !== seq) return null;
+      if (obsoleto()) return null;
       const { escala, meta, valores, detalhes } = escalaDoMapa(resposta);
       m.definirValores(valores, escala, meta, detalhes);
+      await m.pronto;
+      if (obsoleto()) return null;
+      // Ganchos de observação para os testes e2e (geometria carregou 1×; N recolorações).
+      const e = m.estatisticas();
+      area.dataset["fontes"] = String(e.fontesCarregadas);
+      area.dataset["atualizacoes"] = String(e.atualizacoesDeValores);
+      area.dataset["mapaPronto"] = "sim";
       return resposta;
     },
     async mostrarPontos(params) {

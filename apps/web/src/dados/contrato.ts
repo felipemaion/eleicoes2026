@@ -75,6 +75,8 @@ export interface DetalheMapa {
 }
 
 export interface RespostaMapa {
+  /** Nome curto do indicador, usado na legenda (ex.: "Penetração"). */
+  nome?: string;
   valores: Record<string, number>;
   detalhes: Record<string, DetalheMapa>;
   escala_sugerida: EscalaSugerida;

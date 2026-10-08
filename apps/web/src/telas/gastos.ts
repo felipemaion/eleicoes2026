@@ -33,7 +33,7 @@ export const tela: Tela = {
         const k = renderKpi(areaKpi, kpis);
         const d = renderDispersao(areaDispersao, dispersaoCustoVoto(g, base), { titulo: "Custo de campanha × votos por candidato" });
         const e = renderEmpilhado(areaReceita, receitaEmpilhada(g), { titulo: "Receita por fonte" });
-        const seletor = campoSelect("Custo", "base", [{ valor: "contratado", texto: "Contratado" }, { valor: "pago", texto: "Pago" }], base, (v) => {
+        const seletor = campoSelect("Base do custo", "base", [{ valor: "contratado", texto: "Contratado" }, { valor: "pago", texto: "Pago" }], base, (v) => {
           base = v === "pago" ? "pago" : "contratado";
           d.atualizar(dispersaoCustoVoto(g, base));
         });

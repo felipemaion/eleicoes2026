@@ -45,7 +45,7 @@ export const tela: Tela = {
     ], "municipio", () => { /* só município até os PMTiles (T-D04) */ });
     const ind = campoSelect("Indicador", "indicador", INDICADORES, indicador, (v) => { indicador = v; void atualizar(); });
     const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
-    const mun = campoSelect("Município", "municipio", [{ valor: "", texto: "Selecione…" }], "", (v) => {
+    const mun = campoSelect("Resumo do município", "municipio", [{ valor: "", texto: "Selecione…" }], "", (v) => {
       if (v === "") return;
       cliente.municipio(v).then((m) => { if (vivo) desenharMunicipio(painel, m); }, (e: unknown) => { if (vivo) mostrarErro(painel, e, () => { mun.select.dispatchEvent(new Event("change")); }); });
     });

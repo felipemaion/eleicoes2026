@@ -80,7 +80,7 @@ function extensaoSimetrica(valores: readonly number[]): number {
 }
 
 export function escalaDoMapa(r: RespostaMapa): MapaPronto {
-  const meta: MetaIndicador = { nome: r.unidade, tipo: r.tipo, unidade: r.unidade, denominador: r.denominador };
+  const meta: MetaIndicador = { nome: r.nome ?? r.unidade, tipo: r.tipo, unidade: r.unidade, denominador: r.denominador };
   validarCoropletico(meta);
   const v = Object.values(r.valores);
   const escala =
