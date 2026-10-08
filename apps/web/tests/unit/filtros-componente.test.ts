@@ -6,12 +6,23 @@ import { criarStore } from "../../src/store";
 beforeEach(() => { vi.useFakeTimers(); document.body.innerHTML = '<div id="x"></div>'; });
 afterEach(() => { vi.useRealTimers(); document.body.innerHTML = ""; });
 
+const GRUPOS_API = {
+  dt_geracao: "2026-10-07", comparacoes: [],
+  grupos: [
+    { id: "missao_2026", rotulo: "Partido Missão 2026", ano: 2026, n_candidaturas: 3 },
+    { id: "mbl_2026", rotulo: "MBL 2026 (Missão + aliados)", ano: 2026, n_candidaturas: 4 },
+    { id: "mbl_2022", rotulo: "MBL 2022", ano: 2022, n_candidaturas: 3 },
+    { id: "mbl_2022_indicados", rotulo: "MBL 2022 — indicados", ano: 2022, n_candidaturas: 1 },
+  ],
+};
+
 function montar(total = 547, ufsDisponiveis: string[] = ["SE", "SP"]) {
   const candidatos = vi.fn(() => Promise.resolve({ total, limite: 1, offset: 0, itens: [], kpis: null }));
   const ufs = vi.fn(() => Promise.resolve({ dt_geracao: "2026-10-07", itens: ufsDisponiveis.map((u) => ({ uf: u, candidaturas: 1 })) }));
+  const grupos = vi.fn(() => Promise.resolve(GRUPOS_API));
   const store = criarStore();
-  const fim = render(document.getElementById("x") as HTMLElement, store, { candidatos, ufs } as unknown as ClienteApi);
-  return { store, candidatos, ufs, fim };
+  const fim = render(document.getElementById("x") as HTMLElement, store, { candidatos, ufs, grupos } as unknown as ClienteApi);
+  return { store, candidatos, ufs, grupos, fim };
 }
 const radio = (grupo: string, texto: string): HTMLInputElement => {
   const r = [...document.querySelectorAll<HTMLInputElement>(`input[type=radio][name=${grupo}]`)].find((i) => i.labels?.[0]?.textContent === texto);
@@ -76,14 +87,24 @@ describe("filtros", () => {
     expect(store.obter().filtros.uf).toBe("SE");
     expect(uf().value).toBe("Sergipe (SE)");
   });
-  it("grupo mostra descrição curta do escolhido", () => {
+  it("grupo: opções vêm da API (todos os grupos) e a descrição acompanha o escolhido", async () => {
     const { store } = montar();
+    await vi.advanceTimersByTimeAsync(0);
     const sel = document.querySelector<HTMLSelectElement>("select[name=grupo]") as HTMLSelectElement;
-    expect(document.querySelector(".filtro-grupo-desc")?.textContent).toMatch(/Missão/);
-    sel.value = "mbl_2022";
+    expect([...sel.options].map((o) => o.value)).toEqual(["missao_2026", "mbl_2026", "mbl_2022", "mbl_2022_indicados"]);
+    expect(sel.value).toBe("missao_2026");
+    expect(document.querySelector(".filtro-grupo-desc")?.textContent).toMatch(/Missão.*2026.*3 candidaturas/);
+    sel.value = "mbl_2026";
     sel.dispatchEvent(new Event("change", { bubbles: true }));
-    expect(store.obter().filtros.grupo).toBe("mbl_2022");
-    expect(document.querySelector(".filtro-grupo-desc")?.textContent).toMatch(/MBL/);
+    expect(store.obter().filtros.grupo).toBe("mbl_2026");
+    expect(document.querySelector(".filtro-grupo-desc")?.textContent).toMatch(/aliados.*4 candidaturas/);
+  });
+  it("grupo da URL que a API não conhece continua visível no seletor (não some em silêncio)", async () => {
+    const { store } = montar();
+    store.definir({ grupo: "novo_grupo" });
+    await vi.advanceTimersByTimeAsync(0);
+    const sel = document.querySelector<HTMLSelectElement>("select[name=grupo]") as HTMLSelectElement;
+    expect(sel.value).toBe("novo_grupo");
   });
   it("contagem ao vivo, com debounce, usando os filtros atuais", async () => {
     const { store, candidatos } = montar();

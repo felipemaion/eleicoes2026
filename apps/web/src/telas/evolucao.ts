@@ -44,6 +44,11 @@ async function buscarPenetracoes(cliente: ClienteApi, pessoas: readonly PessoaEv
   return Object.fromEntries(pares);
 }
 
+/** Comparação que desemboca no grupo escolhido nos filtros; sem ela, a primeira declarada. */
+function padraoDeComparacao(comparacoes: readonly { id: string; para: string }[], grupo: string): string {
+  return (comparacoes.find((c) => c.para === grupo) ?? comparacoes[0])?.id ?? "";
+}
+
 export const tela: Tela = {
   titulo: "Evolução 2022×2026",
   render(container, { filtros }) {
@@ -69,13 +74,13 @@ export const tela: Tela = {
       parar = carregar(
         conteudo,
         async () => {
-          // `comparacao` é obrigatória na API: sem escolha do usuário, usa a primeira comparação declarada.
+          // `comparacao` é obrigatória na API: sem escolha do usuário, usa a que termina no grupo filtrado (senão, a primeira).
           if (ids.length > 0) {
             const [c, lista] = await Promise.all([comparativoDaSelecao(cliente, ids, cargoApi, filtros.uf), cliente.pessoas({ ...baseLista, limite: "200" })]);
             return { c, g: null, lista: lista.itens };
           }
           const g = await cliente.grupos();
-          comparacao = comparacao || g.comparacoes[0]?.id || "";
+          comparacao = comparacao || padraoDeComparacao(g.comparacoes, filtros.grupo);
           const c = await cliente.comparativo({ ...paramsComCargo(filtros), comparacao: comparacao || undefined });
           return { c, g, lista: [] as PessoaEvolucao[] };
         },
@@ -83,7 +88,7 @@ export const tela: Tela = {
         ({ c: cNulo, g, lista }, destino) => {
           if (cNulo === null) return undefined;
           const c = cNulo;
-          comparacao = comparacao || g?.comparacoes[0]?.id || "";
+          comparacao = comparacao || (g ? padraoDeComparacao(g.comparacoes, filtros.grupo) : "");
           const seletor = g ? campoSelect("Comparar", "comparacao", g.comparacoes.map((x) => ({ valor: x.id, texto: x.rotulo })), comparacao, (v) => { comparacao = v; iniciar("comparacao"); }) : null;
           const { de, para, kpis: k } = c;
           const itens: Kpi[] = [];

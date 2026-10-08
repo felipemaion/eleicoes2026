@@ -13,8 +13,8 @@ export type Uf = (typeof UFS)[number] | "BR";
 export const CARGOS = ["deputado_federal", "deputado_estadual", "senador", "governador", "presidente"] as const;
 export type Cargo = (typeof CARGOS)[number];
 
-export const GRUPOS = ["missao_2026", "mbl_2022"] as const;
-export type Grupo = (typeof GRUPOS)[number];
+/** Id de grupo de `config/grupos.yaml`; a lista válida vem da API (`/api/grupos`), não do código. */
+export type Grupo = string;
 
 export const ANOS = [2022, 2026] as const;
 export type Ano = (typeof ANOS)[number];
