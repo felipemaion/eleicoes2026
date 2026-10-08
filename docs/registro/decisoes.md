@@ -11,3 +11,4 @@
 | 2026-10-07 | 4 agentes (dados/analise Opus/backend/frontend) em tmux com worktrees | pedido; padrão do facc | orquestrador |
 | 2026-10-07 | Repo público criado vazio; Issues #1–#17 abertas (labels papel/fase); push da `main` fica com o Felipe | Felipe preferiu publicar o código depois; a guarda pre-push não é contornada | Felipe |
 | 2026-10-07 | Lista MBL 2022 = 4 indicados (Kim, Guto, Renato Battista, Cristiano Beraldo) + candidatos do Missão 2026 que disputaram 2022 (18 candidaturas); Beraldo entra também no grupo `mbl_2026` | pedido do Felipe | Felipe |
+| 2026-10-07 | Grupo padrão `mbl_2022` = todas as 18 candidaturas (indicados + Missão 2026 que disputou 2022), mesmo quem não era MBL em 2022; recorte `mbl_2022_indicados` fica como filtro opcional | pedido do Felipe | Felipe |
