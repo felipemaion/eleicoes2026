@@ -1,13 +1,14 @@
 /**
  * Verificação final contra a PRODUÇÃO (T-W13). Fora do CI: roda só com E2E_PROD=1.
  * `E2E_PROD=1 pnpm exec playwright test producao --config=playwright.prod.config.ts`
- * Anexa capturas em docs/registro/handoffs/img/T-W13/.
+ * Capturas em test-results/capturas/T-W13/ (SALVAR_CAPTURAS=1 grava em docs/registro/handoffs/img/T-W13/).
  */
+import { pastaCapturas } from "./capturas";
 import { expect, test, type Page } from "@playwright/test";
 
 test.skip(process.env["E2E_PROD"] !== "1", "defina E2E_PROD=1");
 
-const IMG = "../../docs/registro/handoffs/img/T-W13";
+const IMG = pastaCapturas("T-W13");
 const TELAS_5 = ["visao-geral", "mapa", "gastos", "evolucao", "candidato"] as const;
 const CANDIDATOS: [string, string][] = [
   ["renan", "2026:280002540694"],

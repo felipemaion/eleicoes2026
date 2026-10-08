@@ -3,6 +3,7 @@
  * OpenAPI tiver os endpoints). Cada resposta passa por uma checagem de forma mínima: dado
  * malformado falha alto em vez de virar gráfico errado.
  */
+import { VERSAO_BUILD } from "../versao";
 import type {
   Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos, RespostaUfs,
 } from "./contrato";
@@ -55,6 +56,7 @@ function query(p: Params): string {
     if (typeof v === "string") q.set(k, v);
     else for (const x of v) q.append(k, x);
   }
+  if (VERSAO_BUILD !== "") q.set("v", VERSAO_BUILD);
   const s = q.toString();
   return s ? `?${s}` : "";
 }

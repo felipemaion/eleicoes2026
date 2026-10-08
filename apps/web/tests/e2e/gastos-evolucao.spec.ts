@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { simularApi } from "./api";
+import { pastaCapturas } from "./capturas";
 
-const CAPTURAS = "../../docs/registro/handoffs/img";
+const CAPTURAS = pastaCapturas();
 
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
@@ -71,6 +73,36 @@ test("gastos (T-W17): com UF a foto aparece, a tabela não quebra letra a letra 
   const alt = await linha.evaluate((e) => ({ h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) }));
   expect(alt.h).toBeLessThanOrEqual(alt.lh * 1.2);
   expect((await linha.boundingBox())?.width ?? 0).toBeGreaterThan(40);
+});
+
+/** Resposta de antes do deploy que trouxe foto e link: o ETag da API não muda com o código, então o navegador a reaproveita. */
+const semFotoNemLink = (corpo: string): string => {
+  const g = JSON.parse(corpo) as { por_candidato: Record<string, unknown>[] };
+  return JSON.stringify({ ...g, por_candidato: g.por_candidato.map((c) => Object.fromEntries(Object.entries(c).filter(([k]) => k !== "foto_url" && k !== "link_tse_candidato"))) });
+};
+
+test("gastos (T-W21): resposta antiga em cache não esconde foto e link — a API é chamada com a versão do build", async ({ page }) => {
+  await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
+  const completo = readFileSync(new URL("../fixtures/api/gastos.json", import.meta.url), "utf-8");
+  // Registrada depois de `simularApi` (beforeEach), portanto tem prioridade.
+  await page.route("**/api/gastos?**", (r) => {
+    const sujeitoAoCacheAntigo = !new URL(r.request().url()).searchParams.has("v");
+    return r.fulfill({ contentType: "application/json", body: sujeitoAoCacheAntigo ? semFotoNemLink(completo) : completo });
+  });
+  for (const alvo of ["/#/gastos?uf=SE", "/#/gastos?uf=SE&grupo=mbl_2026"]) {
+    await page.goto(alvo);
+    const pontos = page.locator("circle.marca");
+    await expect(pontos.first()).toBeVisible();
+    await expect(page.locator("svg.grafico > title")).toHaveCount(0);
+    await expect(page.locator("circle.marca title")).toHaveCount(0);
+    const balao = page.locator(".tooltip-flutuante:not([hidden])");
+    for (let i = 0; i < await pontos.count(); i++) {
+      await page.mouse.move(2, 2);
+      await pontos.nth(i).hover();
+      await expect(balao.locator(".foto-candidato")).toBeVisible();
+      await expect(balao).toContainText("Clique para abrir no TSE");
+    }
+  }
 });
 
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {
