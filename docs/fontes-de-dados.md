@@ -214,3 +214,16 @@ faltante/repetido na série **falha** o processamento. Última observação baix
   `h3_r6` por `cell_to_parent`; `aptos` = `qt_eleitor_secao` do local). Local sem coordenada (inclui exterior) fica
   **fora** (nunca no centróide, ADR 0007). `h3` é o nome que a API lê; o brief chamava de `h3_r8`.
 - Nomes alinhados ao backend: `nr_local` (não `nr_local_votacao`) e `ano` pela partição hive `ano=AAAA/`.
+
+## Fotos dos candidatos (T-D07)
+- **URL** (outra árvore do CDN, não `odsele`):
+  `https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes{ANO}/fotos/foto_cand{ANO}_{UF}_div.zip`,
+  por UF + `BR` (presidente). **Sem ZIP de `ZZ`** em 2022 nem 2026 (404 verificado em 2026-10-08).
+  Tamanhos: 2026 ≈ 15 MB (SP), 2022 ≈ 90 MB (SP); total ≈ 245 MB em `data/raw/tse/fotos/`.
+- **Conteúdo**: `F<UF><SQ_CANDIDATO>_div.jpg|jpeg` (as duas extensões aparecem) + `leiame.pdf`; JPEG de
+  tamanhos variados (ex. 161×225, 111×155). A chave é o `sq_candidato` (Int64 no Parquet, texto no nome).
+- **Cobertura**: nem todo candidato tem foto (2026: 1 de 20.302; 2022: 25 de 28.720 — quase todos INAPTOS).
+- **Processamento** (`etl fotos --ano A [--baixar] [--uf UF]`): seleciona cargos 1–8 (+ todo o partido 14
+  em 2026), recorta para 160×200 (proporção 4:5, âncora no topo para preservar o rosto), WebP q70, em
+  `data/processed/fotos/<ano>/<sq>.webp` + `fotos/manifesto.json` (`sq` → `arquivo`, `origem`, `sha256`,
+  `sha256_origem`). Idempotente pelo sha256 do JPEG de origem. Servido em `/fotos/<ano>/<sq>.webp`.

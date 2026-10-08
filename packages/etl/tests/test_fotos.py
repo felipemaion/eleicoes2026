@@ -9,10 +9,9 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from PIL import Image
-
 from etl.fontes.catalogo import alvos
 from etl.fotos import ErroFotos, processar_fotos, selecionar_sqs
+from PIL import Image
 
 
 def _jpeg(largura: int, altura: int, cor: tuple[int, int, int]) -> bytes:
@@ -77,7 +76,7 @@ def test_idempotente_e_acumula_entre_ufs(zip_ac: Path, tmp_path: Path) -> None:
 def test_zip_corrompido_falha_alto(tmp_path: Path) -> None:
     ruim = tmp_path / "foto_cand2026_AC_div.zip"
     ruim.write_bytes(b"nao e zip")
-    with pytest.raises(ErroFotos, match="foto_cand2026_AC_div.zip"):
+    with pytest.raises(ErroFotos, match=r"foto_cand2026_AC_div\.zip"):
         processar_fotos(2026, [ruim], tmp_path / "fotos", sqs={"1"})
 
 
@@ -85,7 +84,7 @@ def test_imagem_ilegivel_falha_alto(tmp_path: Path) -> None:
     z = tmp_path / "foto_cand2026_AC_div.zip"
     with zipfile.ZipFile(z, "w") as f:
         f.writestr("FAC10000000001_div.jpg", b"lixo")
-    with pytest.raises(ErroFotos, match="FAC10000000001_div.jpg"):
+    with pytest.raises(ErroFotos, match=r"FAC10000000001_div\.jpg"):
         processar_fotos(2026, [z], tmp_path / "fotos", sqs={"10000000001"})
 
 
@@ -95,7 +94,7 @@ def test_selecionar_sqs_cargos_1_a_8_mais_partido_14(tmp_path: Path) -> None:
     pl.DataFrame(
         {
             "ano_eleicao": [2026] * 4,
-            "sq_candidato": ["1", "2", "3", "4"],
+            "sq_candidato": [1, 2, 3, 4],  # Int64 no Parquet; os ZIPs usam o sq como texto
             "cd_cargo": [1, 9, 9, 9],  # presidente e três suplentes
             "nr_partido": [10, 14, 15, 10],
         }

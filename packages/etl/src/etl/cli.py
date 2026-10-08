@@ -15,6 +15,7 @@ from contratos import ContratoViolado
 
 from etl.download import Baixador, DownloadError
 from etl.fontes.catalogo import CATALOGO, alvos
+from etl.fotos import ErroFotos, processar_fotos, selecionar_sqs
 from etl.geo import ErroGeo
 from etl.ipca import processar_ipca
 from etl.manifesto import Manifesto
@@ -57,7 +58,37 @@ def _parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--descartar-zip", action="store_true", help="apaga o ZIP de cada UF após validar"
     )
+    f = sub.add_parser("fotos", help="fotos oficiais (ZIPs TSE) → WebP 160×200 + manifesto")
+    f.add_argument("--ano", type=int, required=True)
+    f.add_argument("--uf", action="append", help="repetível; padrão: todas as UFs com ZIP")
+    f.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    f.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    f.add_argument("--baixar", action="store_true", help="baixa os ZIPs antes de processar")
     return p
+
+
+def _fotos(args: argparse.Namespace) -> int:
+    manifesto = Manifesto(args.raiz_raw / "manifesto.json")
+    ufs = args.uf or [None]
+    destinos = [a for u in ufs for a in alvos(args.ano, ["fotos"], uf=u)]
+    try:
+        if args.baixar:
+            with httpx.Client(timeout=httpx.Timeout(30.0, read=300.0)) as cliente:
+                baixador = Baixador(args.raiz_raw, manifesto, cliente)
+                for alvo in destinos:
+                    print(f"{baixador.baixar(alvo).value}: {alvo.destino}", flush=True)
+        zips = [args.raiz_raw / a.destino for a in destinos]
+        stats = processar_fotos(
+            args.ano,
+            zips,
+            args.raiz_processed / "fotos",
+            sqs=selecionar_sqs(args.raiz_processed, args.ano),
+        )
+    except (ErroFotos, DownloadError, FileNotFoundError) as e:
+        print(f"FALHA fotos: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+    return 0
 
 
 def _secao(args: argparse.Namespace) -> int:
@@ -131,6 +162,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.comando == "geo":
         return _geo(args)
+    if args.comando == "fotos":
+        return _fotos(args)
     if args.comando == "secao":
         return _secao(args)
     if args.comando == "processar":

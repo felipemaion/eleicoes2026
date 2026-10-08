@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 CDN_TSE = "https://cdn.tse.jus.br/estatistica/sead/odsele"
+# Fotos oficiais ficam em outra árvore do CDN (``eleicoes/eleicoesAAAA/fotos``), não em ``odsele``.
+CDN_TSE_FOTOS = "https://cdn.tse.jus.br/estatistica/sead/eleicoes/eleicoes{ano}/fotos"
 IBGE_API = "https://servicodados.ibge.gov.br/api/v3"
 # A API v3 de malhas não traz municípios criados recentemente (Boa Esperança do Norte/MT);
 # o shapefile oficial da Malha Municipal Digital 2025 traz os 5.571.
@@ -28,7 +30,9 @@ UFS: tuple[str, ...] = (
     "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO", "ZZ", "BR",
 )  # fmt: skip
 # Arquivos por UF que o TSE não publica (404): em 2022 o exterior vem só no arquivo BR.
+# Fotos: o exterior (ZZ) também não tem ZIP em 2026 (404 verificado) — só presidente, que vem em BR.
 UF_SEM_ARQUIVO: frozenset[tuple[int, str]] = frozenset({(2022, "ZZ")})
+UF_SEM_FOTOS: frozenset[tuple[int, str]] = frozenset({(2022, "ZZ"), (2026, "ZZ")})
 
 ANOS_TSE: tuple[int, ...] = (2022, 2026)
 
@@ -82,6 +86,13 @@ CATALOGO: dict[str, Fonte] = {
             "prestacao_contas",
             "prestacao_contas",
             "prestacao_de_contas_eleitorais_candidatos",
+        ),
+        Fonte(
+            id="fotos",
+            origem="tse",
+            url_modelo=f"{CDN_TSE_FOTOS}/foto_cand{{ano}}_{{uf}}_div.zip",
+            destino_modelo="tse/fotos/foto_cand{ano}_{uf}_div.zip",
+            por_uf=True,
         ),
         Fonte(
             id="municipio_tse_ibge",
@@ -144,7 +155,8 @@ def alvos(ano: int, fontes: list[str] | None = None, uf: str | None = None) -> l
         fonte = CATALOGO[id_]
         ufs: tuple[str | None, ...] = ((uf,) if uf else UFS) if fonte.por_uf else (None,)
         for u in ufs:
-            if u is not None and (ano, u) in UF_SEM_ARQUIVO:
+            ausentes = UF_SEM_FOTOS if id_ == "fotos" else UF_SEM_ARQUIVO
+            if u is not None and (ano, u) in ausentes:
                 continue
             valores = {"ano": ano, "uf": u}
             saida.append(
