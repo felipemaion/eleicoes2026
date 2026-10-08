@@ -166,14 +166,30 @@ def despesa_campanha(
     return proprias.group_by(list(por)).agg(soma).sort(list(por))
 
 
+def _despesa_paga() -> pl.Expr:
+    """`despesa_paga` com nulo → 0 quando há despesa contratada (contrato de entrada, §4.2).
+
+    `despesas_pagas` não traz linha para quem ainda não pagou nada; com contas entregues
+    (contratada não nula) isso é "pagou 0", não "sem dado". Sem contas, segue nulo.
+    """
+    contratada, paga = pl.col("despesa_contratada"), pl.col("despesa_paga")
+    return (
+        pl.when(paga.is_null() & contratada.is_not_null())
+        .then(pl.lit(0.0))
+        .otherwise(paga.cast(pl.Float64))
+        .alias("despesa_paga")
+    )
+
+
 def custo_por_voto(df: pl.DataFrame) -> pl.DataFrame:
     """Acrescenta `custo_voto_contratado`, `custo_voto_pago` (R$/voto) e `divida` (§4.2).
 
     `custo = despesa / votos` (`votos = 0` → `null`, nunca infinito);
-    `divida = despesa_contratada − despesa_paga`.
+    `divida = despesa_contratada − despesa_paga`. `despesa_paga` nula com contratada não nula
+    vira 0 (nenhum pagamento lançado); a coluna sai já normalizada.
     """
     exigir_colunas(df, ["despesa_contratada", "despesa_paga", "votos"], "custo_por_voto")
-    return df.with_columns(
+    return df.with_columns(_despesa_paga()).with_columns(
         razao(pl.col("despesa_contratada"), pl.col("votos")).alias("custo_voto_contratado"),
         razao(pl.col("despesa_paga"), pl.col("votos")).alias("custo_voto_pago"),
         (pl.col("despesa_contratada") - pl.col("despesa_paga")).alias("divida"),
@@ -189,6 +205,7 @@ def custo_por_voto_agregado(df: pl.DataFrame) -> pl.DataFrame:
     `candidatos_sem_contas_excluidos`.
     """
     exigir_colunas(df, ["despesa_contratada", "despesa_paga", "votos"], "custo_por_voto_agregado")
+    df = df.with_columns(_despesa_paga())
     com_contas = pl.col("despesa_contratada").is_not_null()
     elegivel = com_contas & (pl.col("votos") > 0)
     votos = pl.col("votos").filter(elegivel).sum()

@@ -19,6 +19,8 @@ from indicadores._comum import (
 )
 
 _CONTAGENS = ("aptos", "validos", "votos")
+CD_CARGO_SENADOR = 5
+"""`CD_CARGO` do Senado no TSE. Fora da evolução: 2022 elegeu 1 vaga, 2026 elege 2 (§1.8)."""
 LIMIAR_REDUTO = 2.0
 """LQ a partir do qual uma AMC é reduto (spec §5.2)."""
 
@@ -48,18 +50,32 @@ def evolucao(
     ano_2026: pl.DataFrame,
     amc: pl.DataFrame,
     por: Sequence[str] = (),
+    *,
+    cd_cargo: int,
 ) -> pl.DataFrame:
     """Δ penetração, swing, retenção e ganho por AMC (spec §5.1).
 
     `delta_penetracao = pen_2026 − pen_2022` (‰, âncora); `swing_pp = %válidos_2026 −
     %válidos_2022` (p.p.); `retencao = votos_2026 / votos_2022` (`null` se 0);
     `ganho_absoluto = votos_2026 − votos_2022` (só símbolos, nunca coroplético).
-    AMC presente num ano só → indicadores do outro lado nulos.
+
+    AMC presente num ano só (p. ex. entidade sem linha num município, ou município fora da
+    base de um dos anos): as colunas `*_<ano ausente>` e **todas** as diferenças
+    (`delta_penetracao`, `swing_pp`, `retencao`, `ganho_absoluto`) ficam `null` — ausência é
+    "sem dado", não zero (zero votos com eleitorado vem como linha com `votos = 0`).
 
     Args:
         ano_2022, ano_2026: `por…, cd_mun_ibge, aptos, validos, votos` (mesmo cargo, 1º turno).
         amc: tabela `cd_mun_ibge → amc` que cobre os municípios dos dois anos.
+        cd_cargo: cargo comparado (código TSE); obrigatório para recusar o Senado.
+
+    Raises:
+        ValueError: Senado (`cd_cargo = 5`) ou município sem AMC.
     """
+    if cd_cargo == CD_CARGO_SENADOR:
+        raise ValueError(
+            "evolucao: Senado não entra em evolução (1 vaga em 2022, 2 em 2026; spec §1.8)"
+        )
     chaves = [*por, "amc"]
     lados = []
     for ano, df in (("2022", ano_2022), ("2026", ano_2026)):

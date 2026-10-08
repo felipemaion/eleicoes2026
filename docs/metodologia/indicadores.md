@@ -508,6 +508,12 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
   publicar os valores distintos de `DS_ORIGEM_DESPESA` (pendência).
 - **Grupos:** `grupos.agregar_grupo` recusa cargos ou turnos misturados; `receitas_grupo` exclui
   receita de "outros candidatos" cujo doador é membro do grupo.
+- **Revisão (T-A06):** `votos_nominais` recusa `nr_turno`/`cd_cargo` com mais de um valor (salvo
+  se a coluna estiver nas `chaves`). Custo por voto: `despesa_paga` nula com contratada não nula
+  = **0** (nenhuma linha em `despesas_pagas` = nada pago); sem contas, segue nulo.
+  `evolucao.evolucao` exige `cd_cargo` e recusa o Senado (§1.8); AMC presente num ano só deixa
+  todas as diferenças nulas (ausência ≠ zero). Escalas sequenciais: `espacial.quebras_comuns`
+  ([§8.3](#quebras-comuns)).
 
 <a id="referencias"></a>
 ## 9. Referências

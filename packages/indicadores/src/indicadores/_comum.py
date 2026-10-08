@@ -42,6 +42,18 @@ def exigir_colunas(df: pl.DataFrame, colunas: Iterable[str], contexto: str) -> N
         raise ValueError(f"{contexto}: colunas ausentes {ausentes}")
 
 
+def exigir_valor_unico(df: pl.DataFrame, coluna: str, regra: str, contexto: str) -> None:
+    """Falha alto se `coluna` existir em `df` com mais de um valor (p. ex. dois turnos).
+
+    Somar turnos ou cargos dupla-contaria o eleitor (spec §0, §1.3); ausência da coluna é
+    aceita — o chamador já filtrou o recorte.
+    """
+    if coluna in df.columns and df[coluna].n_unique() > 1:
+        raise ValueError(
+            f"{contexto}: {regra} ({coluna} com valores {sorted(df[coluna].unique().to_list())})"
+        )
+
+
 def exigir_unicidade(df: pl.DataFrame, chaves: Sequence[str], contexto: str) -> None:
     """Falha alto se houver linhas repetidas para as `chaves` (tabela não agregada)."""
     if df.select(list(chaves)).is_duplicated().any():

@@ -10,17 +10,10 @@ from collections.abc import Sequence
 
 import polars as pl
 
-from indicadores._comum import exigir_colunas
+from indicadores._comum import exigir_colunas, exigir_valor_unico
 from indicadores.financeiro import resumo_receitas
 
 SITUACAO_APTA = "APTO"
-
-
-def _exigir_unico(df: pl.DataFrame, coluna: str, regra: str) -> None:
-    if coluna in df.columns and df[coluna].n_unique() > 1:
-        raise ValueError(
-            f"agregar_grupo: {regra} ({coluna} com valores {df[coluna].unique().to_list()})"
-        )
 
 
 def agregar_grupo(
@@ -42,8 +35,8 @@ def agregar_grupo(
         raise ValueError(f"agregar_grupo: grupo {grupo!r} sem membros")
     exigir_colunas(votos, [entidade, *chaves, "votos"], "agregar_grupo")
     dos_membros = votos.filter(pl.col(entidade).is_in(list(membros)))
-    _exigir_unico(dos_membros, "cd_cargo", "um cargo por vez")
-    _exigir_unico(dos_membros, "nr_turno", "um turno por vez")
+    exigir_valor_unico(dos_membros, "cd_cargo", "um cargo por vez", "agregar_grupo")
+    exigir_valor_unico(dos_membros, "nr_turno", "um turno por vez", "agregar_grupo")
     return (
         dos_membros.group_by(list(chaves))
         .agg(pl.col("votos").sum())

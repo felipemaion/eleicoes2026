@@ -18,6 +18,7 @@ from indicadores._comum import (
     LIMIAR_N_BAIXO,
     exigir_colunas,
     exigir_unicidade,
+    exigir_valor_unico,
     expr_pct_validos,
     expr_penetracao,
     razao,
@@ -47,13 +48,17 @@ def votos_nominais(
         chaves: nível de agregação (padrão candidato × município).
 
     Raises:
-        ValueError: coluna ausente ou destinação desconhecida.
+        ValueError: coluna ausente, destinação desconhecida, ou `nr_turno`/`cd_cargo` com mais
+            de um valor sem estar nas `chaves` (somaria turnos ou cargos; spec §0, §1.3).
     """
     exigir_colunas(
         votacao,
         [*chaves, "nm_tipo_destinacao_votos", "qt_votos_nominais", "qt_votos_nominais_validos"],
         "votos_nominais",
     )
+    for coluna, regra in (("nr_turno", "um turno por vez"), ("cd_cargo", "um cargo por vez")):
+        if coluna not in chaves:
+            exigir_valor_unico(votacao, coluna, regra, "votos_nominais")
     conhecidas = {*DESTINACOES_VALIDAS, *DESTINACOES_ANULADAS, *DESTINACOES_LEGENDA}
     presentes = set(votacao["nm_tipo_destinacao_votos"].unique().to_list())
     if desconhecidas := presentes - conhecidas:
