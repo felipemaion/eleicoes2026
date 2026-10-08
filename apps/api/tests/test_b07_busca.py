@@ -1,6 +1,7 @@
 """T-B07: busca de candidaturas, evolução por pessoa e comparativo de seleção."""
 
-import pytest
+from typing import Any
+
 from api.pessoa import id_publico
 from fastapi.testclient import TestClient
 
@@ -62,7 +63,7 @@ def test_busca_item_completo_sem_pii(api: TestClient) -> None:
     assert item["partido"] == {"numero": 14, "sigla": "MISSÃO"}
     assert item["votos"] == 1000
     assert item["resultado"] == "SUPLENTE"
-    assert item["indicado"] is False
+    assert item["indicado"] is True  # linha origem=indicado da lista de referência (2026)
     assert item["abrangencia"] == {"tipo": "uf", "uf": "SP"}
     assert item["pessoa_id_publico"] == id_publico("pA")
     assert len(item["pessoa_id_publico"]) == 12
@@ -104,8 +105,8 @@ def test_evolucao_pessoas_lista_quem_esta_nos_dois_anos(api: TestClient) -> None
         id_publico("pD"),
     }
     a = next(i for i in itens if i["pessoa_id_publico"] == id_publico("pA"))
-    assert a["de"]["ano"] == 2022 and a["de"]["sq_candidato"] == 1 and a["de"]["votos"] == 800
-    assert a["para"]["ano"] == 2026 and a["para"]["sq_candidato"] == 3
+    assert (a["de"]["ano"], a["de"]["sq_candidato"], a["de"]["votos"]) == (2022, 1, 800)
+    assert (a["para"]["ano"], a["para"]["sq_candidato"]) == (2026, 3)
     assert a["para"]["votos"] == 1000
     assert a["mesmo_cargo"] is True
     assert "pessoa_id" not in a
@@ -124,27 +125,28 @@ def test_evolucao_pessoas_filtros(api: TestClient) -> None:
 
 
 # ------------------------------------------------- comparativo de seleção do usuário
-def _kpis(api: TestClient, **p: object) -> dict[str, object]:
+def _kpis(api: TestClient, **p: object) -> dict[str, Any]:
     r = api.get("/api/comparativo", params={"cargo": DF, **p})
     assert r.status_code == 200, r.text
-    return r.json()
+    corpo: dict[str, Any] = r.json()
+    return corpo
 
 
 def test_comparativo_por_pessoas_e_por_sqs_dao_o_mesmo(api: TestClient) -> None:
     por_pessoa = _kpis(api, pessoas=id_publico("pA"))
     por_sq = _kpis(api, sq_2022=1, sq_2026=3)
     assert por_pessoa["kpis"] == por_sq["kpis"]
-    assert por_pessoa["kpis"]["votos_de"] == 800  # type: ignore[index]
-    assert por_pessoa["kpis"]["votos_para"] == 1000  # type: ignore[index]
+    assert por_pessoa["kpis"]["votos_de"] == 800
+    assert por_pessoa["kpis"]["votos_para"] == 1000
     assert por_pessoa["comparacao"] == "selecao"
-    assert por_pessoa["de"]["ano"] == 2022 and por_pessoa["para"]["ano"] == 2026  # type: ignore[index]
-    assert por_pessoa["n_de"] == 1 and por_pessoa["n_para"] == 1
+    assert (por_pessoa["de"]["ano"], por_pessoa["para"]["ano"]) == (2022, 2026)
+    assert (por_pessoa["n_de"], por_pessoa["n_para"]) == (1, 1)
 
 
 def test_comparativo_com_varias_pessoas_soma_a_selecao(api: TestClient) -> None:
     c = _kpis(api, pessoas=[id_publico("pA"), id_publico("pD")])
-    assert c["kpis"]["votos_de"] == 800 + 60  # type: ignore[index]
-    assert c["kpis"]["votos_para"] == 1000 + 700  # type: ignore[index]
+    assert c["kpis"]["votos_de"] == 800 + 60
+    assert c["kpis"]["votos_para"] == 1000 + 700
 
 
 def test_comparativo_selecao_exige_um_modo(api: TestClient) -> None:
@@ -160,7 +162,7 @@ def test_comparativo_selecao_exige_um_modo(api: TestClient) -> None:
 
 
 def test_comparativo_selecao_sem_par_e_422(api: TestClient) -> None:
-    r = api.get("/api/comparativo", params={"cargo": DF, "pessoas": "naoexiste000"})
+    r = api.get("/api/comparativo", params={"cargo": DF, "pessoas": "0123456789ab"})
     assert r.status_code == 422
     assert r.json()["detail"]["codigo"] == "sem_par_comparavel"
 

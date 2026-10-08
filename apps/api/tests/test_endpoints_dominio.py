@@ -293,7 +293,7 @@ def test_pontos_limite_e_offset(api: TestClient) -> None:
     assert resto["truncado"] is False
 
 
-@pytest.mark.parametrize("extra", [{"uf": None}, {"limite": 0}, {"limite": 50001}, {"grupo": None}])
+@pytest.mark.parametrize("extra", [{"limite": 0}, {"limite": 50001}, {"grupo": None}])
 def test_pontos_parametros_invalidos(api: TestClient, extra: dict[str, object]) -> None:
     params = {"ano": 2026, "cargo": DF, "uf": "SP", "grupo": "missao_2026", **extra}
     params = {k: v for k, v in params.items() if v is not None}

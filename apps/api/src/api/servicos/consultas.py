@@ -4,6 +4,8 @@ Uma só definição da chave de cache e do cálculo: o aquecimento só serve se 
 a chave que a rota vai ler (por isso rota e aquecimento chamam estas funções).
 """
 
+from collections.abc import Sequence
+
 from api.cache_servico import CacheLRU
 from api.dominio import Cargo
 from api.repositorio.base import Repositorio
@@ -56,15 +58,27 @@ def comparativo_em_cache(
     catalogo: Catalogo,
     cache: CacheLRU,
     *,
-    comparacao: str,
+    comparacao: str | None,
     cargo: Cargo,
     uf: str | None,
     mesmos_candidatos: bool,
+    pessoas: Sequence[str] = (),
+    sq_2022: Sequence[int] = (),
+    sq_2026: Sequence[int] = (),
 ) -> Comparativo:
     """`/comparativo` com cache LRU."""
     return cache.obter(
         repo.dt_geracao(),
-        ("comparativo", comparacao, cargo, uf, mesmos_candidatos),
+        (
+            "comparativo",
+            comparacao,
+            cargo,
+            uf,
+            mesmos_candidatos,
+            tuple(sorted(pessoas)),
+            tuple(sorted(sq_2022)),
+            tuple(sorted(sq_2026)),
+        ),
         lambda: montar_comparativo(
             repo,
             catalogo,
@@ -72,5 +86,8 @@ def comparativo_em_cache(
             cargo=cargo,
             uf=uf,
             mesmos_candidatos=mesmos_candidatos,
+            pessoas=pessoas,
+            sq_2022=sq_2022,
+            sq_2026=sq_2026,
         ),
     )

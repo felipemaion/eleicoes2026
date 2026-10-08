@@ -6,6 +6,7 @@ from pathlib import Path
 
 import duckdb
 
+from api.pessoa import SQL_ID_PUBLICO
 from api.repositorio.base import DadosIndisponiveis
 from api.repositorio.modelos import (
     BaseEleitoral,
@@ -13,12 +14,14 @@ from api.repositorio.modelos import (
     CelulaH3,
     DespesaBruta,
     Municipio,
+    ParDePessoa,
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
 )
+from api.texto import SQL_NORMALIZA, escapar_like
 
 # Datasets com contrato (packages/contratos/tse.py), em `<dir>/<dataset>/ano=AAAA/*.parquet`.
 # A API lê só `consulta_cand` como obrigatório; os demais viram view se existirem e, se faltarem,
@@ -46,6 +49,7 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "consulta_cand": (
         "nr_turno", "sg_uf", "ds_cargo", "sq_candidato", "nm_urna_candidato", "nr_partido",
         "sg_partido", "ds_situacao_candidatura", "ds_sit_tot_turno", "pessoa_id", "dt_geracao",
+        "nr_candidato", "nm_candidato",
     ),
     "votacao_candidato_munzona": (
         "nr_turno", "sg_uf", "cd_mun_ibge", "nr_zona", "sq_candidato",
@@ -83,9 +87,10 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
 _VIEWS = {
     "candidatos": (
         "consulta_cand",
-        "SELECT ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"
+        "SELECT ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"  # noqa: S608
         " upper(ds_cargo) AS ds_cargo, nr_partido, sg_partido, ds_situacao_candidatura,"
-        " ds_sit_tot_turno"
+        " ds_sit_tot_turno, nr_candidato, nm_candidato AS nm_civil,"
+        f" {SQL_ID_PUBLICO} AS pessoa_pub"
         " FROM {fonte} WHERE nr_turno = 1",
     ),
     # Votos nominais válidos somados nas zonas e no voto em trânsito (spec §2.1).
@@ -106,12 +111,39 @@ _VIEWS = {
         "SELECT DISTINCT cd_mun_ibge, nm_municipio_ibge AS nome, sg_uf AS uf FROM {fonte}",
     ),
 }
-_COLUNAS_CANDIDATURA = (
-    "ano, sq_candidato, pessoa_id, nm_urna, sg_uf, ds_cargo, nr_partido, sg_partido,"
-    " ds_situacao_candidatura, ds_sit_tot_turno"
-)
+_CAMPOS_CANDIDATURA = (
+    "ano", "sq_candidato", "pessoa_id", "nm_urna", "sg_uf", "ds_cargo", "nr_partido",
+    "sg_partido", "ds_situacao_candidatura", "ds_sit_tot_turno", "nr_candidato", "nm_civil",
+)  # fmt: skip
+_COLUNAS_CANDIDATURA = ", ".join(_CAMPOS_CANDIDATURA)
+_ESCAPE = "ESCAPE '\\'"  # o LIKE do DuckDB não tem escape padrão
 # `sq IN (SELECT unnest(?))`: a lista vai como parâmetro (nunca interpolada no SQL).
 _SQS = "sq_candidato IN (SELECT unnest(?::BIGINT[]))"
+
+
+def _casamento(termo: str, prefixo: str) -> tuple[str, list[object], str, list[object]]:
+    """(condição, params, ordem, params da ordem) do termo sobre as colunas com `prefixo`.
+
+    Termo numérico: prefixo do número de urna ou número do partido. Texto: substring em nome de
+    urna, nome civil e sigla (sem acento, minúsculas); a ordem põe antes quem casa por início de
+    palavra. O termo só entra como parâmetro, com `%`/`_`/`\\` escapados.
+    """
+    if termo.isdigit():
+        casa = f"({prefixo}nr_candidato::VARCHAR LIKE ? {_ESCAPE} OR {prefixo}nr_partido = ?)"
+        rank = f"CASE WHEN {prefixo}nr_candidato::VARCHAR LIKE ? {_ESCAPE} THEN 0 ELSE 1 END"
+        return casa, [termo + "%", int(termo)], rank, [termo + "%"]
+    colunas = [
+        SQL_NORMALIZA.format(coluna=f"{prefixo}{c}") for c in ("nm_urna", "nm_civil", "sg_partido")
+    ]
+    seguro = escapar_like(termo)
+    contem = " OR ".join(f"{c} LIKE ? {_ESCAPE}" for c in colunas)
+    palavra = " OR ".join(f"{c} LIKE ? {_ESCAPE} OR {c} LIKE ? {_ESCAPE}" for c in colunas)
+    return (
+        f"({contem})",
+        [f"%{seguro}%"] * len(colunas),
+        f"CASE WHEN {palavra} THEN 0 ELSE 1 END",
+        [p for _ in colunas for p in (f"{seguro}%", f"% {seguro}%")],
+    )
 
 
 class RepositorioDuckDB:
@@ -398,6 +430,95 @@ class RepositorioDuckDB:
         )
         return Candidatura(*linhas[0]) if linhas else None  # type: ignore[arg-type]
 
+    def buscar_candidaturas(
+        self,
+        *,
+        termo: str,
+        ano: int | None = None,
+        cargo: str | None = None,
+        uf: str | None = None,
+        partido: int | None = None,
+        sqs: Sequence[int] | None = None,
+        limite: int,
+    ) -> tuple[int, list[Candidatura]]:
+        """Busca por nome de urna/civil, número ou partido (termo já normalizado)."""
+        condicoes: list[str] = []
+        params: list[object] = []
+        for coluna, valor in (("ano", ano), ("ds_cargo", cargo)):
+            if valor is not None:
+                condicoes.append(f"{coluna} = ?")
+                params.append(valor)
+        if uf is not None:
+            condicoes.append("sg_uf IN (?, 'BR')" if cargo == "PRESIDENTE" else "sg_uf = ?")
+            params.append(uf)
+        if partido is not None or sqs is not None:
+            uniao = []
+            if partido is not None:
+                uniao.append("nr_partido = ?")
+                params.append(partido)
+            if sqs is not None:
+                uniao.append("sq_candidato IN (SELECT unnest(?::BIGINT[]))")
+                params.append(list(sqs))
+            condicoes.append("(" + " OR ".join(uniao) + ")")
+        casa, params_casa, rank, params_rank = _casamento(termo, "")
+        sql = (
+            f"SELECT {_COLUNAS_CANDIDATURA}, COUNT(*) OVER () FROM candidatos "  # noqa: S608
+            f"WHERE {casa}"
+            + "".join(f" AND {c}" for c in condicoes)
+            + f" ORDER BY {rank}, ano DESC, nm_urna, sq_candidato LIMIT ?"
+        )
+        linhas = self._linhas(sql, [*params_casa, *params, *params_rank, limite])
+        total = int(str(linhas[0][-1])) if linhas else 0
+        return total, [Candidatura(*linha[:-1]) for linha in linhas]  # type: ignore[arg-type]
+
+    def pares_de_pessoas(
+        self,
+        ano_de: int,
+        ano_para: int,
+        *,
+        termo: str | None = None,
+        uf: str | None = None,
+        cargo: str | None = None,
+        limite: int,
+    ) -> tuple[int, list[ParDePessoa]]:
+        """Pessoas com candidatura nos dois anos, ligadas por `pessoa_id`."""
+        condicoes = ["a.ano = ?", "b.ano = ?"]
+        params: list[object] = [ano_de, ano_para]
+        if cargo is not None:
+            condicoes.append("a.ds_cargo = ? AND b.ds_cargo = ?")
+            params += [cargo, cargo]
+        if uf is not None:
+            condicoes.append("(a.sg_uf = ? OR b.sg_uf = ?)")
+            params += [uf, uf]
+        if termo:
+            ca, pa, _, _ = _casamento(termo, "a.")
+            cb, pb, _, _ = _casamento(termo, "b.")
+            condicoes.append(f"({ca} OR {cb})")
+            params += [*pa, *pb]
+        campos = [f"{lado}.{c}" for lado in "ab" for c in _CAMPOS_CANDIDATURA]
+        sql = (
+            f"SELECT {', '.join(campos)}, COUNT(*) OVER () FROM candidatos a "  # noqa: S608
+            "JOIN candidatos b ON a.pessoa_id = b.pessoa_id WHERE "
+            + " AND ".join(condicoes)
+            + " ORDER BY b.nm_urna, b.sq_candidato, a.sq_candidato LIMIT ?"
+        )
+        linhas = self._linhas(sql, [*params, limite])
+        n = len(_CAMPOS_CANDIDATURA)
+        total = int(str(linhas[0][-1])) if linhas else 0
+        return total, [
+            ParDePessoa(Candidatura(*linha[:n]), Candidatura(*linha[n : 2 * n]))  # type: ignore[arg-type]
+            for linha in linhas
+        ]
+
+    def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
+        """Candidaturas do ano das pessoas pelo identificador público."""
+        sql = (
+            f"SELECT {_COLUNAS_CANDIDATURA} FROM candidatos WHERE ano = ? "  # noqa: S608
+            "AND pessoa_pub IN (SELECT unnest(?::VARCHAR[])) "
+            "ORDER BY sg_uf, ds_cargo, nm_urna, sq_candidato"
+        )
+        return [Candidatura(*linha) for linha in self._linhas(sql, [ano, list(publicos)])]  # type: ignore[arg-type]
+
     def municipios(self, codigos: Sequence[int] | None = None) -> list[Municipio]:
         """Municípios (todos ou os pedidos), ordenados por código.
 
@@ -500,10 +621,18 @@ class RepositorioDuckDB:
         return [CelulaH3(*linha) for linha in linhas]  # type: ignore[arg-type]
 
     def pontos(
-        self, ano: int, sqs: Sequence[int], *, uf: str, limite: int, offset: int
+        self,
+        ano: int,
+        sqs: Sequence[int],
+        *,
+        uf: str | None,
+        limite: int,
+        offset: int,
+        grade_graus: float | None = None,
     ) -> tuple[int, list[PontoVotacao]]:
         """Locais com voto, ordenados por votos desc (desempate estável por coordenada)."""
-        base = """
+        filtro_uf = " AND l.sg_uf = ?" if uf is not None else ""
+        base = f"""
             FROM (
               SELECT cd_mun_ibge, nr_zona, nr_local, SUM(votos) AS votos
               FROM votos_local WHERE ano = ? AND sq_candidato IN (SELECT unnest(?::BIGINT[]))
@@ -511,26 +640,49 @@ class RepositorioDuckDB:
             ) v
             JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge
                                   AND l.nr_zona = v.nr_zona AND l.nr_local = v.nr_local
-            WHERE l.sg_uf = ? AND v.votos > 0 AND l.lat IS NOT NULL AND l.lon IS NOT NULL
-        """
-        params: list[object] = [ano, list(sqs), ano, uf]
-        total = self._linhas("SELECT COUNT(*) " + base, params)[0][0]
-        linhas = self._linhas(
-            "SELECT l.lat, l.lon, v.votos::BIGINT "
-            + base
-            + " ORDER BY v.votos DESC, l.lat, l.lon LIMIT ? OFFSET ?",
-            [*params, limite, offset],
-        )
+            WHERE v.votos > 0 AND l.lat IS NOT NULL AND l.lon IS NOT NULL{filtro_uf}
+        """  # noqa: S608 - só fragmentos fixos
+        params: list[object] = [ano, list(sqs), ano]
+        if uf is not None:
+            params.append(uf)
+        if grade_graus is None:
+            total = self._linhas("SELECT COUNT(*) " + base, params)[0][0]
+            linhas = self._linhas(
+                "SELECT l.lat, l.lon, v.votos::BIGINT "
+                + base
+                + " ORDER BY v.votos DESC, l.lat, l.lon LIMIT ? OFFSET ?",
+                [*params, limite, offset],
+            )
+        else:
+            # Célula = floor(coord / grade); o ponto é o centroide ponderado pelos votos.
+            celula = "GROUP BY floor(l.lat / ?), floor(l.lon / ?)"
+            grade: list[object] = [grade_graus, grade_graus]
+            total = self._linhas(
+                "SELECT COUNT(*) FROM (SELECT 1 " + base + celula + ")",  # noqa: S608
+                [*params, *grade],
+            )[0][0]
+            linhas = self._linhas(
+                "SELECT SUM(l.lat * v.votos) / SUM(v.votos), SUM(l.lon * v.votos) / SUM(v.votos),"
+                " SUM(v.votos)::BIGINT "
+                + base
+                + celula
+                + " ORDER BY 3 DESC, 1, 2 LIMIT ? OFFSET ?",
+                [*params, *grade, limite, offset],
+            )
         return int(str(total)), [PontoVotacao(*linha) for linha in linhas]  # type: ignore[arg-type]
 
     def votos_sem_coordenada(
-        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+        self, ano: int, sqs: Sequence[int], *, uf: str | None, por_h3: bool
     ) -> VotosSemCoordenada:
         """Votos em locais sem lat/lon (pontos) ou sem célula H3 (H3), e o total do recorte."""
         # O critério é fixo (não vem do usuário): cada rota perde os locais que ela não desenha.
         ausente = "l.h3 IS NULL" if por_h3 else "(l.lat IS NULL OR l.lon IS NULL)"
         if por_h3 and not self._tem_h3:
             raise DadosIndisponiveis("locais_h3 ausente")
+        filtro_uf = "WHERE l.sg_uf = ?" if uf is not None else ""
+        params: list[object] = [ano, list(sqs), ano]
+        if uf is not None:
+            params.append(uf)
         linha = self._linhas(
             f"""
             SELECT COALESCE(SUM(CASE WHEN {ausente} THEN v.votos END), 0)::BIGINT,
@@ -542,9 +694,9 @@ class RepositorioDuckDB:
             ) v
             JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge
                                   AND l.nr_zona = v.nr_zona AND l.nr_local = v.nr_local
-            WHERE l.sg_uf = ?
+            {filtro_uf}
             """,  # noqa: S608
-            [ano, list(sqs), ano, uf],
+            params,
         )[0]
         return VotosSemCoordenada(int(str(linha[0])), int(str(linha[1])))
 

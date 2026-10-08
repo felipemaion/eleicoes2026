@@ -13,12 +13,16 @@ PR = "PRESIDENTE"
 @pytest.mark.parametrize(
     "alvo", [{"grupo": "novo_2026"}, {"sq_candidato": 11}], ids=["grupo", "candidato"]
 )
-def test_mapa_presidente_exclui_exterior_e_informa(api: TestClient, alvo: dict[str, object]) -> None:
+def test_mapa_presidente_exclui_exterior_e_informa(
+    api: TestClient, alvo: dict[str, object]
+) -> None:
     r = api.get("/api/mapa", params={"ano": 2026, "cargo": PR, "indicador": "votos", **alvo})
     assert r.status_code == 200, r.text
     corpo = r.json()
-    assert set(corpo["valores"]) == {"3550308", "3509502"}
+    # Municípios com eleitorado entram (Santos e Rio com 0 voto); "None" nunca vira chave.
+    assert set(corpo["valores"]) == {"3550308", "3509502", "3548500", "3304557"}
     assert corpo["valores"]["3550308"] == 3000
+    assert corpo["valores"]["3548500"] == 0
     assert corpo["votos_fora_do_mapa"] == 200
 
 
@@ -79,4 +83,4 @@ def test_pontos_com_uf_continua_ponto_a_ponto(api: TestClient) -> None:
     assert r.status_code == 200, r.text
     corpo = r.json()
     assert corpo["grade_graus"] is None
-    assert corpo["total"] == 2
+    assert corpo["total"] == 3  # um ponto por local de votação

@@ -1,12 +1,14 @@
 """Casos de uso /candidatos e /candidatos/{ano}/{sq}."""
 
+from typing import Literal
+
 import polars as pl
 from indicadores import desempenho
 from indicadores.grupos import agregar_grupo
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.erros import nao_encontrado
-from api.repositorio.base import Repositorio
+from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
 from api.servicos.contas import (
     ResumoCustoCandidato,
@@ -22,6 +24,20 @@ class Partido(BaseModel):
 
     numero: int
     sigla: str
+
+
+class Abrangencia(BaseModel):
+    """Região em que o candidato disputa: o front enquadra o mapa por ela."""
+
+    tipo: Literal["pais", "uf"] = Field(description="`pais` (presidente) ou `uf`.")
+    uf: str | None = Field(description="Sigla da UF; null quando `tipo = pais`.")
+
+
+def abrangencia_de(c: Candidatura) -> Abrangencia:
+    """Presidente (gravado com `sg_uf = BR`) → país; os demais cargos → a UF da candidatura."""
+    return (
+        Abrangencia(tipo="pais", uf=None) if c.sg_uf == "BR" else Abrangencia(tipo="uf", uf=c.sg_uf)
+    )
 
 
 class CandidatoResumo(BaseModel):
@@ -46,6 +62,7 @@ class CandidatoResumo(BaseModel):
         description="Candidatura indicada pelo grupo (`origem=indicado` na lista de referência); "
         "false para candidatos próprios ou fora da lista."
     )
+    abrangencia: Abrangencia
 
 
 class KpisGrupo(BaseModel):
@@ -91,6 +108,7 @@ class ListaCandidatos(BaseModel):
                             "pct_validos": 8.06,
                             "penetracao": 57.14,
                             "indicado": False,
+                            "abrangencia": {"tipo": "uf", "uf": "SP"},
                         }
                     ],
                     "kpis": {
@@ -149,6 +167,7 @@ def _montar_resumo(
         pct_validos=pct,
         penetracao=pen,
         indicado=indicado,
+        abrangencia=abrangencia_de(c),
     )
 
 
@@ -164,7 +183,10 @@ def kpis_do_grupo(
     if not candidaturas:
         return None
     sqs = [c.sq_candidato for c in candidaturas]
-    por_mun = repo.votos_territorio(grupo.ano, sqs, por_zona=False, uf=uf)
+    todos = repo.votos_territorio(grupo.ano, sqs, por_zona=False, uf=uf)
+    # Exterior (sem município IBGE) soma ao total do grupo mas não entra por município.
+    exterior = sum(v.votos for v in todos if v.cd_mun_ibge is None)
+    por_mun = [v for v in todos if v.cd_mun_ibge is not None]
     # `votos_territorio` já devolve Σ dos membros por município; o quadro leva o grupo como
     # entidade única para que `agregar_grupo` imponha cargo/turno únicos e some por município.
     votos = pl.DataFrame(
@@ -175,10 +197,9 @@ def kpis_do_grupo(
         },
         schema={"grupo": pl.String, "cd_mun_ibge": pl.Int64, "votos": pl.Int64},
     )
-    if votos.is_empty():
-        total = 0
-    else:
-        total = int(agregar_grupo(votos, [grupo.id], grupo.id, entidade="grupo")["votos"].sum())
+    total = exterior
+    if not votos.is_empty():
+        total += int(agregar_grupo(votos, [grupo.id], grupo.id, entidade="grupo")["votos"].sum())
     base = repo.base_eleitoral(grupo.ano, cargo, por_zona=False, uf=uf)
     aptos, validos = sum(b.aptos for b in base), sum(b.validos for b in base)
     ((pct, pen),) = taxas([(total, aptos, validos)])
@@ -213,6 +234,9 @@ def listar_candidatos(
         itens=itens[offset : offset + limite],
         kpis=kpis_do_grupo(repo, grupo, candidaturas, cargo=cargo, uf=uf) if cargo else None,
     )
+
+
+UF_EXTERIOR = "ZZ"  # sigla do TSE para votos no exterior
 
 
 class VotosUF(BaseModel):
@@ -253,8 +277,13 @@ def montar_ficha(
     c = repo.candidatura(ano, sq_candidato)
     if c is None:
         raise nao_encontrado("candidato_nao_encontrado", f"candidato {ano}/{sq_candidato}")
-    por_mun = repo.votos_territorio(ano, [sq_candidato], por_zona=False)
-    municipios = {m.cd_mun_ibge: m for m in repo.municipios([v.cd_mun_ibge for v in por_mun])}
+    todos = repo.votos_territorio(ano, [sq_candidato], por_zona=False)
+    # Voto sem município (exterior) entra no total e em `ZZ`, mas não tem município nem taxa.
+    exterior = sum(v.votos for v in todos if v.cd_mun_ibge is None)
+    por_mun = [(v.cd_mun_ibge, v.votos) for v in todos if v.cd_mun_ibge is not None]
+    municipios = {m.cd_mun_ibge: m for m in repo.municipios([cd for cd, _ in por_mun])}
+    if any(cd not in municipios for cd, _ in por_mun):
+        raise DadosIndisponiveis("voto em município fora do cadastro (municipio_tse_ibge)")
     base = {
         b.cd_mun_ibge: b
         for b in repo.base_eleitoral(ano, c.ds_cargo, por_zona=False, uf=uf_da_base(c.sg_uf))
@@ -262,25 +291,24 @@ def montar_ficha(
     por_uf: dict[str, int] = {}
     quadro = desempenho.penetracao(
         pl.DataFrame(
-            [
-                (v.votos, base[v.cd_mun_ibge].aptos if v.cd_mun_ibge in base else None)
-                for v in por_mun
-            ],
+            [(votos, base[cd].aptos if cd in base else None) for cd, votos in por_mun],
             schema={"votos": pl.Int64, "aptos": pl.Int64},
             orient="row",
         )
     )
     linhas = []
-    for v, pen in zip(por_mun, quadro["penetracao"], strict=True):
-        m = municipios[v.cd_mun_ibge]
-        por_uf[m.uf] = por_uf.get(m.uf, 0) + v.votos
+    for (cd, votos), pen in zip(por_mun, quadro["penetracao"], strict=True):
+        m = municipios[cd]
+        por_uf[m.uf] = por_uf.get(m.uf, 0) + votos
         linhas.append(
             VotosMunicipio(
-                cd_mun_ibge=m.cd_mun_ibge, nome=m.nome, uf=m.uf, votos=v.votos, penetracao=pen
+                cd_mun_ibge=m.cd_mun_ibge, nome=m.nome, uf=m.uf, votos=votos, penetracao=pen
             )
         )
     linhas.sort(key=lambda x: (-x.votos, x.cd_mun_ibge))
-    votos_total = sum(v.votos for v in por_mun)
+    if exterior:
+        por_uf[UF_EXTERIOR] = exterior
+    votos_total = sum(votos for _, votos in por_mun) + exterior
     contas = contas_de(repo, ano, [c])
     return FichaCandidato(
         candidato=resumir(c, votos_total, BasesPorEscopo(repo), catalogo.indicados),

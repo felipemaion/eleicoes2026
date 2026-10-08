@@ -211,8 +211,23 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
     nome_de = {m[0]: m[2] for m in TABELAS["municipios"][1]}
     uf_de_cand = {c[1]: c[4] for c in TABELAS["candidatos"][1]}
     cands = [
-        (a, 1, CD_ELEICAO[a], uf, cargo, sq, NUMERO[sq], NOME_CIVIL[sq], nm, parte, sg, sit, res,
-         pessoa, DT)
+        (
+            a,
+            1,
+            CD_ELEICAO[a],
+            uf,
+            cargo,
+            sq,
+            NUMERO[sq],
+            NOME_CIVIL[sq],
+            nm,
+            parte,
+            sg,
+            sit,
+            res,
+            pessoa,
+            DT,
+        )
         for (a, sq, pessoa, nm, uf, cargo, parte, sg, sit, res) in TABELAS["candidatos"][1]
     ]
     votos = []

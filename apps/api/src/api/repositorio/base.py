@@ -9,6 +9,7 @@ from api.repositorio.modelos import (
     CelulaH3,
     DespesaBruta,
     Municipio,
+    ParDePessoa,
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
@@ -64,6 +65,45 @@ class Repositorio(Protocol):
         """Uma candidatura ou `None`."""
         ...
 
+    def buscar_candidaturas(
+        self,
+        *,
+        termo: str,
+        ano: int | None = None,
+        cargo: str | None = None,
+        uf: str | None = None,
+        partido: int | None = None,
+        sqs: Sequence[int] | None = None,
+        limite: int,
+    ) -> tuple[int, list[Candidatura]]:
+        """(total, página) de candidaturas cujo nome de urna/civil, número ou partido casa o termo.
+
+        `termo` já vem normalizado (`texto.normalizar`). Numérico: prefixo do número de urna ou
+        número do partido; senão: prefixo de palavra antes de substring, em nome de urna, nome
+        civil e sigla. `partido`/`sqs` restringem a um grupo (união, como em `candidaturas`).
+        """
+        ...
+
+    def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
+        """Candidaturas do ano das pessoas dadas por `pessoa_id_publico` (`pessoa.id_publico`)."""
+        ...
+
+    def pares_de_pessoas(
+        self,
+        ano_de: int,
+        ano_para: int,
+        *,
+        termo: str | None = None,
+        uf: str | None = None,
+        cargo: str | None = None,
+        limite: int,
+    ) -> tuple[int, list[ParDePessoa]]:
+        """(total, página) de pessoas com candidatura nos dois anos, ligadas por `pessoa_id`.
+
+        `cargo` exige o mesmo cargo nos dois anos; `uf` casa em qualquer um dos lados.
+        """
+        ...
+
     def municipios(self, codigos: Sequence[int] | None = None) -> list[Municipio]:
         """Municípios pedidos (todos se `codigos` é `None`)."""
         ...
@@ -101,13 +141,24 @@ class Repositorio(Protocol):
         ...
 
     def pontos(
-        self, ano: int, sqs: Sequence[int], *, uf: str, limite: int, offset: int
+        self,
+        ano: int,
+        sqs: Sequence[int],
+        *,
+        uf: str | None,
+        limite: int,
+        offset: int,
+        grade_graus: float | None = None,
     ) -> tuple[int, list[PontoVotacao]]:
-        """(total de locais com voto, página) ordenados por votos desc."""
+        """(total, página) ordenados por votos desc: um ponto por local de votação.
+
+        `uf` None = Brasil inteiro. Com `grade_graus`, os locais são somados em células de
+        lat/lon desse tamanho (ponto = centroide ponderado por votos): volume controlado.
+        """
         ...
 
     def votos_sem_coordenada(
-        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+        self, ano: int, sqs: Sequence[int], *, uf: str | None, por_h3: bool
     ) -> VotosSemCoordenada:
         """Votos em locais sem lat/lon (`por_h3=False`) ou sem célula H3 (`por_h3=True`)."""
         ...
