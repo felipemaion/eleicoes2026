@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Recusa commits com coautoria de IA. O repositório é público e o único autor
+# é o Felipe (felipemaion) — decisão registrada em docs/adr/0006-autoria.md.
+set -euo pipefail
+if grep -qiE '^(co-authored-by|signed-off-by):.*(claude|anthropic|noreply@anthropic)' "$1"; then
+  echo "recusado: commit com trailer de coautoria de IA. Remova a linha Co-Authored-By." >&2
+  exit 1
+fi

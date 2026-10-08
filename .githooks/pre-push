@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Recusa push direto para main.
+#
+# O GitHub so oferece protecao de branch em repositorio privado no plano Pro,
+# entao a regra vive aqui. Nao e equivalente — uma guarda local se contorna com
+# --no-verify — mas transforma o erro distraido em erro deliberado.
+set -euo pipefail
+
+PROTEGIDA="refs/heads/main"
+
+while read -r _ref_local _sha_local ref_remoto _sha_remoto; do
+  if [ "$ref_remoto" = "$PROTEGIDA" ]; then
+    echo "recusado: main so recebe codigo por pull request." >&2
+    echo "  crie uma branch, abra o PR e deixe o CI verificar." >&2
+    exit 1
+  fi
+done
+
+exit 0

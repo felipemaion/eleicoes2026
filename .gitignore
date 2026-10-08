@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# Node
+node_modules/
+dist/
+playwright-report/
+test-results/
+# Dados (reprodutíveis a partir das fontes oficiais)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.pmtiles
+# Segredos
+.env
+secrets/
+# Agentes
+.worktrees/
+.claude/settings.local.json
+# SO
+.DS_Store
+docs/registro/ledger/*.raw.jsonl

@@ -1,0 +1,39 @@
+[project]
+name = "eleicoes2026"
+version = "0.1.0"
+description = "Dashboard de desempenho do Partido Missão — monorepo (workspace uv)"
+requires-python = ">=3.12"
+readme = "README.md"
+license = "MIT"
+
+[tool.uv.workspace]
+# Cada pacote entra aqui quando a tarefa que o cria for integrada:
+# "etl" (T-D01), "packages/contratos" (T-D02), "packages/indicadores" (T-A02), "apps/api" (T-B01)
+members = []
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "N", "S", "PT"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # acentos em texto pt-BR são intencionais
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+testpaths = ["scripts/tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["scripts"]
+omit = ["scripts/tests/*"]

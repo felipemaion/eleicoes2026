@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint, tipos, testes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest --cov --cov-fail-under=80
+      - name: OpenAPI sem diff
+        if: hashFiles('apps/api/pyproject.toml') != ''
+        run: make openapi && git diff --exit-code docs/api/openapi.json
+
+  web:
+    name: Frontend
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('apps/web/package.json') != '' }}
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint && pnpm typecheck
+      - run: pnpm test -- --coverage
+      - run: pnpm build
+
+  autoria:
+    name: Autoria (sem coautoria de IA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Recusa trailers Co-Authored-By de IA
+        run: |
+          base="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
+          if git log --format=%B "$base"..HEAD | grep -qiE '^(co-authored-by|signed-off-by):.*(claude|anthropic)'; then
+            echo "::error::commit com coautoria de IA (ADR 0006)"; exit 1
+          fi

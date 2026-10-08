@@ -1,0 +1,17 @@
+# Grupos comparáveis (ADR 0005). Novo partido/grupo = nova entrada; nenhum código muda.
+grupos:
+  missao_2026:
+    rotulo: "Partido Missão 2026"
+    ano: 2026
+    criterio:
+      partido: 14
+  mbl_2022:
+    rotulo: "MBL 2022"
+    ano: 2022
+    criterio:
+      lista: data/reference/mbl_2022.csv
+comparacoes:
+  evolucao_mbl:
+    rotulo: "MBL 2022 → Missão 2026"
+    de: mbl_2022
+    para: missao_2026
