@@ -174,7 +174,8 @@ def test_textos_do_comparador(textos: dict[str, Any]) -> None:
     limites: dict[str, int] = textos["limites"]
     assert comp["ui"], "comparador sem textos de interface"
     for chave, valor in comp["ui"].items():
-        assert isinstance(valor, str) and valor.strip(), f"comparador.ui.{chave} vazio"
+        assert isinstance(valor, str), f"comparador.ui.{chave} não é texto"
+        assert valor.strip(), f"comparador.ui.{chave} vazio"
         assert len(valor) <= limites["aviso"], f"comparador.ui.{chave} acima do limite"
     assert set(comp["nota_grupo"]) == set(GRUPOS_EXPLICADOS)
     for chave, nota in comp["nota_grupo"].items():
@@ -185,7 +186,8 @@ def test_textos_do_comparador(textos: dict[str, Any]) -> None:
         if r["origem"] == "indicado":
             assert _nome_publico(r["nome"]) in comp["nota_grupo"]["mbl_2022_indicados"]
     assert "{busca}" in comp["ui"]["sem_resultado"]
-    assert "{n}" in comp["ui"]["refine"] and "{total}" in comp["ui"]["refine"]
+    assert "{n}" in comp["ui"]["refine"]
+    assert "{total}" in comp["ui"]["refine"]
 
 
 def test_sem_espacos_sobrando(textos: dict[str, Any]) -> None:
