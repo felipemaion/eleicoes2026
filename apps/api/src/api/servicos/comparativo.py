@@ -189,12 +189,15 @@ def _pessoas(candidaturas: Sequence[Candidatura], votos: dict[int, int]) -> pl.D
     )
 
 
-def _n_aptas(candidaturas: Sequence[Candidatura]) -> int:
+def n_em_disputa(candidaturas: Sequence[Candidatura]) -> int:
     """Candidaturas do lado que seguem na disputa.
 
     Conta as APTAS e as ainda sem situação: 2026 chega com `ds_situacao_candidatura` nulo até o
     TSE julgar, e descartá-las zerava (ou anulava) o lado inteiro. Indeferidas/renunciadas, que
     já têm situação, ficam de fora.
+
+    Único lugar do critério na API. Difere de `grupos.n_candidatos` (só APTO, spec §5.3) de
+    propósito, por causa das candidaturas sem situação; alinhar é decisão da análise.
     """
     quadro = pl.DataFrame(
         [(c.sq_candidato, c.ds_situacao_candidatura) for c in candidaturas],
@@ -230,6 +233,7 @@ def _selecao(
         comuns = {c.pessoa_id for c in de.values()} & {c.pessoa_id for c in para.values()}
         de = {sq: c for sq, c in de.items() if c.pessoa_id in comuns}
         para = {sq: c for sq, c in para.items() if c.pessoa_id in comuns}
+    fora: list[str] = []
     for ano, sqs, destino in ((ANO_DE, sq_de, de), (ANO_PARA, sq_para, para)):
         for sq in sqs:
             c = repo.candidatura(ano, sq)
@@ -237,6 +241,13 @@ def _selecao(
                 raise nao_encontrado("candidato_nao_encontrado", f"candidato {ano}/{sq}")
             if no_recorte(c):
                 destino[sq] = c
+            else:
+                fora.append(f"{ano}/{sq}")
+    if fora:  # escolha explícita nunca some em silêncio (`pessoas` é que filtra)
+        raise parametro_invalido(
+            "sq_fora_do_recorte",
+            f"candidaturas fora de {cargo.value}{' em ' + uf if uf else ''}: {', '.join(fora)}",
+        )
     return list(de.values()), list(para.values())
 
 
@@ -367,11 +378,17 @@ def _por_lados(
         raise parametro_invalido(
             "lado_vazio", f"informe também o lado {vazio} ('grupo_{vazio}' ou 'sq_{vazio}')"
         )
+    # Grupos primeiro: erro de catálogo vence consulta ao repositório pelos sq.
+    definicoes = {
+        ano: _grupo_do_ano(catalogo, grupo, ano)
+        for ano, grupo in ((ANO_DE, grupo_de), (ANO_PARA, grupo_para))
+        if grupo
+    }
     s_de, s_para = _selecao(repo, cargo, uf, pessoas=pessoas, sq_de=sq_de, sq_para=sq_para)
     lados: list[tuple[list[Candidatura], GrupoRef]] = []
     for ano, grupo, escolhidas in ((ANO_DE, grupo_de, s_de), (ANO_PARA, grupo_para, s_para)):
         if grupo:
-            g = _grupo_do_ano(catalogo, grupo, ano)
+            g = definicoes[ano]
             lados.append(
                 (_lado(repo, g, cargo.value, uf), GrupoRef(id=g.id, rotulo=g.rotulo, ano=ano))
             )
@@ -432,6 +449,12 @@ def montar_comparativo(
             sq_para=sq_2026,
         )
         id_comp, rotulo = ID_SELECAO, f"{de.rotulo} → {para.rotulo}"
+        if (de.id == ID_SELECAO) != (para.id == ID_SELECAO) and mesmos_candidatos:
+            # Filtraria também o lado de grupo, descartando membros que o usuário não excluiu.
+            raise parametro_invalido(
+                "mesmos_candidatos_lado_misto",
+                "'mesmos_candidatos' não vale com um lado de grupo e outro de candidatos",
+            )
         if de.id == ID_SELECAO and para.id == ID_SELECAO:
             mesmos_candidatos = False  # a escolha já é do usuário
     if not c_de or not c_para:
@@ -482,8 +505,8 @@ def montar_comparativo(
         cargo=cargo.value,
         uf=uf,
         mesmos_candidatos=mesmos_candidatos,
-        n_de=_n_aptas(c_de),
-        n_para=_n_aptas(c_para),
+        n_de=n_em_disputa(c_de),
+        n_para=n_em_disputa(c_para),
         kpis=KpisComparativo(
             penetracao_de=kpis.get("penetracao_2022"),
             penetracao_para=kpis.get("penetracao_2026"),
