@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Cargo
 from api.erros import parametro_invalido
+from api.fotos import ComFotoELink, foto_e_link
 from api.pessoa import id_publico
 from api.repositorio.base import Repositorio
 from api.repositorio.modelos import Candidatura
@@ -19,7 +20,7 @@ from api.texto import normalizar
 JANELA_RELEVANCIA = 500
 
 
-class CandidaturaBusca(BaseModel):
+class CandidaturaBusca(ComFotoELink):
     """Candidatura achada: o bastante para listar, escolher e enquadrar o mapa."""
 
     ano: int
@@ -91,6 +92,7 @@ def _itens(
 ) -> dict[int, CandidaturaBusca]:
     """Candidaturas → itens por `sq_candidato`, com os votos buscados uma vez por ano."""
     votos = _votos_de(repo, candidaturas)
+    fotos = repo.fotos()
     return {
         c.sq_candidato: CandidaturaBusca(
             ano=c.ano,
@@ -106,6 +108,7 @@ def _itens(
             indicado=c.sq_candidato in catalogo.indicados,
             pessoa_id_publico=id_publico(c.pessoa_id),
             abrangencia=abrangencia_de(c),
+            **foto_e_link(fotos, ano=c.ano, sq_candidato=c.sq_candidato, uf=c.sg_uf),
         )
         for c in candidaturas
     }

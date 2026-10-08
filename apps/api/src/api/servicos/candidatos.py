@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.erros import nao_encontrado, parametro_invalido
 from api.fontes import Fonte, fontes
+from api.fotos import ComFotoELink, foto_e_link
 from api.links import Link, links_da_candidatura
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
@@ -44,7 +45,7 @@ def abrangencia_de(c: Candidatura) -> Abrangencia:
     )
 
 
-class CandidatoResumo(BaseModel):
+class CandidatoResumo(ComFotoELink):
     """Candidato com votos e taxas na sua circunscrição (cargo × UF)."""
 
     ano: int
@@ -150,25 +151,37 @@ def taxas(linhas: list[tuple[int, int, int]]) -> list[tuple[float | None, float 
 
 
 def resumir(
-    c: Candidatura, votos: int, bases: BasesPorEscopo, indicados: frozenset[int]
+    c: Candidatura,
+    votos: int,
+    bases: BasesPorEscopo,
+    indicados: frozenset[int],
+    fotos: frozenset[tuple[int, int]],
 ) -> CandidatoResumo:
     """Resumo de um candidato com as taxas da circunscrição dele."""
-    return _resumos([(c, votos)], bases, indicados)[0]
+    return _resumos([(c, votos)], bases, indicados, fotos)[0]
 
 
 def _resumos(
-    pares: list[tuple[Candidatura, int]], bases: BasesPorEscopo, indicados: frozenset[int]
+    pares: list[tuple[Candidatura, int]],
+    bases: BasesPorEscopo,
+    indicados: frozenset[int],
+    fotos: frozenset[tuple[int, int]],
 ) -> list[CandidatoResumo]:
     """Resumos de vários candidatos com um único cálculo vetorizado das taxas."""
     entradas = [(votos, *bases.de(c)) for c, votos in pares]
     return [
-        _montar_resumo(c, votos, pct, pen, c.sq_candidato in indicados)
+        _montar_resumo(c, votos, pct, pen, c.sq_candidato in indicados, fotos)
         for (c, votos), (pct, pen) in zip(pares, taxas(entradas), strict=True)
     ]
 
 
 def _montar_resumo(
-    c: Candidatura, votos: int, pct: float | None, pen: float | None, indicado: bool
+    c: Candidatura,
+    votos: int,
+    pct: float | None,
+    pen: float | None,
+    indicado: bool,
+    fotos: frozenset[tuple[int, int]],
 ) -> CandidatoResumo:
     return CandidatoResumo(
         ano=c.ano,
@@ -184,6 +197,7 @@ def _montar_resumo(
         penetracao=pen,
         indicado=indicado,
         abrangencia=abrangencia_de(c),
+        **foto_e_link(fotos, ano=c.ano, sq_candidato=c.sq_candidato, uf=c.sg_uf),
     )
 
 
@@ -239,7 +253,10 @@ def listar_candidatos(
     bases = BasesPorEscopo(repo)
     itens = sorted(
         _resumos(
-            [(c, votos.get(c.sq_candidato, 0)) for c in candidaturas], bases, catalogo.indicados
+            [(c, votos.get(c.sq_candidato, 0)) for c in candidaturas],
+            bases,
+            catalogo.indicados,
+            repo.fotos(),
         ),
         key=lambda i: (-i.votos, i.nm_urna, i.sq_candidato),
     )
@@ -388,7 +405,7 @@ def montar_ficha(
     votos_total = sum(votos for _, votos in por_mun) + exterior
     contas = contas_de(repo, ano, [c])
     return FichaCandidato(
-        candidato=resumir(c, votos_total, BasesPorEscopo(repo), catalogo.indicados),
+        candidato=resumir(c, votos_total, BasesPorEscopo(repo), catalogo.indicados, repo.fotos()),
         votos_total=votos_total,
         votos_por_uf=[VotosUF(uf=u, votos=n) for u, n in sorted(por_uf.items())],
         votos_por_municipio=linhas[:top],

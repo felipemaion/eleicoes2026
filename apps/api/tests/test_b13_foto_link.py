@@ -1,4 +1,4 @@
-"""T-B13: `foto_url` (manifesto de fotos da T-D07) e `link_tse_candidato` verificado no navegador."""
+"""T-B13: `foto_url` (manifesto da T-D07) e `link_tse_candidato` verificado no navegador."""
 
 from api import links
 from api.repositorio.memoria import RepositorioMemoria
@@ -12,7 +12,8 @@ BASE = "https://divulgacandcontas.tse.jus.br/divulga/#/candidato"
 def test_link_tse_padrao_verificado_2026_e_2022() -> None:
     a = links.link_tse_candidato(ano=2026, sq_candidato=250002546642, uf="SP")
     assert a.url == f"{BASE}/SP/SP/20322002026/250002546642/2026/SP"
-    assert a.verificado is True and a.nota is None
+    assert a.verificado is True
+    assert a.nota is None
     b = links.link_tse_candidato(ano=2022, sq_candidato=250001602048, uf="SP")
     assert b.url == f"{BASE}/SP/SP/2040602022/250001602048/2022/SP"
 
