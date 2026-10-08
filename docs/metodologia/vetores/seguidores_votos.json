@@ -1,0 +1,303 @@
+{
+  "indicador": "seguidores_votos",
+  "spec": "docs/metodologia/indicadores.md#seguidores-votos",
+  "versao": 1,
+  "descricao": "Resumo por candidato: conta principal, seguidores por mil votos, votos por mil seguidores, ritmo campanha→pós, % de vídeo e engajamento da campanha.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": [
+    "Datas no fuso de Brasília (UTC−3): o timestamp UTC do post é convertido antes de cair na janela.",
+    "pre_campanha 01/01–15/08 (227 dias), campanha 16/08–04/10 (50 dias), pos_eleicao 05/10 00:00 → última coleta da conta (dias fracionários), total 01/01 → última coleta.",
+    "Taxa por semana = 7 × n / dias; janela com menos de 7 dias → taxa null (n continua).",
+    "Post repetido em várias coletas: vale a coleta mais recente. Conta sem seguidores (status ≠ ok) sai.",
+    "Conta principal = a de mais seguidores no último snapshot (empate: username). Sem perfil declarado → status sem_rede; sem métricas → tem_dados false."
+  ],
+  "casos": [
+    {
+      "nome": "candidatos_com_e_sem_conta",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1000,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1200,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 2,
+            "username": "bia",
+            "status": "ok",
+            "followers_count": 500,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 3,
+            "username": "caio",
+            "status": "nao_comercial",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 5,
+            "username": "eva",
+            "status": "ok",
+            "followers_count": 800,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 5,
+            "username": "eva_oficial",
+            "status": "ok",
+            "followers_count": 5000,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          }
+        ],
+        "posts": [
+          {
+            "username": "ana",
+            "media_id": "a1",
+            "timestamp": "2025-12-31T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 10,
+            "comments_count": 1,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a2",
+            "timestamp": "2026-03-10T15:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 50,
+            "comments_count": 10,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a3",
+            "timestamp": "2026-08-16T02:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": null,
+            "comments_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a4",
+            "timestamp": "2026-09-01T12:00:00Z",
+            "media_type": "CAROUSEL_ALBUM",
+            "media_product_type": "FEED",
+            "like_count": 90,
+            "comments_count": 18,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a4",
+            "timestamp": "2026-09-01T12:00:00Z",
+            "media_type": "CAROUSEL_ALBUM",
+            "media_product_type": "FEED",
+            "like_count": 100,
+            "comments_count": 20,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a8",
+            "timestamp": "2026-09-20T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 24,
+            "comments_count": 0,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a5",
+            "timestamp": "2026-10-05T02:30:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": 300,
+            "comments_count": 60,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a6",
+            "timestamp": "2026-10-06T12:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": 30,
+            "comments_count": 0,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a7",
+            "timestamp": "2026-10-14T20:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 80,
+            "comments_count": 4,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "bia",
+            "media_id": "b1",
+            "timestamp": "2026-09-10T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 10,
+            "comments_count": 0,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "username": "bia",
+            "media_id": "b2",
+            "timestamp": "2026-10-07T12:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "FEED",
+            "like_count": 5,
+            "comments_count": 1,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": 1,
+            "cd_cargo": 6,
+            "votos": 30000
+          },
+          {
+            "sq_candidato": 2,
+            "cd_cargo": 6,
+            "votos": 0
+          },
+          {
+            "sq_candidato": 3,
+            "cd_cargo": 6,
+            "votos": 5000
+          },
+          {
+            "sq_candidato": 4,
+            "cd_cargo": 6,
+            "votos": 1200
+          },
+          {
+            "sq_candidato": 5,
+            "cd_cargo": 7,
+            "votos": 2500
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": 1,
+          "cd_cargo": 6,
+          "votos": 30000,
+          "username": "ana",
+          "status": "ok",
+          "tem_dados": true,
+          "seguidores": 1200,
+          "seguidores_por_mil_votos": 40.0,
+          "votos_por_mil_seguidores": 25000.0,
+          "posts_semana_campanha": 0.42,
+          "posts_semana_pos": 1.3493975903614457,
+          "variacao_ritmo_pct": 221.28514056224898,
+          "pct_video": 42.857142857142854,
+          "engajamento_mediano": 10.0,
+          "engajamento_medio": 14.0
+        },
+        {
+          "sq_candidato": 2,
+          "cd_cargo": 6,
+          "votos": 0,
+          "username": "bia",
+          "status": "ok",
+          "tem_dados": true,
+          "seguidores": 500,
+          "seguidores_por_mil_votos": null,
+          "votos_por_mil_seguidores": 0.0,
+          "posts_semana_campanha": 0.14,
+          "posts_semana_pos": null,
+          "variacao_ritmo_pct": null,
+          "pct_video": 50.0,
+          "engajamento_mediano": 2.0,
+          "engajamento_medio": 2.0
+        },
+        {
+          "sq_candidato": 3,
+          "cd_cargo": 6,
+          "votos": 5000,
+          "username": "caio",
+          "status": "nao_comercial",
+          "tem_dados": false,
+          "seguidores": null,
+          "seguidores_por_mil_votos": null,
+          "votos_por_mil_seguidores": null,
+          "posts_semana_campanha": null,
+          "posts_semana_pos": null,
+          "variacao_ritmo_pct": null,
+          "pct_video": null,
+          "engajamento_mediano": null,
+          "engajamento_medio": null
+        },
+        {
+          "sq_candidato": 4,
+          "cd_cargo": 6,
+          "votos": 1200,
+          "username": null,
+          "status": "sem_rede",
+          "tem_dados": false,
+          "seguidores": null,
+          "seguidores_por_mil_votos": null,
+          "votos_por_mil_seguidores": null,
+          "posts_semana_campanha": null,
+          "posts_semana_pos": null,
+          "variacao_ritmo_pct": null,
+          "pct_video": null,
+          "engajamento_mediano": null,
+          "engajamento_medio": null
+        },
+        {
+          "sq_candidato": 5,
+          "cd_cargo": 7,
+          "votos": 2500,
+          "username": "eva_oficial",
+          "status": "ok",
+          "tem_dados": true,
+          "seguidores": 5000,
+          "seguidores_por_mil_votos": 2000.0,
+          "votos_por_mil_seguidores": 500.0,
+          "posts_semana_campanha": 0.0,
+          "posts_semana_pos": 0.0,
+          "variacao_ritmo_pct": null,
+          "pct_video": null,
+          "engajamento_mediano": null,
+          "engajamento_medio": null
+        }
+      ]
+    }
+  ]
+}

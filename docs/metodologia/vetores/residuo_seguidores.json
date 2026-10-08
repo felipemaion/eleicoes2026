@@ -1,0 +1,367 @@
+{
+  "indicador": "residuo_seguidores",
+  "spec": "docs/metodologia/indicadores.md#residuo-seguidores",
+  "versao": 1,
+  "descricao": "Ajuste log10(1+votos) = a + b·log10(1+seguidores) por cargo; resíduo = voto acima/abaixo do esperado pelos seguidores.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": [
+    "Mínimos quadrados ordinários por cargo, só com seguidores e votos não nulos; n < 10 → tudo null.",
+    "razao_obs_esperado = 10^residuo_log10 = (1+votos)/(1+votos_esperados)."
+  ],
+  "casos": [
+    {
+      "nome": "dois_cargos_um_pequeno",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": 100,
+            "cd_cargo": 6,
+            "seguidores": 150,
+            "votos": 900
+          },
+          {
+            "sq_candidato": 101,
+            "cd_cargo": 6,
+            "seguidores": 800,
+            "votos": 3100
+          },
+          {
+            "sq_candidato": 102,
+            "cd_cargo": 6,
+            "seguidores": 2300,
+            "votos": 1500
+          },
+          {
+            "sq_candidato": 103,
+            "cd_cargo": 6,
+            "seguidores": 2300,
+            "votos": 7800
+          },
+          {
+            "sq_candidato": 104,
+            "cd_cargo": 6,
+            "seguidores": 5100,
+            "votos": 4200
+          },
+          {
+            "sq_candidato": 105,
+            "cd_cargo": 6,
+            "seguidores": 12000,
+            "votos": 25000
+          },
+          {
+            "sq_candidato": 106,
+            "cd_cargo": 6,
+            "seguidores": 450,
+            "votos": 2200
+          },
+          {
+            "sq_candidato": 107,
+            "cd_cargo": 6,
+            "seguidores": 30000,
+            "votos": 18000
+          },
+          {
+            "sq_candidato": 108,
+            "cd_cargo": 6,
+            "seguidores": 61000,
+            "votos": 9500
+          },
+          {
+            "sq_candidato": 109,
+            "cd_cargo": 6,
+            "seguidores": 9000,
+            "votos": 31000
+          },
+          {
+            "sq_candidato": 110,
+            "cd_cargo": 6,
+            "seguidores": 700,
+            "votos": 1100
+          },
+          {
+            "sq_candidato": 111,
+            "cd_cargo": 6,
+            "seguidores": 150000,
+            "votos": 87000
+          },
+          {
+            "sq_candidato": 112,
+            "cd_cargo": 6,
+            "seguidores": null,
+            "votos": 4000
+          },
+          {
+            "sq_candidato": 113,
+            "cd_cargo": 6,
+            "seguidores": null,
+            "votos": 650
+          },
+          {
+            "sq_candidato": 200,
+            "cd_cargo": 7,
+            "seguidores": 150,
+            "votos": 900
+          },
+          {
+            "sq_candidato": 201,
+            "cd_cargo": 7,
+            "seguidores": 800,
+            "votos": 3100
+          },
+          {
+            "sq_candidato": 202,
+            "cd_cargo": 7,
+            "seguidores": 2300,
+            "votos": 1500
+          },
+          {
+            "sq_candidato": 203,
+            "cd_cargo": 7,
+            "seguidores": 2300,
+            "votos": 7800
+          },
+          {
+            "sq_candidato": 204,
+            "cd_cargo": 7,
+            "seguidores": 5100,
+            "votos": 4200
+          },
+          {
+            "sq_candidato": 205,
+            "cd_cargo": 7,
+            "seguidores": 12000,
+            "votos": 25000
+          },
+          {
+            "sq_candidato": 206,
+            "cd_cargo": 7,
+            "seguidores": 450,
+            "votos": 2200
+          },
+          {
+            "sq_candidato": 207,
+            "cd_cargo": 7,
+            "seguidores": 30000,
+            "votos": 18000
+          },
+          {
+            "sq_candidato": 208,
+            "cd_cargo": 7,
+            "seguidores": 61000,
+            "votos": 9500
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": 100,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 851.7010448322155,
+          "residuo_log10": 0.023927995845431038,
+          "razao_obs_esperado": 1.056642307946612
+        },
+        {
+          "sq_candidato": 101,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 2322.1987096657226,
+          "residuo_log10": 0.12541540842996968,
+          "razao_obs_esperado": 1.3347975733191557
+        },
+        {
+          "sq_candidato": 102,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 4377.956570043264,
+          "residuo_log10": -0.4649899456905562,
+          "razao_obs_esperado": 0.3427757220221002
+        },
+        {
+          "sq_candidato": 103,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 4377.956570043264,
+          "residuo_log10": 0.2507796399675377,
+          "razao_obs_esperado": 1.7814746219149935
+        },
+        {
+          "sq_candidato": 104,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 7062.998719910976,
+          "residuo_log10": -0.22569793033168306,
+          "razao_obs_esperado": 0.5947056570323023
+        },
+        {
+          "sq_candidato": 105,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 11808.793756903218,
+          "residuo_log10": 0.325715066827458,
+          "razao_obs_esperado": 2.116971770602353
+        },
+        {
+          "sq_candidato": 106,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 1644.2880889985095,
+          "residuo_log10": 0.12637808889477897,
+          "razao_obs_esperado": 1.3377596390062936
+        },
+        {
+          "sq_candidato": 107,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 20475.97369415552,
+          "residuo_log10": -0.05596914046560286,
+          "razao_obs_esperado": 0.8790849794927355
+        },
+        {
+          "sq_candidato": 108,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 31360.552463363645,
+          "residuo_log10": -0.5186282349509317,
+          "razao_obs_esperado": 0.3029505637866302
+        },
+        {
+          "sq_candidato": 109,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 9934.752461292457,
+          "residuo_log10": 0.49417494012566365,
+          "razao_obs_esperado": 3.120146171190678
+        },
+        {
+          "sq_candidato": 110,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 2143.3614981847536,
+          "residuo_log10": -0.28951068193368235,
+          "razao_obs_esperado": 0.5134395487570634
+        },
+        {
+          "sq_candidato": 111,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": 53840.7852124998,
+          "residuo_log10": 0.20840479328161443,
+          "razao_obs_esperado": 1.6158639550421512
+        },
+        {
+          "sq_candidato": 112,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 113,
+          "cd_cargo": 6,
+          "intercepto": 1.6219185317046811,
+          "inclinacao": 0.6006847686272692,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 200,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 201,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 202,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 203,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 204,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 205,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 206,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 207,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        },
+        {
+          "sq_candidato": 208,
+          "cd_cargo": 7,
+          "intercepto": null,
+          "inclinacao": null,
+          "votos_esperados": null,
+          "residuo_log10": null,
+          "razao_obs_esperado": null
+        }
+      ]
+    }
+  ]
+}

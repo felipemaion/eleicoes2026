@@ -1,0 +1,311 @@
+{
+  "indicador": "ritmo_posts",
+  "spec": "docs/metodologia/indicadores.md#ritmo-posts",
+  "versao": 1,
+  "descricao": "Posts e vídeos por janela (pré-campanha, campanha, pós-eleição, total) e por semana.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": [
+    "Datas no fuso de Brasília (UTC−3): o timestamp UTC do post é convertido antes de cair na janela.",
+    "pre_campanha 01/01–15/08 (227 dias), campanha 16/08–04/10 (50 dias), pos_eleicao 05/10 00:00 → última coleta da conta (dias fracionários), total 01/01 → última coleta.",
+    "Taxa por semana = 7 × n / dias; janela com menos de 7 dias → taxa null (n continua).",
+    "Post repetido em várias coletas: vale a coleta mais recente. Conta sem seguidores (status ≠ ok) sai."
+  ],
+  "casos": [
+    {
+      "nome": "janelas_fuso_e_duplicata",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1000,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1200,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 2,
+            "username": "bia",
+            "status": "ok",
+            "followers_count": 500,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 3,
+            "username": "caio",
+            "status": "nao_comercial",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          }
+        ],
+        "posts": [
+          {
+            "username": "ana",
+            "media_id": "a1",
+            "timestamp": "2025-12-31T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 10,
+            "comments_count": 1,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a2",
+            "timestamp": "2026-03-10T15:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 50,
+            "comments_count": 10,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a3",
+            "timestamp": "2026-08-16T02:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": null,
+            "comments_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a4",
+            "timestamp": "2026-09-01T12:00:00Z",
+            "media_type": "CAROUSEL_ALBUM",
+            "media_product_type": "FEED",
+            "like_count": 90,
+            "comments_count": 18,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a4",
+            "timestamp": "2026-09-01T12:00:00Z",
+            "media_type": "CAROUSEL_ALBUM",
+            "media_product_type": "FEED",
+            "like_count": 100,
+            "comments_count": 20,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a8",
+            "timestamp": "2026-09-20T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 24,
+            "comments_count": 0,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a5",
+            "timestamp": "2026-10-05T02:30:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": 300,
+            "comments_count": 60,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a6",
+            "timestamp": "2026-10-06T12:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "REELS",
+            "like_count": 30,
+            "comments_count": 0,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "ana",
+            "media_id": "a7",
+            "timestamp": "2026-10-14T20:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 80,
+            "comments_count": 4,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "username": "bia",
+            "media_id": "b1",
+            "timestamp": "2026-09-10T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 10,
+            "comments_count": 0,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "username": "bia",
+            "media_id": "b2",
+            "timestamp": "2026-10-07T12:00:00Z",
+            "media_type": "VIDEO",
+            "media_product_type": "FEED",
+            "like_count": 5,
+            "comments_count": 1,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          }
+        ]
+      },
+      "saida": [
+        {
+          "username": "ana",
+          "janela": "pre_campanha",
+          "dias": 227.0,
+          "n_posts": 2,
+          "n_videos": 1,
+          "posts_por_semana": 0.06167400881057269,
+          "videos_por_semana": 0.030837004405286344,
+          "pct_video": 50.0
+        },
+        {
+          "username": "ana",
+          "janela": "campanha",
+          "dias": 50.0,
+          "n_posts": 3,
+          "n_videos": 1,
+          "posts_por_semana": 0.42,
+          "videos_por_semana": 0.14,
+          "pct_video": 33.333333333333336
+        },
+        {
+          "username": "ana",
+          "janela": "pos_eleicao",
+          "dias": 10.375,
+          "n_posts": 2,
+          "n_videos": 1,
+          "posts_por_semana": 1.3493975903614457,
+          "videos_por_semana": 0.6746987951807228,
+          "pct_video": 50.0
+        },
+        {
+          "username": "ana",
+          "janela": "total",
+          "dias": 287.375,
+          "n_posts": 7,
+          "n_videos": 3,
+          "posts_por_semana": 0.17050891692040018,
+          "videos_por_semana": 0.07307525010874293,
+          "pct_video": 42.857142857142854
+        },
+        {
+          "username": "bia",
+          "janela": "pre_campanha",
+          "dias": 227.0,
+          "n_posts": 0,
+          "n_videos": 0,
+          "posts_por_semana": 0.0,
+          "videos_por_semana": 0.0,
+          "pct_video": null
+        },
+        {
+          "username": "bia",
+          "janela": "campanha",
+          "dias": 50.0,
+          "n_posts": 1,
+          "n_videos": 0,
+          "posts_por_semana": 0.14,
+          "videos_por_semana": 0.0,
+          "pct_video": 0.0
+        },
+        {
+          "username": "bia",
+          "janela": "pos_eleicao",
+          "dias": 3.375,
+          "n_posts": 1,
+          "n_videos": 1,
+          "posts_por_semana": null,
+          "videos_por_semana": null,
+          "pct_video": 100.0
+        },
+        {
+          "username": "bia",
+          "janela": "total",
+          "dias": 280.375,
+          "n_posts": 2,
+          "n_videos": 1,
+          "posts_por_semana": 0.04993312527864467,
+          "videos_por_semana": 0.024966562639322336,
+          "pct_video": 50.0
+        }
+      ]
+    },
+    {
+      "nome": "conta_sem_posts",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 4,
+            "username": "duda",
+            "status": "ok",
+            "followers_count": 0,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-20T03:00:00Z"
+          }
+        ],
+        "posts": []
+      },
+      "saida": [
+        {
+          "username": "duda",
+          "janela": "pre_campanha",
+          "dias": 227.0,
+          "n_posts": 0,
+          "n_videos": 0,
+          "posts_por_semana": 0.0,
+          "videos_por_semana": 0.0,
+          "pct_video": null
+        },
+        {
+          "username": "duda",
+          "janela": "campanha",
+          "dias": 50.0,
+          "n_posts": 0,
+          "n_videos": 0,
+          "posts_por_semana": 0.0,
+          "videos_por_semana": 0.0,
+          "pct_video": null
+        },
+        {
+          "username": "duda",
+          "janela": "pos_eleicao",
+          "dias": 15.0,
+          "n_posts": 0,
+          "n_videos": 0,
+          "posts_por_semana": 0.0,
+          "videos_por_semana": 0.0,
+          "pct_video": null
+        },
+        {
+          "username": "duda",
+          "janela": "total",
+          "dias": 292.0,
+          "n_posts": 0,
+          "n_videos": 0,
+          "posts_por_semana": 0.0,
+          "videos_por_semana": 0.0,
+          "pct_video": null
+        }
+      ]
+    }
+  ]
+}
