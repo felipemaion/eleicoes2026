@@ -64,8 +64,12 @@ def ambiente(tmp_path: Path) -> dict[str, Path]:
     pacote = raw / "tse/rede_social_candidato/rede_social_candidato_2026.zip"
     pacote.parent.mkdir(parents=True)
     with zipfile.ZipFile(pacote, "w") as z:
-        z.writestr("rede_social_candidato_2026_SP.csv", "\n".join([CABECALHO, *sp]).encode("latin-1"))
-        z.writestr("rede_social_candidato_2026_RJ.csv", "\n".join([CABECALHO, *rj]).encode("latin-1"))
+        z.writestr(
+            "rede_social_candidato_2026_SP.csv", "\n".join([CABECALHO, *sp]).encode("latin-1")
+        )
+        z.writestr(
+            "rede_social_candidato_2026_RJ.csv", "\n".join([CABECALHO, *rj]).encode("latin-1")
+        )
         # união dos anteriores: lida junto duplicaria tudo
         z.writestr(
             "rede_social_candidato_2026_BRASIL.csv",

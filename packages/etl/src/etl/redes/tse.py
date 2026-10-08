@@ -93,15 +93,13 @@ def processar_redes_tse(
     # Só linhas que citam Instagram entram na contagem de rejeitadas (Facebook etc. são esperados)
     cita = pl.col("url_tse").str.to_lowercase().str.contains(r"instagra[mn]|^\s*@")
     declaracoes = declaracoes.with_columns(
-        pl.col("url_tse")
-        .map_elements(username_instagram, return_dtype=pl.Utf8)
-        .alias("username")
+        pl.col("url_tse").map_elements(username_instagram, return_dtype=pl.Utf8).alias("username")
     )
-    validas = declaracoes.filter(pl.col("username").is_not_null()).sort(
-        "sq_candidato", "nr_ordem"
-    )
+    validas = declaracoes.filter(pl.col("username").is_not_null()).sort("sq_candidato", "nr_ordem")
     # o mesmo perfil pode aparecer em duas linhas do cadastro: vale a de menor ordem
-    distintos = validas.unique(subset=["sq_candidato", "username"], keep="first", maintain_order=True)
+    distintos = validas.unique(
+        subset=["sq_candidato", "username"], keep="first", maintain_order=True
+    )
     por_candidato = distintos.group_by("sq_candidato").agg(pl.len().alias("n_perfis"))
     saida = distintos.with_columns(
         pl.lit(REDE).alias("rede"),
@@ -117,7 +115,5 @@ def processar_redes_tse(
         "sem_instagram": len(sqs) - por_candidato.height,
         "perfis": saida.height,
         "com_mais_de_um_perfil": int((por_candidato["n_perfis"] > 1).sum()),
-        "urls_instagram_rejeitadas": declaracoes.filter(
-            cita & pl.col("username").is_null()
-        ).height,
+        "urls_instagram_rejeitadas": declaracoes.filter(cita & pl.col("username").is_null()).height,
     }

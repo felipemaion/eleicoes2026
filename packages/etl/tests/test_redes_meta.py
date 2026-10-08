@@ -16,7 +16,7 @@ from etl.redes.meta import (
     aviso_de_vencimento,
 )
 
-TOKEN = "EAAB-token-secreto-123"
+TOKEN = "EAAB-token-secreto-123"  # noqa: S105 - valor sintético
 
 
 def _cliente(
@@ -213,6 +213,8 @@ def test_uso_do_app_acima_de_95_por_cento_pausa_antes_da_proxima() -> None:
 
     cliente = _cliente(handler, dormidos)
     cliente.get("me/accounts", {})
+    assert dormidos == []  # a chamada que mostrou o uso alto já foi feita
+    cliente.get("me/accounts", {})
     assert dormidos == [10.0]
 
 
@@ -230,13 +232,15 @@ def test_validade_do_token_via_debug_token_usa_token_do_app() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         vistos.append(req)
         return httpx.Response(
-            200, json={"data": {"is_valid": True, "expires_at": 1796601600}}  # 2026-12-07
+            200,
+            json={"data": {"is_valid": True, "expires_at": 1796601600}},  # 2026-12-07
         )
 
     vence = _cliente(handler).validade_token("123", "segredo-app")
     assert vence == datetime(2026, 12, 7, tzinfo=UTC)
     assert vistos[0].headers["authorization"] == "Bearer 123|segredo-app"
-    assert vistos[0].url.params["input_token"] == TOKEN or "input_token" not in vistos[0].url.params
+    # a API só aceita `input_token` na query (POST é recusado); o segredo do app fica no cabeçalho
+    assert vistos[0].url.params["input_token"] == TOKEN
     assert "segredo-app" not in str(vistos[0].url)
 
 
@@ -245,6 +249,16 @@ def test_token_que_nunca_expira_devolve_none() -> None:
         return httpx.Response(200, json={"data": {"is_valid": True, "expires_at": 0}})
 
     assert _cliente(handler).validade_token("1", "s") is None
+
+
+def test_falha_de_rede_nao_vaza_a_url_com_o_token() -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("sem rede", request=req)
+
+    with pytest.raises(ErroMeta) as e:
+        _cliente(handler).validade_token("1", "s")
+    assert TOKEN not in str(e.value)
+    assert e.value.__suppress_context__
 
 
 def test_token_invalido_falha_alto() -> None:

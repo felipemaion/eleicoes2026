@@ -2,8 +2,8 @@
 
 ``redes_candidatos`` vem do TSE (``rede_social_candidato_AAAA``): uma linha por
 candidatura × perfil distinto (o candidato pode declarar conta pessoal, de campanha e do
-partido), com o ``username`` já normalizado; ``principal`` marca o declarado primeiro. ``redes_perfis`` é uma **série de
-snapshots** (um registro por coleta — nunca se sobrescreve, é assim que nasce o histórico de
+partido), com o ``username`` já normalizado; ``principal`` marca o declarado primeiro.
+``redes_perfis`` é uma **série de snapshots** (um registro por coleta — nunca se sobrescreve, é assim que nasce o histórico de
 seguidores, que a API não fornece). ``redes_posts`` guarda a última leitura de cada post.
 Contagens ocultas pelo dono (curtidas) ficam **nulas**, nunca zero.
 """

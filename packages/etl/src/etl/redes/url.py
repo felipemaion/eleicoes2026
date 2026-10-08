@@ -37,21 +37,21 @@ def _valido(candidato: str) -> str | None:
     return nome
 
 
-def _de_url(texto: str) -> str | None | bool:
-    """Username de ``instagram.com/<perfil>``; ``False`` se o texto não tem esse host."""
+def _de_url(texto: str) -> tuple[bool, str | None]:
+    """``(tem_host, username)`` de ``instagram.com/<perfil>``."""
     casou = _HOST.search(texto)
     if casou is None:
-        return False
+        return False, None
     segmentos = [s for s in casou.group("resto").split("/") if s]
     if segmentos and segmentos[0] == "_u":  # deep link: instagram.com/_u/<perfil>
         segmentos = segmentos[1:]
     if len(segmentos) != 1:  # raiz sem perfil, ou caminho aninhado (p/…, reel/…, channel/…)
-        return None
-    return _valido(segmentos[0])
+        return True, None
+    return True, _valido(segmentos[0])
 
 
 def username_instagram(texto: str) -> str | None:
-    """Username normalizado (minúsculo, sem ``@``) se ``texto`` é perfil do Instagram, senão ``None``.
+    """Username normalizado (minúsculo, sem ``@``) se ``texto`` é perfil do Instagram; senão ``None``.
 
     Aceita URL de perfil e forma solta (``@handle``, ``instagram: handle``). Rejeita post, reel,
     canal, id numérico, nome com espaço e qualquer texto que cite outra rede.
@@ -62,8 +62,9 @@ def username_instagram(texto: str) -> str | None:
     cita_instagram = re.search(_INSTAGRAM, limpo) is not None
     if _OUTRAS_REDES.search(limpo):
         return None  # "@fulano (tiktok)" ou link de outra rede: não é Instagram
-    if (url := _de_url(limpo)) is not False:
-        return url
+    tem_host, perfil = _de_url(limpo)
+    if tem_host:
+        return perfil
     # `instagram.com@handle`, `https://instagram@handle`: o arroba cola o host ao perfil
     colado = re.search(rf"{_INSTAGRAM}(?:\.com)?@([^\s/?#]+)", limpo)
     if colado:
