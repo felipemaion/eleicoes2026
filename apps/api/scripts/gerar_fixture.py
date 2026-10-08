@@ -261,9 +261,13 @@ def _provisorio() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
         "receitas": (
             dict(
                 ano=INT, sq_candidato=INT, ds_fonte_receita=TXT, ds_origem_receita=TXT,
-                ds_natureza_receita=TXT, vr_receita=DBL,
+                ds_natureza_receita=TXT, vr_receita=DBL, sq_candidato_doador=INT,
             ),
-            TABELAS["receitas"][1],
+            # Doador só na receita "de outros candidatos" de sq 3: vem de sq 5 (mesmo grupo).
+            [
+                (*r, 5 if r[3] == "Recursos de outros candidatos" else None)
+                for r in TABELAS["receitas"][1]
+            ],
         ),
         "despesas": (
             dict(

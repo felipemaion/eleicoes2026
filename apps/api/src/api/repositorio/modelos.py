@@ -76,6 +76,7 @@ class ReceitaBruta:
     ds_origem_receita: str
     ds_natureza_receita: str
     valor: float
+    sq_candidato_doador: int | None = None
 
 
 @dataclass(frozen=True)

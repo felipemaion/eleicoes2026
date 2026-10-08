@@ -14,9 +14,7 @@ Branch `feat/backend-endpoints` (sobre `origin/main` 2e4ad84). Commits: `test:` 
   ISO, ex. `2026-10-06`) — não vem mais do manifesto. `manifesto.json` é opcional (só
   `tp_prestacao_contas` por ano → selo "contas parciais").
 - `Repositorio` (Protocol) + `RepositorioDuckDB` + `RepositorioMemoria` (testes de serviço).
-- `servicos/adaptador_indicadores.py` = única fonte das fórmulas, **`# TODO(T-A02)`**: penetração,
-  % válidos, receitas por fonte, custo por voto, IPCA, evolução por AMC. Testado contra os vetores
-  JSON da spec (`penetracao`, `pct_validos`, `receitas`, `custo_por_voto`, `deflacao_ipca`, `evolucao`).
+- (substituído na revisão: fórmulas vêm de `packages/indicadores`; ver seção Revisão.)
 - ETag fraco + `Cache-Control: public, max-age=300` a partir do `dt_geracao`; 304 com
   `If-None-Match`; erros e `/api/health` sem ETag.
 - Erros de domínio: `{"detail": {"codigo", "mensagem"}}` (404 recurso, 422 combinação inválida);
@@ -51,3 +49,36 @@ make lint && uv run pytest --cov --cov-fail-under=85   # 179 passed, apps/api 97
 make openapi && git diff --exit-code docs/api/openapi.json
 ```
 `make test` falha neste worktree só no passo web (sem `node_modules`; fora do meu território).
+
+## Revisão (PR #32, brief T-B02-revisao.md)
+1. **DRY (obrigatório)** — `adaptador_indicadores.py` e seu teste removidos. Serviços montam
+   DataFrames polars e chamam `indicadores`: `desempenho.penetracao/pct_validos/votos_km2`
+   (candidatos, ficha, mapa, município), `financeiro.classificar_receitas/resumo_receitas/
+   despesa_campanha/custo_por_voto/custo_por_voto_agregado/serie_ipca/resolver_mes_base/
+   corrigir_ipca` e `grupos.receitas_grupo` (contas), `evolucao.evolucao/mesmos_candidatos` e
+   `grupos.n_candidatos` (comparativo; KPIs = `evolucao` com todo o recorte como uma AMC).
+   Nenhuma fórmula local. `polars` entrou nas dependências de `apps/api`. Efeito colateral bom:
+   `receitas_grupo` exclui repasses internos do grupo (provisório `receitas` ganhou
+   `sq_candidato_doador`; `/gastos` do grupo agora tira esses repasses, §4.1).
+   Exceção consciente: a **soma de votos dos membros** do grupo é um `SUM` no DuckDB (não
+   `grupos.agregar_grupo`, que exigiria trazer linha por candidato × município); o invariante
+   "um cargo por vez" é garantido por `selecionar_alvo`. Posso trocar se a `analise` preferir.
+2. **IPCA (B1)** — `resolver_mes_base` (último mês disponível se set/2026 não saiu); `base_ipca`
+   = mês realmente usado; série lida uma vez por processo (cache no repositório). Série sem
+   meses ou com buraco → 503.
+3. **Quebras (B2)** — ponto único `mapa.quebras_da_escala` (`# TODO(T-A06)`), quintis da
+   resposta por enquanto; <2 valores → `quebras: null` + `aviso` (nunca `[]` silencioso).
+   Teste `xfail(strict)` espera `indicadores.espacial.quebras_comuns`: quando a `analise`
+   publicar, o teste vira XPASS e força a troca.
+   **Pedido à `analise`:** `quebras_comuns(valores_2022, valores_2026, n_baixo)` (§8.2).
+4. **Desempenho (B3)** — hive ligado: views usam a partição `ano` (poda por ano); `/municipios`
+   filtra `cd_mun_ibge` no SQL (`votos_territorio`/`base_eleitoral` ganharam o parâmetro);
+   cache LRU (`cache_servico.py`, chave inclui `dt_geracao`, 256 entradas) em candidatos, mapa,
+   pontos, gastos, comparativo e município — inclui `/mapa` nacional sem UF.
+5. **Provisórios (B4)** — `COLUNAS_MINIMAS` validadas na abertura para todos os datasets
+   (falha `DadosIndisponiveis: <dataset>: colunas ausentes [...]`); views com colunas
+   explícitas, sem `SELECT *`.
+
+Verificação: `make lint` verde; `uv run pytest --cov --cov-fail-under=85` → 303 passed,
+1 xfailed (esperado, T-A06); apps/api 97%. `docs/api/openapi.json` regenerado (campos novos:
+`EscalaSugerida.aviso`, `quebras` nulável, `ganho_absoluto`/`votos_*` nuláveis no comparativo).

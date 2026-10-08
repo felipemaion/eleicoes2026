@@ -1,17 +1,20 @@
-"""Finanças de campanha: despesas, receitas e custo por voto, com correção pelo IPCA."""
+"""Finanças de campanha: despesas, receitas e custo por voto, com correção pelo IPCA.
+
+Orquestração: lê do Repositorio, monta DataFrames e chama `indicadores.financeiro/grupos`.
+Nenhuma fórmula local (spec §4); transferências e doações internas saem nas funções da lib.
+"""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+import polars as pl
+from indicadores import financeiro, grupos
 from pydantic import BaseModel, Field
 
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
-from api.servicos import adaptador_indicadores as ind
 
-MES_ORIGEM_2022 = "2022-09"
-MES_BASE_IPCA = "2026-09"  # decisão 1.6 da spec: set/2022 → set/2026
-ANO_NOMINAL = 2026
+ANO_NOMINAL = 2026  # valores de 2026 ficam nominais; anteriores sobem para o mês-base
 
 
 class ResumoCustoCandidato(BaseModel):
@@ -68,82 +71,153 @@ class ContasAgregadas:
     base_ipca: str | None
 
 
-def _fator(repo: Repositorio, ano: int) -> float:
+_ESQUEMA_DESPESA = {
+    "sq_candidato": pl.Int64,
+    "ds_origem_despesa": pl.String,
+    "vr_despesa_contratada": pl.Float64,
+    "vr_despesa_paga": pl.Float64,
+}
+_ESQUEMA_RECEITA = {
+    "sq_candidato": pl.Int64,
+    "ds_fonte_receita": pl.String,
+    "ds_origem_receita": pl.String,
+    "ds_natureza_receita": pl.String,
+    "vr_receita": pl.Float64,
+    "sq_candidato_doador": pl.Int64,
+}
+
+
+def _correcao(repo: Repositorio, ano: int) -> tuple[pl.DataFrame, str, str] | None:
+    """(série, mês de origem, mês-base efetivo) ou `None` se o ano é nominal.
+
+    O mês-base é o do ADR 0007 se já publicado, senão o último disponível — e a resposta o
+    declara (`base_ipca`). Sem série utilizável não se publica 2022 "nominal" por engano.
+    """
     if ano >= ANO_NOMINAL:
-        return 1.0
-    serie = {v.mes: v.variacao for v in repo.ipca()}
+        return None
+    serie = financeiro.serie_ipca({v.mes: v.variacao for v in repo.ipca()})
+    origem = f"{ano}-09"
     try:
-        return ind.fator_ipca(serie, f"{ano}-09", MES_BASE_IPCA)
+        return serie, origem, financeiro.resolver_mes_base(serie, origem)
     except ValueError as erro:
-        # Sem IPCA não se publica valor de 2022 "nominal" por engano.
         raise DadosIndisponiveis(str(erro)) from erro
+
+
+def _corrigir(
+    df: pl.DataFrame, colunas: Sequence[str], correcao: tuple[pl.DataFrame, str, str] | None
+) -> pl.DataFrame:
+    if correcao is None:
+        return df
+    serie, origem, base = correcao
+    try:
+        for coluna in colunas:
+            df = financeiro.corrigir_ipca(df, coluna, serie, origem, base)
+    except ValueError as erro:  # mês faltando na série
+        raise DadosIndisponiveis(str(erro)) from erro
+    return df
 
 
 def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) -> ContasAgregadas:
     """Contas das candidaturas no ano; só entram candidatos com lançamentos."""
     sqs = [c.sq_candidato for c in candidaturas]
-    fator = _fator(repo, ano)
+    correcao = _correcao(repo, ano)
     votos = repo.votos_totais(ano, sqs)
-    despesas = repo.despesas(ano, sqs)
-    receitas = repo.receitas(ano, sqs)
-    com_contas = {d.sq_candidato for d in despesas} | {r.sq_candidato for r in receitas}
-    cands = [c for c in candidaturas if c.sq_candidato in com_contas]
-    contas = []
-    for c in cands:
-        proprias = [d for d in despesas if d.sq_candidato == c.sq_candidato]
-        validas = [d for d in proprias if not ind.eh_transferencia(d.ds_origem_despesa)]
-        contas.append(
-            ind.ContasCandidato(
-                c.sq_candidato,
-                sum(d.contratada for d in validas) * fator,
-                sum(d.paga for d in validas) * fator,
-                votos.get(c.sq_candidato, 0),
-            )
-        )
-    custos, grupo = ind.custo_por_voto(contas)
-    receita_por_cand = {
-        c.sq_candidato: sum(r.valor for r in receitas if r.sq_candidato == c.sq_candidato) * fator
-        for c in cands
-    }
-    resumo_rec = ind.resumir_receitas(
-        ind.LinhaReceita(
-            r.ds_fonte_receita, r.ds_origem_receita, r.ds_natureza_receita, r.valor * fator
-        )
-        for r in receitas
+    despesas = pl.DataFrame(
+        [
+            (d.sq_candidato, d.ds_origem_despesa, d.contratada, d.paga)
+            for d in repo.despesas(ano, sqs)
+        ],
+        schema=_ESQUEMA_DESPESA,
+        orient="row",
     )
+    receitas = pl.DataFrame(
+        [
+            (r.sq_candidato, r.ds_fonte_receita, r.ds_origem_receita, r.ds_natureza_receita,
+             r.valor, r.sq_candidato_doador)
+            for r in repo.receitas(ano, sqs)
+        ],
+        schema=_ESQUEMA_RECEITA,
+        orient="row",
+    )  # fmt: skip
+    receitas = _corrigir(receitas, ["vr_receita"], correcao)
+    com_contas = set(despesas["sq_candidato"]) | set(receitas["sq_candidato"])
+
+    contratada = financeiro.despesa_campanha(despesas, "vr_despesa_contratada").rename(
+        {"despesa": "despesa_contratada"}
+    )
+    paga = financeiro.despesa_campanha(despesas, "vr_despesa_paga").rename(
+        {"despesa": "despesa_paga"}
+    )
+    tem_contas = pl.col("sq_candidato").is_in(list(com_contas))
+    # Quem tem lançamentos mas só repasses fica com despesa 0; quem não tem contas fica null
+    # (a lib exclui "sem contas" do agregado).
+    base = (
+        pl.DataFrame(
+            {"sq_candidato": sqs, "votos": [votos.get(sq, 0) for sq in sqs]},
+            schema={"sq_candidato": pl.Int64, "votos": pl.Int64},
+        )
+        .join(contratada, on="sq_candidato", how="left")
+        .join(paga, on="sq_candidato", how="left")
+        .with_columns(
+            pl.when(tem_contas).then(pl.col(c).fill_null(0.0)).otherwise(None).alias(c)
+            for c in ("despesa_contratada", "despesa_paga")
+        )
+    )
+    base = _corrigir(base, ["despesa_contratada", "despesa_paga"], correcao)
+    por_cand = financeiro.custo_por_voto(base).filter(pl.col("despesa_contratada").is_not_null())
+
+    classificadas = financeiro.classificar_receitas(receitas)
+    totais_cand = {
+        linha["sq_candidato"]: linha["receita_total"]
+        for linha in financeiro.resumo_receitas(classificadas).to_dicts()
+    }
+    resumo_rec = grupos.receitas_grupo(classificadas, sqs).to_dicts()[0]
+    agg = financeiro.custo_por_voto_agregado(base).to_dicts()[0]
+    soma = financeiro.custo_por_voto(
+        por_cand.select(
+            pl.col("despesa_contratada").sum(),
+            pl.col("despesa_paga").sum(),
+            pl.col("votos").sum(),
+        )
+    ).to_dicts()[0]
+    por_sq = {c.sq_candidato: c for c in candidaturas}
     return ContasAgregadas(
         por_candidato=[
             ContasCand(
-                candidatura=c,
+                candidatura=por_sq[linha["sq_candidato"]],
                 custo=ResumoCustoCandidato(
-                    despesa_contratada=ct.despesa_contratada,
-                    despesa_paga=ct.despesa_paga,
-                    divida=cu.divida,
-                    votos=ct.votos,
-                    custo_voto_contratado=cu.custo_voto_contratado,
-                    custo_voto_pago=cu.custo_voto_pago,
+                    despesa_contratada=linha["despesa_contratada"],
+                    despesa_paga=linha["despesa_paga"],
+                    divida=linha["divida"],
+                    votos=linha["votos"],
+                    custo_voto_contratado=linha["custo_voto_contratado"],
+                    custo_voto_pago=linha["custo_voto_pago"],
                 ),
-                receita_total=receita_por_cand[c.sq_candidato],
+                receita_total=totais_cand.get(linha["sq_candidato"], 0.0),
             )
-            for c, ct, cu in zip(cands, contas, custos, strict=True)
+            for linha in por_cand.to_dicts()
         ],
         agregado=ResumoCustoGrupo(
-            despesa_contratada=grupo.despesa_contratada,
-            despesa_paga=grupo.despesa_paga,
-            divida=grupo.divida,
-            votos=grupo.votos,
-            custo_voto_contratado=grupo.custo_voto_contratado,
-            custo_voto_pago=grupo.custo_voto_pago,
-            mediana_custo_voto_contratado=grupo.mediana_custo_voto_contratado,
-            candidatos_sem_voto_excluidos=grupo.candidatos_sem_voto_excluidos,
+            despesa_contratada=soma["despesa_contratada"],
+            despesa_paga=soma["despesa_paga"],
+            divida=soma["divida"],
+            votos=soma["votos"],
+            custo_voto_contratado=agg["custo_voto_contratado"],
+            custo_voto_pago=agg["custo_voto_pago"],
+            mediana_custo_voto_contratado=agg["mediana_custo_voto_contratado"],
+            candidatos_sem_voto_excluidos=agg["candidatos_sem_voto_excluidos"],
         ),
         receitas=ResumoReceitasOut(
-            por_categoria=resumo_rec.por_categoria,
-            receita_total=resumo_rec.receita_total,
-            receita_financeira=resumo_rec.receita_financeira,
-            pct_publico=resumo_rec.pct_publico,
-            pct_autofinanciamento=resumo_rec.pct_autofinanciamento,
+            por_categoria={
+                c: resumo_rec[f"receita_{c}"]
+                for c in financeiro.CATEGORIAS_RECEITA
+                if resumo_rec[f"receita_{c}"]
+            },
+            receita_total=resumo_rec["receita_total"],
+            receita_financeira=resumo_rec["receita_financeira"],
+            pct_publico=resumo_rec["pct_publico"],
+            pct_autofinanciamento=resumo_rec["pct_autofinanciamento"],
         ),
         parcial=repo.tp_prestacao_contas(ano).upper() == "PARCIAL",
-        base_ipca=MES_BASE_IPCA if ano < ANO_NOMINAL else None,
+        base_ipca=correcao[2] if correcao else None,
     )

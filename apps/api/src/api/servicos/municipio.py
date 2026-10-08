@@ -1,10 +1,11 @@
 """Caso de uso /municipios/{cd}: resumo do município para cada grupo e cargo."""
 
+import polars as pl
+from indicadores import desempenho
 from pydantic import BaseModel, ConfigDict
 
 from api.erros import nao_encontrado
 from api.repositorio.base import Repositorio
-from api.servicos import adaptador_indicadores as ind
 from api.servicos.grupos import Catalogo, candidaturas_do_grupo
 
 
@@ -85,30 +86,46 @@ def montar_resumo(repo: Repositorio, catalogo: Catalogo, cd_mun_ibge: int) -> Re
             por_cargo.setdefault(c.ds_cargo, []).append(c.sq_candidato)
         cargos = []
         for cargo, sqs in sorted(por_cargo.items()):
-            base = next(
-                (
-                    b
-                    for b in repo.base_eleitoral(grupo.ano, cargo, por_zona=False, uf=m.uf)
-                    if b.cd_mun_ibge == cd_mun_ibge
-                ),
-                None,
+            base = repo.base_eleitoral(
+                grupo.ano, cargo, por_zona=False, uf=m.uf, cd_mun_ibge=cd_mun_ibge
             )
-            if base is None:  # cargo sem eleitorado apurado no município: nada a resumir
+            if not base:  # cargo sem eleitorado apurado no município: nada a resumir
                 continue
             votos = sum(
                 v.votos
-                for v in repo.votos_territorio(grupo.ano, sqs, por_zona=False, uf=m.uf)
-                if v.cd_mun_ibge == cd_mun_ibge
+                for v in repo.votos_territorio(
+                    grupo.ano, sqs, por_zona=False, uf=m.uf, cd_mun_ibge=cd_mun_ibge
+                )
             )
+            quadro = desempenho.votos_km2(
+                desempenho.penetracao(
+                    desempenho.pct_validos(
+                        pl.DataFrame(
+                            {
+                                "votos": [votos],
+                                "aptos": [base[0].aptos],
+                                "validos": [base[0].validos],
+                                "area_km2": [m.area_km2],
+                            },
+                            schema={
+                                "votos": pl.Int64,
+                                "aptos": pl.Int64,
+                                "validos": pl.Int64,
+                                "area_km2": pl.Float64,
+                            },
+                        )
+                    )
+                )
+            ).to_dicts()[0]
             cargos.append(
                 ResumoCargo(
                     cargo=cargo,
                     n_candidaturas=len(sqs),
                     votos=votos,
-                    aptos=base.aptos,
-                    penetracao=ind.penetracao(votos, base.aptos),
-                    pct_validos=ind.pct_validos(votos, base.validos),
-                    votos_por_km2=votos / m.area_km2 if m.area_km2 else None,
+                    aptos=base[0].aptos,
+                    penetracao=quadro["penetracao"],
+                    pct_validos=quadro["pct_validos"],
+                    votos_por_km2=quadro["votos_km2"],
                 )
             )
         grupos.append(ResumoGrupo(id=grupo.id, rotulo=grupo.rotulo, ano=grupo.ano, cargos=cargos))

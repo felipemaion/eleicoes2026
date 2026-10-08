@@ -284,9 +284,10 @@ def test_gastos_do_grupo(api: TestClient) -> None:
     assert agg["mediana_custo_voto_contratado"] == pytest.approx((100.0 + 5000 / 180) / 2)
     assert agg["candidatos_sem_voto_excluidos"] == 0
     rec = corpo["receitas"]
-    assert rec["receita_total"] == 125000.0
-    assert rec["pct_publico"] == pytest.approx(100 * 80000 / 125000)
-    assert rec["pct_autofinanciamento"] == pytest.approx(100 * 10000 / 125000)
+    # 125000 − 7000: o repasse de sq 5 a sq 3 ("outros candidatos", doador do grupo) sai (§4.1).
+    assert rec["receita_total"] == 118000.0
+    assert rec["pct_publico"] == pytest.approx(100 * 80000 / 118000)
+    assert rec["pct_autofinanciamento"] == pytest.approx(100 * 10000 / 118000)
     assert [c["sq_candidato"] for c in corpo["por_candidato"]] == [3, 5]
     assert corpo["contas_parciais"] is True
     assert corpo["dt_geracao"] == "2026-10-06"

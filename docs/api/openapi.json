@@ -994,12 +994,31 @@
             "title": "Paleta"
           },
           "quebras": {
-            "items": {
-              "type": "number"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Quebras",
-            "description": "Cortes internos (quintis dos valores desta resposta)."
+            "description": "Cortes internos da legenda; null quando não há como calcular (ver `aviso`)."
+          },
+          "aviso": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aviso",
+            "description": "Por que `quebras` é null, se for."
           }
         },
         "type": "object",
@@ -1084,15 +1103,37 @@
             "description": "votos_para / votos_de; null se votos_de = 0."
           },
           "ganho_absoluto": {
-            "type": "integer",
-            "title": "Ganho Absoluto"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ganho Absoluto",
+            "description": "null se a AMC só existe num dos anos."
           },
           "votos_de": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Votos De"
           },
           "votos_para": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Votos Para"
           }
         },
@@ -1332,14 +1373,14 @@
             "grupo": "missao_2026",
             "por_candidato": [],
             "receitas": {
-              "pct_autofinanciamento": 8.0,
-              "pct_publico": 64.0,
+              "pct_autofinanciamento": 8.47,
+              "pct_publico": 67.8,
               "por_categoria": {
                 "fefc": 70000.0,
                 "fundo_partidario": 10000.0
               },
-              "receita_financeira": 123000.0,
-              "receita_total": 125000.0
+              "receita_financeira": 116000.0,
+              "receita_total": 118000.0
             },
             "uf": "SP"
           }
@@ -1549,15 +1590,36 @@
             "title": "Retencao"
           },
           "ganho_absoluto": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Ganho Absoluto"
           },
           "votos_de": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Votos De"
           },
           "votos_para": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Votos Para"
           }
         },

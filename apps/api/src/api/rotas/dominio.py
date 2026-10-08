@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
 
-from api.deps import CatalogoDep, RepositorioDep
+from api.deps import CacheDep, CatalogoDep, RepositorioDep
 from api.dominio import UF, Ano, Cargo, Indicador, Nivel
 from api.servicos.candidatos import FichaCandidato, ListaCandidatos, listar_candidatos, montar_ficha
 from api.servicos.comparativo import Comparativo, montar_comparativo
@@ -37,6 +37,7 @@ def grupos(repo: RepositorioDep, catalogo: CatalogoDep) -> GruposResposta:
 def candidatos(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     grupo: GrupoQ,
     uf: UF | None = None,
     cargo: Cargo | None = None,
@@ -44,14 +45,13 @@ def candidatos(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ListaCandidatos:
     """Votos, % dos válidos, penetração, resultado e partido, ordenados por votos."""
-    return listar_candidatos(
-        repo,
-        catalogo,
-        grupo_id=grupo,
-        uf=uf.value if uf else None,
-        cargo=cargo.value if cargo else None,
-        limite=limite,
-        offset=offset,
+    uf_v, cargo_v = (uf.value if uf else None), (cargo.value if cargo else None)
+    return cache.obter(
+        repo.dt_geracao(),
+        ("candidatos", grupo, uf_v, cargo_v, limite, offset),
+        lambda: listar_candidatos(
+            repo, catalogo, grupo_id=grupo, uf=uf_v, cargo=cargo_v, limite=limite, offset=offset
+        ),
     )
 
 
@@ -76,6 +76,7 @@ def ficha(
 def mapa(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     ano: Ano,
     cargo: Cargo,
     uf: UF | None = None,
@@ -85,16 +86,21 @@ def mapa(
     indicador: Indicador = Indicador.PENETRACAO,
 ) -> Mapa:
     """`valores` por território (município, `município-zona` ou célula H3) + escala sugerida."""
-    return montar_mapa(
-        repo,
-        catalogo,
-        ano=ano.value,
-        cargo=cargo.value,
-        uf=uf.value if uf else None,
-        nivel=nivel,
-        indicador=indicador,
-        grupo_id=grupo,
-        sq_candidato=sq_candidato,
+    uf_v = uf.value if uf else None
+    return cache.obter(
+        repo.dt_geracao(),
+        ("mapa", ano, cargo, uf_v, nivel, indicador, grupo, sq_candidato),
+        lambda: montar_mapa(
+            repo,
+            catalogo,
+            ano=ano.value,
+            cargo=cargo.value,
+            uf=uf_v,
+            nivel=nivel,
+            indicador=indicador,
+            grupo_id=grupo,
+            sq_candidato=sq_candidato,
+        ),
     )
 
 
@@ -104,6 +110,7 @@ def mapa(
 def pontos(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     ano: Ano,
     cargo: Cargo,
     uf: UF,
@@ -113,16 +120,20 @@ def pontos(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> Pontos:
     """`{lat, lon, votos}` por local, mais votados primeiro; paginado por UF."""
-    return montar_pontos(
-        repo,
-        catalogo,
-        ano=ano.value,
-        cargo=cargo.value,
-        uf=uf.value,
-        grupo_id=grupo,
-        sq_candidato=sq_candidato,
-        limite=limite,
-        offset=offset,
+    return cache.obter(
+        repo.dt_geracao(),
+        ("pontos", ano, cargo, uf, grupo, sq_candidato, limite, offset),
+        lambda: montar_pontos(
+            repo,
+            catalogo,
+            ano=ano.value,
+            cargo=cargo.value,
+            uf=uf.value,
+            grupo_id=grupo,
+            sq_candidato=sq_candidato,
+            limite=limite,
+            offset=offset,
+        ),
     )
 
 
@@ -130,17 +141,17 @@ def pontos(
 def gastos(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     grupo: GrupoQ,
     uf: UF | None = None,
     cargo: Cargo | None = None,
 ) -> Gastos:
     """Custo por voto (contratado/pago), receita por fonte, % público e % autofinanciamento."""
-    return montar_gastos(
-        repo,
-        catalogo,
-        grupo_id=grupo,
-        uf=uf.value if uf else None,
-        cargo=cargo.value if cargo else None,
+    uf_v, cargo_v = (uf.value if uf else None), (cargo.value if cargo else None)
+    return cache.obter(
+        repo.dt_geracao(),
+        ("gastos", grupo, uf_v, cargo_v),
+        lambda: montar_gastos(repo, catalogo, grupo_id=grupo, uf=uf_v, cargo=cargo_v),
     )
 
 
@@ -150,6 +161,7 @@ def gastos(
 def comparativo(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     comparacao: Annotated[str, Query(description="Id em `comparacoes` (ex.: evolucao_mbl).")],
     cargo: Cargo,
     uf: UF | None = None,
@@ -158,13 +170,18 @@ def comparativo(
     ] = False,
 ) -> Comparativo:
     """Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte."""
-    return montar_comparativo(
-        repo,
-        catalogo,
-        comparacao_id=comparacao,
-        cargo=cargo,
-        uf=uf.value if uf else None,
-        mesmos_candidatos=mesmos_candidatos,
+    uf_v = uf.value if uf else None
+    return cache.obter(
+        repo.dt_geracao(),
+        ("comparativo", comparacao, cargo, uf_v, mesmos_candidatos),
+        lambda: montar_comparativo(
+            repo,
+            catalogo,
+            comparacao_id=comparacao,
+            cargo=cargo,
+            uf=uf_v,
+            mesmos_candidatos=mesmos_candidatos,
+        ),
     )
 
 
@@ -178,7 +195,12 @@ def comparativo(
 def municipio(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
+    cache: CacheDep,
     cd_mun_ibge: Annotated[str, Path(pattern=r"^\d{7}$", description="Código IBGE de 7 dígitos.")],
 ) -> ResumoMunicipio:
     """Desempenho de cada grupo no município, por cargo."""
-    return montar_resumo(repo, catalogo, int(cd_mun_ibge))
+    return cache.obter(
+        repo.dt_geracao(),
+        ("municipio", cd_mun_ibge),
+        lambda: montar_resumo(repo, catalogo, int(cd_mun_ibge)),
+    )

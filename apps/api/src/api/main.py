@@ -10,6 +10,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from api.cache_http import instalar_cache
+from api.cache_servico import CacheLRU
 from api.config import VERSAO, Settings, obter_settings
 from api.erros import ErroDominio
 from api.repositorio.base import DadosIndisponiveis
@@ -28,6 +29,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.grupos = carregar_grupos(cfg.arquivo_grupos)
+        app.state.cache = CacheLRU(cfg.cache_capacidade)
         app.state.catalogo = carregar_catalogo(cfg.arquivo_grupos, cfg.raiz_repositorio)
         app.state.repositorio = None
         try:

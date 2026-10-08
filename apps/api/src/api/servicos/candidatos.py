@@ -1,11 +1,12 @@
 """Casos de uso /candidatos e /candidatos/{ano}/{sq}."""
 
+import polars as pl
+from indicadores import desempenho
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.erros import nao_encontrado
 from api.repositorio.base import Repositorio
 from api.repositorio.modelos import Candidatura
-from api.servicos import adaptador_indicadores as ind
 from api.servicos.contas import (
     ResumoCustoCandidato,
     ResumoReceitasOut,
@@ -76,9 +77,32 @@ class ListaCandidatos(BaseModel):
     )
 
 
+def taxas(linhas: list[tuple[int, int, int]]) -> list[tuple[float | None, float | None]]:
+    """(pct_validos, penetracao) de cada (votos, aptos, validos), pela biblioteca de indicadores."""
+    quadro = pl.DataFrame(
+        linhas, schema={"votos": pl.Int64, "aptos": pl.Int64, "validos": pl.Int64}, orient="row"
+    )
+    calculado = desempenho.penetracao(desempenho.pct_validos(quadro))
+    return list(zip(calculado["pct_validos"], calculado["penetracao"], strict=True))
+
+
 def resumir(c: Candidatura, votos: int, bases: BasesPorEscopo) -> CandidatoResumo:
-    """Monta o resumo com as taxas da circunscrição."""
-    aptos, validos = bases.de(c)
+    """Resumo de um candidato com as taxas da circunscrição dele."""
+    return _resumos([(c, votos)], bases)[0]
+
+
+def _resumos(pares: list[tuple[Candidatura, int]], bases: BasesPorEscopo) -> list[CandidatoResumo]:
+    """Resumos de vários candidatos com um único cálculo vetorizado das taxas."""
+    entradas = [(votos, *bases.de(c)) for c, votos in pares]
+    return [
+        _montar_resumo(c, votos, pct, pen)
+        for (c, votos), (pct, pen) in zip(pares, taxas(entradas), strict=True)
+    ]
+
+
+def _montar_resumo(
+    c: Candidatura, votos: int, pct: float | None, pen: float | None
+) -> CandidatoResumo:
     return CandidatoResumo(
         ano=c.ano,
         sq_candidato=c.sq_candidato,
@@ -89,8 +113,8 @@ def resumir(c: Candidatura, votos: int, bases: BasesPorEscopo) -> CandidatoResum
         situacao=c.ds_situacao_candidatura,
         resultado=c.ds_sit_tot_turno,
         votos=votos,
-        pct_validos=ind.pct_validos(votos, validos),
-        penetracao=ind.penetracao(votos, aptos),
+        pct_validos=pct,
+        penetracao=pen,
     )
 
 
@@ -110,7 +134,7 @@ def listar_candidatos(
     votos = repo.votos_totais(grupo.ano, [c.sq_candidato for c in candidaturas])
     bases = BasesPorEscopo(repo)
     itens = sorted(
-        (resumir(c, votos.get(c.sq_candidato, 0), bases) for c in candidaturas),
+        _resumos([(c, votos.get(c.sq_candidato, 0)) for c in candidaturas], bases),
         key=lambda i: (-i.votos, i.nm_urna, i.sq_candidato),
     )
     return ListaCandidatos(
@@ -161,18 +185,23 @@ def montar_ficha(repo: Repositorio, ano: int, sq_candidato: int, top: int) -> Fi
         for b in repo.base_eleitoral(ano, c.ds_cargo, por_zona=False, uf=uf_da_base(c.sg_uf))
     }
     por_uf: dict[str, int] = {}
+    quadro = desempenho.penetracao(
+        pl.DataFrame(
+            [
+                (v.votos, base[v.cd_mun_ibge].aptos if v.cd_mun_ibge in base else None)
+                for v in por_mun
+            ],
+            schema={"votos": pl.Int64, "aptos": pl.Int64},
+            orient="row",
+        )
+    )
     linhas = []
-    for v in por_mun:
+    for v, pen in zip(por_mun, quadro["penetracao"], strict=True):
         m = municipios[v.cd_mun_ibge]
         por_uf[m.uf] = por_uf.get(m.uf, 0) + v.votos
-        b = base.get(v.cd_mun_ibge)
         linhas.append(
             VotosMunicipio(
-                cd_mun_ibge=m.cd_mun_ibge,
-                nome=m.nome,
-                uf=m.uf,
-                votos=v.votos,
-                penetracao=ind.penetracao(v.votos, b.aptos) if b else None,
+                cd_mun_ibge=m.cd_mun_ibge, nome=m.nome, uf=m.uf, votos=v.votos, penetracao=pen
             )
         )
     linhas.sort(key=lambda x: (-x.votos, x.cd_mun_ibge))

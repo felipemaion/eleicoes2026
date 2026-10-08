@@ -3,12 +3,13 @@
 import statistics
 from collections.abc import Sequence
 
+import polars as pl
+from indicadores import desempenho
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Indicador, Nivel
 from api.erros import parametro_invalido
 from api.repositorio.base import Repositorio
-from api.servicos import adaptador_indicadores as ind
 from api.servicos.escopo import selecionar_alvo
 from api.servicos.grupos import Catalogo
 
@@ -34,9 +35,10 @@ class EscalaSugerida(BaseModel):
 
     tipo: str = Field(description="`sequencial` (taxas) ou `simbolo_proporcional` (absolutos).")
     paleta: str
-    quebras: list[float] = Field(
-        description="Cortes internos (quintis dos valores desta resposta)."
+    quebras: list[float] | None = Field(
+        description="Cortes internos da legenda; null quando não há como calcular (ver `aviso`)."
     )
+    aviso: str | None = Field(default=None, description="Por que `quebras` é null, se for.")
 
 
 class Mapa(BaseModel):
@@ -79,15 +81,25 @@ class Mapa(BaseModel):
     )
 
 
+def quebras_da_escala(valores: Sequence[float]) -> list[float] | None:
+    """Cortes da legenda sequencial a partir dos valores.
+
+    TODO(T-A06): a spec §8.2 pede quebras **comuns a 2022+2026**, sem células `n_baixo`;
+    quando `indicadores.espacial.quebras_comuns` existir, é ela que entra aqui (ponto único de
+    uso). Até lá: quintis dos valores desta resposta. Menos de 2 valores → `None` (o chamador
+    explica em `aviso`), nunca lista vazia silenciosa.
+    """
+    if len(valores) < 2:
+        return None
+    return [round(q, 2) for q in statistics.quantiles(valores, n=5, method="inclusive")]
+
+
 def _escala(indicador: Indicador, valores: Sequence[float]) -> EscalaSugerida:
     if indicador is Indicador.VOTOS:
         return EscalaSugerida(tipo="simbolo_proporcional", paleta="um_matiz", quebras=[])
-    quebras = (
-        [round(q, 2) for q in statistics.quantiles(valores, n=5, method="inclusive")]
-        if len(valores) >= 2
-        else []
-    )
-    return EscalaSugerida(tipo="sequencial", paleta="viridis", quebras=quebras)
+    quebras = quebras_da_escala(valores)
+    aviso = None if quebras is not None else "menos de 2 valores: sem base para quebras"
+    return EscalaSugerida(tipo="sequencial", paleta="viridis", quebras=quebras, aviso=aviso)
 
 
 def montar_mapa(
@@ -113,11 +125,10 @@ def montar_mapa(
         repo, catalogo, ano=ano, cargo=cargo, uf=uf, grupo_id=grupo_id, sq_candidato=sq_candidato
     )
     sqs = [c.sq_candidato for c in alvo]
-    detalhes: dict[str, Detalhe] = {}
+    linhas: list[tuple[str, int, int, int | None]] = []  # (chave, votos, aptos, válidos)
     if nivel is Nivel.H3:
         assert uf is not None  # noqa: S101 - exigido acima
-        for cel in repo.votos_h3(ano, sqs, uf=uf):
-            detalhes[cel.h3] = _detalhe(indicador, cel.votos, cel.aptos, None)
+        linhas = [(c.h3, c.votos, c.aptos, None) for c in repo.votos_h3(ano, sqs, uf=uf)]
     else:
         por_zona = nivel is Nivel.ZONA
         votos = {
@@ -125,15 +136,19 @@ def montar_mapa(
             for v in repo.votos_territorio(ano, sqs, por_zona=por_zona, uf=uf)
         }
         base = repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
-        vistos = set()
-        for b in base:
-            vistos.add((b.cd_mun_ibge, b.nr_zona))
-            detalhes[_chave(b.cd_mun_ibge, b.nr_zona)] = _detalhe(
-                indicador, votos.get((b.cd_mun_ibge, b.nr_zona), 0), b.aptos, b.validos
+        vistos = {(b.cd_mun_ibge, b.nr_zona) for b in base}
+        linhas = [
+            (
+                _chave(b.cd_mun_ibge, b.nr_zona),
+                votos.get((b.cd_mun_ibge, b.nr_zona), 0),
+                b.aptos,
+                b.validos,
             )
-        for (mun, zona), n in votos.items():  # voto sem base: aparece como "sem dado", não some
-            if (mun, zona) not in vistos:
-                detalhes[_chave(mun, zona)] = _detalhe(indicador, n, 0, 0)
+            for b in base
+        ]
+        # Voto sem base eleitoral: aparece como "sem dado" (aptos 0 → null), não some.
+        linhas += [(_chave(m, z), n, 0, 0) for (m, z), n in votos.items() if (m, z) not in vistos]
+    detalhes = _detalhes(indicador, linhas)
     valores = {k: d.taxa for k, d in detalhes.items()}
     return Mapa(
         ano=ano,
@@ -149,18 +164,34 @@ def montar_mapa(
     )
 
 
+def _detalhes(
+    indicador: Indicador, linhas: list[tuple[str, int, int, int | None]]
+) -> dict[str, Detalhe]:
+    """Taxas de todos os territórios de uma vez, pela biblioteca de indicadores."""
+    quadro = pl.DataFrame(
+        linhas,
+        schema={"chave": pl.String, "votos": pl.Int64, "aptos": pl.Int64, "validos": pl.Int64},
+        orient="row",
+    )
+    calculado = desempenho.penetracao(desempenho.pct_validos(quadro))
+    coluna = {
+        Indicador.PENETRACAO: "penetracao",
+        Indicador.PCT_VALIDOS: "pct_validos",
+        Indicador.VOTOS: "votos",
+    }[indicador]
+    return {
+        r["chave"]: Detalhe(
+            votos=r["votos"],
+            aptos=r["aptos"],
+            validos=r["validos"],
+            taxa=None if r[coluna] is None else float(r[coluna]),
+        )
+        for r in calculado.to_dicts()
+    }
+
+
 def _chave(cd_mun_ibge: int, nr_zona: int | None) -> str:
     return str(cd_mun_ibge) if nr_zona is None else f"{cd_mun_ibge}-{nr_zona}"
-
-
-def _detalhe(indicador: Indicador, votos: int, aptos: int, validos: int | None) -> Detalhe:
-    if indicador is Indicador.VOTOS:
-        taxa: float | None = float(votos)
-    elif indicador is Indicador.PENETRACAO:
-        taxa = ind.penetracao(votos, aptos)
-    else:
-        taxa = ind.pct_validos(votos, validos or 0)
-    return Detalhe(votos=votos, aptos=aptos, validos=validos, taxa=taxa)
 
 
 class Ponto(BaseModel):

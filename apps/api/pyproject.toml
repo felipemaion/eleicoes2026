@@ -3,7 +3,7 @@ name = "api"
 version = "0.1.0"
 description = "API FastAPI do Eleicoes2026 (papel backend)."
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "duckdb>=1.1", "pydantic-settings>=2.4", "pyyaml>=6", "contratos", "indicadores"]
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "duckdb>=1.1", "pydantic-settings>=2.4", "pyyaml>=6", "polars>=1.10", "contratos", "indicadores"]
 
 [build-system]
 requires = ["hatchling"]

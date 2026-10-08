@@ -132,7 +132,13 @@ class RepositorioMemoria:
         return todos if codigos is None else [m for m in todos if m.cd_mun_ibge in codigos]
 
     def votos_territorio(
-        self, ano: int, sqs: Sequence[int], *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        sqs: Sequence[int],
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[VotosTerritorio]:
         """Soma por município/zona."""
         uf_de = {m.cd_mun_ibge: m.uf for m in self._d.municipios}
@@ -141,6 +147,8 @@ class RepositorioMemoria:
             if v.ano != ano or v.sq_candidato not in sqs or v.cd_mun_ibge not in uf_de:
                 continue
             if uf is not None and uf_de[v.cd_mun_ibge] != uf:
+                continue
+            if cd_mun_ibge is not None and v.cd_mun_ibge != cd_mun_ibge:
                 continue
             chave = (v.cd_mun_ibge, v.nr_zona if por_zona else None)
             soma[chave] = soma.get(chave, 0) + v.votos
@@ -155,12 +163,20 @@ class RepositorioMemoria:
         return total
 
     def base_eleitoral(
-        self, ano: int, cargo: str, *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        cargo: str,
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[BaseEleitoral]:
         """Soma aptos/válidos por município/zona."""
         soma: dict[tuple[int, int | None], tuple[int, int]] = {}
         for e in self._d.eleitorado:
             if e.ano != ano or e.ds_cargo != cargo or (uf is not None and e.sg_uf != uf):
+                continue
+            if cd_mun_ibge is not None and e.cd_mun_ibge != cd_mun_ibge:
                 continue
             chave = (e.cd_mun_ibge, e.nr_zona if por_zona else None)
             a, v = soma.get(chave, (0, 0))

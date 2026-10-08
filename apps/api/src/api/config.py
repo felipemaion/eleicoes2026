@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     raiz_repositorio: Path = RAIZ
     # Cache-Control: o dado muda no máximo diariamente; a revalidação por ETag cobre o resto.
     cache_max_age: int = 300
+    # Entradas do cache LRU dos serviços (mapa nacional, comparativos…).
+    cache_capacidade: int = 256
     # ADR 0002: o servidor tem pouca CPU; 2 threads é o teto.
     threads: int = 2
     cors_origens: list[str] = ["http://localhost:5173"]

@@ -68,9 +68,15 @@ class Repositorio(Protocol):
         ...
 
     def votos_territorio(
-        self, ano: int, sqs: Sequence[int], *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        sqs: Sequence[int],
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[VotosTerritorio]:
-        """Σ votos dos `sqs` por município (ou município×zona); `uf` filtra o *município*."""
+        """Σ votos dos `sqs` por município (ou município×zona); `uf`/`cd_mun_ibge` filtram."""
         ...
 
     def votos_totais(self, ano: int, sqs: Sequence[int]) -> dict[int, int]:
@@ -78,9 +84,15 @@ class Repositorio(Protocol):
         ...
 
     def base_eleitoral(
-        self, ano: int, cargo: str, *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        cargo: str,
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[BaseEleitoral]:
-        """Aptos e válidos do cargo por município (ou município×zona); `uf` ausente = Brasil."""
+        """Aptos e válidos do cargo por município (ou município×zona); sem filtro = Brasil."""
         ...
 
     def votos_h3(self, ano: int, sqs: Sequence[int], *, uf: str) -> list[CelulaH3]:

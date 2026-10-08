@@ -39,24 +39,56 @@ PROVISORIOS = (
     "despesas",
     "ipca",
 )
+# Colunas que a API lê de cada fonte: validadas na abertura (falha clara, sem `SELECT *`).
+COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
+    "consulta_cand": (
+        "nr_turno", "sg_uf", "ds_cargo", "sq_candidato", "nm_urna_candidato", "nr_partido",
+        "sg_partido", "ds_situacao_candidatura", "ds_sit_tot_turno", "pessoa_id", "dt_geracao",
+    ),
+    "votacao_candidato_munzona": (
+        "nr_turno", "sg_uf", "cd_mun_ibge", "nr_zona", "sq_candidato",
+        "qt_votos_nominais_validos", "dt_geracao",
+    ),
+    "detalhe_votacao_munzona": (
+        "nr_turno", "sg_uf", "ds_cargo", "cd_mun_ibge", "nr_zona", "qt_aptos",
+        "qt_total_votos_validos", "dt_geracao",
+    ),
+    "eleitorado_local_votacao": (
+        "nr_turno", "sg_uf", "cd_mun_ibge", "nr_zona", "nr_local_votacao", "nr_latitude",
+        "nr_longitude", "qt_eleitor_secao", "dt_geracao",
+    ),
+    "municipio_tse_ibge": ("cd_mun_ibge", "nm_municipio_ibge", "sg_uf", "dt_geracao"),
+    "municipios_extra": ("cd_mun_ibge", "cd_amc", "area_km2"),
+    "locais_h3": ("ano", "cd_mun_ibge", "nr_zona", "nr_local", "h3"),
+    "votos_local": ("ano", "sq_candidato", "cd_mun_ibge", "nr_zona", "nr_local", "votos"),
+    "receitas": (
+        "ano", "sq_candidato", "ds_fonte_receita", "ds_origem_receita", "ds_natureza_receita",
+        "vr_receita", "sq_candidato_doador",
+    ),
+    "despesas": (
+        "ano", "sq_candidato", "ds_origem_despesa", "vr_despesa_contratada", "vr_despesa_paga",
+    ),
+    "ipca": ("mes", "variacao"),
+}  # fmt: skip
+# `ano` vem da partição hive (`ano=AAAA/`): é ele que o DuckDB poda, sem abrir os outros anos.
 # Turno 1 em todas as views: 2º turno tem decisão própria (spec §1.3).
 _VIEWS = {
     "candidatos": (
         "consulta_cand",
-        "SELECT ano_eleicao AS ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"
+        "SELECT ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"
         " ds_cargo, nr_partido, sg_partido, ds_situacao_candidatura, ds_sit_tot_turno"
         " FROM {fonte} WHERE nr_turno = 1",
     ),
     # Votos nominais válidos somados nas zonas e no voto em trânsito (spec §2.1).
     "votos_munzona": (
         "votacao_candidato_munzona",
-        "SELECT ano_eleicao AS ano, sq_candidato, sg_uf, cd_mun_ibge, nr_zona,"
+        "SELECT ano, sq_candidato, sg_uf, cd_mun_ibge, nr_zona,"
         " SUM(qt_votos_nominais_validos)::BIGINT AS votos FROM {fonte} WHERE nr_turno = 1"
         " GROUP BY ALL",
     ),
     "eleitorado_munzona": (
         "detalhe_votacao_munzona",
-        "SELECT ano_eleicao AS ano, sg_uf, ds_cargo, cd_mun_ibge, nr_zona,"
+        "SELECT ano, sg_uf, ds_cargo, cd_mun_ibge, nr_zona,"
         " SUM(qt_aptos)::BIGINT AS aptos, SUM(qt_total_votos_validos)::BIGINT AS votos_validos"
         " FROM {fonte} WHERE nr_turno = 1 GROUP BY ALL",
     ),
@@ -86,18 +118,34 @@ class RepositorioDuckDB:
             self._con = duckdb.connect(":memory:")
             self._con.execute("SET threads = ?", [threads])
             fontes = {n: self._fonte(dir_dados, n) for n in (*CONTRATADOS, *PROVISORIOS)}
+            self._validar_colunas(fontes)
             for nome, (dataset, sql) in _VIEWS.items():
                 if fontes.get(dataset):
                     self._view(nome, sql.format(fonte=fontes[dataset]))
             for nome in PROVISORIOS:
                 if fontes[nome]:
-                    self._view(nome, f"SELECT * FROM {fontes[nome]}")  # noqa: S608
+                    colunas = ", ".join(COLUNAS_MINIMAS[nome])
+                    self._view(nome, f"SELECT {colunas} FROM {fontes[nome]}")  # noqa: S608
+            self._ipca: list[VariacaoIpca] | None = None
             self._tem_h3 = bool(fontes["locais_h3"])
             self._criar_views_compostas(fontes)
             self._dt = self._dt_geracao_dos_dados(fontes)
             self._con.execute("SET lock_configuration = true")
         except (duckdb.Error, KeyError, ValueError) as erro:
             raise DadosIndisponiveis(str(erro)) from erro
+
+    def _validar_colunas(self, fontes: dict[str, str | None]) -> None:
+        """Falha clara na abertura se faltar coluna que a API lê (em vez de erro na 1ª consulta)."""
+        for nome, fonte in fontes.items():
+            if not fonte:
+                continue
+            existentes = {
+                str(linha[0])
+                for linha in self._con.execute(f"DESCRIBE SELECT * FROM {fonte}").fetchall()  # noqa: S608
+            }
+            ausentes = [c for c in COLUNAS_MINIMAS[nome] if c not in existentes]
+            if ausentes:
+                raise DadosIndisponiveis(f"{nome}: colunas ausentes {ausentes}")
 
     @staticmethod
     def _ler_prestacao(manifesto: Path) -> dict[int, str]:
@@ -113,7 +161,7 @@ class RepositorioDuckDB:
         # O caminho vem da configuração, nunca do usuário; aspas simples escapadas por garantia.
         if any((dir_dados / nome).glob("ano=*/*.parquet")):
             caminho = str(dir_dados / nome / "ano=*" / "*.parquet").replace("'", "''")
-            return f"read_parquet('{caminho}', hive_partitioning = false, union_by_name = true)"
+            return f"read_parquet('{caminho}', hive_partitioning = true, union_by_name = true)"
         flat = dir_dados / f"{nome}.parquet"
         if flat.is_file():
             return f"read_parquet('{str(flat).replace(chr(39), chr(39) * 2)}')"
@@ -143,13 +191,13 @@ class RepositorioDuckDB:
         if fontes["eleitorado_local_votacao"]:
             h3 = "h.h3" if self._tem_h3 else "NULL::VARCHAR AS h3"
             juncao = (
-                " LEFT JOIN locais_h3 h ON h.ano = l.aa_eleicao AND h.cd_mun_ibge = l.cd_mun_ibge"
+                " LEFT JOIN locais_h3 h ON h.ano = l.ano AND h.cd_mun_ibge = l.cd_mun_ibge"
                 " AND h.nr_zona = l.nr_zona AND h.nr_local = l.nr_local_votacao"
                 if self._tem_h3
                 else ""
             )
             select = (
-                "SELECT l.aa_eleicao AS ano, l.sg_uf, l.cd_mun_ibge, l.nr_zona,"  # noqa: S608
+                "SELECT l.ano, l.sg_uf, l.cd_mun_ibge, l.nr_zona,"  # noqa: S608
                 " l.nr_local_votacao AS nr_local, l.nr_latitude AS lat, l.nr_longitude AS lon,"
                 f" {h3}, l.qt_eleitor_secao AS aptos FROM {fontes['eleitorado_local_votacao']} l"
                 f"{juncao} WHERE l.nr_turno = 1"
@@ -273,7 +321,13 @@ class RepositorioDuckDB:
         return [Municipio(*linha) for linha in linhas]  # type: ignore[arg-type]
 
     def votos_territorio(
-        self, ano: int, sqs: Sequence[int], *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        sqs: Sequence[int],
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[VotosTerritorio]:
         """Σ votos por município ou município×zona."""
         zona = "v.nr_zona" if por_zona else "NULL"
@@ -283,6 +337,9 @@ class RepositorioDuckDB:
         if uf is not None:
             filtro_uf = " AND v.sg_uf = ?"  # UF do local de votação (vale também para presidente)
             params.append(uf)
+        if cd_mun_ibge is not None:
+            filtro_uf += " AND v.cd_mun_ibge = ?"
+            params.append(cd_mun_ibge)
         sql = (
             f"SELECT v.cd_mun_ibge, {zona}, SUM(v.votos)::BIGINT FROM votos_munzona v "  # noqa: S608
             f"WHERE v.ano = ? AND v.{_SQS}{filtro_uf} GROUP BY {agrupa} ORDER BY {agrupa}"
@@ -299,7 +356,13 @@ class RepositorioDuckDB:
         return {int(str(s)): int(str(v)) for s, v in linhas}
 
     def base_eleitoral(
-        self, ano: int, cargo: str, *, por_zona: bool, uf: str | None = None
+        self,
+        ano: int,
+        cargo: str,
+        *,
+        por_zona: bool,
+        uf: str | None = None,
+        cd_mun_ibge: int | None = None,
     ) -> list[BaseEleitoral]:
         """Aptos/válidos por município ou município×zona."""
         zona = "e.nr_zona" if por_zona else "NULL"
@@ -309,6 +372,9 @@ class RepositorioDuckDB:
         if uf is not None:
             filtro_uf = " AND e.sg_uf = ?"
             params.append(uf)
+        if cd_mun_ibge is not None:
+            filtro_uf += " AND e.cd_mun_ibge = ?"
+            params.append(cd_mun_ibge)
         sql = (
             f"SELECT e.cd_mun_ibge, {zona}, SUM(e.aptos)::BIGINT, SUM(e.votos_validos)::BIGINT "  # noqa: S608
             f"FROM eleitorado_munzona e WHERE e.ano = ? AND e.ds_cargo = ?{filtro_uf} "
@@ -366,10 +432,14 @@ class RepositorioDuckDB:
         """Receitas agregadas por candidato × rótulos."""
         linhas = self._linhas(
             "SELECT sq_candidato, ds_fonte_receita, ds_origem_receita, ds_natureza_receita, "  # noqa: S608
-            f"SUM(vr_receita) FROM receitas WHERE ano = ? AND {_SQS} GROUP BY ALL ORDER BY ALL",
+            "sq_candidato_doador, SUM(vr_receita) FROM receitas "
+            f"WHERE ano = ? AND {_SQS} GROUP BY ALL ORDER BY ALL",
             [ano, list(sqs)],
         )
-        return [ReceitaBruta(*linha) for linha in linhas]  # type: ignore[arg-type]
+        return [
+            ReceitaBruta(sq, fonte, origem, natureza, valor, doador)  # type: ignore[arg-type]
+            for sq, fonte, origem, natureza, doador, valor in linhas
+        ]
 
     def despesas(self, ano: int, sqs: Sequence[int]) -> list[DespesaBruta]:
         """Despesas agregadas por candidato × origem."""
@@ -383,7 +453,10 @@ class RepositorioDuckDB:
 
     def ipca(self) -> list[VariacaoIpca]:
         """Série do IPCA."""
-        return [VariacaoIpca(*linha) for linha in self._linhas("SELECT mes, variacao FROM ipca")]  # type: ignore[arg-type]
+        if self._ipca is None:  # série pequena e imutável até a próxima carga: lê uma vez
+            linhas = self._linhas("SELECT mes, variacao FROM ipca ORDER BY mes")
+            self._ipca = [VariacaoIpca(*linha) for linha in linhas]  # type: ignore[arg-type]
+        return list(self._ipca)
 
     def fechar(self) -> None:
         """Fecha a conexão."""
