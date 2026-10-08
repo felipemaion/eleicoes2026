@@ -1,0 +1,20 @@
+{
+ "cd_mun_ibge": "2800308",
+ "nome": "Aracaju",
+ "uf": "SE",
+ "aptos": 211971,
+ "grupos": [
+  {
+   "grupo": "missao_2026",
+   "rotulo": "Missão 2026",
+   "votos": 3155,
+   "taxa": 0.01861
+  },
+  {
+   "grupo": "mbl_2022",
+   "rotulo": "MBL 2022",
+   "votos": 2100,
+   "taxa": 0.0099
+  }
+ ]
+}
