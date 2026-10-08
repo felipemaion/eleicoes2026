@@ -43,9 +43,32 @@ Registro deferido pelo TSE em 04/11/2025, número **14**. Em `consulta_cand_2026
 Fonte: https://www.tse.jus.br/comunicacao/noticias/2025/Novembro/tse-aprova-registro-e-homologa-estatuto-do-partido-missao
 
 ## IBGE
-- Malhas: `https://servicodados.ibge.gov.br/api/v3/malhas/estados/{UF}?formato=application/vnd.geo%2Bjson&intrarregiao=municipio&qualidade=minima`
-  (também `paises/BR?intrarregiao=municipio`, TopoJSON com `formato=application/json`).
-- Área territorial dos municípios (para votos/km² de contexto).
+- **Malha municipal**: shapefile oficial `BR_Municipios_2025.zip` (Malha Municipal Digital 2025, 237 MB,
+  5.571 municípios, campo `CD_MUN`) em
+  `https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2025/Brasil/`.
+  **Não** usamos a API v3 de malhas: ela não traz Boa Esperança do Norte/MT (município novo) e
+  ainda desenha Sorriso/Nova Ubiratã com o território antigo. Lido com `pyshp` e simplificado
+  (0,0005° ≈ 50 m) — fonte `malha_municipios`.
+- **UFs**: `api/v3/malhas/paises/BR?intrarregiao=UF&qualidade=intermediaria` — fonte `malha_ufs`.
+- **Área territorial**: `.../estrutura_territorial/areas_territoriais/2025/AR_BR_RG_UF_RGINT_RGI_MUN_2025.xls`
+  (aba `AR_BR_MUN_2025`, km², calculada sobre a mesma malha 2025) — fonte `areas_ibge`. Traz 5.571
+  municípios + 2 "Áreas Operacionais" das lagoas (RS, `43000xx`), descartadas.
+- **AMC 2022↔2026**: o IBGE só publica AMC censitária (até 2010). Para 2022→2026 há **um** desmembramento:
+  Boa Esperança do Norte/MT (5101837; Lei MT 7.264/2000, validada pelo STF em out/2023, entrou na DTB 2024),
+  saída de **Sorriso (5107925) e Nova Ubiratã (5106240)**. Verificado nos dados: é o único código de 2026
+  ausente de `eleitorado_local_votacao` 2022. `cd_amc` = menor código do grupo (5101837). Lista em
+  `etl.municipios.AGREGACOES_AMC`.
+
+## Geo (T-D04)
+`uv run etl baixar --ano 2026 --fonte areas_ibge --fonte malha_municipios --fonte malha_ufs` e depois
+`uv run etl geo` → `data/processed/municipios.parquet` (contrato `municipios`) e
+`data/processed/tiles/municipios.<hash12>.pmtiles` + `tiles/manifesto.json` (`arquivo`, `sha256`, `camadas`).
+Camadas (zoom 3–10): `ufs` (`cd_uf`, `sg_uf`), `municipios` (`cd_mun_ibge` int, `nm`),
+`zonas_2022` e `zonas_2026` (`cd_mun_ibge`, `nr_zona`, `id` = `<cd_mun_ibge>-<nr_zona>`).
+Limitações das zonas (aproximação, ADR 0003): locais sem coordenada no TSE (7% em 2022) ficam fora do
+Voronoi; zona sem nenhum local georreferenciado **não ganha polígono** (251 em 2022, 1 em 2026) e as
+vizinhas ocupam o espaço dela. Em 2022, locais dentro do território hoje de Boa Esperança do Norte caem
+fora do polígono de Sorriso/Nova Ubiratã e são descartados.
 
 ## BCB
 - IPCA (SGS série 433) para deflacionar valores de 2022: `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json`

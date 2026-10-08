@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -14,8 +15,11 @@ from contratos import ContratoViolado
 
 from etl.download import Baixador, DownloadError
 from etl.fontes.catalogo import CATALOGO, alvos
+from etl.geo import ErroGeo
 from etl.ipca import processar_ipca
 from etl.manifesto import Manifesto
+from etl.municipios import ErroMunicipios
+from etl.pipeline_geo import construir_geo
 from etl.processar import CONTAS, FONTES, ErroProcessamento, processar_fonte
 
 
@@ -39,7 +43,21 @@ def _parser() -> argparse.ArgumentParser:
     )
     c.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     c.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    g = sub.add_parser("geo", help="municipios.parquet + PMTiles (municípios, UFs, zonas)")
+    g.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    g.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    g.add_argument("--saida", type=Path, default=Path("data/processed/tiles"))
     return p
+
+
+def _geo(args: argparse.Namespace) -> int:
+    try:
+        stats = construir_geo(args.raiz_raw, args.raiz_processed, args.saida)
+    except (ErroGeo, ErroMunicipios, ContratoViolado) as e:
+        print(f"FALHA geo: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+    return 0
 
 
 def _processar(args: argparse.Namespace) -> int:
@@ -74,6 +92,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Ponto de entrada; devolve o código de saída."""
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     args = _parser().parse_args(argv)
+    if args.comando == "geo":
+        return _geo(args)
     if args.comando == "processar":
         return _processar(args)
     try:

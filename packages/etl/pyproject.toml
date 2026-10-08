@@ -3,7 +3,15 @@ name = "etl"
 version = "0.1.0"
 description = "ETL de dados oficiais TSE/IBGE/BCB → Parquet (papel dados)."
 requires-python = ">=3.12"
-dependencies = ["polars>=1.10", "httpx>=0.27", "contratos"]
+dependencies = [
+    "polars>=1.10",
+    "httpx>=0.27",
+    "contratos",
+    "shapely>=2.2.0",
+    "numpy>=2.5.3",
+    "fastexcel>=0.21.0",
+    "pyshp>=3.1.6",
+]
 
 [project.scripts]
 etl = "etl.cli:main"
@@ -17,3 +25,8 @@ packages = ["src/etl"]
 
 [tool.uv.sources]
 contratos = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "types-shapely>=2.1.0.20260728",
+]
