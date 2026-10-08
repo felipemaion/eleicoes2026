@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { simularApi } from "./api";
+import { pastaCapturas } from "./capturas";
 
-const CAPTURAS = "../../docs/registro/handoffs/img";
+const CAPTURAS = pastaCapturas();
 
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
