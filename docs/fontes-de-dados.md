@@ -53,3 +53,9 @@ Fonte: https://www.tse.jus.br/comunicacao/noticias/2025/Novembro/tse-aprova-regi
 ## Zonas eleitorais
 Não há polígono oficial. Aproximação: Voronoi dos locais de votação recortado pelo município;
 município de zona única usa o próprio polígono. Chave `(cd_mun, nr_zona)`. Ver ADR 0003.
+
+## Download (T-D01)
+`uv run etl baixar --ano 2026 [--fonte ID ...] [--uf SP] [--forcar]` → `data/raw/` + `data/raw/manifesto.json`
+(url, caminho, sha256, bytes, ETag, Last-Modified, baixado_em UTC). Idempotente: HEAD compara
+ETag/Last-Modified; escrita em `.part` + rename atômico; retry (4 tentativas, backoff 1/2/4 s) só em
+erro de rede/5xx. Catálogo: `packages/etl/src/etl/fontes/catalogo.py`.
