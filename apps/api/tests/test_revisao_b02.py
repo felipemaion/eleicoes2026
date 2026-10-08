@@ -151,9 +151,6 @@ def test_menos_de_dois_valores_nao_devolve_lista_vazia_silenciosa() -> None:
     assert _escala(Indicador.PENETRACAO, [1.0, 2.0, 3.0]).aviso is None
 
 
-@pytest.mark.xfail(
-    strict=True, reason="T-A06: indicadores.espacial.quebras_comuns ainda não foi publicada"
-)
 def test_quebras_vem_de_indicadores_quebras_comuns() -> None:
     from indicadores import espacial
 
