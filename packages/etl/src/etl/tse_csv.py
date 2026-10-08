@@ -60,21 +60,9 @@ def _expr(origem: str, tipo: pl.DataType | type[pl.DataType]) -> pl.Expr:
     return pl.when(nulo).then(None).otherwise(texto).cast(tipo, strict=True)
 
 
-def ler_membro(
-    zip_path: Path,
-    membro: str,
-    contrato: Contrato,
-    tmp: Path,
-    extras: Sequence[str] = (),
-) -> pl.LazyFrame:
-    """LazyFrame tipado de um membro do ZIP, com as colunas lidas do CSV conforme ``contrato``.
-
-    Colunas derivadas (``contrato.derivadas``) não existem na origem e ficam de fora.
-    ``extras`` são colunas brutas (texto) adicionais, minúsculas, p.ex. CPF para o hash.
-    Coluna ausente na origem ou valor que não converte → erro (nada de fallback silencioso).
-    """
-    csv = transcodificar(zip_path, membro, tmp / (Path(membro).stem + ".utf8.csv"))
-    lf = pl.scan_csv(
+def scan_texto(csv: Path) -> pl.LazyFrame:
+    """CSV UTF-8 já transcodificado, tudo como texto (sem inferência nem conversão)."""
+    return pl.scan_csv(
         csv,
         separator=";",
         quote_char='"',
@@ -82,6 +70,33 @@ def ler_membro(
         encoding="utf8",
         truncate_ragged_lines=False,
     )
+
+
+def ler_membro(
+    zip_path: Path,
+    membro: str,
+    contrato: Contrato,
+    tmp: Path,
+    extras: Sequence[str] = (),
+) -> pl.LazyFrame:
+    """Transcodifica o membro para ``tmp`` e devolve :func:`ler_csv`."""
+    csv = transcodificar(zip_path, membro, tmp / (Path(membro).stem + ".utf8.csv"))
+    return ler_csv(csv, membro, contrato, extras)
+
+
+def ler_csv(
+    csv: Path,
+    membro: str,
+    contrato: Contrato,
+    extras: Sequence[str] = (),
+) -> pl.LazyFrame:
+    """LazyFrame tipado de um CSV UTF-8, com as colunas lidas conforme ``contrato``.
+
+    Colunas derivadas (``contrato.derivadas``) não existem na origem e ficam de fora.
+    ``extras`` são colunas brutas (texto) adicionais, minúsculas, p.ex. CPF para o hash.
+    Coluna ausente na origem ou valor que não converte → erro (nada de fallback silencioso).
+    """
+    lf = scan_texto(csv)
     presentes = set(lf.collect_schema().names())
     exprs: list[pl.Expr] = []
     for nome, tipo in contrato.colunas.items():

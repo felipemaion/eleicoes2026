@@ -82,10 +82,18 @@ def _recorte(
     return sqs
 
 
+def _cpf_sintetico(i: int) -> str:
+    """CPF com dígitos verificadores válidos (o ETL rejeita CPF malformado), base 900…"""
+    nums = [int(d) for d in f"{900000000 + i:09d}"]
+    for n in (9, 10):
+        nums.append(sum(d * (n + 1 - k) for k, d in enumerate(nums)) * 10 % 11 % 10)
+    return "".join(map(str, nums))
+
+
 def _anonimizar(cab: list[str], linha: list[str], i: int) -> list[str]:
     d = dict(zip(cab, linha, strict=True))
     for c in SINTETICO & d.keys():
-        d[c] = f"{i + 1:011d}" if c == "NR_CPF_CANDIDATO" else f"{i + 1:012d}"
+        d[c] = _cpf_sintetico(i) if c == "NR_CPF_CANDIDATO" else f"{i + 1:012d}"
     if "DS_EMAIL" in d:
         d["DS_EMAIL"] = "NÃO DIVULGÁVEL"
     return [d[c] for c in cab]

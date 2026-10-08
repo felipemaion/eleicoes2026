@@ -22,7 +22,7 @@ from contratos import CONTRATOS, Contrato, validar
 
 from etl.fontes.catalogo import alvos
 from etl.manifesto import Manifesto
-from etl.tse_csv import ler_membro, membros_dados
+from etl.tse_csv import ler_csv, membros_dados, scan_texto, transcodificar
 
 LOG = logging.getLogger(__name__)
 ELEITORADO = CONTRATOS["eleitorado_local_votacao"]
@@ -34,18 +34,36 @@ class ErroProcessamento(RuntimeError):  # noqa: N818 - nome de domínio
     """Falha de regra de negócio no processamento (crosswalk, sal, totais de controle)."""
 
 
+def cpf_valido(digitos: str) -> bool:
+    """CPF com 11 dígitos, DVs corretos e não repetido (``00000000000``, ``11111111111``…)."""
+    if len(digitos) != 11 or len(set(digitos)) == 1:
+        return False
+    nums = [int(d) for d in digitos]
+    for n in (9, 10):
+        resto = sum(d * (n + 1 - k) for k, d in enumerate(nums[:n])) * 10 % 11 % 10
+        if resto != nums[n]:
+            return False
+    return True
+
+
 def hash_pessoa(cpf: str | None, titulo: str | None, sal: str) -> str | None:
     """``sha256(sal || cpf_normalizado)`` (ADR 0004); sem CPF válido cai no título.
 
-    "Não divulgável" (``-4``, vazio, sem dígitos) não identifica ninguém → ``None``.
+    CPF exige 11 dígitos com DV válido; título, 12 dígitos não repetidos. "Não divulgável"
+    (``-4``), vazio ou malformado não identifica ninguém → ``None`` (nunca um hash de lixo,
+    que ligaria pessoas diferentes ao mesmo ``pessoa_id``).
     """
-    for bruto, minimo_digitos in ((cpf, 11), (titulo, 8)):
+    for bruto, valido in ((cpf, cpf_valido), (titulo, _titulo_valido)):
         if not bruto or bruto.strip().startswith("-"):
             continue
         digitos = re.sub(r"\D", "", bruto)
-        if len(digitos) >= minimo_digitos:
+        if valido(digitos):
             return hashlib.sha256(sal.encode() + digitos.encode()).hexdigest()
     return None
+
+
+def _titulo_valido(digitos: str) -> bool:
+    return len(digitos) == 12 and len(set(digitos)) > 1
 
 
 @dataclass(frozen=True)
@@ -83,8 +101,11 @@ def _primeiro(coluna: str) -> pl.Expr:
 def _agregar_locais(lf: pl.LazyFrame, _: Contexto) -> pl.LazyFrame:
     # O TSE marca "sem coordenada" como (-1.0; -1.0). Locais do exterior (ZZ) ficam sem
     # coordenada: estão fora do Brasil, não entram em mapa nem em H3 (spec, §0 Recortes).
-    sem_coord = ((pl.col("nr_latitude") == -1.0) & (pl.col("nr_longitude") == -1.0)) | (
-        pl.col("sg_uf") == EXTERIOR
+    sem_coord = (
+        ((pl.col("nr_latitude") == -1.0) & (pl.col("nr_longitude") == -1.0))
+        | (pl.col("sg_uf") == EXTERIOR)
+        # lat/lon só valem em par: metade de coordenada nunca é mantida
+        | (pl.col("nr_latitude").is_null() != pl.col("nr_longitude").is_null())
     )
     lat_lo, lat_hi = ELEITORADO.faixas["nr_latitude"]
     lon_lo, lon_hi = ELEITORADO.faixas["nr_longitude"]
@@ -123,9 +144,13 @@ def _agregar_locais(lf: pl.LazyFrame, _: Contexto) -> pl.LazyFrame:
         "nr_zona",
         "nr_local_votacao",
     ]
-    return lf.group_by(chave).agg(
+    # Ordem total por seção: "primeira" coordenada/endereço do local não depende da ordem do CSV.
+    # lat/lon saem de UMA mesma seção (struct), nunca de seções diferentes.
+    lf = lf.sort(["nr_turno", pl.col("nr_secao").cast(pl.Int64, strict=False)], nulls_last=True)
+    par = pl.struct("nr_latitude", "nr_longitude").filter(pl.col("nr_latitude").is_not_null())
+    return lf.group_by(chave, maintain_order=True).agg(
         _primeiro("nm_local_votacao"), _primeiro("ds_endereco"), _primeiro("nm_bairro"),
-        _primeiro("nr_latitude"), _primeiro("nr_longitude"),
+        par.first().struct.field("nr_latitude"), par.first().struct.field("nr_longitude"),
         pl.len().cast(pl.Int32).alias("qt_secoes"),
         pl.col("qt_eleitor_secao").sum(),
         pl.col("dt_geracao").max(),
@@ -164,6 +189,7 @@ FONTES: dict[str, Fonte] = {
         CONTRATOS["eleitorado_local_votacao"],
         controle=("qt_eleitor_secao",),
         linhas_1a1=False,
+        extras=("nr_secao",),
         regra=_agregar_locais,
     ),
 }
@@ -191,18 +217,39 @@ def _conferir_municipios(saida: pl.LazyFrame, membro: str) -> None:
         )
 
 
-def _controle(bruto: pl.LazyFrame, saida: pl.LazyFrame, fonte: Fonte, membro: str) -> None:
-    """Total de controle: soma(origem) == soma(saída) e, quando 1:1, nº de linhas."""
-    esperado = (
-        bruto.select(pl.len().alias("__n"), *[pl.col(c).sum().alias(c) for c in fonte.controle])
-        .collect()
-        .row(0, named=True)
-    )
+def _esperado_do_texto(csv: Path, fonte: Fonte, membro: str) -> dict[str, int]:
+    """Totais de controle calculados do CSV **em texto**, independentes do parser.
+
+    Soma só valores ≥ 0 (``-1/-3/-4`` são sentinelas, não quantidades) e registra quantos
+    valores foram sentinela ou não numéricos por coluna.
+    """
+    exprs: list[pl.Expr] = [pl.len().alias("__n")]
+    for c in fonte.controle:
+        v = pl.col(fonte.contrato.origem.get(c, c.upper())).str.strip_chars()
+        n = v.cast(pl.Int64, strict=False)
+        exprs += [
+            n.filter(n >= 0).sum().alias(c),
+            (n < 0).sum().alias(f"__sentinela_{c}"),
+            (n.is_null()).sum().alias(f"__nulo_{c}"),
+        ]
+    r = scan_texto(csv).select(exprs).collect().row(0, named=True)
+    for c in fonte.controle:
+        LOG.info(
+            "%s: %s → %d sentinela(s) negativa(s), %d nulo(s)/não numérico(s)",
+            membro, c, r[f"__sentinela_{c}"], r[f"__nulo_{c}"],
+        )  # fmt: skip
+    return {"__n": r["__n"], **{c: r[c] or 0 for c in fonte.controle}}
+
+
+def _controle(csv: Path, saida: pl.LazyFrame, fonte: Fonte, membro: str) -> None:
+    """Total de controle: soma(CSV em texto) == soma(saída) e, quando 1:1, nº de linhas."""
+    esperado = _esperado_do_texto(csv, fonte, membro)
     obtido = (
         saida.select(pl.len().alias("__n"), *[pl.col(c).sum().alias(c) for c in fonte.controle])
         .collect()
         .row(0, named=True)
     )
+    obtido = {k: (v or 0) for k, v in obtido.items()}
     if not fonte.linhas_1a1:
         esperado.pop("__n")
         obtido.pop("__n")
@@ -213,34 +260,52 @@ def _controle(bruto: pl.LazyFrame, saida: pl.LazyFrame, fonte: Fonte, membro: st
 
 
 def _processar_membro(
-    nome: str, fonte: Fonte, zip_path: Path, membro: str, destino: Path, tmp: Path,
+    fonte: Fonte, zip_path: Path, membro: str, destino: Path, tmp: Path,
     ctx: Contexto, crosswalk: pl.LazyFrame | None,
 ) -> str | None:  # fmt: skip
-    """Devolve o ``dt_geracao`` (máximo) do membro."""
-    bruto = ler_membro(zip_path, membro, fonte.contrato, tmp, fonte.extras)
-    lf = bruto
-    if "cd_mun_ibge" in fonte.contrato.derivadas:
-        if crosswalk is None:
-            raise ErroProcessamento("crosswalk TSE→IBGE não carregado")
-        lf = lf.join(crosswalk, on="cd_municipio_tse", how="left")
-    if fonte.regra:
-        lf = fonte.regra(lf, ctx)
-    lf = lf.select(list(fonte.contrato.colunas))
-    temporario = destino.with_name(destino.name + ".tmp")
-    destino.parent.mkdir(parents=True, exist_ok=True)
+    """Devolve o ``dt_geracao`` (máximo) do membro.
+
+    O CSV transcodificado (com CPF/título) vive em ``tmp`` — fora de ``processed/`` — e é
+    apagado ao fim do membro, qualquer que seja o resultado.
+    """
+    csv = tmp / (Path(membro).stem + ".utf8.csv")
     try:
-        lf.sink_parquet(temporario)
-        saida = pl.scan_parquet(temporario)
-        validar(saida, fonte.contrato)
+        transcodificar(zip_path, membro, csv)
+        lf = ler_csv(csv, membro, fonte.contrato, fonte.extras)
         if "cd_mun_ibge" in fonte.contrato.derivadas:
-            _conferir_municipios(saida, membro)
-        _controle(bruto, saida, fonte, membro)
-        os.replace(temporario, destino)
-    except BaseException:
-        temporario.unlink(missing_ok=True)
-        raise
+            if crosswalk is None:
+                raise ErroProcessamento("crosswalk TSE→IBGE não carregado")
+            lf = lf.join(crosswalk, on="cd_municipio_tse", how="left")
+        if fonte.regra:
+            lf = fonte.regra(lf, ctx)
+        lf = lf.select(list(fonte.contrato.colunas))
+        temporario = destino.with_name(destino.name + ".tmp")
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            lf.sink_parquet(temporario)
+            saida = pl.scan_parquet(temporario)
+            validar(saida, fonte.contrato)
+            if "cd_mun_ibge" in fonte.contrato.derivadas:
+                _conferir_municipios(saida, membro)
+            _controle(csv, saida, fonte, membro)
+            os.replace(temporario, destino)
+        except BaseException:
+            temporario.unlink(missing_ok=True)
+            raise
+    finally:
+        csv.unlink(missing_ok=True)
     ultima = pl.scan_parquet(destino).select(pl.col("dt_geracao").max()).collect().item()
     return None if ultima is None else ultima.isoformat()
+
+
+def _publicar(stage: Path, pasta: Path) -> None:
+    """Troca ``ano=N.tmp/`` por ``ano=N/``: o leitor vê o ano antigo inteiro ou o novo inteiro."""
+    antigo = pasta.with_name(pasta.name + ".old")
+    shutil.rmtree(antigo, ignore_errors=True)
+    if pasta.exists():
+        os.replace(pasta, antigo)
+    os.replace(stage, pasta)
+    shutil.rmtree(antigo, ignore_errors=True)
 
 
 def processar_fonte(
@@ -265,22 +330,31 @@ def processar_fonte(
         _crosswalk(raiz_raw, raiz_proc, ano) if "cd_mun_ibge" in spec.contrato.derivadas else None
     )
     raiz_proc.mkdir(parents=True, exist_ok=True)
-    tmp = Path(tempfile.mkdtemp(prefix=".etl-", dir=raiz_proc))
-    escritos: list[Path] = []
+    pasta = raiz_proc / fonte / f"ano={ano}"
+    stage = pasta.with_name(pasta.name + ".tmp")
+    shutil.rmtree(stage, ignore_errors=True)
+    # Temporário FORA de processed/ (pasta publicável), modo 0700: o CSV traz CPF/título.
+    tmp = Path(tempfile.mkdtemp(prefix="etl-"))
+    nomes: list[str] = []
     geracoes: list[str] = []
     try:
         for membro in membros_dados(zip_path):
-            destino = (
-                raiz_proc / fonte / f"ano={ano}" / (Path(membro).stem.split("_")[-1] + ".parquet")
+            nome = (
+                "municipio_tse_ibge.parquet"
+                if fonte == CROSSWALK
+                else Path(membro).stem.split("_")[-1] + ".parquet"
             )
-            if fonte == CROSSWALK:
-                destino = raiz_proc / fonte / f"ano={ano}" / "municipio_tse_ibge.parquet"
-            dt = _processar_membro(fonte, spec, zip_path, membro, destino, tmp, ctx, cross)
-            escritos.append(destino)
+            dt = _processar_membro(spec, zip_path, membro, stage / nome, tmp, ctx, cross)
+            nomes.append(nome)
             if dt:
                 geracoes.append(dt)
+        _publicar(stage, pasta)  # só depois de TODOS os membros validados
+    except BaseException:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    escritos = [pasta / n for n in nomes]
     if manifesto and geracoes:
         entrada = manifesto.por_caminho(alvo.destino)
         if entrada:

@@ -31,3 +31,21 @@ Branch `feat/dados-parsers` (a partir de `feat/dados-downloader`; **depende do P
 ## Verificar
 `make lint test` (verde; cobertura etl ≈ 96–100%). Dados reais:
 `PESSOA_ID_SAL=$(...) uv run etl baixar --ano 2022 && uv run etl processar --ano 2022`.
+
+## Revisão (PR #29) — correções aplicadas
+1. **Privacidade:** o CSV transcodificado (com CPF/título) vive em `tempfile.mkdtemp` (sistema, 0700), fora de
+   `processed/`, e o `.utf8.csv` é apagado ao fim de cada membro (`finally`). Teste espiona `hash_pessoa` e
+   prova que nada com CPF existe sob `processed/` enquanto o CSV existe fora dele; nada sobra no fim.
+2. **`hash_pessoa`:** CPF só com 11 dígitos, DV válido e não repetido; título só com 12 dígitos não repetidos;
+   o resto → `None`. Fixture `consulta_cand` regenerada com CPFs sintéticos de DV válido.
+3. **Total de controle não circular:** esperado vem do CSV **em texto** (`scan_texto`, cast não estrito, soma
+   de valores ≥ 0); sentinelas e não numéricos por coluna vão ao log (INFO). Teste com `-1`/`-3`.
+4. **`_agregar_locais`:** ordena por turno e `nr_secao`, `group_by(maintain_order=True)`; lat/lon vêm de UMA
+   mesma seção (struct) e metade de coordenada é anulada. Teste com 3 ordens de linhas → mesmo resultado.
+5. **Publicação atômica:** todos os membros validados em `ano=N.tmp/`, depois troca de diretório
+   (`ano=N.old` → apaga). Falha em qualquer membro mantém o ano anterior intacto. Teste incluso.
+- `make lint test`: lint verde; pytest 174 passed, cobertura 96%. `vitest` falha só por `node_modules`
+  ausente neste worktree (ambiente, não código).
+- Reprocessados 2022 e 2026 (tudo exceto `consulta_cand`): contratos e totais OK. `consulta_cand` foi
+  validado com sal descartável em diretório temporário; **rode-o com o `PESSOA_ID_SAL` real** para
+  regenerar `data/processed/consulta_cand` (o `pessoa_id` mudou de regra: CPF inválido agora é nulo).

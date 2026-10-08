@@ -3,6 +3,7 @@
 import csv
 import io
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -104,11 +105,60 @@ def test_consulta_cand_sem_pii_e_com_pessoa_id(raiz: tuple[Path, Path]) -> None:
 def test_pessoa_id_ver_adr_0004() -> None:
     import hashlib
 
-    esperado = hashlib.sha256(b"sal" + b"12345678901").hexdigest()
-    assert hash_pessoa("123.456.789-01", None, "sal") == esperado
+    esperado = hashlib.sha256(b"sal" + b"52998224725").hexdigest()
+    assert hash_pessoa("529.982.247-25", None, "sal") == esperado
     assert hash_pessoa(None, "0001 2345 6789", "sal") != esperado  # cai no título
     assert hash_pessoa("-4", "-4", "sal") is None  # não divulgável
-    assert hash_pessoa("12345678901", None, "outro") != esperado
+    assert hash_pessoa("52998224725", None, "outro") != esperado
+
+
+@pytest.mark.parametrize(
+    "cpf",
+    ["00000000000", "11111111111", "123.456.789-01", "529982247251", "5299822472", "abc"],
+)
+def test_pessoa_id_rejeita_cpf_malformado(cpf: str) -> None:
+    """Zeros, dígitos repetidos, DV errado e ≠ 11 dígitos não identificam ninguém."""
+    assert hash_pessoa(cpf, None, "sal") is None
+
+
+def test_pessoa_id_titulo_exige_12_digitos() -> None:
+    assert hash_pessoa(None, "12345678", "sal") is None  # 8 dígitos
+    assert hash_pessoa(None, "1234567890123", "sal") is None  # 13 dígitos
+    assert hash_pessoa(None, "000000000000", "sal") is None  # repetidos
+    assert hash_pessoa(None, "123456789012", "sal") is not None
+
+
+def test_cpf_nunca_toca_processed(raiz: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Em nenhum momento observável há arquivo com CPF sob processed/; o temporário some."""
+    import tempfile
+
+    import etl.processar as proc_mod
+
+    raw, proc = raiz
+    ref = oraculo("consulta_cand", "consulta_cand_2022.zip")
+    cpfs = {r["NR_CPF_CANDIDATO"].encode() for r in ref}
+    temp = Path(tempfile.gettempdir())
+    antes = {p.name for p in temp.glob("etl-*")}
+    vistos = {"fora": False}
+    original = proc_mod.hash_pessoa
+
+    def espiao(cpf: str | None, titulo: str | None, sal: str) -> str | None:
+        for arq in proc.rglob("*"):
+            if arq.is_file() and any(c in arq.read_bytes() for c in cpfs):
+                raise AssertionError(f"CPF em disco sob processed/: {arq}")
+        vistos["fora"] = any(
+            any(c in a.read_bytes() for c in cpfs)
+            for d in temp.glob("etl-*")
+            for a in d.glob("*.csv")
+        )
+        return original(cpf, titulo, sal)
+
+    monkeypatch.setattr(proc_mod, "hash_pessoa", espiao)
+    processar_fonte("consulta_cand", 2022, raw, proc, sal=SAL)
+    assert vistos["fora"]  # o espião de fato viu o CSV (fora de processed/)
+    assert {p.name for p in temp.glob("etl-*")} == antes  # nada sobra
+    assert not list(proc.rglob("*.utf8.csv"))
+    assert not list(proc.rglob(".etl-*"))
 
 
 def test_consulta_cand_exige_sal(raiz: tuple[Path, Path]) -> None:
@@ -165,3 +215,103 @@ def test_cli_processar(raiz: tuple[Path, Path], capsys: pytest.CaptureFixture[st
                 "--raiz-raw", str(raiz[0]), "--raiz-processed", str(raiz[1])])  # fmt: skip
     assert cod == 0
     assert "consulta_vagas" in capsys.readouterr().out
+
+
+def _zip_de_locais(destino: Path, ordem: list[int]) -> Path:
+    """Zip com um local de duas seções e coordenadas diferentes, linhas na ordem dada."""
+    with zipfile.ZipFile(FIX / "eleitorado_local_votacao_2022.zip") as z:
+        [membro] = z.namelist()
+        texto = io.TextIOWrapper(z.open(membro), encoding="latin-1")
+        linhas = list(csv.reader(texto, delimiter=";"))
+    cab, base = linhas[0], linhas[1]
+    i = {c: k for k, c in enumerate(cab)}
+    secoes = []
+    for sec, lat, lon in ((10, "-9,10", "-67,10"), (20, "-9,90", "-67,90"), (30, "-1,0", "-1,0")):
+        r = list(base)
+        r[i["NR_SECAO"]], r[i["NR_LATITUDE"]], r[i["NR_LONGITUDE"]] = str(sec), lat, lon
+        secoes.append(r)
+    saida = io.StringIO()
+    w = csv.writer(saida, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    w.writerow(cab)
+    w.writerows(secoes[k] for k in ordem)
+    with zipfile.ZipFile(destino, "w") as z:
+        z.writestr("eleitorado_local_votacao_2022.csv", saida.getvalue().encode("latin-1"))
+    return destino
+
+
+def test_locais_deterministico_e_coordenada_de_uma_secao(
+    raiz: tuple[Path, Path], tmp_path: Path
+) -> None:
+    resultados = []
+    for k, ordem in enumerate(([0, 1, 2], [2, 1, 0], [1, 2, 0])):
+        raw = tmp_path / f"raw{k}"
+        destino = raw / "tse/eleitorado_local_votacao/eleitorado_local_votacao_2022.zip"
+        destino.parent.mkdir(parents=True)
+        _zip_de_locais(destino, ordem)
+        proc = tmp_path / f"proc{k}"
+        shutil.copytree(raiz[1] / "municipio_tse_ibge", proc / "municipio_tse_ibge")
+        processar_fonte("eleitorado_local_votacao", 2022, raw, proc)
+        df = _ler(proc, "eleitorado_local_votacao")
+        assert df.height == 1
+        resultados.append(df.row(0, named=True))
+    assert resultados[0] == resultados[1] == resultados[2]
+    # seção 10 (menor) vence; o par lat/lon é da MESMA seção, e o sentinela (-1;-1) é ignorado
+    assert (resultados[0]["nr_latitude"], resultados[0]["nr_longitude"]) == (-9.10, -67.10)
+    assert resultados[0]["qt_secoes"] == 3
+
+
+def test_total_de_controle_vem_do_texto_com_sentinelas(
+    raiz: tuple[Path, Path], tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Esperado = soma do texto ≥ 0; `-1/-3` nunca entram (nem inflam nem escondem divergência)."""
+    raw = tmp_path / "raw"
+    destino = raw / "tse/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip"
+    destino.parent.mkdir(parents=True)
+    with zipfile.ZipFile(FIX / "detalhe_votacao_munzona_2022.zip") as z:
+        linhas = list(
+            csv.reader(
+                io.TextIOWrapper(z.open("detalhe_votacao_munzona_2022_AC.csv"), encoding="latin-1"),
+                delimiter=";",
+            )
+        )
+    cab = linhas[0]
+    k = cab.index("QT_COMPARECIMENTO")
+    corpo = [list(r) for r in linhas[1:]]
+    corpo[0][k], corpo[1][k] = "-1", "-3"
+    esperado = sum(int(r[k]) for r in corpo if int(r[k]) >= 0)
+    saida = io.StringIO()
+    w = csv.writer(saida, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    w.writerows([cab, *corpo])
+    with zipfile.ZipFile(destino, "w") as z:
+        z.writestr("detalhe_votacao_munzona_2022_AC.csv", saida.getvalue().encode("latin-1"))
+    proc = tmp_path / "proc"
+    shutil.copytree(raiz[1] / "municipio_tse_ibge", proc / "municipio_tse_ibge")
+    with caplog.at_level("INFO", logger="etl.processar"):
+        processar_fonte("detalhe_votacao_munzona", 2022, raw, proc)
+    df = _ler(proc, "detalhe_votacao_munzona")
+    assert df["qt_comparecimento"].sum() == esperado
+    assert df.height == len(corpo)
+    assert "qt_comparecimento → 2 sentinela" in caplog.text
+
+
+def test_publicacao_atomica_nada_parcial(raiz: tuple[Path, Path], tmp_path: Path) -> None:
+    """Um membro inválido derruba o ano inteiro: nem o ano antigo muda, nem sobra staging."""
+    raw = tmp_path / "raw"
+    destino = raw / "tse/consulta_vagas/consulta_vagas_2022.zip"
+    destino.parent.mkdir(parents=True)
+    shutil.copy(FIX / "consulta_vagas_2022.zip", destino)
+    proc = tmp_path / "proc"
+    processar_fonte("consulta_vagas", 2022, raw, proc)
+    antes = {p.name: p.read_bytes() for p in (proc / "consulta_vagas/ano=2022").glob("*.parquet")}
+    with zipfile.ZipFile(destino) as z:
+        itens = {n: z.read(n) for n in z.namelist()}
+    ruim = sorted(n for n in itens if n.endswith(".csv") and not n.endswith("_BRASIL.csv"))[-1]
+    itens[ruim] = itens[ruim].replace(b'"QT_VAGA"', b'"QT_VAGAS"')  # coluna ausente
+    with zipfile.ZipFile(destino, "w") as z:
+        for n, b in itens.items():
+            z.writestr(n, b)
+    with pytest.raises(Exception, match="QT_VAGA"):
+        processar_fonte("consulta_vagas", 2022, raw, proc)
+    depois = {p.name: p.read_bytes() for p in (proc / "consulta_vagas/ano=2022").glob("*.parquet")}
+    assert depois == antes
+    assert not list((proc / "consulta_vagas").glob("ano=2022.*"))
