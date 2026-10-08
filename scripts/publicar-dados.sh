@@ -14,20 +14,22 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ORIGEM="${1:-$RAIZ/data/processed}"
 DESTINO="eleicoes01@167.126.3.134"
 
-[ -f "$ORIGEM/manifesto.json" ] || { echo "sem manifesto.json em $ORIGEM — rode o ETL antes" >&2; exit 1; }
+# dt_geracao vem de coluna dos próprios Parquet; manifesto.json (situação das contas) é opcional.
+[ -d "$ORIGEM/consulta_cand" ] || { echo "sem consulta_cand em $ORIGEM — rode o ETL antes" >&2; exit 1; }
 # Defesa extra de privacidade: nenhum CSV transcodificado (com CPF) pode subir.
 if find "$ORIGEM" -name '*.csv' -o -name '.etl-*' | grep -q .; then
   echo "recusado: há CSV/temporário do ETL em $ORIGEM" >&2; exit 1
 fi
 
-echo "== datasets ($(du -sh "$ORIGEM" --exclude tiles 2>/dev/null | cut -f1 || du -sh "$ORIGEM" | cut -f1))"
+echo "== datasets"
 rsync -az --delete --exclude 'tiles/' \
   -e "ssh -i $HOME/.ssh/eleicoes-rsync-datasets -o IdentitiesOnly=yes" \
   "$ORIGEM/" "$DESTINO:"
 
 if [ -d "$ORIGEM/tiles" ]; then
   echo "== tiles"
-  rsync -az --delete \
+  # Só os PMTiles e o manifesto: os GeoJSONL intermediários (_geojsonl/) ficam no Mac.
+  rsync -az --delete --include 'manifesto.json' --include '*.pmtiles' --exclude '*' \
     -e "ssh -i $HOME/.ssh/eleicoes-rsync-public -o IdentitiesOnly=yes" \
     "$ORIGEM/tiles/" "$DESTINO:tiles/"
 fi
