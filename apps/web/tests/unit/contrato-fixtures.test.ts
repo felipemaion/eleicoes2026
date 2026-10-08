@@ -15,7 +15,7 @@ import mapa from "../fixtures/api/mapa.json";
 import pontos from "../fixtures/api/mapa-pontos.json";
 import meta from "../fixtures/api/meta.json";
 import municipio from "../fixtures/api/municipio.json";
-import { fichaTipada, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
+import { fichaTipada, gastosTipados, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
 import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos, RespostaPessoas, RespostaUfs } from "../../src/dados/contrato";
 
 describe("fixtures seguem o OpenAPI gerado", () => {
@@ -28,7 +28,7 @@ describe("fixtures seguem o OpenAPI gerado", () => {
       fichaTipada(ficha) satisfies Ficha,
       mapa satisfies RespostaMapa,
       pontos satisfies RespostaPontos,
-      gastos satisfies RespostaGastos,
+      gastosTipados(gastos) satisfies RespostaGastos,
       ufs satisfies RespostaUfs,
       comparativo satisfies RespostaComparativo,
       municipio satisfies RespostaMunicipio,

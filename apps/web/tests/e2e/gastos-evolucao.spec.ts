@@ -22,6 +22,36 @@ test("gastos: hover e foco no círculo mostram o tooltip com os dados do candida
   await expect(balao).toBeHidden();
 });
 
+const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+
+test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página do TSE em nova aba", async ({ page }) => {
+  await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
+  await page.addInitScript(() => {
+    (window as unknown as { __abertos: unknown[][] }).__abertos = [];
+    window.open = ((...a: unknown[]) => { (window as unknown as { __abertos: unknown[][] }).__abertos.push(a); return null; }) as typeof window.open;
+  });
+  await page.goto("/#/gastos");
+  const balao = page.locator(".tooltip-flutuante:not([hidden])");
+  const ana = page.locator('circle.marca[data-id="1"]');
+  await ana.hover();
+  await expect(balao.locator("img")).toHaveAttribute("alt", "Foto de Ana Souza");
+  await expect(balao.locator("img")).toHaveAttribute("loading", "lazy");
+  await expect(balao).toContainText("Clique para abrir no TSE");
+  await ana.click();
+  await ana.focus();
+  await page.keyboard.press("Enter");
+  const abertos = await page.evaluate(() => (window as unknown as { __abertos: unknown[][] }).__abertos);
+  expect(abertos).toHaveLength(2);
+  expect(abertos[0]).toEqual(["https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1", "_blank", "noopener,noreferrer"]);
+  // candidatura sem foto na API (sq 3): placeholder com iniciais, mesmo tamanho
+  await page.mouse.move(2, 2);
+  const sem = page.locator('circle.marca[data-id="3"]');
+  if (await sem.count()) {
+    await sem.hover();
+    await expect(balao.locator(".foto-candidato.sem-foto")).toBeVisible();
+  }
+});
+
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {
   await page.goto("/#/gastos");
   await expect(page.locator("line.referencia")).toHaveCount(1);
