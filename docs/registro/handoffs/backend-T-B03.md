@@ -49,3 +49,8 @@ dev:
 
 ## Como verificar
 `ELEICOES_DIR_DADOS=<processed> uv run uvicorn api.main:app_producao --factory --port 8000` e `uv run python apps/api/scripts/smoke.py`; `uv run pytest apps/api`.
+
+## Avisos da conferência T-A04
+- Presidente: munzona traz UFs reais; o que ficava só em `BR` é a candidatura (`sg_uf='BR'`). `candidaturas(uf=X, cargo=PRESIDENTE)` agora inclui `BR` (antes zerava o cargo); fixture e teste cobrem. A API nunca soma arquivos por UF.
+- Legenda: a API usa só votos nominais (`qt_votos_nominais_validos`); não consome `qt_votos_leg_validos`, então não há risco de legenda parcial em 2022. Quem for expor legenda deve somar leg_validos + nom_convr_leg_validos.
+- Custo por voto: descrição OpenAPI dos campos `despesa_*` e `custo_voto_*` diz que exclui repasses a outros candidatos/partidos.

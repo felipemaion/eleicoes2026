@@ -358,7 +358,9 @@ class RepositorioDuckDB:
         condicoes = ["ano = ?"]
         params: list[object] = [ano]
         if uf is not None:
-            condicoes.append("sg_uf = ?")
+            # Presidente é gravado só com sg_uf = BR (BR.parquet): filtrar pela UF zeraria o cargo.
+            presidente = cargo == "PRESIDENTE"
+            condicoes.append("sg_uf IN (?, 'BR')" if presidente else "sg_uf = ?")
             params.append(uf)
         if cargo is not None:
             condicoes.append("ds_cargo = ?")

@@ -43,6 +43,8 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 5, "pB", "B", "SP", DF, 14, "MISSÃO", "APTO", "NÃO ELEITO"),
             (2026, 6, "pF", "F", "SP", DF, 15, "MDB", "APTO", "ELEITO POR MÉDIA"),
             (2026, 7, "pD", "D", "SP", DF, 11, "PP", "APTO", "ELEITO POR QP"),
+            # Presidente: o TSE grava a candidatura com sg_uf = BR (arquivo BR.parquet).
+            (2026, 11, "pP", "P", "BR", "Presidente", 30, "NOVO", "APTO", "2º TURNO"),
         ],
     ),
     "municipios": (

@@ -20,12 +20,17 @@ ANO_NOMINAL = 2026  # valores de 2026 ficam nominais; anteriores sobem para o m�
 class ResumoCustoCandidato(BaseModel):
     """Despesa (sem transferências) e custo por voto de um candidato."""
 
-    despesa_contratada: float
-    despesa_paga: float
+    despesa_contratada: float = Field(description="R$ da própria campanha, sem repasses.")
+    despesa_paga: float = Field(description="R$ pagos da própria campanha, sem repasses.")
     divida: float = Field(description="contratada − paga (§4.2).")
     votos: int
-    custo_voto_contratado: float | None = Field(description="R$/voto; null se votos = 0.")
-    custo_voto_pago: float | None
+    custo_voto_contratado: float | None = Field(
+        description="R$/voto = despesa contratada ÷ votos nominais. "
+        "Exclui repasses a outros candidatos/partidos (§4.2). null se votos = 0."
+    )
+    custo_voto_pago: float | None = Field(
+        description="R$/voto pago; exclui repasses a outros candidatos/partidos (§4.2)."
+    )
 
 
 class ResumoReceitasOut(BaseModel):
@@ -41,13 +46,20 @@ class ResumoReceitasOut(BaseModel):
 class ResumoCustoGrupo(BaseModel):
     """Agregado: Σ despesa / Σ votos, não média de razões (§4.2)."""
 
-    despesa_contratada: float
-    despesa_paga: float
+    despesa_contratada: float = Field(description="Σ da própria campanha, sem repasses.")
+    despesa_paga: float = Field(description="Σ paga da própria campanha, sem repasses.")
     divida: float
     votos: int
-    custo_voto_contratado: float | None
-    custo_voto_pago: float | None
-    mediana_custo_voto_contratado: float | None
+    custo_voto_contratado: float | None = Field(
+        description="Σ despesa contratada ÷ Σ votos; exclui repasses a outros "
+        "candidatos/partidos (§4.2)."
+    )
+    custo_voto_pago: float | None = Field(
+        description="Σ despesa paga ÷ Σ votos; exclui repasses a outros candidatos/partidos."
+    )
+    mediana_custo_voto_contratado: float | None = Field(
+        description="Mediana entre candidatos com voto; exclui repasses (§4.2)."
+    )
     candidatos_sem_voto_excluidos: int
 
 

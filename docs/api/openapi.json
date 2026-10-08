@@ -2074,11 +2074,13 @@
         "properties": {
           "despesa_contratada": {
             "type": "number",
-            "title": "Despesa Contratada"
+            "title": "Despesa Contratada",
+            "description": "R$ da própria campanha, sem repasses."
           },
           "despesa_paga": {
             "type": "number",
-            "title": "Despesa Paga"
+            "title": "Despesa Paga",
+            "description": "R$ pagos da própria campanha, sem repasses."
           },
           "divida": {
             "type": "number",
@@ -2099,7 +2101,7 @@
               }
             ],
             "title": "Custo Voto Contratado",
-            "description": "R$/voto; null se votos = 0."
+            "description": "R$/voto = despesa contratada ÷ votos nominais. Exclui repasses a outros candidatos/partidos (§4.2). null se votos = 0."
           },
           "custo_voto_pago": {
             "anyOf": [
@@ -2110,7 +2112,8 @@
                 "type": "null"
               }
             ],
-            "title": "Custo Voto Pago"
+            "title": "Custo Voto Pago",
+            "description": "R$/voto pago; exclui repasses a outros candidatos/partidos (§4.2)."
           }
         },
         "type": "object",
@@ -2129,11 +2132,13 @@
         "properties": {
           "despesa_contratada": {
             "type": "number",
-            "title": "Despesa Contratada"
+            "title": "Despesa Contratada",
+            "description": "Σ da própria campanha, sem repasses."
           },
           "despesa_paga": {
             "type": "number",
-            "title": "Despesa Paga"
+            "title": "Despesa Paga",
+            "description": "Σ paga da própria campanha, sem repasses."
           },
           "divida": {
             "type": "number",
@@ -2152,7 +2157,8 @@
                 "type": "null"
               }
             ],
-            "title": "Custo Voto Contratado"
+            "title": "Custo Voto Contratado",
+            "description": "Σ despesa contratada ÷ Σ votos; exclui repasses a outros candidatos/partidos (§4.2)."
           },
           "custo_voto_pago": {
             "anyOf": [
@@ -2163,7 +2169,8 @@
                 "type": "null"
               }
             ],
-            "title": "Custo Voto Pago"
+            "title": "Custo Voto Pago",
+            "description": "Σ despesa paga ÷ Σ votos; exclui repasses a outros candidatos/partidos."
           },
           "mediana_custo_voto_contratado": {
             "anyOf": [
@@ -2174,7 +2181,8 @@
                 "type": "null"
               }
             ],
-            "title": "Mediana Custo Voto Contratado"
+            "title": "Mediana Custo Voto Contratado",
+            "description": "Mediana entre candidatos com voto; exclui repasses (§4.2)."
           },
           "candidatos_sem_voto_excluidos": {
             "type": "integer",

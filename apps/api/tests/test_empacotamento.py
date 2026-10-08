@@ -43,3 +43,13 @@ def test_threads_aceita_o_nome_do_compose_de_producao(monkeypatch: pytest.Monkey
 
     monkeypatch.setenv("ELEICOES_DUCKDB_THREADS", "3")
     assert Settings().threads == 3
+
+
+def test_candidato_a_presidente_aparece_na_consulta_por_uf() -> None:
+    """Presidente só existe como `sg_uf = BR`; filtrar por 'SP' não pode zerar o cargo."""
+    from api.repositorio.duckdb import RepositorioDuckDB
+
+    repo = RepositorioDuckDB(RAIZ / "apps" / "api" / "tests" / "fixtures")
+    achadas = repo.candidaturas(2026, uf="SP", cargo="PRESIDENTE")
+    assert [c.sq_candidato for c in achadas] == [11]
+    assert repo.candidaturas(2026, uf="SP", cargo="DEPUTADO FEDERAL")  # outros cargos seguem a UF

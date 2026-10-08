@@ -42,8 +42,8 @@ def test_health_503_quando_dados_nao_abrem(tmp_path: Path) -> None:
 def test_meta_lista_anos_ufs_cargos_e_grupos(cliente: TestClient) -> None:
     corpo = cliente.get("/api/meta").json()
     assert corpo["anos"] == [2022, 2026]
-    assert corpo["ufs"] == ["RJ", "SP"]
-    assert corpo["cargos"] == ["DEPUTADO ESTADUAL", "DEPUTADO FEDERAL"]
+    assert corpo["ufs"] == ["BR", "RJ", "SP"]  # BR = candidatura a Presidente
+    assert corpo["cargos"] == ["DEPUTADO ESTADUAL", "DEPUTADO FEDERAL", "PRESIDENTE"]
     ids = {g["id"] for g in corpo["grupos"]}
     assert {"missao_2026", "mbl_2022"} <= ids
     assert corpo["dt_geracao"] == "2026-10-06"
