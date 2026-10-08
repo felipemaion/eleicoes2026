@@ -175,7 +175,7 @@ def _coletar(
     }
     base = repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
     vistos = {(b.cd_mun_ibge, b.nr_zona) for b in base}
-    linhas = [
+    linhas: list[Linha] = [
         (
             _chave(b.cd_mun_ibge, b.nr_zona),
             votos.get((b.cd_mun_ibge, b.nr_zona), 0),
