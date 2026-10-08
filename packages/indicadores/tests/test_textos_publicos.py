@@ -22,7 +22,7 @@ VETORES = sorted((METODOLOGIA / "vetores").glob("*.json"))
 REFERENCIA_MBL = RAIZ / "data" / "reference" / "mbl_2022.csv"
 
 CAMPOS_INDICADOR = ("titulo", "resumo", "como_ler", "unidade", "denominador", "cuidado", "fonte")
-TELAS = ("visao_geral", "mapa", "gastos", "evolucao", "candidato")
+TELAS = ("visao_geral", "mapa", "gastos", "evolucao", "candidato", "redes")
 CAMPOS_TELA = ("titulo", "subtitulo", "nota_rodape")
 AVISOS_OBRIGATORIOS = (
     "contas_parciais",
@@ -202,3 +202,33 @@ def test_pagina_como_ler_existe_e_cobre_os_avisos() -> None:
     termos = ("penetração", "legenda", "rezoneamento", "PTB", "parciais", "IPCA", "indicados")
     for termo in (*termos, "Beraldo", "comparador"):
         assert termo.lower() in texto.lower(), f"'Como ler' não menciona {termo}"
+
+
+INDICADORES_REDES = (
+    "ritmo_posts",
+    "engajamento",
+    "seguidores_votos",
+    "serie_seguidores",
+    "correlacao_redes",
+    "residuo_seguidores",
+)
+
+
+def test_tela_de_redes_sociais(textos: dict[str, Any]) -> None:
+    tela = textos["telas"]["redes"]
+    assert set(INDICADORES_REDES) <= set(tela["indicadores"])
+    # Os três cuidados do brief (T-A10) aparecem como aviso da tela.
+    for aviso in ("redes_nao_causalidade", "redes_contas_sem_dados", "redes_seguidores_sem_historico"):
+        assert aviso in tela["avisos"], f"tela redes sem aviso {aviso}"
+    assert "{dt_coleta_redes}" in tela["nota_rodape"]
+    assert "API oficial da Meta" in tela["nota_rodape"]
+    for chave in ("engajamento", "reels", "conta_comercial", "correlacao_spearman"):
+        assert chave in textos["glossario"], f"glossário sem {chave!r}"
+
+
+def test_como_ler_tem_redes_sociais() -> None:
+    texto = COMO_LER.read_text(encoding="utf-8")
+    assert "## Redes sociais" in texto
+    secao = texto.split("## Redes sociais", 1)[1].split("\n## ", 1)[0].lower()
+    for termo in ("causa", "seguidores", "curtidas", "pré-campanha", "por semana", "esperado"):
+        assert termo in secao, f"seção Redes sociais não menciona {termo}"
