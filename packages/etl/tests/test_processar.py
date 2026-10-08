@@ -128,7 +128,9 @@ def test_pessoa_id_titulo_exige_12_digitos() -> None:
     assert hash_pessoa(None, "123456789012", "sal") is not None
 
 
-def test_cpf_nunca_toca_processed(raiz: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cpf_nunca_toca_processed(
+    raiz: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """Em nenhum momento observável há arquivo com CPF sob processed/; o temporário some."""
     import tempfile
 
@@ -137,7 +139,10 @@ def test_cpf_nunca_toca_processed(raiz: tuple[Path, Path], monkeypatch: pytest.M
     raw, proc = raiz
     ref = oraculo("consulta_cand", "consulta_cand_2022.zip")
     cpfs = {r["NR_CPF_CANDIDATO"].encode() for r in ref}
-    temp = Path(tempfile.gettempdir())
+    # temp exclusivo do teste: outro processo usando /tmp não pode aparecer no glob
+    temp = tmp_path / "tmp"
+    temp.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
     antes = {p.name for p in temp.glob("etl-*")}
     vistos = {"fora": False}
     original = proc_mod.hash_pessoa
