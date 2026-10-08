@@ -27,3 +27,11 @@ Branch `feat/dados-downloader`.
 
 ## Verificar
 `make lint test` (verde, 73 testes); `uv run pytest packages/etl -v`.
+
+## Revisão (PR #24)
+1. Content-Length agora é comparado com `resp.num_bytes_downloaded` (bytes no fio); teste com gzip real.
+2. HEAD com erro → `False` (cai no GET, sha256 decide); 408/429 repetíveis, `Retry-After` (inteiro,
+   teto 120 s) respeitado.
+3. `OSError`/`httpx.HTTPError` (redirects, decodificação) viram `DownloadError`; o laço do CLI segue.
+4. `fsync` do `.part` antes do `replace`; `etl baixar --verificar` recalcula sha256 local (sem rede;
+   saída 1 se ausente/corrompido); teste de sha256 sem validadores afirma GET sem HEAD.

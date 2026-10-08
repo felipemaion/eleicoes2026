@@ -22,6 +22,7 @@ def _parser() -> argparse.ArgumentParser:
     b.add_argument("--fonte", action="append", choices=sorted(CATALOGO), help="repetível")
     b.add_argument("--uf", help="restringe fontes por UF (ex.: SP)")
     b.add_argument("--raiz", type=Path, default=Path("data/raw"))
+    b.add_argument("--verificar", action="store_true", help="só confere sha256 local (sem rede)")
     b.add_argument("--forcar", action="store_true", help="ignora o cache")
     return p
 
@@ -39,6 +40,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     with httpx.Client(timeout=httpx.Timeout(30.0, read=120.0)) as cliente:
         baixador = Baixador(args.raiz, manifesto, cliente)
         for alvo in lista:
+            if args.verificar:
+                estado = baixador.verificar(alvo)
+                falhas += estado != "ok"
+                print(f"{estado:10} {alvo.destino}")
+                continue
             try:
                 res = baixador.baixar(alvo, forcar=args.forcar)
             except DownloadError as e:

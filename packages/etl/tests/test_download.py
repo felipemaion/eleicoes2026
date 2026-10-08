@@ -89,7 +89,9 @@ def test_sem_validadores_decide_por_sha256(
     httpserver.expect_request("/a.zip").respond_with_data(CORPO, headers={"ETag": ""})
     b = _baixador(tmp_path, cliente)
     b.baixar(_alvo(httpserver))
+    n = len(httpserver.log)
     assert b.baixar(_alvo(httpserver)) is Resultado.INALTERADO
+    assert [r.method for r, _ in httpserver.log[n:]] == ["GET"]  # sem HEAD: o hash decidiu
 
 
 def test_forcar_ignora_cache(httpserver: HTTPServer, tmp_path: Path, cliente: httpx.Client) -> None:
@@ -222,3 +224,109 @@ def test_cli_baixa_e_reporta_falha(
 def test_cli_ano_invalido(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["baixar", "--ano", "1999"]) == 2
     assert "erro" in capsys.readouterr().err
+
+
+def _com_transporte(tmp_path: Path, responder, esperas=None):  # type: ignore[no-untyped-def]
+    c = httpx.Client(transport=httpx.MockTransport(responder))
+    return _baixador(tmp_path, c, esperas), Alvo("t", "http://x/a.json", "ibge/a.json")
+
+
+def _ok(corpo: bytes = CORPO, **headers: str) -> httpx.Response:
+    """Resposta simulada sem Content-Length (o MockTransport não conta bytes no fio)."""
+    return httpx.Response(200, stream=httpx.ByteStream(corpo), headers=headers)
+
+
+def test_resposta_gzip_nao_parece_truncada(
+    httpserver: HTTPServer, tmp_path: Path, cliente: httpx.Client
+) -> None:
+    import gzip
+
+    bruto = gzip.compress(CORPO)
+    httpserver.expect_request("/a.zip").respond_with_data(
+        bruto, headers={"Content-Encoding": "gzip"}
+    )
+    assert _baixador(tmp_path, cliente).baixar(_alvo(httpserver)) is Resultado.BAIXADO
+    assert (tmp_path / "tse/teste/a.zip").read_bytes() == CORPO
+
+
+@pytest.mark.parametrize("status", [403, 405])
+def test_head_4xx_cai_no_get(tmp_path: Path, status: int) -> None:
+    def responder(req: httpx.Request) -> httpx.Response:
+        if req.method == "HEAD":
+            return httpx.Response(status)
+        return _ok(ETag='"v1"')
+
+    b, alvo = _com_transporte(tmp_path, responder)
+    b.baixar(alvo)
+    assert b.baixar(alvo) is Resultado.INALTERADO  # GET refeito, sha256 igual
+    assert (tmp_path / alvo.destino).read_bytes() == CORPO
+
+
+def test_429_repetido_respeitando_retry_after(tmp_path: Path) -> None:
+    n = {"i": 0}
+
+    def responder(_: httpx.Request) -> httpx.Response:
+        n["i"] += 1
+        if n["i"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "7"})
+        return _ok()
+
+    esperas: list[float] = []
+    b, alvo = _com_transporte(tmp_path, responder, esperas)
+    assert b.baixar(alvo) is Resultado.BAIXADO
+    assert esperas == [7.0]
+
+
+def test_too_many_redirects_vira_download_error(tmp_path: Path) -> None:
+    def responder(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"Location": "http://x/a.json"})
+
+    b, alvo = _com_transporte(tmp_path, responder)
+    with pytest.raises(DownloadError):
+        b.baixar(alvo)
+
+
+def test_disco_cheio_vira_download_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    def falha(*_: object) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(os, "fsync", falha)
+    b, alvo = _com_transporte(tmp_path, lambda _: _ok())
+    with pytest.raises(DownloadError, match="No space"):
+        b.baixar(alvo)
+    assert not list(tmp_path.rglob("*.part"))
+
+
+def test_fsync_chamado_antes_do_replace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    chamadas: list[int] = []
+    real = os.fsync
+    monkeypatch.setattr(os, "fsync", lambda fd: (chamadas.append(fd), real(fd))[1])
+    b, alvo = _com_transporte(tmp_path, lambda _: _ok())
+    b.baixar(alvo)
+    assert chamadas
+
+
+def test_verificar_detecta_corrupcao(tmp_path: Path) -> None:
+    b, alvo = _com_transporte(tmp_path, lambda _: _ok())
+    assert b.verificar(alvo) == "ausente"
+    b.baixar(alvo)
+    assert b.verificar(alvo) == "ok"
+    (tmp_path / alvo.destino).write_bytes(b"corrompido")
+    assert b.verificar(alvo) == "corrompido"
+
+
+def test_cli_laco_segue_apos_erro_e_verifica(
+    httpserver: HTTPServer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import etl.cli as cli
+
+    httpserver.expect_request("/a.zip").respond_with_data(CORPO)
+    monkeypatch.setattr(cli, "alvos", lambda *a, **k: [_alvo(httpserver)])
+    assert main(["baixar", "--ano", "2026", "--raiz", str(tmp_path)]) == 0
+    assert main(["baixar", "--ano", "2026", "--raiz", str(tmp_path), "--verificar"]) == 0
+    (tmp_path / "tse/teste/a.zip").write_bytes(b"x")
+    assert main(["baixar", "--ano", "2026", "--raiz", str(tmp_path), "--verificar"]) == 1
