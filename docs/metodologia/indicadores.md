@@ -101,9 +101,11 @@ tooltip, que mostra bruta e suavizada). Vetor: [`suavizacao_eb`](#suavizacao-bay
 ### 1.6 Mês-base do IPCA
 Valores de 2022 corrigidos de **setembro/2022** (mês central da campanha de 2022: 16/08–02/10)
 para **setembro/2026** (mês central da campanha de 2026: 16/08–04/10) — mesma posição relativa no
-ciclo. Valores de 2026 ficam nominais. O IPCA de set/2026 sai ≈ 09/10/2026; até lá o ETL **falha**
-(sem fallback silencioso). Referência: fator out/2022–ago/2026 = **1,198245** (SGS 433, consulta
-de 2026-10-07; falta set/2026). A UI declara "R$ de set/2026 (IPCA)". Vetor:
+ciclo. Valores de 2026 ficam nominais. **Emenda (ADR 0007, 2026-10-07):** enquanto o IPCA de
+set/2026 (sai ≈ 09/10/2026) não for publicado, a base é o **último mês disponível** na SGS 433
+(`financeiro.resolver_mes_base`) e a UI declara "R$ de <mês/ano> (IPCA)"; falha só se a série não
+tiver nenhum mês posterior à origem ou tiver buraco no intervalo. Referência: fator out/2022–ago/2026
+= **1,198245** (SGS 433, consulta de 2026-10-07; falta set/2026). Vetor:
 [`deflacao_ipca`](#deflacao-ipca).
 
 ### 1.7 Tipologia de Ames operacionalizada
@@ -455,6 +457,28 @@ fechar os mapeamentos.
 Bivariado 3×3 (penetração 2022 × 2026) e Dorling: fase 2 (`cuidados.md`).
 
 ---
+
+<a id="notas-implementacao"></a>
+## 8-A. Notas de implementação (T-A02, `packages/indicadores`)
+Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
+- **Tabela completa.** `desempenho.montar_tabela` faz o produto entidade × unidade com `votos = 0`
+  onde o TSE não traz linha (LQ, G e EB precisam de todas as unidades da UF). Falha alto em linha
+  duplicada, voto em unidade sem eleitorado e `votos > validos`.
+- **Taxa de referência do n baixo** = penetração (proporção) da entidade na UF; esperado nulo conta
+  como n baixo. No H3, a referência usa **todos** os locais recebidos, inclusive sem coordenada.
+- **Tipologia** sem nenhuma candidatura na população de referência → medianas e tipos `null`.
+- **EB:** com `a = 0` e `b = 0` (nenhum voto) o peso é 0 e tudo encolhe para 0.
+- **LISA:** quadrante "alto" se `> 0` (zero conta como "baixo"); pseudo-p `(M+1)/(P+1)` na cauda do
+  sinal observado — global por permutação total, local por permutação condicional; ilha (sem
+  vizinho) **falha**: o chamador atribui o k = 1 antes.
+- **Spearman da sobreposição** usa todas as AMCs com LQ definido nos dois anos (o `n_baixo` só
+  restringe quem é reduto).
+- **Rótulos do TSE** (fonte/origem/natureza de receita, origem de despesa) são comparados
+  normalizados (maiúsculas, sem acento). Tabelas fechadas em `financeiro.py`; rótulo novo falha.
+  Repasse excluído da despesa: só "Doações financeiras a outros candidatos/partidos" até o `dados`
+  publicar os valores distintos de `DS_ORIGEM_DESPESA` (pendência).
+- **Grupos:** `grupos.agregar_grupo` recusa cargos ou turnos misturados; `receitas_grupo` exclui
+  receita de "outros candidatos" cujo doador é membro do grupo.
 
 <a id="referencias"></a>
 ## 9. Referências
