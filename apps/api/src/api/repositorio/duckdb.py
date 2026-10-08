@@ -253,7 +253,10 @@ class RepositorioDuckDB:
                 "despesas",
                 "WITH c AS (SELECT ano, sq_candidato, ds_origem_despesa,"  # noqa: S608
                 f" SUM(vr_despesa_contratada) AS contratada FROM {contratadas}"
-                " WHERE nr_turno = 1 GROUP BY ALL),"
+                # "Sem movimento" (origem nula, valor 0) não é despesa; origem nula com valor
+                # continua passando e a biblioteca de indicadores falha alto.
+                " WHERE nr_turno = 1 AND NOT (ds_origem_despesa IS NULL"
+                " AND vr_despesa_contratada = 0) GROUP BY ALL),"
                 " p AS (SELECT ano, sq_candidato, ds_origem_despesa,"
                 f" SUM(vr_pagto_despesa) AS paga FROM {pagas} WHERE nr_turno = 1 GROUP BY ALL)"
                 " SELECT ano, sq_candidato, ds_origem_despesa,"
