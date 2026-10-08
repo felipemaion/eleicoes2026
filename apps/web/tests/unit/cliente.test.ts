@@ -24,20 +24,23 @@ describe("cliente.meta", () => {
 });
 
 describe("cliente — endpoints de domínio", () => {
-  function espiar(corpo: unknown): ReturnType<typeof vi.fn> {
-    const f = vi.fn((_url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(corpo) }));
-    vi.stubGlobal("fetch", f);
-    return f;
+  function espiar(corpo: unknown): string[] {
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (url: string) => {
+      urls.push(url);
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(corpo) });
+    });
+    return urls;
   }
   it("monta a URL com query só dos parâmetros presentes", async () => {
-    const f = espiar({ valores: {}, detalhes: {}, escala_sugerida: "quantil", tipo: "taxa", unidade: "u", denominador: "d" });
+    const urls = espiar({ valores: {}, detalhes: {}, escala_sugerida: "quantil", tipo: "taxa", unidade: "u", denominador: "d" });
     await criarCliente("/api").mapa({ ano: "2026", uf: "SE", indicador: "penetracao", vazio: undefined });
-    expect(f.mock.calls[0]?.[0]).toBe("/api/mapa?ano=2026&uf=SE&indicador=penetracao");
+    expect(urls[0]).toBe("/api/mapa?ano=2026&uf=SE&indicador=penetracao");
   });
   it("ficha usa ano e sq no caminho, escapados", async () => {
-    const f = espiar({ candidato: {}, votos_municipios: [], gastos: {}, receitas: [], contas_parciais: false });
+    const urls = espiar({ candidato: {}, votos_municipios: [], gastos: {}, receitas: [], contas_parciais: false });
     await criarCliente().ficha(2026, "a/b");
-    expect(f.mock.calls[0]?.[0]).toBe("/api/candidatos/2026/a%2Fb");
+    expect(urls[0]).toBe("/api/candidatos/2026/a%2Fb");
   });
   it("erro HTTP falha alto com status e caminho", async () => {
     simular({}, false);

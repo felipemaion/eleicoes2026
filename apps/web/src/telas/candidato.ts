@@ -1,3 +1,76 @@
-import { placeholder } from "./tipos";
+import { barrasMunicipios, paramsDeFiltros } from "../dados/adaptadores";
+import { criarCliente } from "../dados/cliente";
+import type { Ficha } from "../dados/contrato";
+import { render as renderBarras } from "../componentes/graficos/barras";
+import { render as renderEmpilhado } from "../componentes/graficos/empilhado";
+import { render as renderKpi, type Kpi } from "../componentes/graficos/kpi";
+import { formatarNumero } from "../formato";
+import { formatarHash } from "../rotas";
+import { campoSelect, h, nota, titulo } from "./dom";
+import { carregar, mostrarErro } from "./estados";
+import { criarPainelMapa } from "./painel-mapa";
+import type { Tela } from "./tipos";
 
-export const tela = placeholder("Candidato", "Ficha do candidato (T-W03).");
+function desenharFicha(destino: HTMLElement, f: Ficha, filtros: Parameters<Tela["render"]>[1]["filtros"]): () => void {
+  const c = f.candidato;
+  const kpis: Kpi[] = [
+    { rotulo: "Votos", valor: c.votos, formato: "inteiro" },
+    { rotulo: "% dos válidos", valor: c.pct_validos, formato: "percentual", unidade: "% dos votos válidos" },
+    { rotulo: "Penetração", valor: c.penetracao, formato: "percentual", unidade: "% dos aptos" },
+  ];
+  if (f.gastos.custo_voto_contratado !== null) kpis.push({ rotulo: "Custo por voto contratado", valor: f.gastos.custo_voto_contratado, formato: "moeda" });
+  if (f.gastos.custo_voto_pago !== null) kpis.push({ rotulo: "Custo por voto pago", valor: f.gastos.custo_voto_pago, formato: "moeda" });
+  const aKpi = h("div");
+  const aBarras = h("div");
+  const aReceita = h("div");
+  const aMapa = h("div", { className: "mapa-area" });
+  const k = renderKpi(aKpi, kpis);
+  const b = renderBarras(aBarras, barrasMunicipios(f, 10), { titulo: "Municípios com mais votos", formato: formatarNumero, colunaValor: "Votos" });
+  const e = renderEmpilhado(aReceita, [{ rotulo: c.nome, valores: Object.fromEntries(f.receitas.map((r) => [r.fonte, r.valor])) }], { titulo: "Receita por fonte" });
+  const cliente = criarCliente();
+  const mapa = criarPainelMapa(aMapa, cliente, `Mapa de votos de ${c.nome}`);
+  const erroMapa = h("div");
+  mapa.atualizar({ ...paramsDeFiltros(filtros), ano: String(c.ano), sq_candidato: c.sq_candidato, indicador: "penetracao", nivel: "municipio" })
+    .catch((err: unknown) => { mostrarErro(erroMapa, err, () => { /* recarregar a tela refaz */ }); });
+  destino.append(
+    h("section", { className: "ficha" },
+      h("h2", { textContent: c.nome }),
+      h("p", { textContent: `${c.partido} · ${c.cargo.replace(/_/g, " ")} · ${c.uf} · ${String(c.ano)} · ${c.resultado}` }),
+      aKpi,
+      ...(f.contas_parciais ? [nota("Contas de 2026 parciais: gastos e receitas ainda mudam.")] : []),
+      h("h3", { textContent: "Votos por município" }), aBarras,
+      h("h3", { textContent: "Mapa individual" }), erroMapa, aMapa,
+      h("h3", { textContent: "Receitas" }), aReceita,
+    ),
+  );
+  return () => { k.destruir(); b.destruir(); e.destruir(); mapa.destruir(); };
+}
+
+export const tela: Tela = {
+  titulo: "Candidato",
+  render(container, estado) {
+    const { filtros } = estado;
+    const cliente = criarCliente();
+    const conteudo = h("div");
+    container.replaceChildren(titulo("Candidato"), conteudo);
+    const [ano, sq] = filtros.candidato.split(":");
+    const parar = carregar(
+      conteudo,
+      () => Promise.all([cliente.candidatos(paramsDeFiltros(filtros)), sq && ano ? cliente.ficha(Number(ano), sq) : Promise.resolve(null)]),
+      ([r]) => (r.candidatos.length === 0 ? "Nenhum candidato encontrado para estes filtros." : null),
+      ([r, ficha], destino) => {
+        const seletor = campoSelect(
+          "Candidato", "candidato",
+          [{ valor: "", texto: "Escolha…" }, ...r.candidatos.map((c) => ({ valor: `${String(c.ano)}:${c.sq_candidato}`, texto: c.nome }))],
+          filtros.candidato,
+          // O hash é a fonte de verdade: a rota atualiza o store e a tela se redesenha (deep-link grátis).
+          (v) => { window.location.hash = formatarHash("candidato", { ...filtros, candidato: v }); },
+        );
+        destino.append(h("div", { className: "controles" }, seletor.rotulo));
+        if (!ficha) { destino.append(h("p", { className: "estado", textContent: "Escolha um candidato para ver a ficha." })); return; }
+        return desenharFicha(destino, ficha, filtros);
+      },
+    );
+    return () => { parar(); container.replaceChildren(); };
+  },
+};

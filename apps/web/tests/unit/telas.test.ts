@@ -25,7 +25,7 @@ const ROTAS: Record<string, unknown> = {
   "/api/gastos": gastos, "/api/comparativo": comparativo, "/api/candidatos/2026/1": ficha, "/api/municipios/2800308": municipio,
 };
 let chamadas: string[];
-function simularApi(sobrescrever: Record<string, unknown | Error> = {}): void {
+function simularApi(sobrescrever: Record<string, unknown> = {}): void {
   chamadas = [];
   vi.stubGlobal("fetch", vi.fn((url: string) => {
     chamadas.push(url);
@@ -140,7 +140,7 @@ describe("mapa", () => {
     const dispose = await desenhar("mapa");
     await vi.waitFor(() => { expect(mapaFalso.instancias).toHaveLength(1); });
     dispose();
-    expect(mapaFalso.instancias[0]?.destruir).toHaveBeenCalled();
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.destruir).toHaveBeenCalled(); });
   });
 });
 

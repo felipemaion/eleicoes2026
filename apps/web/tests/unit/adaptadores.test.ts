@@ -3,7 +3,7 @@ import {
   avisosGastos, barrasMunicipios, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
   mapaDeDiferenca, paramsDeFiltros, paresDaComparacao, rankingDeCandidatos,
 } from "../../src/dados/adaptadores";
-import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
+import type { RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
 import { FILTROS_PADRAO } from "../../src/store";
 import candidatos from "../fixtures/api/candidatos.json";
 import comparativo from "../fixtures/api/comparativo.json";
@@ -14,6 +14,7 @@ import mapa from "../fixtures/api/mapa.json";
 const C = candidatos as RespostaCandidatos;
 const G = gastos as RespostaGastos;
 const M = mapa as RespostaMapa;
+const kpisC = (C.kpis ?? (() => { throw new Error("fixture sem kpis"); })());
 const CMP = comparativo as RespostaComparativo;
 
 describe("paramsDeFiltros", () => {
@@ -25,7 +26,7 @@ describe("paramsDeFiltros", () => {
 
 describe("kpisDoGrupo", () => {
   it("monta os 7 KPIs da spec §8.1 com unidade", () => {
-    const k = kpisDoGrupo(C.kpis!);
+    const k = kpisDoGrupo(kpisC);
     expect(k.map((x) => x.rotulo)).toEqual([
       "Votação do partido", "Penetração", "% dos válidos", "Eleitos / candidaturas aptas",
       "Custo por voto contratado", "% recursos públicos", "Δ penetração vs MBL 2022",
@@ -33,7 +34,7 @@ describe("kpisDoGrupo", () => {
     expect(k.find((x) => x.rotulo === "Penetração")?.unidade).toMatch(/aptos/);
   });
   it("sem comparação, o KPI de Δ some em vez de virar 0", () => {
-    const k = kpisDoGrupo({ ...C.kpis!, delta_penetracao: null, penetracao_comparada: null, custo_voto_contratado: null });
+    const k = kpisDoGrupo({ ...kpisC, delta_penetracao: null, penetracao_comparada: null, custo_voto_contratado: null });
     expect(k.some((x) => x.rotulo.startsWith("Δ"))).toBe(false);
     expect(k.some((x) => x.rotulo === "Custo por voto contratado")).toBe(false);
   });
@@ -99,7 +100,7 @@ describe("evolução e candidato", () => {
     ]);
   });
   it("barras da ficha: top municípios por votos", () => {
-    const b = barrasMunicipios(ficha as Ficha, 5);
+    const b = barrasMunicipios(ficha, 5);
     expect(b).toHaveLength(5);
     expect(b[0]?.valor).toBeGreaterThanOrEqual(b[4]?.valor ?? Infinity);
   });

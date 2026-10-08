@@ -32,6 +32,8 @@ function ehMeta(x: unknown): x is Meta {
 }
 
 /** Cria o guarda que exige um objeto com estas chaves. */
+// T só aparece no predicado de tipo, que é o ponto: o chamador escolhe o tipo da resposta.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 function comChaves<T>(...chaves: string[]): (x: unknown) => x is T {
   return (x): x is T => ehObjeto(x) && chaves.every((k) => k in x);
 }
@@ -44,6 +46,8 @@ function query(p: Params): string {
 }
 
 export function criarCliente(base = "/api"): ClienteApi {
+  // T aparece no guarda e no retorno; o linter não enxerga o predicado de tipo como uso.
+   
   async function obter<T>(caminho: string, valido: (x: unknown) => x is T): Promise<T> {
     const r = await fetch(`${base}${caminho}`);
     if (!r.ok) throw new Error(`GET ${base}${caminho} falhou: ${String(r.status)}`);
