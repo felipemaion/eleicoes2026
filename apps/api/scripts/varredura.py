@@ -50,11 +50,12 @@ class Relatorio:
     cinco_xx: list[tuple[Pedido, int]] = field(default_factory=list)
     lentos: list[tuple[Pedido, float]] = field(default_factory=list)
     nao_json: list[Pedido] = field(default_factory=list)
+    descoberta: list[tuple[Pedido, int]] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
-        """Sem 5xx e sem corpo inválido."""
-        return not self.cinco_xx and not self.nao_json
+        """Sem 5xx, sem corpo inválido e sem falha ao descobrir candidatos/grupos."""
+        return not self.cinco_xx and not self.nao_json and not self.descoberta
 
 
 def _amostra(itens: list[Json], n: int) -> list[Json]:
@@ -65,9 +66,30 @@ def _amostra(itens: list[Json], n: int) -> list[Json]:
     return [itens[int(i * passo)] for i in range(n)]
 
 
-def pedidos(get: Get, ufs: tuple[str, ...] = UFS_PADRAO) -> Iterator[Pedido]:
-    """Gera os pedidos da varredura, descobrindo grupos e candidatos pela própria API."""
-    _, corpo, _ = get("/api/grupos", {})
+def _descobrir(
+    get: Get, caminho: str, params: dict[str, object], falhas: list[tuple[Pedido, int]]
+) -> Json | None:
+    """GET de descoberta; resposta não-200 ou sem JSON vira falha registrada, não exceção."""
+    status, corpo, _ = get(caminho, params)
+    if status != 200 or not isinstance(corpo, dict):
+        falhas.append(((caminho, params), status))
+        return None
+    return corpo
+
+
+def pedidos(
+    get: Get,
+    ufs: tuple[str, ...] = UFS_PADRAO,
+    falhas: list[tuple[Pedido, int]] | None = None,
+) -> Iterator[Pedido]:
+    """Gera os pedidos da varredura, descobrindo grupos e candidatos pela própria API.
+
+    Descoberta que falha entra em `falhas` e a parte dependente dela é pulada.
+    """
+    falhas = falhas if falhas is not None else []
+    corpo = _descobrir(get, "/api/grupos", {}, falhas)
+    if corpo is None:
+        return
     grupos = corpo["grupos"]
     comparacoes = corpo["comparacoes"]
     recortes: list[str | None] = [None, *ufs]
@@ -106,7 +128,7 @@ def pedidos(get: Get, ufs: tuple[str, ...] = UFS_PADRAO) -> Iterator[Pedido]:
                             "mesmos_candidatos": mesmos,
                         },
                     )
-    yield from _por_candidato(get, grupos, ufs)
+    yield from _por_candidato(get, grupos, ufs, falhas)
     for q in BUSCAS:
         yield "/api/busca", {"q": q}
         for g in grupos:
@@ -116,11 +138,15 @@ def pedidos(get: Get, ufs: tuple[str, ...] = UFS_PADRAO) -> Iterator[Pedido]:
         yield "/api/evolucao/pessoas", {"cargo": cargo}
 
 
-def _por_candidato(get: Get, grupos: list[Json], ufs: tuple[str, ...]) -> Iterator[Pedido]:
+def _por_candidato(
+    get: Get, grupos: list[Json], ufs: tuple[str, ...], falhas: list[tuple[Pedido, int]]
+) -> Iterator[Pedido]:
     """Ficha, mapa, pontos e comparativo de cada candidato escolhido (majoritários + amostra)."""
     pessoas: set[str] = set()
     for g in grupos:
-        _, corpo, _ = get("/api/candidatos", {"grupo": g["id"], "limite": 500})
+        corpo = _descobrir(get, "/api/candidatos", {"grupo": g["id"], "limite": 500}, falhas)
+        if corpo is None:
+            continue
         itens = corpo["itens"]
         majoritarios = [i for i in itens if i["cargo"] in MAJORITARIOS]
         outros = [i for i in itens if i["cargo"] not in MAJORITARIOS]
@@ -132,8 +158,9 @@ def _por_candidato(get: Get, grupos: list[Json], ufs: tuple[str, ...]) -> Iterat
                 yield "/api/mapa", alvo
                 yield "/api/mapa/pontos", alvo
             yield "/api/busca", {"q": i["nm_urna"], "ano": ano}
-        _, busca, _ = get("/api/busca", {"q": "a", "grupo": g["id"], "limite": 100})
-        pessoas |= {i["pessoa_id_publico"] for i in busca["itens"]}
+        busca = _descobrir(get, "/api/busca", {"q": "a", "grupo": g["id"], "limite": 100}, falhas)
+        if busca is not None:
+            pessoas |= {i["pessoa_id_publico"] for i in busca["itens"]}
     for p in sorted(pessoas)[:AMOSTRA_MINIMA]:
         for cargo in CARGOS:
             yield "/api/comparativo", {"cargo": cargo, "pessoas": p}
@@ -142,7 +169,7 @@ def _por_candidato(get: Get, grupos: list[Json], ufs: tuple[str, ...]) -> Iterat
 def executar(get: Get, ufs: tuple[str, ...] = UFS_PADRAO, maximo: int | None = None) -> Relatorio:
     """Roda os pedidos e junta o que não pode acontecer: 5xx, corpo não-JSON, lentidão."""
     rel = Relatorio()
-    for n, (caminho, params) in enumerate(pedidos(get, ufs)):
+    for n, (caminho, params) in enumerate(pedidos(get, ufs, rel.descoberta)):
         if maximo is not None and n >= maximo:
             break
         pedido = (caminho, {k: v for k, v in params.items() if v is not None})
@@ -176,6 +203,8 @@ def get_http(base: str) -> Get:
             except json.JSONDecodeError:
                 corpo = None
             return erro.code, corpo, time.perf_counter() - ini
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            return 0, None, time.perf_counter() - ini  # sem resposta utilizável: status 0
 
     return get
 
@@ -191,6 +220,8 @@ def main() -> int:
     print(f"{rel.total} pedidos; status: {dict(sorted(rel.por_status.items()))}")
     for (caminho, params), status in rel.cinco_xx:
         print(f"5xx {status}: {caminho} {params}")
+    for (caminho, params), status in rel.descoberta:
+        print(f"descoberta falhou ({status}): {caminho} {params}")
     for caminho, params in rel.nao_json:
         print(f"sem JSON: {caminho} {params}")
     for (caminho, params), s in rel.lentos:
