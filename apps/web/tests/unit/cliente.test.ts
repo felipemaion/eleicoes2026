@@ -49,7 +49,7 @@ describe("cliente — endpoints de domínio", () => {
   });
   it("resposta sem as chaves obrigatórias é rejeitada", async () => {
     simular({ foo: 1 });
-    await expect(criarCliente().candidatos({})).rejects.toThrow(/inesperada.*candidatos/);
+    await expect(criarCliente().candidatos({})).rejects.toThrow(/candidatos.*inesperada/);
   });
   it("expõe todos os endpoints do contrato", () => {
     const c = criarCliente();
