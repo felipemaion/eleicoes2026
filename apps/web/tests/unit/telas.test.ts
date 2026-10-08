@@ -6,6 +6,7 @@ import gastos from "../fixtures/api/gastos.json";
 import grupos from "../fixtures/api/grupos.json";
 import mapa from "../fixtures/api/mapa.json";
 import pontos from "../fixtures/api/mapa-pontos.json";
+import pessoas from "../fixtures/api/pessoas.json";
 import municipio from "../fixtures/api/municipio.json";
 import { FILTROS_PADRAO, type Estado, type Tela as Chave } from "../../src/store";
 
@@ -30,6 +31,7 @@ vi.mock("../../src/telas/mapa-embutido", () => ({
 const ROTAS: Record<string, unknown> = {
   "/api/candidatos": candidatos, "/api/grupos": grupos, "/api/mapa": mapa, "/api/mapa/pontos": pontos,
   "/api/gastos": gastos, "/api/comparativo": comparativo, "/api/candidatos/2026/1": ficha, "/api/municipios/2800308": municipio,
+  "/api/evolucao/pessoas": pessoas,
 };
 let chamadas: string[];
 function simularApi(sobrescrever: Record<string, unknown> = {}): void {
@@ -236,6 +238,53 @@ describe("gastos", () => {
   });
 });
 
+describe("gastos — hover, busca e referência", () => {
+  const balao = (): string => document.querySelector(".tooltip-flutuante:not([hidden])")?.textContent ?? "";
+  it("cada ponto abre tooltip com partido, UF, cargo, votos, despesas, custo por voto e resultado", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
+    el.querySelector('circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
+    for (const t of ["Ana Souza", "MISSÃO (14)", "SE", "deputado federal", "18.049", "Despesa contratada", "Despesa paga", "Custo por voto", "não eleito"]) expect(balao()).toContain(t);
+    expect(chamou("/api/candidatos?")).toBe(true);
+  });
+  it("mostra a mediana de custo por voto como linha de referência", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("line.referencia")).not.toBeNull(); });
+    expect(el.querySelector(".referencia-rotulo")?.textContent).toMatch(/mediana/i);
+  });
+  it("a busca realça o candidato no gráfico (sem acento) e avisa quando não acha", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
+    const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
+    q.value = "bruno";
+    q.dispatchEvent(new Event("input"));
+    expect(el.querySelector('circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
+    expect(el.querySelector('circle[data-id="1"]')?.classList.contains("atenuado")).toBe(true);
+    expect(el.querySelector(".busca-gastos-estado")?.textContent).toContain("1 candidato");
+    q.value = "zzzz";
+    q.dispatchEvent(new Event("input"));
+    expect(el.querySelector(".busca-gastos-estado")?.textContent).toMatch(/Nenhum candidato/);
+    expect(el.querySelectorAll("circle.destaque")).toHaveLength(0);
+  });
+  it("a mudança de base mantém o destaque da busca", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("circle.marca")).not.toBeNull(); });
+    const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
+    q.value = "ana";
+    q.dispatchEvent(new Event("input"));
+    const sel = el.querySelector<HTMLSelectElement>("select[name=base]") as HTMLSelectElement;
+    sel.value = "pago";
+    sel.dispatchEvent(new Event("change"));
+    expect(el.querySelector('circle[data-id="1"]')?.classList.contains("destaque")).toBe(true);
+  });
+  it("barras de receita têm hover com fonte e valor", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector("rect.marca")).not.toBeNull(); });
+    el.querySelector("rect.marca")?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 5, clientY: 5 }));
+    expect(balao()).toMatch(/R\$/);
+  });
+});
+
 describe("evolução 2022×2026", () => {
   it("três mapas (2022, 2026, diferença); 2022 e 2026 com as mesmas quebras", async () => {
     await desenhar("evolucao");
@@ -258,6 +307,80 @@ describe("evolução 2022×2026", () => {
   });
 });
 
+describe("evolução — escolha de candidatos", () => {
+  const A = "aaaaaaaaaaaa";
+  const B = "bbbbbbbbbbbb";
+  const urlComparativo = (): string => chamadas.filter((c) => c.startsWith("/api/comparativo?")).at(-1) ?? "";
+  it("lista as pessoas (cargo/UF da barra de filtros) com busca, e o grupo inteiro é o padrão", async () => {
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
+    expect(chamadas.find((c) => c.startsWith("/api/evolucao/pessoas?"))).toContain("cargo=DEPUTADO+FEDERAL");
+    expect(urlComparativo()).toContain("comparacao=");
+    expect(urlComparativo()).not.toContain("pessoas=");
+    expect(el.querySelector(".pessoa-item")?.textContent).toMatch(/ANA SOUZA.*2022.*NOVO.*2026.*MISSÃO/s);
+  });
+  it("marcar pessoas só monta o rascunho (sem refazer mapas); 'Comparar selecionados' grava no hash", async () => {
+    window.location.hash = "";
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item input[type=checkbox]")).toHaveLength(3); });
+    const caixas = el.querySelectorAll<HTMLInputElement>(".pessoa-item input[type=checkbox]");
+    caixas[0]?.click();
+    expect(window.location.hash).not.toContain("pessoas=");
+    expect(el.querySelector(".selecao-contagem")?.textContent).toContain("1 selecionado");
+    (el.querySelector("button[data-acao=comparar]") as HTMLButtonElement).click();
+    expect(decodeURIComponent(window.location.hash)).toContain(`pessoas=${A}`);
+  });
+  it("com seleção no hash, o comparativo recebe pessoas repetido e a tabela traz 2022 × 2026", async () => {
+    await desenhar("evolucao", estado("evolucao", { pessoas: `${A},${B}` }));
+    await vi.waitFor(() => { expect(el.querySelectorAll("table.tabela-pessoas tbody tr")).toHaveLength(2); });
+    expect(urlComparativo()).toContain(`pessoas=${A}&pessoas=${B}`);
+    expect(urlComparativo()).not.toContain("comparacao=");
+    const linha = el.querySelector("table.tabela-pessoas tbody tr")?.textContent ?? "";
+    for (const t of ["ANA SOUZA", "9.000", "18.049", "NOVO", "MISSÃO"]) expect(linha).toContain(t);
+    expect([...el.querySelectorAll<HTMLInputElement>(".pessoa-item input:checked")]).toHaveLength(2);
+  });
+  it("a tabela ordena ao clicar no cabeçalho e informa aria-sort", async () => {
+    await desenhar("evolucao", estado("evolucao", { pessoas: `${A},${B}` }));
+    await vi.waitFor(() => { expect(el.querySelectorAll("table.tabela-pessoas tbody tr")).toHaveLength(2); });
+    const nomes = (): string[] => [...el.querySelectorAll("table.tabela-pessoas tbody tr th")].map((t) => t.textContent);
+    const botao = [...el.querySelectorAll<HTMLButtonElement>("table.tabela-pessoas thead button")].find((b) => b.textContent.includes("Votos 2026")) as HTMLButtonElement;
+    botao.click();
+    const primeiro = nomes();
+    el.querySelector<HTMLButtonElement>('table.tabela-pessoas thead button[data-coluna="votos_para"]')?.click();
+    expect(nomes()).not.toEqual(primeiro);
+    expect(el.querySelector('table.tabela-pessoas thead th[aria-sort]')).not.toBeNull();
+  });
+  it("atalhos: 'Só indicados' marca os indicados e 'Grupo inteiro' limpa a seleção", async () => {
+    window.location.hash = "";
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
+    (el.querySelector("button[data-atalho=indicados]") as HTMLButtonElement).click();
+    expect(decodeURIComponent(window.location.hash)).toContain(`pessoas=${B}`);
+    (el.querySelector("button[data-atalho=grupo]") as HTMLButtonElement).click();
+    expect(window.location.hash).not.toContain("pessoas=");
+  });
+  it("a busca por nome consulta a API com q (debounce) sem refazer o comparativo", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
+    const antes = chamadas.filter((c) => c.startsWith("/api/comparativo?")).length;
+    const q = el.querySelector<HTMLInputElement>("input[name=busca-pessoas]") as HTMLInputElement;
+    q.value = "bruno";
+    q.dispatchEvent(new Event("input"));
+    await vi.advanceTimersByTimeAsync(400);
+    await vi.waitFor(() => { expect(chamadas.some((c) => c.startsWith("/api/evolucao/pessoas?") && c.includes("q=bruno"))).toBe(true); });
+    expect(chamadas.filter((c) => c.startsWith("/api/comparativo?")).length).toBe(antes);
+    vi.useRealTimers();
+  });
+  it("pessoa que não entra no comparativo (outro cargo/Senado) vem desabilitada e explicada", async () => {
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
+    const carla = [...el.querySelectorAll<HTMLElement>(".pessoa-item")].find((x) => x.textContent.includes("CARLA")) as HTMLElement;
+    expect(carla.querySelector<HTMLInputElement>("input")?.disabled).toBe(true);
+    expect(carla.textContent).toMatch(/não concorreu ao mesmo cargo|fora do comparativo/i);
+  });
+});
+
 describe("candidato", () => {
   it("sem candidato escolhido, pede a escolha e lista os candidatos", async () => {
     await desenhar("candidato");
@@ -271,6 +394,32 @@ describe("candidato", () => {
     expect(el.querySelector(".ficha")?.textContent).toContain("Ana Souza");
     expect(el.querySelectorAll("svg.grafico").length).toBeGreaterThanOrEqual(2);
     expect(chamou("sq_candidato=1")).toBe(true);
+  });
+  it("ficha rastreável: gastos completos, custo com e sem repasses explicado, receita por fonte", async () => {
+    await desenhar("candidato", estado("candidato", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelector(".ficha-gastos")).not.toBeNull(); });
+    const t = el.querySelector(".ficha-gastos")?.textContent ?? "";
+    for (const x of ["Contratado", "Pago", "Dívida", "223.000", "180.000", "43.000", "Repasses", "sem repasses", "com repasses", "14,02", "Repasses são dinheiro transferido"]) expect(t).toContain(x);
+  });
+  it("ficha: botões para as páginas oficiais do TSE abrem em nova aba, com aviso quando não verificados", async () => {
+    await desenhar("candidato", estado("candidato", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelector(".ficha-links")).not.toBeNull(); });
+    const links = [...el.querySelectorAll<HTMLAnchorElement>(".ficha-links a")];
+    expect(links.map((a) => a.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("resultados.tse.jus.br"), expect.stringContaining("DivulgaCandContas")]));
+    for (const a of links) { expect(a.target).toBe("_blank"); expect(a.rel).toContain("noopener"); expect(a.href).toMatch(/^https:\/\//); }
+    expect(el.querySelector(".ficha-links")?.textContent).toContain("Confira o número do candidato");
+  });
+  it("cada bloco de números tem 'fonte': dataset, data de geração, regra e link da metodologia", async () => {
+    await desenhar("candidato", estado("candidato", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelectorAll(".fonte-botao").length).toBeGreaterThanOrEqual(2); });
+    const botoes = [...el.querySelectorAll<HTMLButtonElement>(".fonte-botao")];
+    const gastos = botoes.find((b) => b.closest(".ficha-gastos")) as HTMLButtonElement;
+    gastos.focus();
+    gastos.dispatchEvent(new FocusEvent("focus"));
+    const painel = gastos.parentElement?.querySelector<HTMLElement>(".fonte-painel") as HTMLElement;
+    expect(painel.hidden).toBe(false);
+    for (const x of ["prestacao_contas", "07/10/2026", "VR_DESPESA_CONTRATADA", "Metodologia"]) expect(painel.textContent).toContain(x);
+    expect(painel.querySelector<HTMLAnchorElement>("a[href*='indicadores.md']")).not.toBeNull();
   });
   it("presidente (Renan Santos): ficha e mapa nacional carregam mesmo com filtros de outra UF e fora da lista do recorte", async () => {
     const pres = { ...ficha, candidato: { ...ficha.candidato, nm_urna: "RENAN SANTOS", cargo: "PRESIDENTE", sg_uf: "BR", abrangencia: { tipo: "pais", uf: null } } };

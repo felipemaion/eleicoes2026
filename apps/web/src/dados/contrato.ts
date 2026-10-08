@@ -28,6 +28,11 @@ export type GastoCandidato = S["GastoCandidato"];
 export type RespostaComparativo = S["Comparativo"];
 export type MunicipioComparado = S["EvolucaoMunicipio"];
 export type RespostaMunicipio = S["ResumoMunicipio"];
+export type PessoaEvolucao = S["PessoaEvolucao"];
+export type RespostaPessoas = S["ListaPessoas"];
+export type Fonte = S["Fonte"];
+export type LinkOficial = S["Link"];
+export type GastosFicha = S["GastosCandidato"];
 
 /** Valores aceitos pela API (enums do OpenAPI). */
 export type CargoApi = S["Cargo"];

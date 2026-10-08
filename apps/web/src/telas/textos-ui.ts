@@ -1,5 +1,6 @@
 /** Textos públicos em DOM: "?" de ajuda, avisos, subtítulo e rodapé de cada tela. */
-import { avisosDaTela, indicadorDe, notaRodape, subtituloDaTela, type Contexto, type ContextoAvisos, type TelaComTextos } from "../textos";
+import type { Fonte } from "../dados/contrato";
+import { avisosDaTela, formatarDtGeracao, indicadorDe, notaRodape, subtituloDaTela, type Contexto, type ContextoAvisos, type TelaComTextos } from "../textos";
 import { ligarPainel } from "../componentes/ui/tooltip";
 import { h, nota } from "./dom";
 
@@ -49,3 +50,34 @@ export function avisosUi(tela: TelaComTextos, ctx: ContextoAvisos): HTMLElement 
 
 export const cabecalhoDaTela = (tela: TelaComTextos): HTMLElement => h("p", { className: "subtitulo", textContent: subtituloDaTela(tela) });
 export const rodapeUi = (tela: TelaComTextos, ctx: Contexto): HTMLElement => nota(notaRodape(tela, ctx));
+
+/**
+ * "fonte" discreto ao lado de um número: dataset, data de geração do TSE, regra aplicada e links
+ * (arquivo oficial + metodologia). `datasets` escolhe quais fontes da resposta valem para o número.
+ * Sem fonte correspondente o texto diz isso, em vez de omitir a procedência.
+ */
+export function fonteUi(fontes: readonly Fonte[], datasets: readonly string[]): HTMLElement {
+  const usadas = fontes.filter((f) => datasets.includes(f.dataset));
+  if (usadas.length === 0) return h("span", { className: "fonte fonte-ausente", textContent: "fonte não informada" });
+  const id = `fonte-${String(++contador)}`;
+  const painel = h("div", { id, hidden: true, className: "fonte-painel" },
+    ...usadas.map((f) => h("div", { className: "fonte-item" },
+      h("strong", { textContent: f.dataset }),
+      h("dl", {},
+        h("dt", { textContent: "Gerado pelo TSE em" }), h("dd", { textContent: formatarDtGeracao(f.dt_geracao) }),
+        h("dt", { textContent: "Regra" }), h("dd", { textContent: f.coluna_regra }),
+      ),
+      h("p", {},
+        h("a", { href: f.arquivo_oficial_url, target: "_blank", rel: "noopener noreferrer", textContent: "Arquivo oficial" }), " · ",
+        h("a", { href: f.metodologia_url, target: "_blank", rel: "noopener noreferrer", textContent: "Metodologia" }),
+      ),
+    )),
+  );
+  const botao = h("button", { type: "button", className: "fonte-botao", textContent: "fonte" });
+  botao.setAttribute("aria-label", `Fonte dos dados: ${usadas.map((f) => f.dataset).join(", ")}`);
+  botao.setAttribute("aria-expanded", "false");
+  botao.setAttribute("aria-controls", id);
+  const raiz = h("span", { className: "fonte" }, botao, painel);
+  ligarPainel(raiz, botao, painel);
+  return raiz;
+}

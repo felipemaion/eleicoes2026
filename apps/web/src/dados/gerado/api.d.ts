@@ -405,6 +405,7 @@ export interface components {
          *         "rotulo": "MBL 2022"
          *       },
          *       "dt_geracao": "2026-10-06",
+         *       "fontes": [],
          *       "kpis": {
          *         "delta_penetracao": 37.1,
          *         "ganho_absoluto": 720,
@@ -455,6 +456,11 @@ export interface components {
             municipios: components["schemas"]["EvolucaoMunicipio"][];
             /** Dt Geracao */
             dt_geracao: string;
+            /**
+             * Fontes
+             * @description Procedência dos números (arquivo, regra, spec).
+             */
+            fontes: components["schemas"]["Fonte"][];
         };
         /**
          * Detalhe
@@ -565,7 +571,7 @@ export interface components {
              */
             votos_por_municipio: components["schemas"]["VotosMunicipio"][];
             /** @description null se não há prestação de contas. */
-            gastos: components["schemas"]["ResumoCustoCandidato"] | null;
+            gastos: components["schemas"]["GastosCandidato"] | null;
             receitas: components["schemas"]["ResumoReceitasOut"] | null;
             /**
              * Contas Parciais
@@ -579,6 +585,47 @@ export interface components {
             base_ipca: string | null;
             /** Dt Geracao */
             dt_geracao: string;
+            /**
+             * Links
+             * @description Links oficiais do TSE (votos, perfil, contas, dados abertos); cada um diz se foi `verificado` e, se não, o que conferir.
+             */
+            links: components["schemas"]["Link"][];
+            /**
+             * Fontes
+             * @description Procedência dos números da ficha.
+             */
+            fontes: components["schemas"]["Fonte"][];
+        };
+        /**
+         * Fonte
+         * @description De onde vem um número: arquivo oficial, momento da geração e regra aplicada.
+         */
+        Fonte: {
+            /**
+             * Dataset
+             * @description Id do dataset no catálogo (ex.: `votacao_candidato_munzona`).
+             */
+            dataset: string;
+            /**
+             * Arquivo Oficial Url
+             * @description URL do arquivo oficial (ZIP no CDN do TSE etc.).
+             */
+            arquivo_oficial_url: string;
+            /**
+             * Dt Geracao
+             * @description `DT_GERACAO` dos dados publicados pelo TSE.
+             */
+            dt_geracao: string;
+            /**
+             * Coluna Regra
+             * @description Coluna(s) usada(s) e regra aplicada sobre elas.
+             */
+            coluna_regra: string;
+            /**
+             * Metodologia Url
+             * @description Seção da spec que define o número (GitHub).
+             */
+            metodologia_url: string;
         };
         /**
          * GastoCandidato
@@ -615,6 +662,7 @@ export interface components {
          *       "cargo": "DEPUTADO FEDERAL",
          *       "contas_parciais": true,
          *       "dt_geracao": "2026-10-06",
+         *       "fontes": [],
          *       "grupo": "missao_2026",
          *       "por_candidato": [],
          *       "receitas": {
@@ -649,6 +697,88 @@ export interface components {
             base_ipca: string | null;
             /** Dt Geracao */
             dt_geracao: string;
+            /**
+             * Fontes
+             * @description Procedência dos números (arquivo, regra, spec).
+             */
+            fontes: components["schemas"]["Fonte"][];
+        };
+        /**
+         * GastosCandidato
+         * @description Finanças da campanha: despesa, repasses, receita e custo por voto com e sem repasses.
+         */
+        GastosCandidato: {
+            /**
+             * Despesa Contratada
+             * @description R$ da própria campanha, sem repasses.
+             */
+            despesa_contratada: number;
+            /**
+             * Despesa Paga
+             * @description R$ pagos da própria campanha, sem repasses.
+             */
+            despesa_paga: number;
+            /**
+             * Divida
+             * @description contratada − paga (§4.2).
+             */
+            divida: number;
+            /** Votos */
+            votos: number;
+            /**
+             * Custo Voto Contratado
+             * @description R$/voto = despesa contratada ÷ votos nominais. Exclui repasses a outros candidatos/partidos (§4.2). null se votos = 0.
+             */
+            custo_voto_contratado: number | null;
+            /**
+             * Custo Voto Pago
+             * @description R$/voto pago; exclui repasses a outros candidatos/partidos (§4.2).
+             */
+            custo_voto_pago: number | null;
+            /**
+             * Repasses Contratados
+             * @description R$ contratados como doação a outros candidatos/partidos (fora do custo).
+             */
+            repasses_contratados: number;
+            /**
+             * Repasses Pagos
+             * @description R$ pagos nesses repasses.
+             */
+            repasses_pagos: number;
+            /**
+             * Despesa Total Contratada
+             * @description Despesa própria + repasses (contratada): tudo que a campanha comprometeu.
+             */
+            despesa_total_contratada: number;
+            /**
+             * Despesa Total Paga
+             * @description Despesa própria + repasses (paga).
+             */
+            despesa_total_paga: number;
+            /**
+             * Custo Voto Contratado Com Repasses
+             * @description despesa total contratada ÷ votos. Maior ou igual ao custo sem repasses: a diferença é o dinheiro repassado a terceiros. null se votos = 0.
+             */
+            custo_voto_contratado_com_repasses: number | null;
+            /** Custo Voto Pago Com Repasses */
+            custo_voto_pago_com_repasses: number | null;
+            /**
+             * Receita Total
+             * @description Σ das receitas da campanha (todas as fontes).
+             */
+            receita_total: number;
+            /**
+             * Receita Por Fonte
+             * @description Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…
+             */
+            receita_por_fonte: {
+                [key: string]: number;
+            };
+            /**
+             * Explicacao Repasses
+             * @description Por que há dois custos por voto e qual a diferença entre eles.
+             */
+            explicacao_repasses: string;
         };
         /**
          * Grupo
@@ -784,9 +914,43 @@ export interface components {
             penetracao: number | null;
         };
         /**
+         * Link
+         * @description Um link oficial, com a honestidade de dizer se foi conferido.
+         */
+        Link: {
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo: "votos_oficiais" | "divulgacand_lista" | "divulgacand_candidato" | "divulgacand_ficha_json" | "dados_abertos_votos" | "dados_abertos_contas";
+            /** Rotulo */
+            rotulo: string;
+            /** Url */
+            url: string;
+            /**
+             * Verificado
+             * @description true = aberto e conferido; false = padrão a conferir.
+             */
+            verificado: boolean;
+            /**
+             * Nota
+             * @description Obrigatória quando `verificado = false`.
+             */
+            nota: string | null;
+        };
+        /**
          * ListaCandidatos
          * @description Página de candidatos.
          * @example {
+         *       "fontes": [
+         *         {
+         *           "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+         *           "coluna_regra": "QT_VOTOS_NOMINAIS_VALIDOS com destinação 'Válido'.",
+         *           "dataset": "votacao_candidato_munzona",
+         *           "dt_geracao": "2026-10-06",
+         *           "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md#21-votos-nominais"
+         *         }
+         *       ],
          *       "itens": [
          *         {
          *           "abrangencia": {
@@ -833,6 +997,11 @@ export interface components {
             itens: components["schemas"]["CandidatoResumo"][];
             /** @description Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam cargos) ou sem candidaturas. */
             kpis: components["schemas"]["KpisGrupo"] | null;
+            /**
+             * Fontes
+             * @description Procedência dos números (arquivo, regra, spec).
+             */
+            fontes: components["schemas"]["Fonte"][];
         };
         /**
          * ListaPessoas
@@ -873,6 +1042,7 @@ export interface components {
          *         ],
          *         "tipo": "sequencial"
          *       },
+         *       "fontes": [],
          *       "indicador": "penetracao",
          *       "n_candidaturas": 2,
          *       "nivel": "municipio",
@@ -923,6 +1093,11 @@ export interface components {
             votos_fora_do_mapa: number;
             /** Dt Geracao */
             dt_geracao: string;
+            /**
+             * Fontes
+             * @description Procedência dos números (arquivo, regra, spec).
+             */
+            fontes: components["schemas"]["Fonte"][];
         };
         /**
          * Meta

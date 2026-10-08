@@ -1,0 +1,151 @@
+{
+  "total": 3,
+  "limite": 50,
+  "dt_geracao": "2026-10-07",
+  "itens": [
+    {
+      "pessoa_id_publico": "aaaaaaaaaaaa",
+      "nome": "ANA SOUZA",
+      "mesmo_cargo": true,
+      "comparavel": true,
+      "de": {
+        "ano": 2022,
+        "sq_candidato": 101,
+        "nm_urna": "ANA SOUZA",
+        "nome": "ANA SOUZA DA SILVA",
+        "numero": 1501,
+        "cargo": "DEPUTADO FEDERAL",
+        "uf": "SE",
+        "partido": {
+          "numero": 30,
+          "sigla": "NOVO"
+        },
+        "votos": 9000,
+        "resultado": null,
+        "indicado": false,
+        "pessoa_id_publico": "aaaaaaaaaaaa",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SE"
+        }
+      },
+      "para": {
+        "ano": 2026,
+        "sq_candidato": 1,
+        "nm_urna": "ANA SOUZA",
+        "nome": "ANA SOUZA DA SILVA",
+        "numero": 1401,
+        "cargo": "DEPUTADO FEDERAL",
+        "uf": "SE",
+        "partido": {
+          "numero": 14,
+          "sigla": "MISSÃO"
+        },
+        "votos": 18049,
+        "resultado": null,
+        "indicado": false,
+        "pessoa_id_publico": "aaaaaaaaaaaa",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SE"
+        }
+      }
+    },
+    {
+      "pessoa_id_publico": "bbbbbbbbbbbb",
+      "nome": "BRUNO LIMA",
+      "mesmo_cargo": true,
+      "comparavel": true,
+      "de": {
+        "ano": 2022,
+        "sq_candidato": 102,
+        "nm_urna": "BRUNO LIMA",
+        "nome": "BRUNO LIMA DA SILVA",
+        "numero": 1502,
+        "cargo": "DEPUTADO FEDERAL",
+        "uf": "SE",
+        "partido": {
+          "numero": 30,
+          "sigla": "NOVO"
+        },
+        "votos": 15000,
+        "resultado": null,
+        "indicado": true,
+        "pessoa_id_publico": "bbbbbbbbbbbb",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SE"
+        }
+      },
+      "para": {
+        "ano": 2026,
+        "sq_candidato": 2,
+        "nm_urna": "BRUNO LIMA",
+        "nome": "BRUNO LIMA DA SILVA",
+        "numero": 1402,
+        "cargo": "DEPUTADO FEDERAL",
+        "uf": "SE",
+        "partido": {
+          "numero": 14,
+          "sigla": "MISSÃO"
+        },
+        "votos": 11991,
+        "resultado": null,
+        "indicado": true,
+        "pessoa_id_publico": "bbbbbbbbbbbb",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SE"
+        }
+      }
+    },
+    {
+      "pessoa_id_publico": "cccccccccccc",
+      "nome": "CARLA DIAS",
+      "mesmo_cargo": false,
+      "comparavel": false,
+      "de": {
+        "ano": 2022,
+        "sq_candidato": 103,
+        "nm_urna": "CARLA DIAS",
+        "nome": "CARLA DIAS DA SILVA",
+        "numero": 1503,
+        "cargo": "VEREADOR",
+        "uf": "SP",
+        "partido": {
+          "numero": 30,
+          "sigla": "NOVO"
+        },
+        "votos": 2000,
+        "resultado": null,
+        "indicado": false,
+        "pessoa_id_publico": "cccccccccccc",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SP"
+        }
+      },
+      "para": {
+        "ano": 2026,
+        "sq_candidato": 3,
+        "nm_urna": "CARLA DIAS",
+        "nome": "CARLA DIAS DA SILVA",
+        "numero": 1403,
+        "cargo": "DEPUTADO ESTADUAL",
+        "uf": "SP",
+        "partido": {
+          "numero": 14,
+          "sigla": "MISSÃO"
+        },
+        "votos": 3155,
+        "resultado": null,
+        "indicado": false,
+        "pessoa_id_publico": "cccccccccccc",
+        "abrangencia": {
+          "tipo": "uf",
+          "uf": "SP"
+        }
+      }
+    }
+  ]
+}

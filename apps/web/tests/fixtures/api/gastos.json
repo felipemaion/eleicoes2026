@@ -1,78 +1,87 @@
 {
- "grupo": "missao_2026",
- "ano": 2026,
- "cargo": null,
- "uf": null,
- "agregado": {
-  "despesa_contratada": 343000,
-  "despesa_paga": 275000,
-  "divida": 68000,
-  "votos": 33195,
-  "custo_voto_contratado": 10.33,
-  "custo_voto_pago": 8.28,
-  "mediana_custo_voto_contratado": 9.1,
-  "candidatos_sem_voto_excluidos": 0
- },
- "receitas": {
-  "por_categoria": {
-   "FEFC": 210000,
-   "Fundo Partidário": 40000,
-   "Doações PF": 20000,
-   "Autofinanciamento": 20000
+  "grupo": "missao_2026",
+  "ano": 2026,
+  "cargo": null,
+  "uf": null,
+  "agregado": {
+    "despesa_contratada": 343000,
+    "despesa_paga": 275000,
+    "divida": 68000,
+    "votos": 33195,
+    "custo_voto_contratado": 10.33,
+    "custo_voto_pago": 8.28,
+    "mediana_custo_voto_contratado": 9.1,
+    "candidatos_sem_voto_excluidos": 0
   },
-  "receita_total": 290000,
-  "receita_financeira": 290000,
-  "pct_publico": 86.2,
-  "pct_autofinanciamento": 6.9
- },
- "por_candidato": [
-  {
-   "sq_candidato": 1,
-   "nm_urna": "Ana Souza",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "receita_total": 210000,
-   "custo": {
-    "despesa_contratada": 223000,
-    "despesa_paga": 180000,
-    "divida": 43000,
-    "votos": 18049,
-    "custo_voto_contratado": 12.36,
-    "custo_voto_pago": 9.97
-   }
+  "receitas": {
+    "por_categoria": {
+      "FEFC": 210000,
+      "Fundo Partidário": 40000,
+      "Doações PF": 20000,
+      "Autofinanciamento": 20000
+    },
+    "receita_total": 290000,
+    "receita_financeira": 290000,
+    "pct_publico": 86.2,
+    "pct_autofinanciamento": 6.9
   },
-  {
-   "sq_candidato": 2,
-   "nm_urna": "Bruno Lima",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "receita_total": 80000,
-   "custo": {
-    "despesa_contratada": 90000,
-    "despesa_paga": 70000,
-    "divida": 20000,
-    "votos": 11991,
-    "custo_voto_contratado": 7.51,
-    "custo_voto_pago": 5.84
-   }
-  },
-  {
-   "sq_candidato": 3,
-   "nm_urna": "Carla Dias",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "receita_total": 30000,
-   "custo": {
-    "despesa_contratada": 30000,
-    "despesa_paga": 25000,
-    "divida": 5000,
-    "votos": 3155,
-    "custo_voto_contratado": 9.51,
-    "custo_voto_pago": 7.92
-   }
-  }
- ],
- "contas_parciais": true,
- "base_ipca": "2026-09",
- "dt_geracao": "2026-10-07"
+  "por_candidato": [
+    {
+      "sq_candidato": 1,
+      "nm_urna": "Ana Souza",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "receita_total": 210000,
+      "custo": {
+        "despesa_contratada": 223000,
+        "despesa_paga": 180000,
+        "divida": 43000,
+        "votos": 18049,
+        "custo_voto_contratado": 12.36,
+        "custo_voto_pago": 9.97
+      }
+    },
+    {
+      "sq_candidato": 2,
+      "nm_urna": "Bruno Lima",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "receita_total": 80000,
+      "custo": {
+        "despesa_contratada": 90000,
+        "despesa_paga": 70000,
+        "divida": 20000,
+        "votos": 11991,
+        "custo_voto_contratado": 7.51,
+        "custo_voto_pago": 5.84
+      }
+    },
+    {
+      "sq_candidato": 3,
+      "nm_urna": "Carla Dias",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "receita_total": 30000,
+      "custo": {
+        "despesa_contratada": 30000,
+        "despesa_paga": 25000,
+        "divida": 5000,
+        "votos": 3155,
+        "custo_voto_contratado": 9.51,
+        "custo_voto_pago": 7.92
+      }
+    }
+  ],
+  "contas_parciais": true,
+  "base_ipca": "2026-09",
+  "dt_geracao": "2026-10-07",
+  "fontes": [
+    {
+      "dataset": "prestacao_contas",
+      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/prestacao_contas/prestacao_contas_2026.zip",
+      "dt_geracao": "2026-10-07",
+      "coluna_regra": "VR_DESPESA_CONTRATADA ÷ votos nominais",
+      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#prestacao_contas"
+    }
+  ]
 }
