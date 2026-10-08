@@ -10,6 +10,10 @@
 # Uso: publicar-dados.sh [dir_processed]   (padrão: data/processed)
 set -euo pipefail
 
+# O openrsync do macOS (protocolo 29) é incompatível com o rrsync do servidor: use o rsync do Homebrew.
+RSYNC="$(command -v /opt/homebrew/bin/rsync || command -v rsync)"
+"$RSYNC" --version | grep -q openrsync && { echo "instale o rsync oficial: brew install rsync" >&2; exit 1; }
+
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ORIGEM="${1:-$RAIZ/data/processed}"
 DESTINO="eleicoes01@167.126.3.134"
@@ -22,14 +26,14 @@ if find "$ORIGEM" -name '*.csv' -o -name '.etl-*' | grep -q .; then
 fi
 
 echo "== datasets"
-rsync -az --delete --exclude 'tiles/' \
+"$RSYNC" -az --delete --exclude 'tiles/' \
   -e "ssh -i $HOME/.ssh/eleicoes-rsync-datasets -o IdentitiesOnly=yes" \
   "$ORIGEM/" "$DESTINO:"
 
 if [ -d "$ORIGEM/tiles" ]; then
   echo "== tiles"
   # Só os PMTiles e o manifesto: os GeoJSONL intermediários (_geojsonl/) ficam no Mac.
-  rsync -az --delete --include 'manifesto.json' --include '*.pmtiles' --exclude '*' \
+  "$RSYNC" -az --delete --include 'manifesto.json' --include '*.pmtiles' --exclude '*' \
     -e "ssh -i $HOME/.ssh/eleicoes-rsync-public -o IdentitiesOnly=yes" \
     "$ORIGEM/tiles/" "$DESTINO:tiles/"
 fi
