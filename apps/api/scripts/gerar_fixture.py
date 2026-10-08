@@ -2,8 +2,8 @@
 
 Datasets com contrato (`packages/contratos/.../tse.py`) saem em
 `<dest>/<dataset>/ano=AAAA/<dataset>.parquet` com os nomes de coluna do TSE em minúsculas
-(só a projeção que a API lê). O que ainda não tem contrato (receitas, despesas, IPCA, área/AMC
-do município, H3 e votos por local de votação) sai provisório em `<dest>/<nome>.parquet`.
+(só a projeção que a API lê). O que ainda não tem contrato (área/AMC do município, H3 e votos por
+local de votação) sai provisório em `<dest>/<nome>.parquet`.
 
 Mundo pequeno, conferível à mão:
 
@@ -179,6 +179,7 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
     cand = {c[1]: c for c in TABELAS["candidatos"][1] if c[0] in (2022, 2026)}
     uf_de = {m[0]: m[3] for m in TABELAS["municipios"][1]}
     nome_de = {m[0]: m[2] for m in TABELAS["municipios"][1]}
+    uf_de_cand = {c[1]: c[4] for c in TABELAS["candidatos"][1]}
     cands = [
         (a, 1, CD_ELEICAO[a], uf, cargo, sq, nm, parte, sg, sit, res, pessoa, DT)
         for (a, sq, pessoa, nm, uf, cargo, parte, sg, sit, res) in TABELAS["candidatos"][1]
@@ -245,6 +246,42 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
             ),
             muns,
         ),
+        # Prestação de contas: um registro por candidato × rótulo, como o ETL grava. O doador
+        # (transferência entre candidatos) é coluna extra opcional: o TSE agregado não a traz.
+        "receitas_candidatos": (
+            dict(
+                ano_eleicao=INT, nr_turno=INT, sg_uf=TXT, tp_prestacao_contas=TXT,
+                sq_candidato=INT, ds_fonte_receita=TXT, ds_origem_receita=TXT,
+                ds_natureza_receita=TXT, vr_receita=DBL, sq_candidato_doador=INT, dt_geracao=DAT,
+            ),
+            [
+                (a, 1, uf_de_cand[sq], "FINAL", sq, f, o, n, v,
+                 5 if o == "Recursos de outros candidatos" else None, DT)
+                for a, sq, f, o, n, v in TABELAS["receitas"][1]
+            ],
+        ),
+        "despesas_contratadas_candidatos": (
+            dict(
+                ano_eleicao=INT, nr_turno=INT, sg_uf=TXT, tp_prestacao_contas=TXT,
+                sq_candidato=INT, ds_origem_despesa=TXT, vr_despesa_contratada=DBL, dt_geracao=DAT,
+            ),
+            [
+                (a, 1, uf_de_cand[sq], "Final", sq, o, c, DT)
+                for a, sq, o, c, _p in TABELAS["despesas"][1]
+            ],
+        ),
+        "despesas_pagas_candidatos": (
+            dict(
+                ano_eleicao=INT, nr_turno=INT, sg_uf=TXT, tp_prestacao_contas=TXT,
+                sq_candidato=INT, ds_fonte_despesa=TXT, ds_origem_despesa=TXT,
+                vr_pagto_despesa=DBL, dt_geracao=DAT,
+            ),
+            [
+                (a, 1, uf_de_cand[sq], "Final", sq, "Fundo Especial de Financiamento de Campanha",
+                 o, p, DT)
+                for a, sq, o, _c, p in TABELAS["despesas"][1]
+            ],
+        ),
     }  # fmt: skip
 
 
@@ -258,24 +295,6 @@ def _provisorio() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
         "votos_local": (
             dict(ano=INT, sq_candidato=INT, cd_mun_ibge=INT, nr_zona=INT, nr_local=INT, votos=INT),
             TABELAS["votos_local"][1],
-        ),
-        "receitas": (
-            dict(
-                ano=INT, sq_candidato=INT, ds_fonte_receita=TXT, ds_origem_receita=TXT,
-                ds_natureza_receita=TXT, vr_receita=DBL, sq_candidato_doador=INT,
-            ),
-            # Doador só na receita "de outros candidatos" de sq 3: vem de sq 5 (mesmo grupo).
-            [
-                (*r, 5 if r[3] == "Recursos de outros candidatos" else None)
-                for r in TABELAS["receitas"][1]
-            ],
-        ),
-        "despesas": (
-            dict(
-                ano=INT, sq_candidato=INT, ds_origem_despesa=TXT, vr_despesa_contratada=DBL,
-                vr_despesa_paga=DBL,
-            ),
-            TABELAS["despesas"][1],
         ),
         "ipca": (dict(mes=TXT, variacao=DBL), [(m, v) for m, v in IPCA]),
     }  # fmt: skip
@@ -314,7 +333,11 @@ def main() -> None:
             destino = DESTINO / nome / f"ano={ano}" / f"{nome}.parquet"
             _escrever(con, nome, colunas, parte, destino)
     for nome, (colunas, linhas) in _provisorio().items():
-        _escrever(con, nome, colunas, linhas, DESTINO / f"{nome}.parquet")
+        # IPCA: o ETL grava `ipca/ipca.parquet` (diretório, sem partição de ano).
+        destino = (
+            DESTINO / nome / f"{nome}.parquet" if nome == "ipca" else DESTINO / f"{nome}.parquet"
+        )
+        _escrever(con, nome, colunas, linhas, destino)
     (DESTINO / "manifesto.json").write_text(
         json.dumps({"tp_prestacao_contas": {"2022": "FINAL", "2026": "PARCIAL"}}, indent=2) + "\n"
     )

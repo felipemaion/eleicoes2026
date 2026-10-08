@@ -87,12 +87,12 @@ def test_coluna_ausente_em_provisorio_falha_clara_na_abertura(tmp_path: Path) ->
     shutil.copytree(FIXTURES, destino)
     con = duckdb.connect()
     con.execute(
-        "COPY (SELECT ano, sq_candidato, ds_origem_despesa, vr_despesa_contratada"
-        f" FROM read_parquet('{destino / 'despesas.parquet'}'))"
-        f" TO '{destino / 'despesas.parquet'}' (FORMAT PARQUET)"
+        "COPY (SELECT cd_mun_ibge, cd_amc"
+        f" FROM read_parquet('{destino / 'municipios_extra.parquet'}'))"
+        f" TO '{destino / 'municipios_extra.parquet'}' (FORMAT PARQUET)"
     )
     with pytest.raises(
-        DadosIndisponiveis, match=r"despesas: colunas ausentes \['vr_despesa_paga'\]"
+        DadosIndisponiveis, match=r"municipios_extra: colunas ausentes \['area_km2'\]"
     ):
         RepositorioDuckDB(destino)
 

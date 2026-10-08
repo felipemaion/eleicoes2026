@@ -28,15 +28,16 @@ CONTRATADOS = (
     "detalhe_votacao_munzona",
     "eleitorado_local_votacao",
     "municipio_tse_ibge",
+    "receitas_candidatos",
+    "despesas_contratadas_candidatos",
+    "despesas_pagas_candidatos",
 )
-# TODO(dados): ainda sem contrato — receitas/despesas (prestação de contas), IPCA, área/AMC do
-# município, H3 e votos por local de votação. Formato provisório: `<dir>/<nome>.parquet`.
+# TODO(dados): ainda sem contrato — IPCA, área/AMC do município, H3 e votos por local de
+# votação. Formato provisório: `<dir>/<nome>.parquet` ou `<dir>/<nome>/*.parquet`.
 PROVISORIOS = (
     "municipios_extra",
     "locais_h3",
     "votos_local",
-    "receitas",
-    "despesas",
     "ipca",
 )
 # Colunas que a API lê de cada fonte: validadas na abertura (falha clara, sem `SELECT *`).
@@ -61,12 +62,17 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "municipios_extra": ("cd_mun_ibge", "cd_amc", "area_km2"),
     "locais_h3": ("ano", "cd_mun_ibge", "nr_zona", "nr_local", "h3"),
     "votos_local": ("ano", "sq_candidato", "cd_mun_ibge", "nr_zona", "nr_local", "votos"),
-    "receitas": (
-        "ano", "sq_candidato", "ds_fonte_receita", "ds_origem_receita", "ds_natureza_receita",
-        "vr_receita", "sq_candidato_doador",
+    "receitas_candidatos": (
+        "nr_turno", "tp_prestacao_contas", "sq_candidato", "ds_fonte_receita",
+        "ds_origem_receita", "ds_natureza_receita", "vr_receita", "dt_geracao",
     ),
-    "despesas": (
-        "ano", "sq_candidato", "ds_origem_despesa", "vr_despesa_contratada", "vr_despesa_paga",
+    "despesas_contratadas_candidatos": (
+        "nr_turno", "tp_prestacao_contas", "sq_candidato", "ds_origem_despesa",
+        "vr_despesa_contratada", "dt_geracao",
+    ),
+    "despesas_pagas_candidatos": (
+        "nr_turno", "tp_prestacao_contas", "sq_candidato", "ds_origem_despesa",
+        "vr_pagto_despesa", "dt_geracao",
     ),
     "ipca": ("mes", "variacao"),
 }  # fmt: skip
@@ -115,6 +121,7 @@ class RepositorioDuckDB:
             raise DadosIndisponiveis(f"consulta_cand ausente em {dir_dados}")
         try:
             self._prestacao = self._ler_prestacao(dir_dados / "manifesto.json")
+            self._prestacao_dados: dict[int, str] = {}
             # Somente leitura na prática: banco em memória + views sobre Parquet (nunca escrito);
             # lock_configuration impede que consultas mudem threads/limites depois.
             self._con = duckdb.connect(":memory:")
@@ -131,6 +138,7 @@ class RepositorioDuckDB:
             self._ipca: list[VariacaoIpca] | None = None
             self._tem_h3 = bool(fontes["locais_h3"])
             self._criar_views_compostas(fontes)
+            self._criar_views_prestacao(fontes)
             self._dt = self._dt_geracao_dos_dados(fontes)
             self._con.execute("SET lock_configuration = true")
         except (duckdb.Error, KeyError, ValueError) as erro:
@@ -164,6 +172,9 @@ class RepositorioDuckDB:
         if any((dir_dados / nome).glob("ano=*/*.parquet")):
             caminho = str(dir_dados / nome / "ano=*" / "*.parquet").replace("'", "''")
             return f"read_parquet('{caminho}', hive_partitioning = true, union_by_name = true)"
+        if any((dir_dados / nome).glob("*.parquet")):  # ex.: ipca/ipca.parquet
+            pasta = str(dir_dados / nome / "*.parquet").replace("'", "''")
+            return f"read_parquet('{pasta}')"
         flat = dir_dados / f"{nome}.parquet"
         if flat.is_file():
             return f"read_parquet('{str(flat).replace(chr(39), chr(39) * 2)}')"
@@ -205,6 +216,57 @@ class RepositorioDuckDB:
                 f"{juncao} WHERE l.nr_turno = 1"
             )
             self._view("locais_votacao", select)
+
+    def _criar_views_prestacao(self, fontes: dict[str, str | None]) -> None:
+        """`receitas` e `despesas` a partir dos datasets de prestação de contas do ETL."""
+        receitas = fontes["receitas_candidatos"]
+        if receitas:
+            existentes = {
+                str(c[0])
+                for c in self._con.execute(f"DESCRIBE SELECT * FROM {receitas}").fetchall()  # noqa: S608
+            }
+            # O agregado do TSE não traz o doador; sem ele, transferências entre candidatos
+            # não são abatidas do grupo (o serviço de contas trata `None` como doador externo).
+            doador = (
+                "sq_candidato_doador" if "sq_candidato_doador" in existentes else "NULL::BIGINT"
+            )
+            self._view(
+                "receitas",
+                "SELECT ano, sq_candidato, ds_fonte_receita, ds_origem_receita,"  # noqa: S608
+                f" ds_natureza_receita, vr_receita, {doador} AS sq_candidato_doador"
+                f" FROM {receitas} WHERE nr_turno = 1",
+            )
+            self._prestacao_dados = self._prestacao_da_base(receitas)
+        contratadas, pagas = (
+            fontes["despesas_contratadas_candidatos"],
+            fontes["despesas_pagas_candidatos"],
+        )
+        if contratadas and pagas:
+            # Paga ausente = 0 (spec): contratada sem pagamento registrado não é dado faltante.
+            self._view(
+                "despesas",
+                "WITH c AS (SELECT ano, sq_candidato, ds_origem_despesa,"  # noqa: S608
+                f" SUM(vr_despesa_contratada) AS contratada FROM {contratadas}"
+                " WHERE nr_turno = 1 GROUP BY ALL),"
+                " p AS (SELECT ano, sq_candidato, ds_origem_despesa,"
+                f" SUM(vr_pagto_despesa) AS paga FROM {pagas} WHERE nr_turno = 1 GROUP BY ALL)"
+                " SELECT ano, sq_candidato, ds_origem_despesa,"
+                " COALESCE(c.contratada, 0) AS vr_despesa_contratada,"
+                " COALESCE(p.paga, 0) AS vr_despesa_paga"
+                " FROM c FULL JOIN p USING (ano, sq_candidato, ds_origem_despesa)",
+            )
+
+    def _prestacao_da_base(self, receitas: str) -> dict[int, str]:
+        """Ano → FINAL se ≥ 95 % dos registros são prestação final; senão PARCIAL.
+
+        O TSE mistura situações por candidato (FINAL, PARCIAL, RELATÓRIO FINANCEIRO…); em 2026 a
+        quase totalidade ainda é parcial, e rotular o ano como FINAL esconderia isso.
+        """
+        linhas = self._con.execute(
+            "SELECT ano, avg((upper(tp_prestacao_contas) = 'FINAL')::INT)"  # noqa: S608
+            f" FROM {receitas} WHERE nr_turno = 1 GROUP BY ano"
+        ).fetchall()
+        return {int(a): "FINAL" if float(f) >= 0.95 else "PARCIAL" for a, f in linhas}
 
     def _dt_geracao_dos_dados(self, fontes: dict[str, str | None]) -> str:
         """Maior `dt_geracao` entre os datasets com contrato: o dado manda, não o manifesto."""
@@ -252,7 +314,9 @@ class RepositorioDuckDB:
 
     def tp_prestacao_contas(self, ano: int) -> str:
         """Situação da prestação de contas no ano (manifesto)."""
-        return self._prestacao.get(ano, "FINAL")
+        # Manifesto manda (decisão humana); senão a proporção real no dado; sem nenhum, PARCIAL
+        # (o lado seguro: o front avisa que a prestação pode estar incompleta).
+        return self._prestacao.get(ano) or self._prestacao_dados.get(ano, "PARCIAL")
 
     def anos(self) -> list[int]:
         """Anos distintos."""
