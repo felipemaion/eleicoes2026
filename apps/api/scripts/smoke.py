@@ -41,7 +41,12 @@ def _get(base: str, caminho: str, **params: object) -> tuple[int, Any, float]:
         with urllib.request.urlopen(url, timeout=30) as r:  # noqa: S310 - base controlada
             return r.status, json.loads(r.read()), time.perf_counter() - ini
     except urllib.error.HTTPError as erro:
-        return erro.code, json.loads(erro.read() or b"null"), time.perf_counter() - ini
+        bruto = erro.read().decode(errors="replace")
+        try:
+            corpo = json.loads(bruto)
+        except json.JSONDecodeError:
+            corpo = bruto[:200]  # 500 do servidor vem como texto
+        return erro.code, corpo, time.perf_counter() - ini
 
 
 def _exigir(condicao: bool, msg: str) -> None:
@@ -181,6 +186,7 @@ def main() -> int:
     ap.add_argument("--repeticoes", type=int, default=20)
     args = ap.parse_args()
     falhas = 0
+    medidas = latencias(args.base, args.repeticoes)  # antes de tudo: a 1ª chamada é a fria
     for nome, fn in verificar(args.base).items():
         try:
             fn()
@@ -189,7 +195,7 @@ def main() -> int:
             falhas += 1
             print(f"FALHA {nome}: {erro!r}")
     print(f"\n{'endpoint':30} {'frio':>8} {'p50':>8} {'p95':>8}  meta")
-    for nome, frio, p50, p95, ok in latencias(args.base, args.repeticoes):
+    for nome, frio, p50, p95, ok in medidas:
         marca = "ok" if ok else "FORA"
         print(f"{nome:30} {frio * 1000:6.0f}ms {p50 * 1000:6.0f}ms {p95 * 1000:6.0f}ms  {marca}")
         falhas += 0 if ok else 1

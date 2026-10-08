@@ -130,7 +130,7 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
                 "FINANCEIRO",
                 8000.0,
             ),
-            (2026, 3, "OUTROS RECURSOS", "Recursos de pessoas físicas", "ESTIMADO", 2000.0),
+            (2026, 3, "OUTROS RECURSOS", "Recursos de pessoas físicas", "ESTIMÁVEL", 2000.0),
             (2026, 3, "OUTROS RECURSOS", "Recursos de outros candidatos", "FINANCEIRO", 7000.0),
             (
                 2026,
