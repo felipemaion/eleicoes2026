@@ -16,11 +16,13 @@ export type Tema = {
   readonly textoSuave: string;
   readonly borda: string;
   readonly destaque: string;
+  /** Áreas sem dado no mapa/legenda: cinza neutro, fora da escala de dados. */
+  readonly semDado: string;
 };
 
 export const TEMAS = {
-  claro: { fundo: "#ffffff", superficie: "#f4f6f8", texto: "#1a1d21", textoSuave: "#4a5360", borda: "#c9d0d8", destaque: "#084594" },
-  escuro: { fundo: "#121417", superficie: "#1c2025", texto: "#eceff1", textoSuave: "#aab4be", borda: "#39414a", destaque: "#9ecae1" },
+  claro: { fundo: "#ffffff", superficie: "#f4f6f8", texto: "#1a1d21", textoSuave: "#4a5360", borda: "#c9d0d8", destaque: "#084594", semDado: "#c3c9d0" },
+  escuro: { fundo: "#121417", superficie: "#1c2025", texto: "#eceff1", textoSuave: "#aab4be", borda: "#39414a", destaque: "#9ecae1", semDado: "#4b535c" },
 } as const satisfies Record<string, Tema>;
 
 function luminancia(hex: string): number {

@@ -41,7 +41,7 @@ export function criarLegenda(escala: Escala, meta: MetaIndicador, opcoes: Opcoes
     svg.append(no("text", { class: "quebra", x: (i + 1) * w, y: 62, "text-anchor": "middle", fill: "var(--cor-texto)", "font-size": 11 }, fmt(q)));
   });
   svg.append(
-    no("rect", { class: "sem-dado", x: n * w + 12, y: 34, width: 12, height: 12, fill: escala.corSemDado, stroke: "var(--cor-borda)" }),
+    no("rect", { class: "sem-dado", x: n * w + 12, y: 34, width: 12, height: 12, fill: "var(--cor-sem-dado)", stroke: "var(--cor-borda)" }),
     no("text", { x: n * w + 28, y: 44, fill: "var(--cor-texto)", "font-size": 11 }, "sem dado"),
   );
   return svg;

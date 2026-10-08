@@ -33,6 +33,15 @@ describe("paletas", () => {
     }
   });
 
+  it("cor de 'sem dado' é token de tema, distinguível do fundo, da superfície e da classe mais clara", () => {
+    for (const t of Object.values(TEMAS)) {
+      expect(contraste(t.semDado, t.fundo)).toBeGreaterThanOrEqual(1.5);
+      expect(contraste(t.semDado, t.superficie)).toBeGreaterThanOrEqual(1.2);
+    }
+    expect(contraste(TEMAS.claro.semDado, PALETAS.sequencial[0])).toBeGreaterThanOrEqual(1.3);
+    expect(TEMAS.claro.semDado).not.toBe(TEMAS.escuro.semDado);
+  });
+
   it("contraste calcula valores de referência", () => {
     expect(contraste("#000000", "#ffffff")).toBeCloseTo(21, 0);
   });

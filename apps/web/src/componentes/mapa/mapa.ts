@@ -14,6 +14,7 @@ import { expressaoCor, validarCoropletico, type Escala, type MetaIndicador } fro
 import { criarLegenda } from "../escalas/legenda";
 import { expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoes";
 import { limitesDe, type Limites } from "./geo";
+import { limitesDosIds } from "../../dados/limites-uf";
 import { textoTooltip, type DetalheLocal } from "./tooltip";
 
 /** Hachura diagonal 8×8 para áreas de n baixo; a cor vem do tema, então é lida na hora de desenhar. */
@@ -176,7 +177,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     else mapa.addSource(idFonte(n), { type: "vector", url: `${PROTOCOLO_PMTILES}://${f.url}`, promoteId: f.idPropriedade });
     const camada = f.tipo === "pmtiles" ? { "source-layer": f.camadaFonte } : {};
     const destaque: ExpressionSpecification = ["case", ["boolean", ["feature-state", "destaque"], false], 3, 0.6];
-    mapa.addLayer({ id: idFill(n), type: "fill", source: idFonte(n), ...camada, paint: { "fill-color": cssVar("--cor-superficie", "#d9d9d9"), "fill-opacity": 0.92 } }, camadaPontosAcima());
+    mapa.addLayer({ id: idFill(n), type: "fill", source: idFonte(n), ...camada, paint: { "fill-color": cssVar("--cor-sem-dado", "#c3c9d0"), "fill-opacity": 0.92 } }, camadaPontosAcima());
     if (!mapa.hasImage(IMAGEM_HACHURA)) mapa.addImage(IMAGEM_HACHURA, imagemHachura(cssVar("--cor-texto", "#1b2430")));
     // fill-pattern não aceita feature-state, mas fill-opacity aceita: a hachura existe em todos e só aparece onde nbaixo.
     mapa.addLayer({
@@ -369,39 +370,27 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     if (tabela.open && tabelaPendente) { const f = tabelaPendente; tabelaPendente = null; f(); }
   });
 
-  /** Enquadra as áreas com valor (ex.: a UF filtrada). PMTiles não trazem limites por UF; saem das feições já carregadas. */
-  function enquadrarValores(n: Nivel, ids: ReadonlySet<string>): void {
-    const f = opcoes.fontes[n];
-    if (f?.tipo !== "pmtiles" || ids.size === 0) return;
-    const caixa: Limites = [Infinity, Infinity, -Infinity, -Infinity];
-    const alcancar = (c: unknown): void => {
-      if (!Array.isArray(c)) return;
-      if (typeof c[0] === "number" && typeof c[1] === "number") {
-        caixa[0] = Math.min(caixa[0], c[0]); caixa[1] = Math.min(caixa[1], c[1]);
-        caixa[2] = Math.max(caixa[2], c[0]); caixa[3] = Math.max(caixa[3], c[1]);
-      } else c.forEach(alcancar);
-    };
-    for (const x of mapa.querySourceFeatures(idFonte(n), { sourceLayer: f.camadaFonte })) {
-      if (ids.has(String(x.properties[f.idPropriedade]))) alcancar((x.geometry as { coordinates?: unknown }).coordinates);
-    }
-    if (caixa.every(Number.isFinite)) mapa.fitBounds(caixa, { padding: 24, duration: 0 });
+  /** Enquadra a(s) UF(s) dos ids com valor pela tabela estática: determinístico, não depende de tiles já renderizados. */
+  function enquadrarValores(ids: ReadonlySet<string>): void {
+    const caixa = limitesDosIds(ids);
+    if (caixa) mapa.fitBounds(caixa, { padding: 24, duration: 0 });
   }
 
-  let tentativasEnquadrar = 0;
-  /** Espera os tiles chegarem (idle) e enquadra; tenta poucas vezes para não girar em tela sem feição. */
-  function agendarEnquadramento(n: Nivel, ids: ReadonlySet<string>): void {
-    const id = ++tentativasEnquadrar;
-    const tentar = (k: number): void => {
-      if (id !== tentativasEnquadrar || n !== nivel) return;
-      mapa.once("idle", () => {
-        if (id !== tentativasEnquadrar) return;
-        const antes = mapa.getBounds().toString();
-        enquadrarValores(n, ids);
-        if (k < 3 && mapa.getBounds().toString() === antes) tentar(k + 1);
-      });
-    };
-    tentar(0);
-  }
+  /** MapLibre não lê var(): resolve o token `--cor-sem-dado` do tema vigente a cada aplicação. */
+  const corDoPreenchimento = (escala: Escala): ExpressionSpecification =>
+    expressaoCor({ ...escala, corSemDado: cssVar("--cor-sem-dado", escala.corSemDado) }) as ExpressionSpecification;
+  const escalaAtual = new Map<Nivel, Escala>();
+  const temaEscuro = window.matchMedia("(prefers-color-scheme: dark)");
+  /** Troca de tema do sistema: repinta fundo e áreas sem dado sem recarregar geometria. */
+  const aoTrocarTema = (): void => {
+    if (!mapa.getLayer("fundo")) return;
+    mapa.setPaintProperty("fundo", "background-color", cssVar("--cor-superficie", "#f4f6f8"));
+    for (const n of adicionadas) {
+      const e = escalaAtual.get(n);
+      mapa.setPaintProperty(idFill(n), "fill-color", e ? corDoPreenchimento(e) : cssVar("--cor-sem-dado", "#c3c9d0"));
+    }
+  };
+  temaEscuro.addEventListener("change", aoTrocarTema);
 
   function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala, detalhes?: Readonly<Record<string, DetalheParcial>>): void {
     const f = garantirNivel(n);
@@ -409,7 +398,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     const sl = f.tipo === "pmtiles" ? { sourceLayer: f.camadaFonte } : {};
     mapa.removeFeatureState({ source: fonte, ...sl });
     for (const [id, valor] of Object.entries(valores)) mapa.setFeatureState({ source: fonte, ...sl, id }, { valor, nbaixo: detalhes?.[id]?.nBaixo === true });
-    mapa.setPaintProperty(idFill(n), "fill-color", expressaoCor(escala) as ExpressionSpecification);
+    escalaAtual.set(n, escala);
+    mapa.setPaintProperty(idFill(n), "fill-color", corDoPreenchimento(escala));
     destacado = null;
     stats.atualizacoesDeValores += 1;
   }
@@ -425,7 +415,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       if (detalhes) detalhesPorNivel.set(nivel, { ...detalhes });
       metaAtual = meta;
       const n = nivel;
-      quandoPronto(() => { aplicarValores(n, finitos, escala, detalhes); agendarEnquadramento(n, new Set(Object.keys(finitos))); });
+      quandoPronto(() => { aplicarValores(n, finitos, escala, detalhes); if (opcoes.fontes[n]?.tipo === "pmtiles") enquadrarValores(new Set(Object.keys(finitos))); });
       areaLegenda.replaceChildren(legenda, legendaHachura());
       const resumo = document.createElement("summary");
       resumo.textContent = `Tabela de valores: ${meta.nome}`;
@@ -483,6 +473,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       mapa.off("idle", aoOciosoColherNomes);
       ouvintesMapa.splice(0).forEach((f) => { f(); });
       fila.length = 0;
+      temaEscuro.removeEventListener("change", aoTrocarTema);
       mapa.remove();
       container.replaceChildren();
     },
