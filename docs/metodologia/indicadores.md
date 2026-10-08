@@ -443,7 +443,7 @@ fechar os mapeamentos.
 ### 8.2 Escalas de cor
 | Indicador | Tipo | Paleta (daltônico-segura) | Quebras |
 |---|---|---|---|
-| Penetração, % válidos | sequencial | viridis (ou ColorBrewer YlGnBu) | 5 quantis do **conjunto 2022+2026** (excluindo `n_baixo`), arredondados; **as mesmas nos dois anos** |
+| Penetração, % válidos | sequencial | viridis (ou ColorBrewer YlGnBu) | 5 quantis do **conjunto 2022+2026** (excluindo `n_baixo`), arredondados; **as mesmas nos dois anos** ([§8.3](#quebras-comuns)) |
 | LQ | divergente, log₂, centro 1 | ColorBrewer PuOr | ¼, ½, 0,8, 1,25, 2, 4 |
 | Δ penetração, swing | divergente, centro 0 | ColorBrewer BrBG (verde = ganho) | simétricas: ±(máx \|Δ\| arredondado) / 3, 5 ou 7 classes |
 | Retenção | divergente, log, centro 1 | BrBG | ¼, ½, 0,8, 1,25, 2, 4 |
@@ -455,6 +455,35 @@ fechar os mapeamentos.
 | Sem dado (`null`) | — | cinza claro neutro, distinto de qualquer classe | — |
 
 Bivariado 3×3 (penetração 2022 × 2026) e Dorling: fase 2 (`cuidados.md`).
+
+<a id="quebras-comuns"></a>
+### 8.3 Quebras comuns 2022 + 2026 (escalas sequenciais)
+- **Para quê:** a mesma cor significa o mesmo valor nos dois mapas (penetração, % válidos). Uma
+  chamada por indicador × cargo × recorte (UF ou Brasil) × unidade espacial; o backend passa os
+  valores dos dois anos e usa as mesmas quebras nas duas respostas (T-B02: `/mapa`, `/comparativo`).
+- **Entrada:** `valores_por_ano = {ano: tabela}`, cada tabela com `valor` (a taxa) e `n_baixo`;
+  `k` classes (padrão **5**); `excluir_n_baixo` (padrão **sim**).
+- **Conjunto de referência P:** valores **não nulos** de todos os anos, sem as unidades com
+  `n_baixo = true` (se `excluir_n_baixo`). Cada unidade-ano pesa 1 (sem ponderar por aptos: a
+  escala classifica áreas, não eleitores). `null` é "sem dado" e não entra.
+- **Quantis:** `q_j = quantil(P, j/k)`, `j = 1..k−1`, interpolação **linear** (Hyndman–Fan tipo 7:
+  posição `h = (|P| − 1)·p`, `q = P₍⌊h⌋₎ + (h − ⌊h⌋)(P₍⌊h⌋+1₎ − P₍⌊h⌋₎)`, P ordenado a partir de 0;
+  padrão de numpy, polars e R).
+- **Arredondamento:** cada `q_j` a **2 algarismos significativos** (meio para cima, em decimal);
+  se o arredondamento fundir dois quantis brutos **distintos**, sobe-se para 3, 4… até 6
+  algarismos (todos os limiares com a mesma precisão).
+- **Limpeza:** remove-se limiar repetido (empates nos dados, p. ex. muitos zeros) e limiar fora de
+  `(min P, max P]` (deixaria classe vazia). Resultado: lista **estritamente crescente** de até
+  `k − 1` limiares; com empates, menos classes — a legenda usa `len(limiares) + 1` classes.
+- **Classes:** `[b_j, b_{j+1})`, fechadas à esquerda — `valor < b_1` → classe 0, `valor ≥ b_{k−1}`
+  → última (convenção de `d3.scaleThreshold`). Unidades `n_baixo` são classificadas com as mesmas
+  quebras e hachuradas.
+- **Falha alto:** `k < 2`; nenhum ano; coluna ausente; `n_baixo` nulo; valor não finito (NaN/inf
+  — indefinido deve vir como `null`); `|P| < 2k` ("poucos valores para k classes"); nenhum
+  limiar restante (sem variação).
+- **Limitações:** quantis do conjunto pooled — se um ano tiver valores muito maiores, ele ocupa as
+  classes de cima (é o efeito desejado: mostrar a mudança). Ano com muito mais unidades pesa mais.
+- Vetor: `vetores/quebras_comuns.json`
 
 ---
 
@@ -479,6 +508,12 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
   publicar os valores distintos de `DS_ORIGEM_DESPESA` (pendência).
 - **Grupos:** `grupos.agregar_grupo` recusa cargos ou turnos misturados; `receitas_grupo` exclui
   receita de "outros candidatos" cujo doador é membro do grupo.
+- **Revisão (T-A06):** `votos_nominais` recusa `nr_turno`/`cd_cargo` com mais de um valor (salvo
+  se a coluna estiver nas `chaves`). Custo por voto: `despesa_paga` nula com contratada não nula
+  = **0** (nenhuma linha em `despesas_pagas` = nada pago); sem contas, segue nulo.
+  `evolucao.evolucao` exige `cd_cargo` e recusa o Senado (§1.8); AMC presente num ano só deixa
+  todas as diferenças nulas (ausência ≠ zero). Escalas sequenciais: `espacial.quebras_comuns`
+  ([§8.3](#quebras-comuns)).
 
 <a id="referencias"></a>
 ## 9. Referências

@@ -179,7 +179,10 @@ def _evolucao(entrada: dict[str, Any]) -> list[dict[str, Any]]:
         {"cd_mun_ibge": [int(k) for k in entrada["amc"]], "amc": list(entrada["amc"].values())}
     )
     df = evolucao.evolucao(
-        pl.DataFrame(entrada["ano_2022"]), pl.DataFrame(entrada["ano_2026"]), amc
+        pl.DataFrame(entrada["ano_2022"]),
+        pl.DataFrame(entrada["ano_2026"]),
+        amc,
+        cd_cargo=entrada["cd_cargo"],
     )
     return _linhas(df.sort("amc"))
 
@@ -202,6 +205,17 @@ def _por_candidato(entrada: dict[str, Any]) -> dict[str, Any]:
     return saida
 
 
+def _quebras(entrada: dict[str, Any]) -> dict[str, Any]:
+    tabelas = {
+        int(ano): pl.DataFrame(linhas, schema={"valor": pl.Float64, "n_baixo": pl.Boolean})
+        for ano, linhas in entrada["valores_por_ano"].items()
+    }
+    limiares = espacial.quebras_comuns(
+        tabelas, k=entrada["k"], excluir_n_baixo=entrada["excluir_n_baixo"]
+    )
+    return {"quebras": limiares}
+
+
 ADAPTADORES: dict[str, Adaptador] = {
     "votos_nominais": _votos_nominais,
     "pct_validos": _municipal_e_uf,
@@ -221,6 +235,7 @@ ADAPTADORES: dict[str, Adaptador] = {
     "evolucao": _evolucao,
     "sobreposicao_redutos": _redutos,
     "por_candidato": _por_candidato,
+    "quebras_comuns": _quebras,
 }
 
 

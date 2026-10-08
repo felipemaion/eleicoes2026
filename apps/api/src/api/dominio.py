@@ -17,6 +17,21 @@ class Cargo(StrEnum):
     DEPUTADO_ESTADUAL = "DEPUTADO ESTADUAL"
     DEPUTADO_DISTRITAL = "DEPUTADO DISTRITAL"
 
+    @property
+    def codigo(self) -> int:
+        """`cd_cargo` do TSE (1 presidente, 3 governador, 5 senador, 6/7/8 deputados)."""
+        return _CODIGO_CARGO[self]
+
+
+_CODIGO_CARGO = {
+    Cargo.PRESIDENTE: 1,
+    Cargo.GOVERNADOR: 3,
+    Cargo.SENADOR: 5,
+    Cargo.DEPUTADO_FEDERAL: 6,
+    Cargo.DEPUTADO_ESTADUAL: 7,
+    Cargo.DEPUTADO_DISTRITAL: 8,
+}
+
 
 class UF(StrEnum):
     """Unidades da federação (sem exterior: `ZZ` não tem mapa)."""

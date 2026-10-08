@@ -114,3 +114,42 @@ def test_h3_marca_n_baixo_pela_taxa_da_uf() -> None:
     )
     df = espacial.agregar_h3(locais, "h3_r8")
     assert df["n_baixo"].to_list() == [True, False]
+
+
+def _anos(**valores: list[float]) -> dict[int, pl.DataFrame]:
+    return {
+        int(ano.removeprefix("a")): pl.DataFrame(
+            {"valor": v, "n_baixo": [False] * len(v)},
+            schema={"valor": pl.Float64, "n_baixo": pl.Boolean},
+        )
+        for ano, v in valores.items()
+    }
+
+
+def test_quebras_valor_nao_finito_falha() -> None:
+    anos = _anos(a2022=[float(i) for i in range(10)] + [float("inf")])
+    with pytest.raises(ValueError, match="não finito"):
+        espacial.quebras_comuns(anos)
+
+
+def test_quebras_nan_falha() -> None:
+    anos = _anos(a2022=[float(i) for i in range(10)] + [float("nan")])
+    with pytest.raises(ValueError, match="não finito"):
+        espacial.quebras_comuns(anos)
+
+
+def test_quebras_coluna_ausente_falha() -> None:
+    with pytest.raises(ValueError, match="colunas ausentes"):
+        espacial.quebras_comuns({2022: pl.DataFrame({"valor": [1.0] * 10})})
+
+
+def test_quebras_sem_exclusao_dispensa_n_baixo() -> None:
+    tabela = pl.DataFrame({"valor": [float(i) for i in range(1, 11)]})
+    assert espacial.quebras_comuns({2026: tabela}, k=2, excluir_n_baixo=False) == [5.5]
+
+
+def test_quebras_coluna_configuravel_e_estritamente_crescente() -> None:
+    tabela = pl.DataFrame({"pct": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0]})
+    quebras = espacial.quebras_comuns({2026: tabela}, excluir_n_baixo=False, coluna="pct")
+    assert quebras == sorted(set(quebras))
+    assert all(q > 0 for q in quebras)

@@ -1,0 +1,869 @@
+{
+  "indicador": "quebras_comuns",
+  "spec": "docs/metodologia/indicadores.md#quebras-comuns",
+  "versao": 1,
+  "descricao": "Limiares comuns 2022+2026 para escalas sequenciais: quantis tipo 7 do conjunto pooled (sem null e, por padrão, sem n_baixo), 2 alg. significativos (sobe se fundir), únicos e em (min, max]. Saída: lista crescente de até k-1 limiares; classes [b_j, b_j+1).",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "chaves de valores_por_ano são o ano como texto (JSON); null = sem dado, fora do conjunto",
+  "casos": [
+    {
+      "nome": "pooled_dois_anos",
+      "descricao": "P = 20 valores (2 n_baixo e 1 null fora); quintis tipo 7 arredondados a 2 alg. significativos.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.1,
+              "n_baixo": false
+            },
+            {
+              "valor": null,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.8,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.25,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 12.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 15.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.1,
+              "n_baixo": true
+            }
+          ],
+          "2026": [
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 11.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 13.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 18.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 22.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 40.0,
+              "n_baixo": true
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          2.9,
+          5.2,
+          7.7,
+          13.0
+        ]
+      }
+    },
+    {
+      "nome": "sem_excluir_n_baixo",
+      "descricao": "Mesma entrada, n_baixo incluído: P = 22 valores.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": false,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.1,
+              "n_baixo": false
+            },
+            {
+              "valor": null,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.8,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.25,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 12.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 15.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.1,
+              "n_baixo": true
+            }
+          ],
+          "2026": [
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 11.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 13.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 18.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 22.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 40.0,
+              "n_baixo": true
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          2.5,
+          5.1,
+          7.9,
+          13.0
+        ]
+      }
+    },
+    {
+      "nome": "k_3",
+      "descricao": "Tercis: 2 limiares.",
+      "entrada": {
+        "k": 3,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.1,
+              "n_baixo": false
+            },
+            {
+              "valor": null,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.8,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.25,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 12.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 15.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.1,
+              "n_baixo": true
+            }
+          ],
+          "2026": [
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 11.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 13.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 18.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 22.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 40.0,
+              "n_baixo": true
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          4.3,
+          9.4
+        ]
+      }
+    },
+    {
+      "nome": "empates_em_zero",
+      "descricao": "12 zeros em 20: q1..q3 = 0 (≤ min, removidos) → menos classes.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.6,
+              "n_baixo": false
+            }
+          ],
+          "2026": [
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.0,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          0.12,
+          1.2
+        ]
+      }
+    },
+    {
+      "nome": "arredondamento_sobe_precisao",
+      "descricao": "Com 2 e 3 alg. significativos os quintis se fundem (100); sobe para 4 alg.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 100.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.5,
+              "n_baixo": false
+            }
+          ],
+          "2026": [
+            {
+              "valor": 100.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.8,
+              "n_baixo": false
+            },
+            {
+              "valor": 100.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 101.0,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          100.3,
+          100.5,
+          100.6,
+          100.8
+        ]
+      }
+    },
+    {
+      "nome": "um_ano_so",
+      "descricao": "Só 2026 disponível: quebras do próprio ano (10 valores = 2k).",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2026": [
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 11.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 13.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 18.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 22.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 40.0,
+              "n_baixo": true
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          3.9,
+          6.4,
+          9.4,
+          15.0
+        ]
+      }
+    },
+    {
+      "nome": "meio_para_cima",
+      "descricao": "Mediana 0,45 → 0,45 (2 alg.); conferir que não vira 0,4/0,5.",
+      "entrada": {
+        "k": 2,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.1,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.4,
+              "n_baixo": false
+            }
+          ],
+          "2026": [
+            {
+              "valor": 0.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.6,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.7,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.8,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "saida": {
+        "quebras": [
+          0.45
+        ]
+      }
+    },
+    {
+      "nome": "poucos_valores",
+      "descricao": "9 valores < 2k = 10.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 1.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            }
+          ],
+          "2026": [
+            {
+              "valor": 4.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.0,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "erro": "ValueError: poucos valores"
+    },
+    {
+      "nome": "sem_variacao",
+      "descricao": "Todos iguais: nenhum limiar em (min, max].",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            }
+          ],
+          "2026": [
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "erro": "ValueError: sem variação"
+    },
+    {
+      "nome": "n_baixo_nulo",
+      "descricao": "n_baixo deve ser verdadeiro ou falso.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 1.0,
+              "n_baixo": null
+            },
+            {
+              "valor": 2.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 6.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 8.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 10.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 11.0,
+              "n_baixo": false
+            }
+          ]
+        }
+      },
+      "erro": "ValueError: n_baixo nulo"
+    },
+    {
+      "nome": "k_menor_que_2",
+      "descricao": "Uma classe só não é escala.",
+      "entrada": {
+        "k": 1,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {
+          "2022": [
+            {
+              "valor": 0.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 1.2,
+              "n_baixo": false
+            },
+            {
+              "valor": 2.3,
+              "n_baixo": false
+            },
+            {
+              "valor": 3.1,
+              "n_baixo": false
+            },
+            {
+              "valor": null,
+              "n_baixo": false
+            },
+            {
+              "valor": 4.8,
+              "n_baixo": false
+            },
+            {
+              "valor": 5.5,
+              "n_baixo": false
+            },
+            {
+              "valor": 7.25,
+              "n_baixo": false
+            },
+            {
+              "valor": 9.9,
+              "n_baixo": false
+            },
+            {
+              "valor": 12.4,
+              "n_baixo": false
+            },
+            {
+              "valor": 15.0,
+              "n_baixo": false
+            },
+            {
+              "valor": 0.1,
+              "n_baixo": true
+            }
+          ]
+        }
+      },
+      "erro": "ValueError: k deve ser"
+    },
+    {
+      "nome": "nenhum_ano",
+      "descricao": "Entrada vazia.",
+      "entrada": {
+        "k": 5,
+        "excluir_n_baixo": true,
+        "valores_por_ano": {}
+      },
+      "erro": "ValueError: nenhum ano"
+    }
+  ]
+}

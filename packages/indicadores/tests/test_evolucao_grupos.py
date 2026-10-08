@@ -16,19 +16,19 @@ def _ano(votos: list[int]) -> pl.DataFrame:
 def test_municipio_fora_da_tabela_amc_falha() -> None:
     amc = pl.DataFrame({"cd_mun_ibge": [1], "amc": [1]})
     with pytest.raises(ValueError, match="sem AMC"):
-        evolucao.evolucao(_ano([1, 2]), _ano([1, 2]), amc)
+        evolucao.evolucao(_ano([1, 2]), _ano([1, 2]), amc, cd_cargo=6)
 
 
 def test_unidade_so_num_ano_fica_nula() -> None:
     a26 = _ano([5, 5]).filter(pl.col("cd_mun_ibge") == 1)
-    df = evolucao.evolucao(_ano([1, 2]), a26, AMC).sort("amc")
+    df = evolucao.evolucao(_ano([1, 2]), a26, AMC, cd_cargo=6).sort("amc")
     assert df["delta_penetracao"].to_list()[1] is None
 
 
 def test_evolucao_por_entidade() -> None:
     a22 = _ano([1, 2]).with_columns(pl.lit("g").alias("grupo"))
     a26 = _ano([2, 2]).with_columns(pl.lit("g").alias("grupo"))
-    df = evolucao.evolucao(a22, a26, AMC, por=("grupo",)).sort("amc")
+    df = evolucao.evolucao(a22, a26, AMC, por=("grupo",), cd_cargo=6).sort("amc")
     assert df["ganho_absoluto"].to_list() == [1, 0]
 
 
@@ -131,3 +131,24 @@ def test_receitas_do_grupo_excluem_transferencia_interna() -> None:
     )
     assert linha["receita_total"] == 120.0
     assert linha["receita_outros_candidatos"] == 20.0
+
+
+@pytest.mark.parametrize("cd_cargo", [1, 3, 6, 7, 8])
+def test_evolucao_aceita_cargos_comparaveis(cd_cargo: int) -> None:
+    assert evolucao.evolucao(_ano([1, 2]), _ano([2, 2]), AMC, cd_cargo=cd_cargo).height == 2
+
+
+def test_evolucao_recusa_senado() -> None:
+    with pytest.raises(ValueError, match="Senado não entra em evolução"):
+        evolucao.evolucao(_ano([1, 2]), _ano([1, 2]), AMC, cd_cargo=evolucao.CD_CARGO_SENADOR)
+
+
+def test_amc_so_num_ano_tem_ganho_e_retencao_nulos() -> None:
+    a26 = pl.DataFrame({"cd_mun_ibge": [1], "aptos": [100], "validos": [80], "votos": [5]})
+    linha = evolucao.evolucao(_ano([1, 2]), a26, AMC, cd_cargo=6).filter(pl.col("amc") == 2)
+    # Ausência num ano é "sem dado", não zero: nada de ganho = −votos_2022.
+    assert linha.select("ganho_absoluto", "retencao", "delta_penetracao").row(0) == (
+        None,
+        None,
+        None,
+    )

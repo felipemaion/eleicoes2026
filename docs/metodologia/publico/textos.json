@@ -280,6 +280,17 @@
       "fonte": "TSE — candidaturas e votação; grupos definidos no painel",
       "vetor": "por_candidato",
       "spec": "por-candidato-e-mesmos-candidatos"
+    },
+    "quebras_comuns": {
+      "titulo": "Faixas de cor do mapa",
+      "resumo": "As faixas de cor são as mesmas em 2022 e 2026: a mesma cor indica o mesmo valor nos dois mapas.",
+      "como_ler": "As faixas dividem os municípios dos dois anos, juntos, em cinco grupos de tamanho parecido (quintis), com limites arredondados. Assim, se 2026 aparece mais escuro que 2022, o desempenho de fato subiu. Quando muitos lugares têm o mesmo valor (por exemplo, zero voto), pode haver menos faixas.",
+      "unidade": "a do indicador do mapa (‰ ou %)",
+      "denominador": "não se aplica (limites da legenda)",
+      "cuidado": "Lugares com estimativa instável não entram no cálculo das faixas, mas são pintados com elas e hachurados.",
+      "fonte": "Cálculo do painel sobre os dados do TSE de 2022 e 2026",
+      "vetor": "quebras_comuns",
+      "spec": "quebras-comuns"
     }
   },
   "telas": {
@@ -287,36 +298,104 @@
       "titulo": "Partido Missão nas eleições de 2026",
       "subtitulo": "Votação, eleitos e gastos dos candidatos do Missão (14), comparados ao grupo do MBL em 2022. Escolha o cargo e o estado.",
       "nota_rodape": "Fonte: TSE (resultados e prestação de contas) e BCB (IPCA). Dados gerados pelo TSE em {dt_geracao}. Votos de legenda são do partido, não de candidatos. Metodologia em \"Como ler este painel\".",
-      "indicadores": ["votos_legenda", "penetracao", "pct_validos", "votacao_em_qe", "custo_por_voto", "pct_publico", "evolucao", "por_candidato"],
-      "avisos": ["contas_parciais", "legenda_nao_atribuida", "grupo_mbl_2022", "numero_14_em_2022", "resultado_sub_judice"]
+      "indicadores": [
+        "votos_legenda",
+        "penetracao",
+        "pct_validos",
+        "votacao_em_qe",
+        "custo_por_voto",
+        "pct_publico",
+        "evolucao",
+        "por_candidato"
+      ],
+      "avisos": [
+        "contas_parciais",
+        "legenda_nao_atribuida",
+        "grupo_mbl_2022",
+        "numero_14_em_2022",
+        "resultado_sub_judice"
+      ]
     },
     "mapa": {
       "titulo": "Onde vieram os votos",
       "subtitulo": "Penetração (votos por mil eleitores aptos) por município ou zona e densidade de votos em hexágonos.",
       "nota_rodape": "Fonte: TSE (votação por município, zona e seção; locais de votação). Dados gerados em {dt_geracao}. Cores mostram taxas; quantidades de votos aparecem em círculos ou hexágonos. Áreas hachuradas: estimativa instável.",
-      "indicadores": ["penetracao", "votos_nominais", "pct_validos", "lq", "n_baixo", "suavizacao_eb", "agregacao_h3", "votos_km2", "moran_lisa"],
-      "avisos": ["n_baixo", "rezoneamento", "legenda_nao_atribuida"]
+      "indicadores": [
+        "penetracao",
+        "votos_nominais",
+        "pct_validos",
+        "lq",
+        "n_baixo",
+        "suavizacao_eb",
+        "agregacao_h3",
+        "votos_km2",
+        "moran_lisa",
+        "quebras_comuns"
+      ],
+      "avisos": [
+        "n_baixo",
+        "rezoneamento",
+        "legenda_nao_atribuida"
+      ]
     },
     "gastos": {
       "titulo": "Quanto custaram as campanhas",
       "subtitulo": "Receitas por fonte, despesas e custo por voto dos candidatos do grupo, com valores de 2022 corrigidos pela inflação.",
       "nota_rodape": "Fonte: TSE (prestação de contas de candidatos) e BCB (IPCA, série 433). Contas de 2026 geradas em {dt_geracao}. Valores de 2022 em R$ de {mes_base_ipca}.",
-      "indicadores": ["receitas", "pct_publico", "pct_autofinanciamento", "custo_por_voto", "divida", "deflacao_ipca"],
-      "avisos": ["contas_parciais", "ipca"]
+      "indicadores": [
+        "receitas",
+        "pct_publico",
+        "pct_autofinanciamento",
+        "custo_por_voto",
+        "divida",
+        "deflacao_ipca"
+      ],
+      "avisos": [
+        "contas_parciais",
+        "ipca"
+      ]
     },
     "evolucao": {
       "titulo": "De 2022 para 2026",
       "subtitulo": "Como mudou o desempenho do grupo entre o MBL de 2022 e o Missão de 2026, no mesmo cargo, município a município.",
       "nota_rodape": "Fonte: TSE, eleições de 2022 e 2026, 1º turno. Comparação por município (IBGE) e hexágonos, nunca por zona eleitoral. Dados de 2026 gerados em {dt_geracao}.",
-      "indicadores": ["evolucao", "por_candidato", "sobreposicao_redutos", "penetracao", "lq"],
-      "avisos": ["rezoneamento", "grupo_mbl_2022", "numero_14_em_2022", "senado_fora_evolucao"]
+      "indicadores": [
+        "evolucao",
+        "por_candidato",
+        "sobreposicao_redutos",
+        "penetracao",
+        "lq",
+        "quebras_comuns"
+      ],
+      "avisos": [
+        "rezoneamento",
+        "grupo_mbl_2022",
+        "numero_14_em_2022",
+        "senado_fora_evolucao"
+      ]
     },
     "candidato": {
       "titulo": "Desempenho do candidato",
       "subtitulo": "Votação, perfil espacial do voto, redutos e gastos de campanha de uma candidatura.",
       "nota_rodape": "Fonte: TSE (resultados, candidaturas e prestação de contas). Dados gerados em {dt_geracao}. Valores de 2022 em R$ de {mes_base_ipca}.",
-      "indicadores": ["votos_nominais", "pct_validos", "penetracao", "lq", "concentracao", "indice_g", "dominancia", "tipologia_ames", "sobreposicao_redutos", "receitas", "custo_por_voto"],
-      "avisos": ["contas_parciais", "resultado_sub_judice", "legenda_nao_atribuida"]
+      "indicadores": [
+        "votos_nominais",
+        "pct_validos",
+        "penetracao",
+        "lq",
+        "concentracao",
+        "indice_g",
+        "dominancia",
+        "tipologia_ames",
+        "sobreposicao_redutos",
+        "receitas",
+        "custo_por_voto"
+      ],
+      "avisos": [
+        "contas_parciais",
+        "resultado_sub_judice",
+        "legenda_nao_atribuida"
+      ]
     }
   },
   "avisos": {

@@ -1,8 +1,8 @@
 {
   "indicador": "evolucao",
   "spec": "docs/metodologia/indicadores.md#evolucao-2022-2026",
-  "versao": 1,
-  "descricao": "Por AMC (área mínima comparável: município IBGE, desmembramentos agregados ao de origem). Δ penetração (‰, âncora), swing (p.p. de válidos), retenção = v26/v22 (null se v22=0), ganho absoluto.",
+  "versao": 2,
+  "descricao": "Por AMC (área mínima comparável: município IBGE, desmembramentos agregados ao de origem). Δ penetração (‰, âncora), swing (p.p. de válidos), retenção = v26/v22 (null se v22=0), ganho absoluto. v2: entrada traz cd_cargo; Senado (cd_cargo 5) é recusado (spec §1.8).",
   "tolerancia_absoluta": 1e-09,
   "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
   "casos": [
@@ -60,7 +60,8 @@
             "validos": 410,
             "votos": 26
           }
-        ]
+        ],
+        "cd_cargo": 6
       },
       "saida": [
         {
@@ -91,6 +92,66 @@
           "ganho_absoluto": 26
         }
       ]
+    },
+    {
+      "nome": "senado_recusado",
+      "entrada": {
+        "amc": {
+          "1000001": 1000001,
+          "1000002": 1000002,
+          "1000005": 1000002,
+          "1000003": 1000003
+        },
+        "ano_2022": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "validos": 7000,
+            "votos": 700
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2500,
+            "validos": 1900,
+            "votos": 300
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "validos": 400,
+            "votos": 0
+          }
+        ],
+        "ano_2026": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10500,
+            "validos": 7300,
+            "votos": 840
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "validos": 1500,
+            "votos": 150
+          },
+          {
+            "cd_mun_ibge": 1000005,
+            "aptos": 600,
+            "validos": 450,
+            "votos": 90
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 520,
+            "validos": 410,
+            "votos": 26
+          }
+        ],
+        "cd_cargo": 5
+      },
+      "erro": "ValueError: Senado não entra em evolução",
+      "descricao": "2022 elegeu 1 vaga (1 voto) e 2026 elege 2 (2 votos): taxas não comparáveis."
     }
   ]
 }
