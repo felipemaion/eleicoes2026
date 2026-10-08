@@ -1,5 +1,5 @@
 import { desenhar, type Barra } from "./barras";
-import type { Grafico } from "./base";
+import { substituir, type Grafico } from "./base";
 
 export interface Serie {
   titulo: string;
@@ -30,7 +30,7 @@ export function render(container: HTMLElement, series: readonly Serie[], opcoes:
       painel.append(cap, corpo);
       grade.append(painel);
     }
-    container.replaceChildren(grade);
+    substituir(container, grade);
   }
   atualizar(series);
   return { atualizar, destruir: () => { container.replaceChildren(); } };

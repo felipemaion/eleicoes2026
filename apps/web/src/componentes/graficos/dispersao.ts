@@ -1,6 +1,6 @@
 import { axisBottom, axisLeft, scaleLog, select } from "d3";
-import { formatarMoeda, formatarNumero } from "../../formato";
-import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico } from "./base";
+import { formatarCompacto, formatarMoeda, formatarNumero } from "../../formato";
+import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface PontoCustoVoto {
   id: string;
@@ -47,9 +47,9 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
       (nZero > 0 ? ` ${String(nZero)} com custo ou votos zero, marcados à parte na faixa "0".` : ""),
   );
   const gx = select(svg).append("g").attr("class", "eixo-x").attr("transform", `translate(0,${String(h - BAIXO)})`);
-  gx.call(axisBottom(x).ticks(5, "~s"));
+  gx.call(axisBottom(x).ticks(5).tickFormat((v) => formatarCompacto(+v)));
   const gy = select(svg).append("g").attr("class", "eixo-y").attr("transform", `translate(${String(ESQ)},0)`);
-  gy.call(axisLeft(y).ticks(5, "~s"));
+  gy.call(axisLeft(y).ticks(5).tickFormat((v) => formatarCompacto(+v)));
   for (const g of [gx, gy]) {
     g.selectAll("text").attr("fill", "var(--cor-texto-suave)");
     g.selectAll("path,line").attr("stroke", "var(--cor-borda)");
@@ -79,7 +79,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
     svg.append(c);
   }
 
-  container.replaceChildren(
+  substituir(container,
     svg,
     tabelaAlternativa(o.titulo, ["Candidato", "Custo", "Votos", "Observação"], dados.map((d) => [d.rotulo, formatarMoeda(d.custo), formatarNumero(d.votos), d.custo <= 0 || d.votos <= 0 ? "valor zero fora da escala log" : ""])),
   );

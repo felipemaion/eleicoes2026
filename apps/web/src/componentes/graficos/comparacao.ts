@@ -1,6 +1,6 @@
 import { axisBottom, extent, scaleBand, scaleLinear, select } from "d3";
 import { formatarDecimal } from "../../formato";
-import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico } from "./base";
+import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface ParAntesDepois {
   rotulo: string;
@@ -63,7 +63,7 @@ function desenhar(container: HTMLElement, dados: readonly ParAntesDepois[], o: O
     legenda.append(li);
   }
 
-  container.replaceChildren(
+  substituir(container,
     svg,
     legenda,
     tabelaAlternativa(o.titulo, ["Item", o.rotuloAntes, o.rotuloDepois, "Variação"], dados.map((d) => [d.rotulo, fmt(d.antes), fmt(d.depois), fmt(d.depois - d.antes)])),

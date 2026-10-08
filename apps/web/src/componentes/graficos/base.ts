@@ -41,7 +41,8 @@ export function criarSvg(largura: number, altura: number, rotulo: string): SVGSV
   const svg = no("svg", {
     viewBox: `0 0 ${String(largura)} ${String(altura)}`,
     width: "100%",
-    role: "img",
+    // "group", não "img": img torna os filhos apresentacionais e esconde as marcas focáveis.
+    role: "group",
     "aria-label": rotulo,
     class: "grafico",
   });
@@ -51,6 +52,7 @@ export function criarSvg(largura: number, altura: number, rotulo: string): SVGSV
 
 /** Torna uma marca focável e descrita; o rótulo vira também `<title>` (tooltip nativo). */
 export function marcaAcessivel(m: SVGElement, rotulo: string): void {
+  m.setAttribute("role", "img");
   m.setAttribute("tabindex", "0");
   m.setAttribute("aria-label", rotulo);
   m.append(no("title", {}, rotulo));
@@ -96,4 +98,27 @@ export function tabelaAlternativa(titulo: string, colunas: readonly string[], li
 /** Estilo de texto herdando o tema via variáveis CSS. */
 export function textoSvg(x: number, y: number, texto: string, extra: Record<string, string | number> = {}): SVGTextElement {
   return no("text", { x, y, fill: "var(--cor-texto)", "font-size": 12, ...extra }, texto);
+}
+
+/**
+ * Troca o conteúdo do contêiner preservando o que o usuário já fez: `<details>` aberto
+ * continua aberto e o foco volta à mesma marca/resumo (senão `atualizar` joga o leitor de tela
+ * e quem navega por teclado de volta ao início).
+ */
+export function substituir(container: HTMLElement, ...novos: Node[]): void {
+  const abertos = [...container.querySelectorAll("details")].map((d) => d.open);
+  const ativo = document.activeElement;
+  let foco: { tipo: "marca" | "resumo"; indice: number } | null = null;
+  if (ativo && container.contains(ativo)) {
+    const marcas = [...container.querySelectorAll(".marca")];
+    const resumos = [...container.querySelectorAll("summary")];
+    if (marcas.includes(ativo)) foco = { tipo: "marca", indice: marcas.indexOf(ativo) };
+    else if (resumos.includes(ativo as HTMLElement)) foco = { tipo: "resumo", indice: resumos.indexOf(ativo as HTMLElement) };
+  }
+  container.replaceChildren(...novos);
+  container.querySelectorAll("details").forEach((d, i) => { if (abertos[i]) d.open = true; });
+  if (foco) {
+    const alvo = container.querySelectorAll(foco.tipo === "marca" ? ".marca" : "summary")[foco.indice];
+    if (alvo instanceof HTMLElement || alvo instanceof SVGElement) alvo.focus();
+  }
 }

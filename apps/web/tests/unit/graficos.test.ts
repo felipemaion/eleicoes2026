@@ -8,6 +8,7 @@ import * as dispersao from "../../src/componentes/graficos/dispersao";
 import * as empilhado from "../../src/componentes/graficos/empilhado";
 import * as comparacao from "../../src/componentes/graficos/comparacao";
 import * as multiplos from "../../src/componentes/graficos/multiplos";
+import { formatarCompacto } from "../../src/formato";
 
 let el: HTMLElement;
 beforeEach(() => {
@@ -61,13 +62,14 @@ describe("barras", () => {
   it("uma marca por dado, eixo, rótulos, role=img e foco por teclado", () => {
     barras.render(el, dados, { titulo: "Votos por município", formato: formatarNumero });
     const svg = el.querySelector("svg");
-    expect(svg?.getAttribute("role")).toBe("img");
+    expect(svg?.getAttribute("role")).toBe("group");
     expect(svg?.getAttribute("aria-label")).toContain("Votos por município");
     const marcas = el.querySelectorAll("rect.marca");
     expect(marcas).toHaveLength(3);
     marcas.forEach((m) => {
       expect(m.getAttribute("tabindex")).toBe("0");
       expect(m.getAttribute("aria-label")).toMatch(/: /);
+      expect(m.getAttribute("role")).toBe("img");
     });
     expect(el.querySelector("g.eixo-x")).not.toBeNull();
     expect([...el.querySelectorAll("text.rotulo")].map((t) => t.textContent)).toEqual(["A", "B", "C"]);
@@ -140,6 +142,9 @@ describe("dispersão custo × votos (log)", () => {
     dispersao.render(el, pontos, { titulo: "t" });
     const cx = (id: string): number => Number(el.querySelector(`circle[data-id="${id}"]`)?.getAttribute("cx"));
     expect(cx("3")).toBeLessThan(cx("1"));
+    // a calha termina onde começa a escala log: ESQ (76) + CALHA (26); zero fica antes dela
+    expect(cx("3")).toBeLessThan(76 + 26);
+    expect(Number(el.querySelector('circle[data-id="4"]')?.getAttribute("cy"))).toBeGreaterThan(420 - 48 - 26);
   });
   it("lista vazia e só zeros não quebram", () => {
     dispersao.render(el, [], { titulo: "t" });
@@ -200,5 +205,72 @@ describe("pequenos múltiplos", () => {
     expect(el.querySelectorAll(".painel")).toHaveLength(2);
     const w = [...el.querySelectorAll("rect.marca")].map((m) => Number(m.getAttribute("width")));
     expect((w[1] ?? 0) / (w[0] ?? 1)).toBeCloseTo(4, 5);
+  });
+});
+
+describe("revisão T-W03", () => {
+  const dispers = [{ id: "1", rotulo: "Ana", custo: 1000, votos: 500 }, { id: "2", rotulo: "Beto", custo: 100000, votos: 20000 }];
+  const barra = [{ rotulo: "A", valor: 1 }, { rotulo: "B", valor: 2 }];
+  const emp = [{ rotulo: "Ana", valores: { FEFC: 100, PF: 50 } }];
+  const comp = [{ rotulo: "Ana", antes: 0.01, depois: 0.02 }];
+  const mult = [{ titulo: "2022", dados: barra }, { titulo: "2026", dados: barra }];
+  const casos: [string, (c: HTMLElement) => { atualizar: (d: never) => void }, unknown][] = [
+    ["barras", (c) => barras.render(c, barra, { titulo: "t" }), barra],
+    ["dispersão", (c) => dispersao.render(c, dispers, { titulo: "t" }), dispers],
+    ["empilhado", (c) => empilhado.render(c, emp, { titulo: "t" }), emp],
+    ["comparação", (c) => comparacao.render(c, comp, { titulo: "t", rotuloAntes: "a", rotuloDepois: "d" }), comp],
+    ["múltiplos", (c) => multiplos.render(c, mult, { titulo: "t" }), mult],
+  ];
+  it.each(casos)("%s: atualizar não duplica svg, details nem marcas", (_n, fazer, dados) => {
+    const g = fazer(el);
+    const contar = (): number[] => [el.querySelectorAll("svg.grafico").length, el.querySelectorAll("details").length, el.querySelectorAll(".marca").length];
+    const antes = contar();
+    g.atualizar(dados as never);
+    g.atualizar(dados as never);
+    expect(contar()).toEqual(antes);
+  });
+  it.each(casos)("%s: atualizar preserva <details> aberto e o foco na marca", (_n, fazer, dados) => {
+    const g = fazer(el);
+    document.body.append(el);
+    el.querySelector("details")?.setAttribute("open", "");
+    const marcas = [...el.querySelectorAll<SVGElement>(".marca")];
+    marcas[1 % marcas.length]?.focus();
+    const idx = marcas.indexOf(document.activeElement as SVGElement);
+    g.atualizar(dados as never);
+    expect(el.querySelector("details")?.hasAttribute("open")).toBe(true);
+    if (idx >= 0) expect(document.activeElement).toBe(el.querySelectorAll(".marca")[idx]);
+  });
+  it("empilhado: negativos (estornos) não entram no total nem passam do eixo", () => {
+    empilhado.render(el, [{ rotulo: "Ana", valores: { FEFC: 100, PF: -40 } }], { titulo: "t" });
+    expect(el.querySelectorAll("rect.marca")).toHaveLength(1);
+    expect(tabela(el).querySelector("tbody tr")?.textContent).toContain("R$ 100,00");
+    const r = el.querySelector("rect.marca");
+    expect(Number(r?.getAttribute("x")) + Number(r?.getAttribute("width"))).toBeLessThanOrEqual(640 - 20 + 0.001);
+  });
+  it("empilhado: mais de 7 fontes agrupa o excedente em 'Outras' sem lançar", () => {
+    const valores = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`F${String(i)}`, 10]));
+    const g = empilhado.render(el, [{ rotulo: "Ana", valores }], { titulo: "t" });
+    expect(() => { g.atualizar([{ rotulo: "Ana", valores }]); }).not.toThrow();
+    const itens = [...el.querySelectorAll(".legenda-item")].map((l) => l.textContent);
+    expect(itens).toHaveLength(7);
+    expect(itens.at(-1)).toBe("Outras");
+    expect(tabela(el).textContent).toContain("R$ 100,00"); // total preservado
+  });
+  it("empilhado: a cor de uma fonte não muda com a ordem dos dados quando 'fontes' é fixa", () => {
+    const fontes = ["FEFC", "PF"];
+    const cor = (dados: Parameters<typeof empilhado.render>[1]): string | null => {
+      empilhado.render(el, dados, { titulo: "t", fontes });
+      return [...el.querySelectorAll("rect.marca")].find((r) => r.getAttribute("aria-label")?.includes("PF"))?.getAttribute("fill") ?? null;
+    };
+    const a = cor([{ rotulo: "A", valores: { FEFC: 1, PF: 2 } }]);
+    const b = cor([{ rotulo: "A", valores: { PF: 2 } }]);
+    expect(a).not.toBeNull();
+    expect(a).toBe(b);
+  });
+  it("eixos usam compacto pt-BR (mil/mi), não '1.5k'", () => {
+    expect(formatarCompacto(1500)).not.toMatch(/k/i);
+    expect(formatarCompacto(1500)).toMatch(/mil/);
+    dispersao.render(el, dispers, { titulo: "t" });
+    expect(el.querySelector("g.eixo-x")?.textContent).not.toMatch(/\dk|\d\.\dk/);
   });
 });

@@ -10,6 +10,10 @@ export const formatarPercentual = (v: number): string => percentual.format(v);
 
 import { formatLocale } from "d3";
 
+const compacto = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
+/** 1500 → "1,5 mil"; para eixos. O `~s` do D3 sai "1.5k" (en-US), por isso Intl. */
+export const formatarCompacto = (v: number): string => compacto.format(v);
+
 /** Locale D3 pt-BR: vírgula decimal, ponto de milhar, R$ — usado nos eixos e rótulos dos gráficos. */
 export const localePtBR = formatLocale({
   decimal: ",",

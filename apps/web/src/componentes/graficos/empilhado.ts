@@ -1,6 +1,6 @@
 import { axisBottom, scaleBand, scaleLinear, select } from "d3";
-import { formatarMoeda } from "../../formato";
-import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico } from "./base";
+import { formatarCompacto, formatarMoeda } from "../../formato";
+import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface ReceitaPorFonte {
   rotulo: string;
@@ -9,6 +9,9 @@ export interface ReceitaPorFonte {
 
 export interface OpcoesEmpilhado {
   titulo: string;
+  /** Fontes em ordem fixa: a cor de cada uma não depende da ordem nem do conteúdo dos dados.
+   *  Sem esta opção, ordem alfabética. O que passar de 6 fontes (ou não estiver na lista) vira "Outras". */
+  fontes?: readonly string[];
   largura?: number;
 }
 
@@ -18,10 +21,29 @@ const TOPO = 8;
 const BAIXO = 28;
 const LINHA = 28;
 
-function desenhar(container: HTMLElement, dados: readonly ReceitaPorFonte[], o: OpcoesEmpilhado): void {
-  if (dados.length === 0) { mensagemVazia(container); return; }
-  const fontes = [...new Set(dados.flatMap((d) => Object.keys(d.valores)))];
-  if (fontes.length > COR.serie.length) throw new Error(`Empilhado suporta até ${String(COR.serie.length)} fontes; recebidas ${String(fontes.length)}.`);
+const OUTRAS = "Outras";
+
+/** Reagrupa valores nas fontes visíveis; excedente soma em "Outras". Negativos (estornos) não entram. */
+function agrupar(dados: readonly ReceitaPorFonte[], o: OpcoesEmpilhado): { fontes: string[]; linhas: ReceitaPorFonte[] } {
+  const todas = o.fontes ?? [...new Set(dados.flatMap((d) => Object.keys(d.valores)))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const max = COR.serie.length;
+  const visiveis = todas.length > max ? todas.slice(0, max - 1) : [...todas];
+  const aparecemOutras = dados.some((d) => Object.entries(d.valores).some(([f, v]) => !visiveis.includes(f) && v > 0));
+  const fontes = aparecemOutras ? [...visiveis, OUTRAS] : visiveis;
+  const linhas = dados.map((d) => {
+    const valores: Record<string, number> = {};
+    for (const [f, v] of Object.entries(d.valores)) {
+      const chave = visiveis.includes(f) ? f : OUTRAS;
+      valores[chave] = (valores[chave] ?? 0) + Math.max(0, v);
+    }
+    return { rotulo: d.rotulo, valores };
+  });
+  return { fontes, linhas };
+}
+
+function desenhar(container: HTMLElement, brutos: readonly ReceitaPorFonte[], o: OpcoesEmpilhado): void {
+  if (brutos.length === 0) { mensagemVazia(container); return; }
+  const { fontes, linhas: dados } = agrupar(brutos, o);
   const w = o.largura ?? 640;
   const h = TOPO + BAIXO + dados.length * LINHA;
   const total = (d: ReceitaPorFonte): number => Object.values(d.valores).reduce((a, b) => a + b, 0);
@@ -30,7 +52,7 @@ function desenhar(container: HTMLElement, dados: readonly ReceitaPorFonte[], o: 
 
   const svg = criarSvg(w, h, `${o.titulo}. Barras empilhadas de receita por fonte (${fontes.join(", ")}) para ${String(dados.length)} candidatos.`);
   const eixo = select(svg).append("g").attr("class", "eixo-x").attr("transform", `translate(0,${String(h - BAIXO)})`);
-  eixo.call(axisBottom(x).ticks(5, "~s"));
+  eixo.call(axisBottom(x).ticks(5).tickFormat((v) => formatarCompacto(+v)));
   eixo.selectAll("text").attr("fill", "var(--cor-texto-suave)");
   eixo.selectAll("path,line").attr("stroke", "var(--cor-borda)");
 
@@ -60,7 +82,7 @@ function desenhar(container: HTMLElement, dados: readonly ReceitaPorFonte[], o: 
     legenda.append(li);
   });
 
-  container.replaceChildren(
+  substituir(container,
     svg,
     legenda,
     tabelaAlternativa(o.titulo, ["Candidato", ...fontes, "Total"], dados.map((d) => [d.rotulo, ...fontes.map((f) => formatarMoeda(d.valores[f] ?? 0)), formatarMoeda(total(d))])),

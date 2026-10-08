@@ -1,6 +1,6 @@
 import { axisBottom, scaleBand, scaleLinear, select } from "d3";
 import { formatarNumero } from "../../formato";
-import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico } from "./base";
+import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface Barra {
   rotulo: string;
@@ -51,7 +51,7 @@ export function desenhar(container: HTMLElement, dados: readonly Barra[], o: Opc
     svg.append(r, textoSvg(ESQ + larg + 4, yi + y.bandwidth() / 2 + 4, fmt(d.valor), { class: "valor", "font-size": 11 }));
   });
 
-  container.replaceChildren(svg, tabelaAlternativa(o.titulo, ["Item", o.colunaValor ?? "Valor"], dados.map((d, i) => [rot(d, i), fmt(d.valor)])));
+  substituir(container, svg, tabelaAlternativa(o.titulo, ["Item", o.colunaValor ?? "Valor"], dados.map((d, i) => [rot(d, i), fmt(d.valor)])));
 }
 
 export function render(container: HTMLElement, dados: readonly Barra[], opcoes: OpcoesBarras): Grafico<readonly Barra[]> {
