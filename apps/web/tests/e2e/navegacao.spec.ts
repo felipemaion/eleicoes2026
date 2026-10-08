@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { simularApi } from "./api";
+
+test.beforeEach(async ({ page }) => { await simularApi(page); });
 
 const TELAS = ["Visão geral", "Mapa", "Gastos", "Evolução 2022×2026", "Candidato"];
 

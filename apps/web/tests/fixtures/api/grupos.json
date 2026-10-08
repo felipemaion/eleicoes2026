@@ -1,0 +1,30 @@
+{
+ "grupos": [
+  {
+   "id": "missao_2026",
+   "rotulo": "Missão 2026",
+   "ano": 2026,
+   "n_candidaturas": 3
+  },
+  {
+   "id": "mbl_2022",
+   "rotulo": "MBL 2022",
+   "ano": 2022,
+   "n_candidaturas": 3
+  }
+ ],
+ "comparacoes": [
+  {
+   "id": "mbl2022_mbl2026",
+   "rotulo": "MBL 2022 → MBL 2026",
+   "antes": "mbl_2022",
+   "depois": "mbl_2026"
+  },
+  {
+   "id": "mbl2022_missao2026",
+   "rotulo": "MBL 2022 → Missão 2026",
+   "antes": "mbl_2022",
+   "depois": "missao_2026"
+  }
+ ]
+}

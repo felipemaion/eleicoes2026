@@ -1,0 +1,115 @@
+{
+ "candidato": {
+  "sq_candidato": "1",
+  "ano": 2026,
+  "nome": "Ana Souza",
+  "partido": "MISSÃO",
+  "cargo": "deputado_federal",
+  "uf": "SE",
+  "grupo": "missao_2026",
+  "votos": 18049,
+  "pct_validos": 0.0412,
+  "penetracao": 0.0123,
+  "resultado": "não eleito",
+  "indicado": true
+ },
+ "votos_municipios": [
+  {
+   "cd_mun_ibge": "2800670",
+   "nome": "Boquim",
+   "votos": 18049,
+   "taxa": 0.09643
+  },
+  {
+   "cd_mun_ibge": "2802106",
+   "nome": "Estância",
+   "votos": 18042,
+   "taxa": 0.11756
+  },
+  {
+   "cd_mun_ibge": "2803104",
+   "nome": "Itabi",
+   "votos": 17981,
+   "taxa": 0.11873
+  },
+  {
+   "cd_mun_ibge": "2803609",
+   "nome": "Laranjeiras",
+   "votos": 15291,
+   "taxa": 0.09426
+  },
+  {
+   "cd_mun_ibge": "2807105",
+   "nome": "Simão Dias",
+   "votos": 13449,
+   "taxa": 0.10205
+  },
+  {
+   "cd_mun_ibge": "2804003",
+   "nome": "Maruim",
+   "votos": 13334,
+   "taxa": 0.10977
+  },
+  {
+   "cd_mun_ibge": "2803708",
+   "nome": "Macambira",
+   "votos": 13059,
+   "taxa": 0.06191
+  },
+  {
+   "cd_mun_ibge": "2807006",
+   "nome": "São Miguel do Aleixo",
+   "votos": 12944,
+   "taxa": 0.11524
+  },
+  {
+   "cd_mun_ibge": "2806008",
+   "nome": "Ribeirópolis",
+   "votos": 12537,
+   "taxa": 0.08629
+  },
+  {
+   "cd_mun_ibge": "2800407",
+   "nome": "Arauá",
+   "votos": 11991,
+   "taxa": 0.07762
+  },
+  {
+   "cd_mun_ibge": "2805307",
+   "nome": "Pirambu",
+   "votos": 11943,
+   "taxa": 0.09099
+  },
+  {
+   "cd_mun_ibge": "2805208",
+   "nome": "Pinhão",
+   "votos": 11551,
+   "taxa": 0.08031
+  }
+ ],
+ "gastos": {
+  "contratado": 223000,
+  "pago": 180000,
+  "custo_voto_contratado": 12.35,
+  "custo_voto_pago": 9.97
+ },
+ "receitas": [
+  {
+   "fonte": "FEFC",
+   "valor": 150000
+  },
+  {
+   "fonte": "Fundo Partidário",
+   "valor": 40000
+  },
+  {
+   "fonte": "Autofinanciamento",
+   "valor": 20000
+  },
+  {
+   "fonte": "Doações PF",
+   "valor": 13000
+  }
+ ],
+ "contas_parciais": true
+}

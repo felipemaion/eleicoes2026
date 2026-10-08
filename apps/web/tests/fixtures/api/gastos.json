@@ -1,0 +1,48 @@
+{
+ "candidatos": [
+  {
+   "id": "1",
+   "rotulo": "Ana Souza",
+   "votos": 18049,
+   "custo_contratado": 223000,
+   "custo_pago": 180000
+  },
+  {
+   "id": "2",
+   "rotulo": "Bruno Lima",
+   "votos": 11991,
+   "custo_contratado": 90000,
+   "custo_pago": 70000
+  },
+  {
+   "id": "3",
+   "rotulo": "Carla Dias",
+   "votos": 3155,
+   "custo_contratado": 30000,
+   "custo_pago": 25000
+  }
+ ],
+ "receita_por_fonte": [
+  {
+   "rotulo": "Ana Souza",
+   "valores": {
+    "FEFC": 150000,
+    "Fundo Partidário": 40000,
+    "Autofinanciamento": 20000
+   }
+  },
+  {
+   "rotulo": "Bruno Lima",
+   "valores": {
+    "FEFC": 60000,
+    "Doações PF": 20000
+   }
+  }
+ ],
+ "custo_voto_contratado": 10.2,
+ "custo_voto_pago": 8.1,
+ "pct_publico": 0.78,
+ "pct_autofinanciamento": 0.06,
+ "contas_parciais": true,
+ "mes_base_deflator": "2026-09"
+}

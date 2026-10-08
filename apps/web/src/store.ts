@@ -23,9 +23,11 @@ export interface Filtros {
   cargo: Cargo;
   grupo: Grupo;
   ano: Ano;
+  /** Candidato da tela "Candidato", no formato `ano:sq_candidato`; vazio = nenhum. */
+  candidato: string;
 }
 
-export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "todos", grupo: "missao_2026", ano: 2026 };
+export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "todos", grupo: "missao_2026", ano: 2026, candidato: "" };
 
 export interface Estado {
   tela: Tela;

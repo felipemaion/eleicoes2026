@@ -1,0 +1,61 @@
+{
+ "candidatos": [
+  {
+   "sq_candidato": "1",
+   "ano": 2026,
+   "nome": "Ana Souza",
+   "partido": "MISSÃO",
+   "cargo": "deputado_federal",
+   "uf": "SE",
+   "grupo": "missao_2026",
+   "votos": 18049,
+   "pct_validos": 0.0412,
+   "penetracao": 0.0123,
+   "resultado": "não eleito",
+   "indicado": true
+  },
+  {
+   "sq_candidato": "2",
+   "ano": 2026,
+   "nome": "Bruno Lima",
+   "partido": "MISSÃO",
+   "cargo": "deputado_federal",
+   "uf": "SE",
+   "grupo": "missao_2026",
+   "votos": 11991,
+   "pct_validos": 0.0273,
+   "penetracao": 0.0081,
+   "resultado": "não eleito",
+   "indicado": true
+  },
+  {
+   "sq_candidato": "3",
+   "ano": 2026,
+   "nome": "Carla Dias",
+   "partido": "MISSÃO",
+   "cargo": "deputado_federal",
+   "uf": "SE",
+   "grupo": "missao_2026",
+   "votos": 3155,
+   "pct_validos": 0.0072,
+   "penetracao": 0.0021,
+   "resultado": "suplente",
+   "indicado": false
+  }
+ ],
+ "kpis": {
+  "votos": 33195,
+  "votos_nominais": 31000,
+  "votos_legenda": 2195,
+  "pct_validos": 0.0414,
+  "penetracao": 0.0074,
+  "penetracao_comparada": 0.0061,
+  "eleitos": 0,
+  "candidaturas_aptas": 3,
+  "custo_voto_contratado": 12.4,
+  "pct_publico": 0.78,
+  "delta_penetracao": 0.0013
+ },
+ "contas_parciais": true,
+ "dt_geracao": "2026-10-07T10:00:00"
+}

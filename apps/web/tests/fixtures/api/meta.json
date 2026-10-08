@@ -1,0 +1,20 @@
+{
+ "anos": [
+  2022,
+  2026
+ ],
+ "ufs": [
+  "SE"
+ ],
+ "cargos": [
+  "deputado_federal"
+ ],
+ "grupos": [
+  {
+   "id": "missao_2026",
+   "rotulo": "Missão 2026",
+   "ano": 2026
+  }
+ ],
+ "dt_geracao": "2026-10-07T10:00:00"
+}

@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { simularApi } from "./api";
+
+test.beforeEach(async ({ page }) => { await simularApi(page); });
 
 test("mapa carrega a fixture, troca indicador sem recarregar geometria e mostra tooltip", async ({ page }) => {
   await page.goto("/#/mapa");
