@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { simularApi } from "./api";
+import { pastaCapturas } from "./capturas";
 
-const CAPTURAS = "../../docs/registro/handoffs/img";
+const CAPTURAS = pastaCapturas();
 // O tipo é só para quem chama (JSON.parse devolve any).
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 const fixture = <T>(nome: string): T => JSON.parse(readFileSync(new URL(`../fixtures/api/${nome}.json`, import.meta.url), "utf-8")) as T;

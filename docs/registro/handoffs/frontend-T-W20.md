@@ -20,3 +20,5 @@
 `cd apps/web && pnpm exec vitest run && pnpm build && pnpm exec playwright test` (321 + 65 verdes; eslint e tsc limpos).
 E2E `tests/e2e/comparador.spec.ts`: Guto 2022 × Rafa 2026 (dep. estadual SP), Kim + Beraldo 2022 × Missão 2026 inteiro (dep. federal SP), recarregar a URL, nenhuma lista > 8 itens, sem rolagem horizontal no mobile, 422.
 Capturas: `docs/registro/handoffs/img/T-W20-guto-rafa-desktop.png`, `T-W20-kim-beraldo-missao-desktop.png`, `T-W20-kim-beraldo-missao-mobile.png`.
+
+Capturas: geradas com `SALVAR_CAPTURAS=1`; sem a variável o e2e grava em `apps/web/test-results/capturas/` (T-W21).
