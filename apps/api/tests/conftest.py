@@ -19,6 +19,7 @@ def settings_fixture() -> Settings:
         dir_dados=FIXTURES,
         arquivo_grupos=FIXTURES / "grupos.yaml",
         raiz_repositorio=FIXTURES,
+        aquecer=False,  # os testes ligam o aquecimento explicitamente
     )
 
 
