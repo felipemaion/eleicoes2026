@@ -1,0 +1,152 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Eleicoes2026 API",
+    "description": "Dados e indicadores eleitorais (somente leitura).",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "saude"
+        ],
+        "summary": "Saúde da API e DT_GERACAO dos dados",
+        "description": "200 quando os dados abrem; 503 caso contrário.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Saude"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Dimensões disponíveis para filtros",
+        "description": "Anos, UFs e cargos presentes nos dados + grupos configurados.",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meta"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Grupo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "ano"
+        ],
+        "title": "Grupo",
+        "description": "Grupo comparável definido em config/grupos.yaml."
+      },
+      "Meta": {
+        "properties": {
+          "anos": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Anos"
+          },
+          "ufs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ufs"
+          },
+          "cargos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cargos"
+          },
+          "grupos": {
+            "items": {
+              "$ref": "#/components/schemas/Grupo"
+            },
+            "type": "array",
+            "title": "Grupos"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "anos",
+          "ufs",
+          "cargos",
+          "grupos",
+          "dt_geracao"
+        ],
+        "title": "Meta",
+        "description": "Dimensões disponíveis para filtros."
+      },
+      "Saude": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "versao": {
+            "type": "string",
+            "title": "Versao"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "versao",
+          "dt_geracao"
+        ],
+        "title": "Saude",
+        "description": "Estado da API e dos dados."
+      }
+    }
+  }
+}
