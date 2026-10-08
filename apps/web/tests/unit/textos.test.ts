@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import textos from "../../../../docs/metodologia/publico/textos.json";
 import { avisosDaTela, definicaoDe, formatarDtGeracao, formatarMesBase, indicadorDe, notaRodape, preencher, subtituloDaTela } from "../../src/textos";
+
+const AVISOS_GASTOS: string[] = textos.telas.gastos.avisos;
 
 describe("placeholders", () => {
   it("dt_geracao: data ISO → dd/mm/aaaa; com hora → dd/mm/aaaa hh:mm", () => {
@@ -39,8 +42,10 @@ describe("textos públicos (docs/metodologia/publico/textos.json)", () => {
   });
   it("avisos: contas parciais só com a flag; IPCA só com mês-base; n_baixo no mapa (que tem hachura)", () => {
     const base = { dt_geracao: "2026-10-07", contas_parciais: false, mes_base_ipca: undefined };
-    expect(avisosDaTela("gastos", base).map((a) => a.chave)).toEqual([]);
-    expect(avisosDaTela("gastos", { ...base, contas_parciais: true, mes_base_ipca: "2026-09" }).map((a) => a.chave)).toEqual(["contas_parciais", "ipca"]);
+    // Avisos sem condição (ex.: repasses_grupo) aparecem sempre; só os dois condicionais dependem da flag.
+    const incondicionais = AVISOS_GASTOS.filter((k) => k !== "contas_parciais" && k !== "ipca");
+    expect(avisosDaTela("gastos", base).map((a) => a.chave)).toEqual(incondicionais);
+    expect(avisosDaTela("gastos", { ...base, contas_parciais: true, mes_base_ipca: "2026-09" }).map((a) => a.chave)).toEqual(AVISOS_GASTOS);
     const mapa = avisosDaTela("mapa", base).map((a) => a.chave);
     expect(mapa).toContain("rezoneamento");
     expect(mapa).toContain("n_baixo");
