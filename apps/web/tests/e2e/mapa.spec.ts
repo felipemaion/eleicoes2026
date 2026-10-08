@@ -126,7 +126,9 @@ test("pontos 503: o coroplético renderiza, a densidade fica desligada e o aviso
   await expect(page.getByLabel(/Densidade de votos/)).not.toBeChecked();
   await expect(page.locator(".estado.erro")).toHaveCount(0);
   // Ligar a densidade com a API fora do ar: aviso amigável (sem URL crua) e checkbox desabilitado.
-  await page.getByLabel(/Densidade de votos/).check();
+  // click(), não check(): o app desmarca o checkbox sozinho ao receber o 503, e check() reprova
+  // se essa reversão chegar antes da conferência de estado (corrida). O resultado é esperado abaixo.
+  await page.getByLabel(/Densidade de votos/).click();
   const aviso = page.locator(".aviso-pontos");
   await expect(aviso).toContainText("indisponível");
   await expect(aviso).not.toContainText("/api/");
