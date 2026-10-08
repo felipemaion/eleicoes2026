@@ -139,10 +139,75 @@ ELEITORADO_LOCAL_VOTACAO = Contrato(
     origem=_ORIGEM_MUN,
 )  # fmt: skip
 
+# --- votação por seção → local de votação → H3 (T-D05) ---------------------------------------
+# Leitura do CSV por seção (só as colunas usadas; não é publicado). Em ``sq_candidato`` o TSE
+# grava -1 (branco/nulo) e -3 (legenda), que o parser transforma em nulo.
+VOTACAO_SECAO = Contrato(
+    nome="votacao_secao",
+    colunas={
+        "ano_eleicao": I16, "nr_turno": I8, "sg_uf": TXT, "cd_municipio_tse": I32,
+        "nr_zona": I16, "cd_cargo": I8, "nr_votavel": I32, "qt_votos": I64,
+        "nr_local_votacao": I32, "sq_candidato": I64, "dt_geracao": DATA,
+    },
+    chave=(),
+    origem={"cd_municipio_tse": "CD_MUNICIPIO"},
+)  # fmt: skip
+# Chave do local de votação, comum aos três datasets abaixo. ``nr_local`` (e não
+# ``nr_local_votacao``) é o nome que a API lê.
+_CHAVE_LOCAL = ("nr_turno", "sg_uf", "cd_municipio_tse", "nr_zona", "nr_local")
+_COLS_LOCAL = {
+    "ano_eleicao": I16, "nr_turno": I8, "sg_uf": TXT, "cd_municipio_tse": I32,
+    "cd_mun_ibge": I32, "nr_zona": I16, "nr_local": I32,
+}  # fmt: skip
+_OBRIG_LOCAL = ("ano_eleicao", "nr_turno", "sg_uf", "cd_municipio_tse", "nr_zona", "nr_local")
+# A API não filtra turno nestas tabelas: só o 1º turno é gravado (guardado pela faixa).
+_TURNO_1 = {"nr_turno": (1.0, 1.0)}
+
+# Votos nominais (candidato com SQ) por local de votação e cargo.
+VOTOS_LOCAL = Contrato(
+    nome="votos_local",
+    colunas={**_COLS_LOCAL, "cd_cargo": I8, "sq_candidato": I64, "votos": I64, "dt_geracao": DATA},
+    chave=(*_CHAVE_LOCAL, "cd_cargo", "sq_candidato"),
+    nao_nulas=(*_OBRIG_LOCAL, "cd_cargo", "sq_candidato", "votos", "dt_geracao"),
+    faixas=_TURNO_1,
+    derivadas=frozenset({"cd_mun_ibge"}),
+    origem=_ORIGEM_MUN,
+)  # fmt: skip
+
+# Totais por local e cargo: válidos = nominais + legenda; brancos e nulos à parte.
+TOTAIS_LOCAL = Contrato(
+    nome="totais_local",
+    colunas={
+        **_COLS_LOCAL, "cd_cargo": I8, "votos_nominais": I64, "votos_legenda": I64,
+        "votos_brancos": I64, "votos_nulos": I64, "dt_geracao": DATA,
+    },
+    chave=(*_CHAVE_LOCAL, "cd_cargo"),
+    nao_nulas=(*_OBRIG_LOCAL, "cd_cargo", "votos_nominais", "votos_legenda", "votos_brancos",
+               "votos_nulos", "dt_geracao"),
+    faixas=_TURNO_1,
+    derivadas=frozenset({"cd_mun_ibge"}),
+    origem=_ORIGEM_MUN,
+)  # fmt: skip
+
+# Local de votação com coordenada válida → célula H3 (ADR 0007: res 8 canônica; 7 e 6 para a
+# comparação 2022×2026). ``h3`` é a res 8, nome que a API lê. Local sem coordenada fica fora.
+LOCAIS_H3 = Contrato(
+    nome="locais_h3",
+    colunas={
+        **_COLS_LOCAL, "lat": DEC, "lon": DEC, "h3": TXT, "h3_r7": TXT, "h3_r6": TXT,
+        "aptos": I64, "dt_geracao": DATA,
+    },
+    chave=_CHAVE_LOCAL,
+    nao_nulas=(*_OBRIG_LOCAL, "lat", "lon", "h3", "h3_r7", "h3_r6", "aptos"),
+    faixas={**_TURNO_1, "lat": (-35.0, 6.0), "lon": (-75.0, -28.0)},
+    derivadas=frozenset({"cd_mun_ibge"}),
+)  # fmt: skip
+
 CONTRATOS: dict[str, Contrato] = {
     c.nome: c
     for c in (
         MUNICIPIO_TSE_IBGE, CONSULTA_CAND, VOTACAO_CANDIDATO_MUNZONA, DETALHE_VOTACAO_MUNZONA,
-        VOTACAO_PARTIDO_MUNZONA, CONSULTA_VAGAS, ELEITORADO_LOCAL_VOTACAO,
+        VOTACAO_PARTIDO_MUNZONA, CONSULTA_VAGAS, ELEITORADO_LOCAL_VOTACAO, VOTACAO_SECAO,
+        VOTOS_LOCAL, TOTAIS_LOCAL, LOCAIS_H3,
     )
 }  # fmt: skip

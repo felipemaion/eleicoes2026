@@ -10,13 +10,14 @@ import io
 import zipfile
 from pathlib import Path
 
-import h3
+import h3  # type: ignore[import-untyped]  # h3 4.x não publica stubs
 import polars as pl
 import pytest
 from contratos import CONTRATOS, validar
 from etl.processar import ErroProcessamento, processar_fonte
 from etl.secao import processar_secao
 from etl.tse_csv import blocos_utf8
+from polars.testing import assert_frame_equal
 
 FIX = Path(__file__).parent / "fixtures"
 ZIP_SECAO = FIX / "votacao_secao_2022_AC.zip"
@@ -70,7 +71,7 @@ def test_total_de_controle_votos_nominais(ambiente: tuple[Path, Path]) -> None:
     df = ler(ambiente[1], "votos_local")
     obtido = dict(df.group_by("cd_cargo").agg(pl.col("votos").sum()).iter_rows())
     assert obtido == esperado
-    assert df["votos"].min() > 0  # zero voto não vira linha
+    assert (df["votos"] > 0).all()  # zero voto não vira linha
     assert set(df["cd_mun_ibge"].unique()) == {BUJARI, CAPIXABA}
 
 
@@ -96,28 +97,28 @@ def test_totais_por_local_somam_tudo(ambiente: tuple[Path, Path]) -> None:
 def test_bate_com_munzona_por_candidato(ambiente: tuple[Path, Path]) -> None:
     """Para todo candidato do munzona, Σ locais = qt_votos_nominais do munzona."""
     mz = (
-        ler(ambiente[1], "votacao_candidato_munzona")
-        .filter(pl.col("nr_turno") == 1, pl.col("sg_uf") == "AC")
+        pl.read_parquet(ambiente[1] / "votacao_candidato_munzona" / "ano=2022" / "AC.parquet")
+        .filter(pl.col("nr_turno") == 1)
         .group_by("sq_candidato", "cd_cargo")
         .agg(pl.col("qt_votos_nominais").sum().alias("mz"))
     )
-    vl = ler(ambiente[1], "votos_local").group_by("sq_candidato", "cd_cargo").agg(
-        pl.col("votos").sum()
+    vl = (
+        ler(ambiente[1], "votos_local")
+        .group_by("sq_candidato", "cd_cargo")
+        .agg(pl.col("votos").sum())
     )
     j = mz.join(vl, on=["sq_candidato", "cd_cargo"], how="left").fill_null(0)
     assert j.height > 0
     assert j.filter(pl.col("mz") != pl.col("votos")).height == 0
 
 
-def test_blocos_pequenos_dao_o_mesmo_resultado(
-    ambiente: tuple[Path, Path], tmp_path: Path
-) -> None:
+def test_blocos_pequenos_dao_o_mesmo_resultado(ambiente: tuple[Path, Path], tmp_path: Path) -> None:
     """Um local cortado entre blocos é somado de novo no fim (partição por bytes)."""
     raw, proc = montar_raw(tmp_path)
     stats = processar_secao(2022, raw, proc, ufs=["AC"], bloco_bytes=20_000)
     assert stats["blocos"] > 3
     for nome in ("votos_local", "totais_local"):
-        pl.testing.assert_frame_equal(
+        assert_frame_equal(
             ler(proc, nome).drop("dt_geracao"), ler(ambiente[1], nome).drop("dt_geracao")
         )
 
@@ -150,7 +151,9 @@ def test_locais_h3(ambiente: tuple[Path, Path]) -> None:
 def test_todo_local_com_voto_tem_local_cadastrado(ambiente: tuple[Path, Path]) -> None:
     chaves = ["cd_municipio_tse", "nr_zona", "nr_local"]
     votos = ler(ambiente[1], "votos_local").select(chaves).unique()
-    assert votos.join(ler(ambiente[1], "locais_h3").select(chaves), on=chaves, how="anti").is_empty()
+    assert votos.join(
+        ler(ambiente[1], "locais_h3").select(chaves), on=chaves, how="anti"
+    ).is_empty()
 
 
 def test_local_sem_coordenada_fica_fora_do_h3(tmp_path: Path) -> None:
@@ -180,7 +183,7 @@ def test_local_sem_coordenada_fica_fora_do_h3(tmp_path: Path) -> None:
         for r in origem()
         if int(r["SQ_CANDIDATO"]) > 0
         and (r["CD_MUNICIPIO"], r["NR_ZONA"], r["NR_LOCAL_VOTACAO"])
-        == (f"{alvo['cd_municipio_tse']:05d}", str(alvo["nr_zona"]), str(alvo["nr_local_votacao"]))
+        == (str(alvo["cd_municipio_tse"]), str(alvo["nr_zona"]), str(alvo["nr_local_votacao"]))
     )
     assert stats["votos_sem_coordenada"] == esperado > 0
     # o voto continua em votos_local: só o H3 perde o local

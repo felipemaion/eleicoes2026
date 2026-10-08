@@ -25,7 +25,9 @@ def test_votacao_secao_todas_as_ufs() -> None:
 
 def test_votacao_secao_2022_nao_tem_zz() -> None:
     """O TSE não publica `votacao_secao_2022_ZZ.zip` (404): exterior vem no arquivo BR."""
-    ufs_2022 = {a.destino.split("_")[-1].removesuffix(".zip") for a in alvos(2022, ["votacao_secao"])}
+    ufs_2022 = {
+        a.destino.split("_")[-1].removesuffix(".zip") for a in alvos(2022, ["votacao_secao"])
+    }
     assert "ZZ" not in ufs_2022
     assert ufs_2022 == set(UFS) - {"ZZ"}
     [a] = alvos(2026, ["votacao_secao"], uf="ZZ")

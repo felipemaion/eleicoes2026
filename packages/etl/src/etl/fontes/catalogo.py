@@ -22,11 +22,13 @@ IBGE_AREAS = (
 )
 BCB_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs"
 
-# 26 UFs + DF + ZZ (exterior), como nos arquivos por seção do TSE.
+# 26 UFs + DF + ZZ (exterior) + BR (presidente), como nos arquivos por seção do TSE.
 UFS: tuple[str, ...] = (
     "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
-    "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO", "ZZ",
+    "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO", "ZZ", "BR",
 )  # fmt: skip
+# Arquivos por UF que o TSE não publica (404): em 2022 o exterior vem só no arquivo BR.
+UF_SEM_ARQUIVO: frozenset[tuple[int, str]] = frozenset({(2022, "ZZ")})
 
 ANOS_TSE: tuple[int, ...] = (2022, 2026)
 
@@ -142,6 +144,8 @@ def alvos(ano: int, fontes: list[str] | None = None, uf: str | None = None) -> l
         fonte = CATALOGO[id_]
         ufs: tuple[str | None, ...] = ((uf,) if uf else UFS) if fonte.por_uf else (None,)
         for u in ufs:
+            if u is not None and (ano, u) in UF_SEM_ARQUIVO:
+                continue
             valores = {"ano": ano, "uf": u}
             saida.append(
                 Alvo(
