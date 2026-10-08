@@ -121,7 +121,15 @@ _SQS = "sq_candidato IN (SELECT unnest(?::BIGINT[]))"
 class RepositorioDuckDB:
     """Consultas parametrizadas sobre `<dir>/*.parquet`; `<dir>/manifesto.json` dá o DT_GERACAO."""
 
-    def __init__(self, dir_dados: Path, threads: int = 2) -> None:
+    def __init__(
+        self,
+        dir_dados: Path,
+        threads: int = 2,
+        *,
+        memory_limit: str = "1200MB",
+        max_temp_directory_size: str = "400MB",
+        temp_directory: Path = Path("/tmp/duck"),  # noqa: S108 - tmpfs do contêiner
+    ) -> None:
         if not any((dir_dados / "consulta_cand").glob("ano=*/*.parquet")):
             raise DadosIndisponiveis(f"consulta_cand ausente em {dir_dados}")
         try:
@@ -131,6 +139,11 @@ class RepositorioDuckDB:
             # lock_configuration impede que consultas mudem threads/limites depois.
             self._con = duckdb.connect(":memory:")
             self._con.execute("SET threads = ?", [threads])
+            # Teto de memória e de derramamento em disco: consulta gulosa vira erro, não OOM.
+            # DDL/SET não aceitam parâmetros em todos os casos; valores vêm da configuração.
+            self._con.execute("SET memory_limit = ?", [memory_limit])
+            self._con.execute("SET max_temp_directory_size = ?", [max_temp_directory_size])
+            self._con.execute("SET temp_directory = ?", [str(temp_directory)])
             fontes = {n: self._fonte(dir_dados, n) for n in (*CONTRATADOS, *PROVISORIOS)}
             self._validar_colunas(fontes)
             for nome, (dataset, sql) in _VIEWS.items():

@@ -54,3 +54,9 @@ dev:
 - Presidente: munzona traz UFs reais; o que ficava só em `BR` é a candidatura (`sg_uf='BR'`). `candidaturas(uf=X, cargo=PRESIDENTE)` agora inclui `BR` (antes zerava o cargo); fixture e teste cobrem. A API nunca soma arquivos por UF.
 - Legenda: a API usa só votos nominais (`qt_votos_nominais_validos`); não consome `qt_votos_leg_validos`, então não há risco de legenda parcial em 2022. Quem for expor legenda deve somar leg_validos + nom_convr_leg_validos.
 - Custo por voto: descrição OpenAPI dos campos `despesa_*` e `custo_voto_*` diz que exclui repasses a outros candidatos/partidos.
+
+## Segurança pré-deploy (PR #43, item ALTO)
+- DuckDB: `memory_limit=1200MB`, `max_temp_directory_size=400MB`, `temp_directory=/tmp/duck` antes do `lock_configuration` (env `ELEICOES_DUCK_*`). **`/tmp` é gravável via tmpfs 512m (uid 10001) no `infra/compose.yaml`; o compose do Oracle precisa do mesmo tmpfs** (rootfs read-only) — verificado no contêiner.
+- Semáforo: `ELEICOES_CALCULOS_SIMULTANEOS` (padrão 4) nos cálculos (só miss de cache); excedente → 503 `servidor_ocupado` com `Retry-After: 1`.
+- Single-flight por chave no `CacheLRU`; ficha do candidato agora em cache; `nivel=zona|h3` sem `uf` → 422 (já existia, ganhou teste).
+- Testes: `apps/api/tests/test_seguranca.py`.

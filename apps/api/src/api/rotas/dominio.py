@@ -64,12 +64,17 @@ def candidatos(
 )
 def ficha(
     repo: RepositorioDep,
+    cache: CacheDep,
     ano: Ano,
     sq_candidato: int,
     top: Annotated[int, Query(ge=1, le=100, description="Municípios no ranking.")] = 10,
 ) -> FichaCandidato:
     """Votos por UF e município (top N), gastos, receitas por fonte e custo por voto."""
-    return montar_ficha(repo, ano.value, sq_candidato, top)
+    return cache.obter(
+        repo.dt_geracao(),
+        ("ficha", ano, sq_candidato, top),
+        lambda: montar_ficha(repo, ano.value, sq_candidato, top),
+    )
 
 
 @router.get("/mapa", response_model=Mapa, tags=["mapa"], summary="Indicador por território")

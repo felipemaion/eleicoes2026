@@ -29,11 +29,17 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.grupos = carregar_grupos(cfg.arquivo_grupos)
-        app.state.cache = CacheLRU(cfg.cache_capacidade)
+        app.state.cache = CacheLRU(cfg.cache_capacidade, cfg.calculos_simultaneos)
         app.state.catalogo = carregar_catalogo(cfg.arquivo_grupos, cfg.raiz_repositorio)
         app.state.repositorio = None
         try:
-            app.state.repositorio = RepositorioDuckDB(cfg.dir_dados, threads=cfg.threads)
+            app.state.repositorio = RepositorioDuckDB(
+                cfg.dir_dados,
+                threads=cfg.threads,
+                memory_limit=cfg.duck_memory_limit,
+                max_temp_directory_size=cfg.duck_max_temp_directory_size,
+                temp_directory=cfg.duck_temp_directory,
+            )
         except DadosIndisponiveis as erro:
             # Não derruba o processo: /api/health responde 503 e o deploy reverte.
             logger.error("dados indisponíveis: %s", erro)
@@ -61,7 +67,8 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ErroDominio)
     async def _erro_dominio(_: Request, erro: ErroDominio) -> JSONResponse:
         corpo = {"detail": {"codigo": erro.codigo, "mensagem": erro.mensagem}}
-        return JSONResponse(corpo, status_code=erro.status)
+        cabecalhos = {"Retry-After": "1"} if erro.status == 503 else None
+        return JSONResponse(corpo, status_code=erro.status, headers=cabecalhos)
 
     @app.exception_handler(DadosIndisponiveis)
     async def _dados_indisponiveis(_: Request, erro: DadosIndisponiveis) -> JSONResponse:

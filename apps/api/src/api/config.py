@@ -30,6 +30,13 @@ class Settings(BaseSettings):
         default=2,
         validation_alias=AliasChoices("ELEICOES_DUCKDB_THREADS", "ELEICOES_THREADS", "threads"),
     )
+    # Limites do DuckDB (revisão de segurança): memória e temporários têm teto, pois o contêiner
+    # tem 2 GB e a raiz é read-only (`/tmp` é tmpfs gravável de 512 MB no compose).
+    duck_memory_limit: str = "1200MB"
+    duck_max_temp_directory_size: str = "400MB"
+    duck_temp_directory: Path = Path("/tmp/duck")  # noqa: S108 - tmpfs do contêiner
+    # Cálculos pesados simultâneos; o excedente recebe 503 + Retry-After.
+    calculos_simultaneos: int = 4
     cors_origens: list[str] = ["http://localhost:5173"]
 
 
