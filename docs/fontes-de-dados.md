@@ -85,6 +85,7 @@ erro de rede/5xx. Catálogo: `packages/etl/src/etl/fontes/catalogo.py`.
 
 ## Processamento TSE → Parquet (T-D02)
 `PESSOA_ID_SAL=<sal> uv run etl processar --ano 2022|2026 [--fonte ID ...]` → `data/processed/<fonte>/ano=<ano>/<UF>.parquet`
+**Um sal só para todos os anos** (T-D06): o manifesto guarda `sal_impressao = sha256(sal)[:12]` por arquivo e `etl processar` falha se outro ano de `consulta_cand` tiver impressão diferente. Mudou o sal? Reprocesse 2022 e 2026.
 (`municipio_tse_ibge`, `consulta_cand`, `consulta_vagas`, `votacao_candidato_munzona`,
 `detalhe_votacao_munzona`, `votacao_partido_munzona`, `eleitorado_local_votacao`). Contratos em
 `packages/contratos/src/contratos/tse.py`; nomes = colunas do TSE em minúsculas + `cd_mun_ibge`,

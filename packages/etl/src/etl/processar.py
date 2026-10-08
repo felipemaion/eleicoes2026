@@ -46,6 +46,28 @@ def cpf_valido(digitos: str) -> bool:
     return True
 
 
+def impressao_do_sal(sal: str) -> str:
+    """``sha256(sal)[:12]``: identifica o sal no manifesto sem revelá-lo."""
+    return hashlib.sha256(sal.encode()).hexdigest()[:12]
+
+
+def _conferir_sal_do_manifesto(manifesto: Manifesto, grupo: str, proprio: str, sal: str) -> None:
+    """Falha alto se outro ano do mesmo dataset foi processado com sal diferente.
+
+    ``pessoa_id`` só liga 2022↔2026 se o sal for o mesmo; com sais distintos a interseção
+    é vazia sem erro nenhum (incidente T-D06).
+    """
+    minha = impressao_do_sal(sal)
+    for e in manifesto.entradas.values():
+        if Path(e.caminho).parent.name != grupo or e.caminho == proprio:
+            continue
+        if e.sal_impressao and e.sal_impressao != minha:
+            raise ErroProcessamento(
+                f"sal do pessoa_id difere de {e.caminho} (impressão {e.sal_impressao} ≠ {minha}); "
+                "use o mesmo PESSOA_ID_SAL e reprocesse todos os anos"
+            )
+
+
 def hash_pessoa(cpf: str | None, titulo: str | None, sal: str) -> str | None:
     """``sha256(sal || cpf_normalizado)`` (ADR 0004); sem CPF válido cai no título.
 
@@ -429,6 +451,9 @@ def processar_fonte(
     if not zip_path.exists():
         raise ErroProcessamento(f"{zip_path} não existe; rode `etl baixar` antes")
     ctx = Contexto(ano, sal, raiz_raw, raiz_proc)
+    usa_sal = "pessoa_id" in spec.contrato.derivadas
+    if usa_sal and sal and manifesto:
+        _conferir_sal_do_manifesto(manifesto, Path(alvo.destino).parent.name, alvo.destino, sal)
     cross = (
         _crosswalk(raiz_raw, raiz_proc, ano) if "cd_mun_ibge" in spec.contrato.derivadas else None
     )
@@ -461,5 +486,6 @@ def processar_fonte(
     if manifesto and geracoes:
         entrada = manifesto.por_caminho(alvo.destino)
         if entrada:
-            manifesto.registrar(replace(entrada, dt_geracao=max(geracoes)))
+            impressao = impressao_do_sal(sal) if usa_sal and sal else entrada.sal_impressao
+            manifesto.registrar(replace(entrada, dt_geracao=max(geracoes), sal_impressao=impressao))
     return escritos

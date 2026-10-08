@@ -5,6 +5,7 @@ import io
 import json
 import shutil
 import zipfile
+from dataclasses import replace
 from pathlib import Path
 
 import polars as pl
@@ -320,3 +321,46 @@ def test_publicacao_atomica_nada_parcial(raiz: tuple[Path, Path], tmp_path: Path
     depois = {p.name: p.read_bytes() for p in (proc / "consulta_vagas/ano=2022").glob("*.parquet")}
     assert depois == antes
     assert not list((proc / "consulta_vagas").glob("ano=2022.*"))
+
+
+def _com_impressao(m: Manifesto, ano: int, sal: str) -> None:
+    from etl.processar import impressao_do_sal
+
+    entrada = m.obter(f"http://x/{ano}")
+    assert entrada is not None
+    m.registrar(replace(entrada, sal_impressao=impressao_do_sal(sal)))
+
+
+def _manifesto_cand(tmp_path: Path, anos: list[int]) -> Manifesto:
+    m = Manifesto(tmp_path / "m.json")
+    for ano in anos:
+        caminho = f"tse/consulta_cand/consulta_cand_{ano}.zip"
+        m.registrar(Entrada(f"http://x/{ano}", caminho, "h", 1, "2026-10-07T00:00:00Z"))
+    return m
+
+
+def test_manifesto_guarda_impressao_do_sal(raiz: tuple[Path, Path], tmp_path: Path) -> None:
+    from etl.processar import impressao_do_sal
+
+    m = _manifesto_cand(tmp_path, [2022])
+    processar_fonte("consulta_cand", 2022, *raiz, manifesto=m, sal=SAL)
+    bruto = json.loads((tmp_path / "m.json").read_text())["http://x/2022"]
+    assert bruto["sal_impressao"] == impressao_do_sal(SAL)
+    assert len(bruto["sal_impressao"]) == 12
+    assert SAL not in json.dumps(bruto)  # a impressão não revela o sal
+
+
+def test_sal_diferente_entre_anos_falha_alto(raiz: tuple[Path, Path], tmp_path: Path) -> None:
+    m = _manifesto_cand(tmp_path, [2022, 2026])
+    _com_impressao(m, 2026, "outro-sal")
+    shutil.rmtree(raiz[1] / "consulta_cand", ignore_errors=True)
+    with pytest.raises(ErroProcessamento, match="sal"):
+        processar_fonte("consulta_cand", 2022, *raiz, manifesto=m, sal=SAL)
+    assert m.por_caminho("tse/consulta_cand/consulta_cand_2022.zip") is not None
+    assert not list((raiz[1] / "consulta_cand").rglob("*.parquet"))  # falhou antes de escrever
+
+
+def test_mesmo_sal_entre_anos_passa(raiz: tuple[Path, Path], tmp_path: Path) -> None:
+    m = _manifesto_cand(tmp_path, [2022, 2026])
+    _com_impressao(m, 2026, SAL)
+    processar_fonte("consulta_cand", 2022, *raiz, manifesto=m, sal=SAL)
