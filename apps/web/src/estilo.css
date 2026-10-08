@@ -45,7 +45,7 @@ footer { border-top: 1px solid var(--cor-borda); font-size: var(--texto-pequeno)
 .kpi{background:var(--cor-superficie);border:1px solid var(--cor-borda);border-radius:.5rem;padding:.75rem}
 .kpi dt{color:var(--cor-texto-suave);font-size:.85rem}
 .kpi dd{margin:0;font-size:1.6rem;font-weight:600}
-.kpi small{color:var(--cor-texto-suave)}
+.kpi .unidade{font-size:.85rem;color:var(--cor-texto-suave)}
 .grafico .marca:focus-visible{outline:3px solid var(--cor-destaque);outline-offset:2px}
 .grafico-tabela{margin-top:.5rem;font-size:.9rem}
 .grafico-tabela table{border-collapse:collapse}
@@ -67,7 +67,8 @@ h3 { font-size: 1rem; margin: var(--esp-3) 0 var(--esp-2); }
 .estado.erro { border-color: var(--cor-destaque); color: var(--cor-texto); }
 .estado p { margin: 0 0 var(--esp-2); }
 .nota { font-size: var(--texto-pequeno); color: var(--cor-texto-suave); margin: var(--esp-2) 0; }
-.avisos { margin: var(--esp-3) 0; padding: var(--esp-2) var(--esp-3) var(--esp-2) var(--esp-4); border-left: 4px solid var(--cor-destaque); background: var(--cor-superficie); }
+.avisos { margin: var(--esp-3) 0; padding: var(--esp-1) var(--esp-3); border-left: 4px solid var(--cor-destaque); background: var(--cor-superficie); }
+.avisos p { margin: var(--esp-1) 0; }
 .mapa-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--esp-3); align-items: start; }
 .painel-municipio { padding: var(--esp-3); background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio); overflow-wrap: anywhere; }
 .painel-municipio table { border-collapse: collapse; width: 100%; }

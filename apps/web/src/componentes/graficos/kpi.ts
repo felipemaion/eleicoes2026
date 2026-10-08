@@ -25,7 +25,9 @@ export function render(container: HTMLElement, dados: readonly Kpi[]): Grafico<r
       dd.textContent = FORMATOS[k.formato](k.valor);
       cartao.append(dt, dd);
       if (k.unidade !== undefined) {
-        const u = document.createElement("small");
+        // <dd> extra: <small> solto dentro de <dl> é inválido (axe: definition-list).
+        const u = document.createElement("dd");
+        u.className = "unidade";
         u.textContent = k.unidade;
         cartao.append(u);
       }

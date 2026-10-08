@@ -25,8 +25,8 @@ export const tela: Tela = {
           { rotulo: "% recursos públicos", valor: g.pct_publico, formato: "percentual", unidade: "FEFC + Fundo Partidário ÷ receitas" },
           { rotulo: "% autofinanciamento", valor: g.pct_autofinanciamento, formato: "percentual", unidade: "recursos próprios ÷ receitas" },
         );
-        const avisos = h("ul", { className: "avisos" }, ...avisosGastos(g).map((a) => h("li", { textContent: a })));
-        avisos.setAttribute("role", "note");
+        const avisos = h("aside", { className: "avisos" }, ...avisosGastos(g).map((a) => h("p", { textContent: a })));
+        avisos.setAttribute("aria-label", "Avisos de leitura");
         const areaKpi = h("div");
         const areaDispersao = h("div");
         const areaReceita = h("div");
