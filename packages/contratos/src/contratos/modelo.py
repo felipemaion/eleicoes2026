@@ -25,6 +25,8 @@ class Contrato:
     nao_nulas: tuple[str, ...] = ()
     faixas: dict[str, tuple[float, float]] = field(default_factory=dict)
     derivadas: frozenset[str] = frozenset()
+    # coluna de domínio → nome no CSV do TSE, quando não for ``nome.upper()``
+    origem: dict[str, str] = field(default_factory=dict)
 
     def schema(self) -> dict[str, pl.DataType | type[pl.DataType]]:
         """Schema polars esperado (ordem das colunas incluída)."""

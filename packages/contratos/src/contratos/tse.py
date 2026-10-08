@@ -16,6 +16,8 @@ _ELEICAO = {
 _LOCAL = {
     "cd_municipio_tse": I32, "cd_mun_ibge": I32, "nr_zona": I16,
 }  # fmt: skip
+# O CSV chama o código TSE do município de ``CD_MUNICIPIO``.
+_ORIGEM_MUN = {"cd_municipio_tse": "CD_MUNICIPIO"}
 _OBRIG_ELEICAO = ("ano_eleicao", "nr_turno", "cd_eleicao", "sg_uf", "dt_geracao")
 
 MUNICIPIO_TSE_IBGE = Contrato(
@@ -26,7 +28,7 @@ MUNICIPIO_TSE_IBGE = Contrato(
     },
     chave=("cd_municipio_tse",),
     nao_nulas=("cd_municipio_tse", "cd_mun_ibge", "sg_uf"),
-    derivadas=frozenset(),
+    origem={"cd_mun_ibge": "CD_MUNICIPIO_IBGE"},
 )  # fmt: skip
 
 CONSULTA_CAND = Contrato(
@@ -61,6 +63,7 @@ VOTACAO_CANDIDATO_MUNZONA = Contrato(
     nao_nulas=(*_OBRIG_ELEICAO, "cd_municipio_tse", "nr_zona", "cd_cargo", "sq_candidato",
                "qt_votos_nominais"),
     derivadas=frozenset({"cd_mun_ibge"}),
+    origem=_ORIGEM_MUN,
 )  # fmt: skip
 
 DETALHE_VOTACAO_MUNZONA = Contrato(
@@ -85,6 +88,7 @@ DETALHE_VOTACAO_MUNZONA = Contrato(
     ),
     nao_nulas=(*_OBRIG_ELEICAO, "cd_municipio_tse", "nr_zona", "cd_cargo", "qt_aptos"),
     derivadas=frozenset({"cd_mun_ibge"}),
+    origem=_ORIGEM_MUN,
 )  # fmt: skip
 
 VOTACAO_PARTIDO_MUNZONA = Contrato(
@@ -100,10 +104,11 @@ VOTACAO_PARTIDO_MUNZONA = Contrato(
     },
     chave=(
         "ano_eleicao", "cd_eleicao", "nr_turno", "sg_uf", "cd_municipio_tse", "nr_zona",
-        "cd_cargo", "nr_partido", "st_voto_em_transito",
+        "cd_cargo", "nr_partido", "sq_coligacao", "st_voto_em_transito",
     ),
     nao_nulas=(*_OBRIG_ELEICAO, "cd_municipio_tse", "nr_zona", "cd_cargo", "nr_partido"),
     derivadas=frozenset({"cd_mun_ibge"}),
+    origem=_ORIGEM_MUN,
 )  # fmt: skip
 
 CONSULTA_VAGAS = Contrato(
@@ -131,6 +136,7 @@ ELEITORADO_LOCAL_VOTACAO = Contrato(
     ),
     faixas={"nr_latitude": (-35.0, 6.0), "nr_longitude": (-75.0, -28.0)},
     derivadas=frozenset({"cd_mun_ibge", "qt_secoes"}),
+    origem=_ORIGEM_MUN,
 )  # fmt: skip
 
 CONTRATOS: dict[str, Contrato] = {

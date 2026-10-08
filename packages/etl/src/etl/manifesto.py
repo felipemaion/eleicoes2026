@@ -36,6 +36,10 @@ class Manifesto:
         """Entrada registrada para ``url``, se houver."""
         return self.entradas.get(url)
 
+    def por_caminho(self, caminho: str) -> Entrada | None:
+        """Entrada cujo arquivo (relativo a data/raw) é ``caminho``."""
+        return next((e for e in self.entradas.values() if e.caminho == caminho), None)
+
     def registrar(self, entrada: Entrada) -> None:
         """Insere/substitui a entrada e persiste."""
         self.entradas[entrada.url] = entrada

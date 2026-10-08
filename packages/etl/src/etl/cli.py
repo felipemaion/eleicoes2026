@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import logging
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 import httpx
+from contratos import ContratoViolado
 
 from etl.download import Baixador, DownloadError
 from etl.fontes.catalogo import CATALOGO, alvos
 from etl.manifesto import Manifesto
+from etl.processar import FONTES, ErroProcessamento, processar_fonte
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -24,12 +28,37 @@ def _parser() -> argparse.ArgumentParser:
     b.add_argument("--raiz", type=Path, default=Path("data/raw"))
     b.add_argument("--verificar", action="store_true", help="só confere sha256 local (sem rede)")
     b.add_argument("--forcar", action="store_true", help="ignora o cache")
+    c = sub.add_parser("processar", help="ZIPs brutos → Parquet validado em data/processed")
+    c.add_argument("--ano", type=int, required=True)
+    c.add_argument("--fonte", action="append", choices=sorted(FONTES), help="repetível")
+    c.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    c.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
     return p
+
+
+def _processar(args: argparse.Namespace) -> int:
+    manifesto = Manifesto(args.raiz_raw / "manifesto.json")
+    sal = os.environ.get("PESSOA_ID_SAL") or None
+    falhas = 0
+    for fonte in args.fonte or list(FONTES):
+        try:
+            saidas = processar_fonte(
+                fonte, args.ano, args.raiz_raw, args.raiz_processed, manifesto=manifesto, sal=sal
+            )
+        except (ErroProcessamento, ContratoViolado) as e:
+            falhas += 1
+            print(f"FALHA {fonte}: {e}", file=sys.stderr)
+        else:
+            print(f"processado {fonte}: {len(saidas)} arquivo(s)")
+    return 1 if falhas else 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Ponto de entrada; devolve o código de saída."""
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     args = _parser().parse_args(argv)
+    if args.comando == "processar":
+        return _processar(args)
     try:
         lista = alvos(args.ano, args.fonte, args.uf)
     except ValueError as e:
