@@ -37,14 +37,37 @@ Primeira leva em paralelo: **T-D01, T-A01, T-B01, T-W01**.
 | T-W04 | frontend | telas: visão geral, mapa, gastos, evolução, ficha do candidato |
 | T-A04 | analise | conferência dos números contra totais oficiais do TSE |
 
-## Status em 2026-10-08 (fechamento)
-- **F0–F3 concluídas.** Produção: https://eleicoes2026.maionesys.com — deploy automático na `main`
-  (imagem arm64 no GHCR, bundle por rsync); dados por `make publicar-dados`.
-- Integradas todas as tarefas planejadas: T-D01..T-D05, T-A01, T-A02 (+T-A03), T-A04..T-A07, T-B01..T-B06,
-  T-W01..T-W09 e a lista MBL 2022 (18 candidaturas).
-- Conferência com o TSE: diferença zero (`docs/metodologia/conferencia.md`); smoke de produção verde.
-- Limitação conhecida: em 2022 o TSE não publica coordenada para 5,8% dos votos (BA/ES/SE ~26–30%) — a
-  densidade desses estados é parcial e a API informa o peso fora do mapa.
-- Backlog (F4): Moran/LISA no mapa, bivariado, cartograma, 2º turno, atualização automática das contas 2026,
-  outros partidos (só configuração em `config/grupos.yaml`).
-- Custo de desenvolvimento: `docs/registro/RELATORIO.md`.
+## Status em 2026-10-08 (noite) — F3 no ar, F3+ (melhorias pedidas pelo Felipe) em andamento
+Produção: https://eleicoes2026.maionesys.com — deploy automático na `main`; dados via `make publicar-dados`.
+
+### Concluído (integrado e em produção)
+- Dados: T-D01..T-D07 (fontes, parsers, contas+IPCA, malhas/AMC/PMTiles, seção→local→H3, `pessoa_id` com sal
+  único + lista MBL reproduzível, fotos oficiais WebP).
+- Análise: T-A01, T-A02(+A03), T-A04..T-A07 (spec, biblioteca, conferência com o TSE = diferença zero,
+  textos públicos, rótulos de receita).
+- Backend: T-B01..T-B12 (API, dados reais, Docker, pós-deploy, presidente/exterior, busca com relevância,
+  abrangência, evolução por pessoa, procedência + links oficiais do TSE, UFs por cargo, OOM/503 corrigidos).
+- Frontend: T-W01..T-W14 (5 telas, mapa PMTiles, redesenho com a identidade Missão, overlay, tooltips, busca
+  global, filtros dependentes, mapa focado no candidato, gastos com hover, evolução com escolha de pessoas,
+  ficha rastreável, grupos vindos da API).
+- Varredura em produção após T-B11: 2.143 pedidos, 0 × 5xx.
+
+### Em andamento / fila
+| Tarefa | Papel | O quê | Estado |
+|---|---|---|---|
+| T-B13 | backend | `foto_url` + página oficial do candidato no TSE (verificada) | em andamento |
+| T-W15 | frontend | hover dos Gastos com foto; clique abre o TSE em nova aba | fila (depois da T-B13) |
+| T-A08 | analise | indicadores de **receitas** (spec + biblioteca + textos) | em andamento |
+| T-B14 | backend | API de receitas | fila (depois da T-A08/T-B13) |
+| T-W16 | frontend | receitas na interface ("Financiamento") | fila (depois da T-B14/T-W15) |
+
+Fotos já publicadas em `/fotos/<ano>/<sq>.webp` (48.996). Briefs em `docs/tarefas/`.
+
+### Limitações conhecidas
+- 2022: o TSE não publica coordenada para 5,8% dos votos (BA/ES/SE ~26–30%) — densidade parcial; a API informa.
+- Contas de 2026 parciais; IPCA com mês-base = último publicado (ADR 0007).
+- Deep link de página humana do candidato no DivulgaCandContas ainda não verificado (T-B13 investiga).
+
+### Backlog (F4)
+Moran/LISA no mapa, bivariado, cartograma, 2º turno, atualização automática das contas 2026, outros partidos
+(só configuração em `config/grupos.yaml`). Custo: `docs/registro/RELATORIO.md`.

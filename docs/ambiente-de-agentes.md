@@ -59,6 +59,14 @@ O orquestrador lê o handoff (arquivo), não a tela — poupa contexto.
 - Briefs são autossuficientes (objetivo, arquivos, critério de aceite, links de spec) para que o
   agente recomece limpo sem perder estado: o estado vive no repositório, não na conversa.
 
+## Operação do orquestrador (aprendizados)
+- Painéis em `--permission-mode auto` (heredocs travavam o `acceptEdits`); push/PR/merge negados aos agentes
+  por `--disallowedTools` (o `settings.json` do projeto vale também para o orquestrador, que precisa publicar).
+- `despachar.sh … --limpar` espera 6 s após o `/clear` — mensagens enviadas antes se perdem.
+- Vigia (handoffs, commits, prompts travados, contexto ≥ 60%) roda como Monitor do orquestrador.
+- Ao integrar, rebase com `--onto origin/main <último commit já squashado>` quando o branch nasceu de outro
+  branch já integrado; conflito → o próprio agente resolve.
+
 ## Registro (ledger)
 
 `scripts/ledger.py` lê o `usage` dos transcripts do Claude Code (sem hooks) e os eventos de

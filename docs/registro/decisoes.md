@@ -14,3 +14,9 @@
 | 2026-10-07 | Grupo padrão `mbl_2022` = todas as 18 candidaturas (indicados + Missão 2026 que disputou 2022), mesmo quem não era MBL em 2022; recorte `mbl_2022_indicados` fica como filtro opcional | pedido do Felipe | Felipe |
 | 2026-10-07 | PR #20 foi integrado com CI vermelho (falha do laço de merge); corrigido no #21 e criado `scripts/integrar.sh` (merge só com checks verdes) | incidente de processo | orquestrador |
 | 2026-10-07 | Painéis dos agentes em `--permission-mode auto` | em `acceptEdits` cada heredoc travava num prompt manual; negações de push/PR/merge seguem por `--disallowedTools` | orquestrador |
+| 2026-10-08 | Redesenho com a identidade do Missão (#fcbe26, #070d0c, branco), layout amplo, overlay e tooltip único | pedido do Felipe | Felipe |
+| 2026-10-08 | Busca global, filtros dependentes, mapa focado na abrangência do candidato, evolução por pessoa | pedido do Felipe | Felipe |
+| 2026-10-08 | Procedência em todo número (`fontes`) e links oficiais do TSE com `verificado`/nota | "tudo explicável e rastreável" | Felipe |
+| 2026-10-08 | Fotos oficiais do TSE hospedadas no próprio servidor (WebP 160×200) | confiabilidade; TSE bloqueia scripts | orquestrador |
+| 2026-10-08 | `pessoa_id` com sal único e guarda no manifesto | anos com sais diferentes zeravam a evolução por pessoa | dados |
+| 2026-10-08 | Indicadores de receitas (T-A08/T-B14/T-W16) | pedido do Felipe | Felipe |

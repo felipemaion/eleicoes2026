@@ -1,6 +1,6 @@
 # Eleicoes2026 — desempenho do Partido Missão (14)
 
-Dashboard público (`eleicoes2026.maionesys.com`) que mede o desempenho dos candidatos do
+Dashboard público **no ar em https://eleicoes2026.maionesys.com** que mede o desempenho dos candidatos do
 **Partido Missão (nº 14)** nas eleições gerais de 2026, por município e zona eleitoral, com mapa
 de densidade de votos e indicadores de gasto de campanha, e compara com o **grupo MBL de 2022**
 (candidatos em outros partidos, lista em `data/reference/`). Feito para expandir a outros
@@ -50,7 +50,8 @@ scripts/              tmux, ledger, despacho de tarefas, ctx-watch
 make setup        # uv sync + pnpm install + hooks
 make test         # todos os testes (py + web)
 make lint         # ruff + mypy + eslint + tsc
-make etl ANO=2026 # baixa e processa dados oficiais (local; pesado)
+make etl ANO=2026 # baixa e processa dados oficiais (local; inclui geo, seção/H3)
+make publicar-dados DIR=data/processed  # rsync → servidor (exige `brew install rsync`)
 make dev          # API (:8000) + web (:5173) com dados processados
 make openapi      # regenera docs/api/openapi.json (CI confere diff)
 make agentes      # sobe janelas tmux 'agentes' e 'infra'
@@ -93,7 +94,8 @@ make relatorio    # docs/registro/RELATORIO.md (tokens e custo)
 - Conventional Commits em português: `feat(api): endpoint de comparativo`.
 - **Autor único: Felipe (felipemaion).** Proibido trailer `Co-Authored-By` de IA — o hook
   `commit-msg` recusa. Nada de usuário bot no repositório.
-- Agentes **não** fazem `git push` nem `gh pr merge`: o orquestrador revisa e integra.
+- Agentes **não** fazem push, PR nem merge (`--disallowedTools` no `dev-env.sh`): o orquestrador revisa e
+  integra com `scripts/integrar.sh <PR>` (só com todos os checks verdes; espera os checks do commit novo).
 
 ### Escopo de cada agente
 Cada papel tem território exclusivo (ver `.claude/agents/<papel>.md`). Precisa mudar algo fora
@@ -110,6 +112,16 @@ no contrato (`packages/contratos` ou OpenAPI), com PR próprio.
    como verificar) e responde `pronto T-xxx`.
 5. Orquestrador revisa (subagentes revisores), faz push, abre PR e integra com `scripts/integrar.sh <PR>` (só com CI verde).
 6. Contexto do agente > 60% ou tarefa encerrada → `/clear` e próximo brief (`--limpar`).
+
+## Produção e operação
+
+- Deploy automático a cada merge na `main` (`.github/workflows/deploy.yml`): imagem arm64 no GHCR (público) +
+  bundle web por rsync. A API só relê dados ao reiniciar: após `make publicar-dados`, dispare o workflow Deploy.
+- Servidor: Oracle (ARM64, 2 OCPU) — `docs/deploy.md`. Dados em `datasets/` (:ro); estáticos, `tiles/` e
+  `fotos/` em `public/` (Caddy próprio). Infra só via agente **Oracle**.
+- Verificação: `apps/api/scripts/smoke.py` e `varredura.py` contra produção (`--base https://…`); a Cloudflare
+  bloqueia o User-Agent padrão do Python (403/1010) — scripts enviam UA próprio.
+- `pessoa_id` exige o **mesmo sal** em todos os anos (manifesto guarda a impressão e o ETL recusa mistura).
 
 ## Comunicação entre agentes
 
