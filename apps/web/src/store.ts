@@ -26,11 +26,12 @@ export interface Filtros {
   ano: Ano;
   /** Candidato da tela "Candidato", no formato `ano:sq_candidato`; vazio = nenhum. */
   candidato: string;
-  /** Seleção da Evolução: `pessoa_id_publico` separados por vírgula; vazio = grupo inteiro. */
-  pessoas: string;
+  /** Lados da Evolução, no formato `g:<grupo>` ou `c:<sq>,<sq>`; vazio = padrão da configuração. */
+  de: string;
+  para: string;
 }
 
-export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "deputado_federal", grupo: "missao_2026", ano: 2026, candidato: "", pessoas: "" };
+export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "deputado_federal", grupo: "missao_2026", ano: 2026, candidato: "", de: "", para: "" };
 
 import { normalizarFiltros } from "./filtros-logica";
 

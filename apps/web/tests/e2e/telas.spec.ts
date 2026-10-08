@@ -49,6 +49,7 @@ test("evolução: três mapas, KPIs em ‰ e avisos de rezoneamento", async ({ p
   await page.goto("/#/evolucao");
   await expect(page.locator(".mapas-3 canvas")).toHaveCount(3, { timeout: 20_000 });
   await expect(page.getByText(/mesmas quebras de cor/)).toBeVisible();
+  await page.locator(".notas-dados > summary").click();
   await expect(page.getByText("Zonas eleitorais mudaram.")).toBeVisible();
   await expect(page.locator("dl.kpis")).toContainText("6,1 ‰");
 });
@@ -96,7 +97,7 @@ test("sem rolagem horizontal em 360 px com dados", async ({ page }) => {
 test("evolução envia `comparacao` (obrigatória na API) já na primeira chamada", async ({ page }) => {
   const urls = await simularApi(page);
   await page.goto("/#/evolucao?uf=SE");
-  await expect(page.getByLabel("Comparar")).toBeVisible();
+  await expect(page.locator(".frase-resumo")).toBeVisible();
   const chamadas = urls.filter((u) => u.startsWith("/api/comparativo"));
   expect(chamadas.length).toBeGreaterThan(0);
   expect(chamadas.every((u) => new URL(u, "http://x").searchParams.has("comparacao"))).toBe(true);

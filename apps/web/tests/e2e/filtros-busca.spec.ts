@@ -132,11 +132,11 @@ test("grupos: o seletor lista todos os grupos da API e trocar de grupo recarrega
   await expect.poll(() => urls.some((u) => u.startsWith("/api/mapa?") && u.includes("grupo=mbl_2026"))).toBe(true);
 });
 
-test("grupos: a Evolução oferece MBL 2022 → MBL 2026 e abre nela quando o grupo é mbl_2026", async ({ page }) => {
+test("grupos: a Evolução abre em MBL 2022 → MBL 2026 quando o grupo é mbl_2026, e os grupos viram opções dos cartões", async ({ page }) => {
   const urls = await simularApi(page);
   await page.goto("/#/evolucao?grupo=mbl_2026");
-  const comparar = page.getByLabel("Comparar");
-  await expect(comparar.locator("option")).toContainText(["MBL 2022 → Missão 2026", "MBL 2022 → MBL 2026"]);
-  await expect(comparar).toHaveValue("mbl2022_mbl2026");
+  await expect(page.locator(".frase-resumo")).toContainText("MBL 2026");
+  await page.getByRole("button", { name: "Alterar" }).nth(1).click();
+  await expect(page.locator(".cartao-lado").nth(1).locator("select[name=grupo] option")).toContainText(["Partido Missão 2026", "MBL 2026 (Missão + aliados em outros partidos)"]);
   await expect.poll(() => urls.some((u) => u.startsWith("/api/comparativo?") && u.includes("comparacao=mbl2022_mbl2026"))).toBe(true);
 });

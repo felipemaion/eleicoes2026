@@ -83,3 +83,17 @@ describe("pessoas e parâmetros em lista", () => {
     expect(urls[1]).toBe("/api/evolucao/pessoas?q=ana&uf=SE");
   });
 });
+
+describe("cliente — erro HTTP", () => {
+  const falhar = (status: number, corpo: unknown): void => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false, status, json: () => Promise.resolve(corpo) })));
+  };
+  it("422 carrega status e o código do motivo (detail.codigo, detail texto ou ausente)", async () => {
+    for (const [corpo, codigo] of [[{ detail: { codigo: "sq_fora_do_recorte" } }, "sq_fora_do_recorte"], [{ detail: "grupo_ano_errado" }, "grupo_ano_errado"], [{ detail: [{ msg: "x" }] }, null], [null, null]] as const) {
+      falhar(422, corpo);
+      const e = await criarCliente().comparativo({ cargo: "X" }).catch((x: unknown) => x);
+      expect(e).toMatchObject({ status: 422, codigo });
+      expect((e as Error).message).toMatch(/: 422$/);
+    }
+  });
+});

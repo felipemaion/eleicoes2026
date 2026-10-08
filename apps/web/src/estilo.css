@@ -271,19 +271,8 @@ rect.marca:hover, rect.marca:focus-visible { stroke: var(--cor-destaque); stroke
 .botao-link:hover, .botao-link:focus-visible { background: var(--cor-acento); color: var(--cor-texto-acento); }
 .botao-link:focus-visible { outline: 3px solid var(--cor-destaque); outline-offset: 2px; }
 
-.selecao-pessoas { margin-block: var(--esp-3); padding: var(--esp-3); border: 1px solid var(--cor-borda); border-radius: var(--raio); background: var(--cor-superficie); }
-.selecao-pessoas h2 { margin-top: 0; }
 .rotulo-linha { flex-direction: row !important; align-items: center; gap: var(--esp-2) !important; }
 .atalhos { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); margin-block: var(--esp-2); }
-.atalhos button:disabled { opacity: 0.5; cursor: not-allowed; }
-.selecao-contagem { font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
-.lista-pessoas { list-style: none; margin: 0; padding: 0; max-height: 22rem; overflow-y: auto; display: grid; gap: 1px; background: var(--cor-borda); border: 1px solid var(--cor-borda); border-radius: var(--raio); }
-.lista-pessoas:empty { display: none; }
-.pessoa-item { padding: var(--esp-2) var(--esp-3); background: var(--cor-fundo); }
-.pessoa-item label { display: flex; gap: var(--esp-2); align-items: flex-start; cursor: pointer; }
-.pessoa-item input { margin-top: 0.3rem; }
-.pessoa-texto { display: flex; flex-wrap: wrap; gap: 0 var(--esp-2); align-items: baseline; }
-.pessoa-contexto { flex-basis: 100%; font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
 .selo { font-size: 0.75rem; padding: 0 var(--esp-2); border: 1px solid var(--cor-acento); border-radius: 999px; }
 
 .tabela-rolavel { overflow-x: auto; border: 1px solid var(--cor-borda); border-radius: var(--raio); }
@@ -303,3 +292,27 @@ rect.marca:hover, rect.marca:focus-visible { stroke: var(--cor-destaque); stroke
 .foto-candidato img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tooltip-rodape { clear: both; margin: 0.4rem 0 0; color: var(--cor-texto-suave); font-size: 0.85rem; }
 circle.marca.com-link { cursor: pointer; }
+
+/* Comparador 2022 → 2026 (Evolução) */
+.frase-resumo { font-size: 1.15rem; margin-block: var(--esp-3); }
+.frase-contagem { color: var(--cor-texto-suave); }
+.cartoes-lados { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--esp-3); align-items: start; }
+.cartoes-seta { align-self: center; font-size: 1.6rem; color: var(--cor-texto-suave); }
+.cartao-lado { padding: var(--esp-3); border: 1px solid var(--cor-borda); border-radius: var(--raio); background: var(--cor-superficie); }
+.cartao-lado h2 { margin: 0 0 var(--esp-1); font-size: 1rem; color: var(--cor-texto-suave); }
+.cartao-resumo { margin: 0 0 var(--esp-2); font-weight: 600; overflow-wrap: anywhere; }
+.cartao-erro { margin: var(--esp-2) 0 0; color: var(--cor-erro, #b3261e); font-size: var(--texto-pequeno); }
+.cartao-editor { margin-top: var(--esp-3); display: grid; gap: var(--esp-2); }
+.cartao-editor[hidden], .cartao-painel[hidden] { display: none; }
+.cartao-modos { display: flex; gap: var(--esp-3); }
+.cartao-painel { display: grid; gap: var(--esp-1); position: relative; }
+.chips-candidatos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--esp-1); }
+.chip-candidato { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.2rem 0.1rem 0.6rem; border: 1px solid var(--cor-borda); border-radius: 999px; background: var(--cor-fundo); }
+.chip-candidato button { border: 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.2rem 0.4rem; }
+.notas-dados { margin-block: var(--esp-3); }
+.notas-dados > summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 720px) {
+  .cartoes-lados { grid-template-columns: 1fr; }
+  .cartoes-seta { transform: rotate(90deg); justify-self: center; }
+}
+.tabela-rolagem { overflow-x: auto; max-width: 100%; }
