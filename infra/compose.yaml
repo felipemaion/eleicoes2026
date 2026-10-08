@@ -1,6 +1,7 @@
 # Eleicoes2026 API — contêiner único atrás do Caddy (docs/deploy.md, ADR 0002).
 # Sem `ports:`: o Caddy alcança `eleicoes2026-api:8000` pela rede externa `proxy`.
-# Uso no servidor:  docker compose -f infra/compose.yaml up -d --build
+# Local/espelho: em produção o compose é do Oracle e a imagem vem do GitHub Actions (ghcr.io).
+# Local:  docker compose -f infra/compose.yaml up -d --build
 services:
   api:
     container_name: eleicoes2026-api
@@ -8,7 +9,7 @@ services:
       context: ..
       dockerfile: apps/api/Dockerfile
       platforms: [linux/arm64]
-    image: eleicoes2026-api:${TAG:-latest}
+    image: ghcr.io/felipemaion/eleicoes2026-api:${TAG:-latest}
     restart: unless-stopped
     # CPU é o recurso escasso do servidor (4 outros serviços): teto 1 vCPU, 2 GB.
     cpus: "1.0"
