@@ -13,6 +13,15 @@ Base: pesquisa do agente de análise (2026-10-07). Fontes no fim.
    candidatos nas duas eleições".
 7. **Municípios pequenos**: taxas instáveis → suavização bayesiana empírica ou alerta de n baixo.
 8. **Contas de 2026 são parciais** até a prestação final — exibir `DT_GERACAO` e aviso.
+9. **Voto em candidato inapto é nulo** (CE art. 175 §3º) e o TSE omite o candidato do
+   `votacao_candidato_munzona`; quem existir só no `consulta_cand` como INAPTO tem 0 votos no
+   painel, não "dado faltante". Ver `conferencia.md`.
+10. **Legenda total = `leg_validos + nom_convr_leg_validos`.** Em 2022 o `detalhe_votacao_munzona`
+    de SP já embute os convertidos em `qt_votos_leg_validos`; usar a legenda do
+    `votacao_partido_munzona` ou `qt_total_votos_leg_validos`, nunca a parcela isolada.
+11. **Presidente fica em `BR.parquet`** no processado; somar só as 27 UFs zera o cargo 1.
+12. **Custo por voto exclui repasses** a outros candidatos/partidos (§4.2): difere do total de
+    despesas do DivulgaCandContas; dizer isso no tooltip.
 
 ## Visualização
 - Coroplético **só com taxas**; absolutos em símbolos proporcionais (centroide) ou hexbin H3.
