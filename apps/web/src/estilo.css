@@ -142,7 +142,11 @@ footer p { margin: var(--esp-1) 0; }
 .tooltip-lista dt { color: var(--cor-texto-suave); }
 .tooltip-lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 /* nowrap só no tooltip de dados (rótulo curto + número); texto corrido quebra normalmente. */
-.tooltip-lista--dados dt, .tooltip-lista--dados dd { white-space: nowrap; }
+.tooltip-lista--dados dd { white-space: nowrap; }
+/* Rótulos quebram linha antes de o valor ser cortado; a caixa nunca é menor que o conteúdo (sem overflow horizontal). */
+.tooltip-lista--dados dt { overflow-wrap: break-word; }
+.tooltip { min-width: min-content; }
+.tooltip[data-lado="direita"]::before, .tooltip[data-lado="esquerda"]::before { display: none; }
 .tooltip-cabeca { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.3rem; }
 .tooltip-cabeca .tooltip-titulo { margin: 0; }
 

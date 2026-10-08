@@ -170,7 +170,7 @@ test("financiamento (T-W16): receita × votos com hover, saldo, clique no TSE e 
   const ana = page.locator('.grafico-receita circle.marca[data-id="1"]');
   await ana.hover();
   const balao = page.locator(".tooltip-flutuante:not([hidden])");
-  for (const t of ["Receita total", "Receita por voto", "Saldo (receita − despesa contratada)", "% pessoas físicas"]) await expect(balao).toContainText(t);
+  for (const t of ["Receita total", "Receita por voto", "Saldo", "% pessoas físicas"]) await expect(balao).toContainText(t);
   await expect(balao.locator("img")).toHaveAttribute("alt", "Foto de Ana Souza");
   await ana.click();
   const abertos = await page.evaluate(() => (window as unknown as { __abertos: unknown[][] }).__abertos);
@@ -179,4 +179,34 @@ test("financiamento (T-W16): receita × votos com hover, saldo, clique no TSE e 
   await expect(tabela).toContainText("set/2026");
   await expect(tabela).toContainText("+11,5%");
   await page.screenshot({ path: `${CAPTURAS}/T-W16-financiamento.png`, fullPage: true });
+});
+
+test("gastos (T-W23): balão das duas dispersões nunca é cortado nos pontos mais à direita e mais acima", async ({ page }) => {
+  await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
+  for (const largura of [1280, 700]) {
+    await page.setViewportSize({ width: largura, height: 800 });
+    await page.goto("/#/gastos");
+    const balao = page.locator(".tooltip-flutuante:not([hidden])");
+    for (const grafico of [".grafico-receita", ".grafico-custo, .grafico-despesa"]) {
+      const pontos = page.locator(`${grafico} circle.marca`);
+      if (await pontos.count() === 0) continue;
+      await expect(pontos.first()).toBeVisible();
+      const caixas = await pontos.evaluateAll((l) => l.map((c) => { const r = c.getBoundingClientRect(); return { dir: r.right, topo: r.top }; }));
+      const alvos = new Set([caixas.findIndex((c) => c.dir === Math.max(...caixas.map((k) => k.dir))), caixas.findIndex((c) => c.topo === Math.min(...caixas.map((k) => k.topo)))]);
+      for (const i of alvos) {
+        await page.mouse.move(2, 2);
+        await pontos.nth(i).scrollIntoViewIfNeeded();
+        await pontos.nth(i).hover();
+        await expect(balao).toBeVisible();
+        const caixa = (await balao.boundingBox()) ?? { x: -1, y: -1, width: 9999, height: 9999 };
+        expect(caixa.x).toBeGreaterThanOrEqual(0);
+        expect(caixa.y).toBeGreaterThanOrEqual(0);
+        expect(caixa.x + caixa.width).toBeLessThanOrEqual(largura);
+        const cortes = await balao.evaluate((el) => [el, ...el.querySelectorAll("*")].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${e.tagName}.${e.getAttribute("class") ?? ""}:${String(e.scrollWidth)}>${String(e.clientWidth)}`));
+        const det = await balao.locator("dt,dd").evaluateAll((l) => l.map((e) => `${e.textContent}:${String(Math.round(e.getBoundingClientRect().width))}:${getComputedStyle(e).whiteSpace}`));
+        expect(cortes, det.join(" | ")).toEqual([]);
+      }
+    }
+    await page.screenshot({ path: `${CAPTURAS}/T-W23-balao-${String(largura)}.png`, fullPage: false });
+  }
 });

@@ -58,7 +58,9 @@ export function encaixar(caixa: HTMLElement, ancora: Ancora): void {
   caixa.style.top = "0px";
   const r = caixa.getBoundingClientRect();
   const p = posicionar(ancora, { largura: r.width, altura: r.height }, viewport());
-  caixa.style.maxWidth = `${String(p.largura)}px`;
+  // Largura natural já cabe: só fixa maxWidth quando a tela é menor que o conteúdo (rótulos passam a quebrar).
+  caixa.style.maxWidth = p.comprimida ? `${String(p.largura)}px` : "";
+  caixa.dataset["comprimida"] = String(p.comprimida);
   caixa.style.left = `${String(Math.round(p.x))}px`;
   caixa.style.top = `${String(Math.round(p.y))}px`;
   caixa.dataset["lado"] = p.lado;
