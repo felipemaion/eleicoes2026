@@ -14,7 +14,7 @@ critico=0
 
 while read -r painel papel; do
   [ -n "$papel" ] || continue
-  pct="$(tmux capture-pane -p -t "$painel" | grep -oE 'ctx:[0-9]+%' | tail -1 | tr -dc '0-9')"
+  pct="$(tmux capture-pane -p -t "$painel" | grep -oE 'ctx:[0-9]+%' | tail -1 | tr -dc '0-9' || true)"
   pct="${pct:-?}"
   estado=ok
   if [ "$pct" != "?" ]; then

@@ -25,7 +25,7 @@ import re
 import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
@@ -314,7 +314,7 @@ def _safe_cost(usage: TokenUsage, model: str) -> float:
 
 
 def _agora() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 @dataclass
@@ -371,13 +371,13 @@ def ledger_path(project_root: Path, quando: datetime | None = None) -> Path:
     o arquivo versionado acontece quando o orquestrador decide, via
     `ledger.py consolidar`.
     """
-    momento = quando or datetime.now(UTC)
+    momento = quando or datetime.now(timezone.utc)
     return project_root / "docs" / "registro" / "ledger" / f"{momento:%Y-%m}.raw.jsonl"
 
 
 def consolidated_ledger_path(project_root: Path, quando: datetime | None = None) -> Path:
     """Caminho do ledger versionado do mes corrente."""
-    momento = quando or datetime.now(UTC)
+    momento = quando or datetime.now(timezone.utc)
     return project_root / "docs" / "registro" / "ledger" / f"{momento:%Y-%m}.jsonl"
 
 
