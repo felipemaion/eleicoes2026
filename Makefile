@@ -27,7 +27,7 @@ publicar-dados:
 
 dev:
 	@trap 'kill 0' INT TERM; \
-	ELEICOES_DIR_DADOS=$${ELEICOES_DIR_DADOS:-data/processed} uv run uvicorn api.main:app_producao --factory --reload --port 8000 & \
+	ELEICOES_VERSAO_APP=$${ELEICOES_VERSAO_APP:-dev} ELEICOES_DIR_DADOS=$${ELEICOES_DIR_DADOS:-data/processed} uv run uvicorn api.main:app_producao --factory --reload --port 8000 & \
 	(cd apps/web && pnpm dev) & wait
 
 openapi:

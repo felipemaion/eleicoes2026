@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     aquecer: bool = True
     # Teto de consultas pré-calculadas: metade do LRU, para não expulsar o que já está quente.
     aquecimento_max_entradas: int = 128
+    # Sha do build, injetado na imagem (ELEICOES_VERSAO_APP). Entra no ETag: sem isso, um deploy que
+    # muda o formato da resposta sem mudar o DT_GERACAO receberia 304 e o navegador manteria o
+    # JSON antigo. Sem default de propósito: `criar_app` falha alto se faltar.
+    versao_app: str | None = Field(
+        default=None, validation_alias=AliasChoices("ELEICOES_VERSAO_APP", "versao_app")
+    )
     cors_origens: list[str] = ["http://localhost:5173"]
 
 

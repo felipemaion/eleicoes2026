@@ -39,6 +39,10 @@ COPY data/reference/mbl_2022.csv data/reference/mbl_2022.csv
 
 # Em --no-editable o pacote mora em site-packages: os caminhos não podem ser deduzidos do
 # __file__, então vêm do ambiente. Os Parquet entram por volume somente leitura em /datasets.
+# Sha do build (deploy.yml passa `--build-arg VERSAO_APP=${{ github.sha }}`): entra no ETag e no
+# /api/health. Sem default: a API recusa subir sem ele.
+ARG VERSAO_APP
+ENV ELEICOES_VERSAO_APP=$VERSAO_APP
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

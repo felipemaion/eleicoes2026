@@ -1,5 +1,7 @@
 """Fábrica da aplicação FastAPI."""
 
+import hashlib
+import json
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -26,6 +28,12 @@ logger = logging.getLogger(__name__)
 def criar_app(settings: Settings | None = None) -> FastAPI:
     """Monta a app; `settings` explícito facilita testes."""
     cfg = settings or obter_settings()
+    if not cfg.versao_app:
+        raise RuntimeError(
+            "ELEICOES_VERSAO_APP ausente: o ETag precisa do sha do build "
+            "(o Dockerfile injeta; em dev use `make dev`)"
+        )
+    versao_app = cfg.versao_app
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -78,10 +86,15 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware, allow_origins=cfg.cors_origens, allow_methods=["GET"], allow_headers=[]
     )
-    instalar_cache(app, cfg.cache_max_age)
     app.include_router(saude.router, prefix="/api")
     app.include_router(meta.router, prefix="/api")
     app.include_router(dominio.router, prefix="/api")
+    app.state.versao_app = versao_app
+    # Reforço do sha: mudança de contrato invalida o cache mesmo que o sha não chegue (ex.: dev).
+    esquema = json.dumps(app.openapi(), sort_keys=True).encode()
+    instalar_cache(
+        app, cfg.cache_max_age, f"{versao_app}|{hashlib.sha256(esquema).hexdigest()[:12]}"
+    )
 
     @app.exception_handler(ErroDominio)
     async def _erro_dominio(_: Request, erro: ErroDominio) -> JSONResponse:
