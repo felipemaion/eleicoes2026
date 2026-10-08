@@ -55,10 +55,10 @@ Produção: https://eleicoes2026.maionesys.com — deploy automático na `main`;
 ### Em andamento / fila
 | Tarefa | Papel | O quê | Estado |
 |---|---|---|---|
-| T-B13 | backend | `foto_url` + página oficial do candidato no TSE (verificada) | em andamento |
-| T-W15 | frontend | hover dos Gastos com foto; clique abre o TSE em nova aba | fila (depois da T-B13) |
+| T-B13 | backend | `foto_url` + página oficial do candidato no TSE (verificada) | **concluído** (PR #70) |
+| T-W15 | frontend | hover dos Gastos com foto; clique abre o TSE em nova aba | em andamento |
 | T-A08 | analise | indicadores de **receitas** (spec + biblioteca + textos) | em andamento |
-| T-B14 | backend | API de receitas | fila (depois da T-A08/T-B13) |
+| T-B14 | backend | API de receitas | fila (depois da T-A08) |
 | T-W16 | frontend | receitas na interface ("Financiamento") | fila (depois da T-B14/T-W15) |
 
 Fotos já publicadas em `/fotos/<ano>/<sq>.webp` (48.996). Briefs em `docs/tarefas/`.
@@ -66,7 +66,7 @@ Fotos já publicadas em `/fotos/<ano>/<sq>.webp` (48.996). Briefs em `docs/taref
 ### Limitações conhecidas
 - 2022: o TSE não publica coordenada para 5,8% dos votos (BA/ES/SE ~26–30%) — densidade parcial; a API informa.
 - Contas de 2026 parciais; IPCA com mês-base = último publicado (ADR 0007).
-- Deep link de página humana do candidato no DivulgaCandContas ainda não verificado (T-B13 investiga).
+- Página do candidato no DivulgaCandContas: padrão `#/candidato/<UF>/<UF>/<eleição>/<sq>/<ano>/<UF>` verificado (T-B13).
 
 ### Backlog (F4)
 Moran/LISA no mapa, bivariado, cartograma, 2º turno, atualização automática das contas 2026, outros partidos
