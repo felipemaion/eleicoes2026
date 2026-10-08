@@ -478,7 +478,7 @@
     },
     "evolucao": {
       "titulo": "De 2022 para 2026",
-      "subtitulo": "Como mudou o desempenho do grupo entre o MBL de 2022 e o Missão de 2026, no mesmo cargo, município a município.",
+      "subtitulo": "Compare um lado de 2022 com um de 2026, cada um com um grupo ou candidatos escolhidos, no mesmo cargo e UF, município a município.",
       "nota_rodape": "Fonte: TSE, eleições de 2022 e 2026, 1º turno. Comparação por município (IBGE) e hexágonos, nunca por zona eleitoral. Dados de 2026 gerados em {dt_geracao}.",
       "indicadores": [
         "evolucao",
@@ -675,6 +675,63 @@
     "repasse_entre_candidatos": {
       "termo": "Repasse entre candidatos",
       "definicao": "Dinheiro que uma campanha transfere a outra, inclusive do Fundo Eleitoral. Aparece como despesa de quem repassa e receita de quem recebe."
+    },
+    "indicados": {
+      "termo": "Indicados",
+      "definicao": "As 4 candidaturas de 2022 que o MBL indicou para concorrer por outro partido (todas pelo União Brasil): Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo. Na tela, aparecem com o selo \"indicado pelo MBL\"."
+    },
+    "grupo_mbl_2022": {
+      "termo": "Grupo MBL 2022",
+      "definicao": "18 candidaturas de 2022: os 4 indicados e mais 14 pessoas que concorreram pelo Missão em 2026 e também disputaram 2022, por qualquer partido. Vários destes 14 não eram do MBL em 2022. O critério foi definido pelo autor do painel."
+    },
+    "grupo_mbl_2026": {
+      "termo": "Grupo MBL 2026",
+      "definicao": "Todas as candidaturas do Partido Missão em 2026 mais Cristiano Beraldo, indicado do MBL em 2022 que em 2026 concorreu pelo PP."
+    },
+    "comparador": {
+      "termo": "Comparador 2022×2026",
+      "definicao": "Põe lado a lado um lado de 2022 e um de 2026. Cada lado é um grupo pronto ou candidatos escolhidos na busca. Só compara o mesmo cargo na mesma UF, no 1º turno, por município e hexágono, nunca por zona eleitoral, que mudou entre os anos."
+    }
+  },
+  "comparador": {
+    "placeholders": {
+      "busca": "o que a pessoa digitou na busca",
+      "n": "quantos resultados aparecem",
+      "total": "quantos resultados existem",
+      "contexto": "cargo e UF escolhidos, ex. Deputado Federal · São Paulo"
+    },
+    "ui": {
+      "alterar": "Alterar",
+      "aplicar": "Aplicar",
+      "cancelar": "Cancelar",
+      "limpar": "Voltar ao padrão",
+      "modo_rotulo": "O que comparar neste lado",
+      "modo_grupo": "Grupo",
+      "modo_candidatos": "Candidatos",
+      "grupo_rotulo": "Grupo",
+      "busca_rotulo": "Buscar candidato (nome, número ou partido)",
+      "placeholder_busca": "Nome, número ou partido",
+      "sugestoes_rotulo": "Candidaturas encontradas",
+      "minimo": "Digite pelo menos 2 letras ou números.",
+      "buscando": "Buscando…",
+      "busca_indisponivel": "A busca não respondeu. Tente de novo em instantes.",
+      "sem_resultado": "Nenhum candidato encontrado para “{busca}” neste cargo e UF. Tente só o sobrenome ou o número de urna.",
+      "refine": "Mostrando {n} de {total} resultados. Digite mais para refinar.",
+      "erro_422": "Não há o que comparar com esta escolha: um dos lados não tem candidaturas neste cargo e UF. Mude o lado em “Alterar” ou o cargo e a UF na barra de filtros.",
+      "erro_sq_fora_geral": "Não foi possível comparar: alguma candidatura escolhida não concorreu a este cargo nesta UF. Veja o aviso no cartão do lado.",
+      "erro_sq_lado": "Alguma candidatura escolhida aqui não concorreu a este cargo nesta UF. Remova-a em “Alterar” ou mude cargo e UF na barra de filtros.",
+      "sem_dados_comparaveis": "Não há municípios com votos dos dois lados para comparar neste cargo e UF.",
+      "recorte": "Recorte: {contexto}. Mude cargo e UF na barra de filtros.",
+      "selo_indicado": "indicado pelo MBL",
+      "carregando_nomes": "Carregando…",
+      "notas_dados": "Notas sobre os dados",
+      "tabela_titulo": "Candidaturas escolhidas"
+    },
+    "nota_grupo": {
+      "mbl_2022_indicados": "Indicados: as 4 candidaturas de 2022 que o MBL indicou em outro partido (União Brasil): Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo.",
+      "mbl_2022": "Grupo MBL 2022: os 4 indicados (Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo) mais 14 candidatos do Missão em 2026 que também disputaram 2022, por qualquer partido. Vários destes 14 não eram do MBL em 2022.",
+      "mbl_2026": "Grupo MBL 2026: todas as candidaturas do Partido Missão em 2026 mais Cristiano Beraldo, indicado do MBL em 2022 que em 2026 concorreu pelo PP.",
+      "missao_2026": "Partido Missão 2026: todas as candidaturas do Missão (número 14) em 2026."
     }
   }
 }

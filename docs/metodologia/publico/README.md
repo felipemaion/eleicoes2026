@@ -57,11 +57,31 @@ legenda).
 - Grupos de tamanhos diferentes são comparados também **por candidato** e no recorte **"mesmos
   candidatos"** (só quem disputou as duas eleições). O número de candidaturas aparece sempre.
 
-### Quem está no grupo "MBL 2022"
+### O comparador
 
-São **18 candidaturas** de 2022: **4 indicadas** pelo MBL e **14** de pessoas que concorreram
-pelo Missão em 2026 e também disputaram 2022, por qualquer partido. Várias destas **não eram do
-MBL em 2022**. O recorte **"indicados"** mostra só as 4 primeiras.
+A tela de evolução é um **comparador**: de um lado fica **2022**, do outro **2026**. Em cada lado
+você escolhe, em **"Alterar"**, um **grupo pronto** (abaixo) ou **candidatos** achados pela
+busca (nome, número ou partido).
+
+- Só se compara o **mesmo cargo na mesma UF** (escolhidos na barra de filtros). Uma candidatura
+  que não concorreu a esse cargo nessa UF não entra, e o cartão do lado avisa.
+- A comparação é **por município e hexágono**, nunca por zona eleitoral (ver acima).
+- Se um lado tem muito mais candidaturas que o outro, olhe também os números **por candidato**.
+
+### Indicados e grupos
+
+- **Indicados**: as **4 candidaturas de 2022 que o MBL indicou** para concorrer por outro
+  partido, todas pelo União Brasil: **Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano
+  Beraldo**. Na tela, aparecem com o selo "indicado pelo MBL".
+- **Grupo MBL 2022**: **18 candidaturas** de 2022, os **4 indicados** e mais **14** pessoas que
+  concorreram pelo Missão em 2026 e também disputaram 2022, por qualquer partido. Vários destes
+  14 **não eram do MBL em 2022**; o critério foi definido pelo autor do painel. O recorte
+  **"indicados"** mostra só os 4 primeiros.
+- **Grupo MBL 2026**: todas as candidaturas do **Partido Missão** em 2026 **mais Cristiano
+  Beraldo**, que em 2026 concorreu pelo **PP**.
+- **Partido Missão 2026**: só as candidaturas do Missão (número 14).
+
+A lista de referência é pública no repositório (`data/reference/mbl_2022.csv`).
 
 ### O número 14 em 2022 era do PTB
 
