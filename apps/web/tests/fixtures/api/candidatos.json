@@ -73,5 +73,14 @@
     "validos": 1000000,
     "pct_validos": 3.32,
     "penetracao": 19.53
-  }
+  },
+  "fontes": [
+    {
+      "dataset": "votacao_candidato_munzona",
+      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+      "dt_geracao": "2026-10-07",
+      "coluna_regra": "QT_VOTOS_NOMINAIS somados por candidatura",
+      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#votacao_candidato_munzona"
+    }
+  ]
 }

@@ -119,7 +119,20 @@
     "divida": 43000,
     "votos": 18049,
     "custo_voto_contratado": 12.36,
-    "custo_voto_pago": 9.97
+    "custo_voto_pago": 9.97,
+    "repasses_contratados": 30000,
+    "repasses_pagos": 25000,
+    "despesa_total_contratada": 253000,
+    "despesa_total_paga": 205000,
+    "custo_voto_contratado_com_repasses": 14.02,
+    "custo_voto_pago_com_repasses": 11.36,
+    "receita_total": 210000,
+    "receita_por_fonte": {
+      "FEFC": 150000,
+      "Fundo Partidário": 40000,
+      "Autofinanciamento": 20000
+    },
+    "explicacao_repasses": "Repasses são dinheiro transferido a outros candidatos ou ao partido; entram à parte para não contar duas vezes."
   },
   "receitas": {
     "por_categoria": {
@@ -134,5 +147,37 @@
   },
   "contas_parciais": true,
   "base_ipca": "2026-09",
-  "dt_geracao": "2026-10-07"
+  "dt_geracao": "2026-10-07",
+  "links": [
+    {
+      "tipo": "votos_oficiais",
+      "rotulo": "Votação em resultados.tse.jus.br",
+      "url": "https://resultados.tse.jus.br/oficial/app/index.html#/eleicao;e=e546/dados-de-urna/votacao",
+      "verificado": true,
+      "nota": null
+    },
+    {
+      "tipo": "divulgacand_candidato",
+      "rotulo": "Prestação de contas no DivulgaCandContas",
+      "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/546/SE/1",
+      "verificado": false,
+      "nota": "Confira o número do candidato na página do TSE."
+    }
+  ],
+  "fontes": [
+    {
+      "dataset": "votacao_candidato_munzona",
+      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+      "dt_geracao": "2026-10-07",
+      "coluna_regra": "QT_VOTOS_NOMINAIS por candidato",
+      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#votacao_candidato_munzona"
+    },
+    {
+      "dataset": "despesas_contratadas_candidatos",
+      "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/despesas_contratadas_candidatos/despesas_contratadas_candidatos_2026.zip",
+      "dt_geracao": "2026-10-07",
+      "coluna_regra": "VR_DESPESA_CONTRATADA e VR_DESPESA_PAGA",
+      "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#despesas_contratadas_candidatos"
+    }
+  ]
 }
