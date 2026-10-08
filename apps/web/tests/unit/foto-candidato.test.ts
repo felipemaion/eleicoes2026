@@ -68,6 +68,44 @@ describe("corpoRico com foto", () => {
   });
 });
 
+describe("tooltip da dispersão (T-W17)", () => {
+  const pts = [{ id: "1", rotulo: "Kim", custo: 405448.51, votos: 520071, foto: "/fotos/2026/250002546642.webp" }];
+  const mover = (c: Element, x: number): void => { c.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: x, clientY: 60 })); };
+  it("a foto do tooltip carrega já (eager): o balão some em instantes e um lazy nunca chegaria a carregar", () => {
+    const el = document.getElementById("c") as HTMLElement;
+    dispersao.render(el, pts, { titulo: "t" });
+    const c = el.querySelector("circle.marca") as SVGElement;
+    c.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, clientX: 50, clientY: 50 }));
+    const img = document.querySelector(".tooltip-flutuante:not([hidden]) img");
+    expect(img?.getAttribute("src")).toBe("/fotos/2026/250002546642.webp");
+    expect(img?.getAttribute("loading")).toBe("eager");
+  });
+  it("mover o cursor sobre o mesmo ponto não recria a foto (só reposiciona)", () => {
+    const el = document.getElementById("c") as HTMLElement;
+    dispersao.render(el, pts, { titulo: "t" });
+    const c = el.querySelector("circle.marca") as SVGElement;
+    c.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, clientX: 50, clientY: 50 }));
+    const antes = document.querySelector(".tooltip-flutuante img");
+    mover(c, 55); mover(c, 60);
+    expect(document.querySelector(".tooltip-flutuante img")).toBe(antes);
+  });
+  it("sem <title> nativo no ponto (o tooltip rico o substitui); aria-label permanece", () => {
+    const el = document.getElementById("c") as HTMLElement;
+    dispersao.render(el, pts, { titulo: "t" });
+    const c = el.querySelector("circle.marca") as SVGElement;
+    expect(c.querySelector("title")).toBeNull();
+    expect(c.getAttribute("aria-label")).toContain("Kim");
+  });
+  it("foto e título ficam num cabeçalho; a lista de valores vem depois, sem float", () => {
+    const d = document.createElement("div");
+    d.append(corpoRico({ titulo: "Kim", linhas: [["Partido", "MISSÃO (14)"]], foto: { nome: "Kim", url: "/f.webp" } }));
+    const cab = d.querySelector(".tooltip-cabeca");
+    expect(cab?.querySelector("img")).not.toBeNull();
+    expect(cab?.querySelector(".tooltip-titulo")?.textContent).toBe("Kim");
+    expect(cab?.nextElementSibling?.className).toBe("tooltip-lista");
+  });
+});
+
 describe("pontosDeGastos propaga foto e link", () => {
   it("foto_url e link_tse_candidato vão para o ponto", () => {
     const pts = pontosDeGastos(gastosTipados(gastos), "contratado");
