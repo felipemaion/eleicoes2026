@@ -108,7 +108,7 @@ no contrato (`packages/contratos` ou OpenAPI), com PR próprio.
 3. Agente: `git fetch && git rebase origin/main`, cria a branch, TDD, `make lint test` verde.
 4. Agente escreve `docs/registro/handoffs/<papel>-T-xxx.md` (o que fez, decisões, pendências,
    como verificar) e responde `pronto T-xxx`.
-5. Orquestrador revisa (subagentes revisores), faz push, abre PR, CI verde, merge squash.
+5. Orquestrador revisa (subagentes revisores), faz push, abre PR e integra com `scripts/integrar.sh <PR>` (só com CI verde).
 6. Contexto do agente > 60% ou tarefa encerrada → `/clear` e próximo brief (`--limpar`).
 
 ## Comunicação entre agentes

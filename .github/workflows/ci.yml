@@ -36,7 +36,7 @@ jobs:
       - run: uv run mypy packages/contratos/src packages/indicadores/src packages/etl/src apps/api/src
       - run: uv run pytest --cov --cov-fail-under=80
       - name: OpenAPI sem diff
-        if: hashFiles('apps/api/pyproject.toml') != ''
+        if: hashFiles('apps/api/src/api/openapi.py') != ''
         run: make openapi && git diff --exit-code docs/api/openapi.json
 
   web:
