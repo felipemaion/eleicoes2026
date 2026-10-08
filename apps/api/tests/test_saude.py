@@ -14,7 +14,9 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _settings(dir_dados: Path, **extra: object) -> Settings:
-    return Settings(dir_dados=dir_dados, arquivo_grupos=RAIZ / "config" / "grupos.yaml", **extra)  # type: ignore[arg-type]
+    return Settings(
+        dir_dados=dir_dados, arquivo_grupos=RAIZ / "config" / "grupos.yaml", aquecer=False, **extra
+    )  # type: ignore[arg-type]
 
 
 @pytest.fixture

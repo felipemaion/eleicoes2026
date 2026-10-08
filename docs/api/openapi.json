@@ -791,6 +791,11 @@
             ],
             "title": "Penetracao",
             "description": "‰ dos aptos do cargo na UF (§2.3)."
+          },
+          "indicado": {
+            "type": "boolean",
+            "title": "Indicado",
+            "description": "Candidatura indicada pelo grupo (`origem=indicado` na lista de referência); false para candidatos próprios ou fora da lista."
           }
         },
         "type": "object",
@@ -805,7 +810,8 @@
           "resultado",
           "votos",
           "pct_validos",
-          "penetracao"
+          "penetracao",
+          "indicado"
         ],
         "title": "CandidatoResumo",
         "description": "Candidato com votos e taxas na sua circunscrição (cargo × UF)."
@@ -1014,6 +1020,18 @@
             ],
             "title": "Taxa",
             "description": "Valor do indicador; null = sem dado (denominador 0)."
+          },
+          "nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome",
+            "description": "Nome do município (também nas chaves `IBGE-zona`); null no H3 ou se o município não consta do cadastro."
           }
         },
         "type": "object",
@@ -1689,6 +1707,59 @@
         "title": "KpisComparativo",
         "description": "Os mesmos indicadores sobre o recorte inteiro (Σ votos / Σ base, não média de AMCs)."
       },
+      "KpisGrupo": {
+        "properties": {
+          "votos": {
+            "type": "integer",
+            "title": "Votos",
+            "description": "Σ votos nominais válidos dos membros (spec §2.1)."
+          },
+          "aptos": {
+            "type": "integer",
+            "title": "Aptos",
+            "description": "Aptos do cargo no recorte (denominador da penetração)."
+          },
+          "validos": {
+            "type": "integer",
+            "title": "Validos",
+            "description": "Votos válidos do cargo no recorte (denominador do %)."
+          },
+          "pct_validos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Validos",
+            "description": "% dos válidos do cargo (§2.2)."
+          },
+          "penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao",
+            "description": "‰ dos aptos do cargo (§2.3)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "votos",
+          "aptos",
+          "validos",
+          "pct_validos",
+          "penetracao"
+        ],
+        "title": "KpisGrupo",
+        "description": "Grupo como candidato coletivo no recorte (cargo × UF): soma única, nunca de cargos."
+      },
       "ListaCandidatos": {
         "properties": {
           "total": {
@@ -1709,6 +1780,17 @@
             },
             "type": "array",
             "title": "Itens"
+          },
+          "kpis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KpisGrupo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam cargos) ou sem candidaturas."
           }
         },
         "type": "object",
@@ -1716,7 +1798,8 @@
           "total",
           "limite",
           "offset",
-          "itens"
+          "itens",
+          "kpis"
         ],
         "title": "ListaCandidatos",
         "description": "Página de candidatos.",
@@ -1726,6 +1809,7 @@
               {
                 "ano": 2026,
                 "cargo": "DEPUTADO FEDERAL",
+                "indicado": false,
                 "nm_urna": "A",
                 "partido": {
                   "numero": 14,
@@ -1740,6 +1824,13 @@
                 "votos": 1000
               }
             ],
+            "kpis": {
+              "aptos": 17500,
+              "pct_validos": 8.06,
+              "penetracao": 57.14,
+              "validos": 12400,
+              "votos": 1000
+            },
             "limite": 200,
             "offset": 0,
             "total": 1

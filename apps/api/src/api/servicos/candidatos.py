@@ -2,6 +2,7 @@
 
 import polars as pl
 from indicadores import desempenho
+from indicadores.grupos import agregar_grupo
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.erros import nao_encontrado
@@ -13,7 +14,7 @@ from api.servicos.contas import (
     contas_de,
 )
 from api.servicos.escopo import BasesPorEscopo, uf_da_base
-from api.servicos.grupos import Catalogo, candidaturas_do_grupo
+from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
 
 
 class Partido(BaseModel):
@@ -41,6 +42,20 @@ class CandidatoResumo(BaseModel):
     votos: int = Field(description="Votos nominais válidos (spec §2.1).")
     pct_validos: float | None = Field(description="% dos válidos do cargo na UF (§2.2).")
     penetracao: float | None = Field(description="‰ dos aptos do cargo na UF (§2.3).")
+    indicado: bool = Field(
+        description="Candidatura indicada pelo grupo (`origem=indicado` na lista de referência); "
+        "false para candidatos próprios ou fora da lista."
+    )
+
+
+class KpisGrupo(BaseModel):
+    """Grupo como candidato coletivo no recorte (cargo × UF): soma única, nunca de cargos."""
+
+    votos: int = Field(description="Σ votos nominais válidos dos membros (spec §2.1).")
+    aptos: int = Field(description="Aptos do cargo no recorte (denominador da penetração).")
+    validos: int = Field(description="Votos válidos do cargo no recorte (denominador do %).")
+    pct_validos: float | None = Field(description="% dos válidos do cargo (§2.2).")
+    penetracao: float | None = Field(description="‰ dos aptos do cargo (§2.3).")
 
 
 class ListaCandidatos(BaseModel):
@@ -50,6 +65,10 @@ class ListaCandidatos(BaseModel):
     limite: int
     offset: int
     itens: list[CandidatoResumo]
+    kpis: KpisGrupo | None = Field(
+        description="Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam "
+        "cargos) ou sem candidaturas."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -71,8 +90,16 @@ class ListaCandidatos(BaseModel):
                             "votos": 1000,
                             "pct_validos": 8.06,
                             "penetracao": 57.14,
+                            "indicado": False,
                         }
                     ],
+                    "kpis": {
+                        "votos": 1000,
+                        "aptos": 17500,
+                        "validos": 12400,
+                        "pct_validos": 8.06,
+                        "penetracao": 57.14,
+                    },
                 }
             ]
         }
@@ -88,22 +115,26 @@ def taxas(linhas: list[tuple[int, int, int]]) -> list[tuple[float | None, float 
     return list(zip(calculado["pct_validos"], calculado["penetracao"], strict=True))
 
 
-def resumir(c: Candidatura, votos: int, bases: BasesPorEscopo) -> CandidatoResumo:
+def resumir(
+    c: Candidatura, votos: int, bases: BasesPorEscopo, indicados: frozenset[int]
+) -> CandidatoResumo:
     """Resumo de um candidato com as taxas da circunscrição dele."""
-    return _resumos([(c, votos)], bases)[0]
+    return _resumos([(c, votos)], bases, indicados)[0]
 
 
-def _resumos(pares: list[tuple[Candidatura, int]], bases: BasesPorEscopo) -> list[CandidatoResumo]:
+def _resumos(
+    pares: list[tuple[Candidatura, int]], bases: BasesPorEscopo, indicados: frozenset[int]
+) -> list[CandidatoResumo]:
     """Resumos de vários candidatos com um único cálculo vetorizado das taxas."""
     entradas = [(votos, *bases.de(c)) for c, votos in pares]
     return [
-        _montar_resumo(c, votos, pct, pen)
+        _montar_resumo(c, votos, pct, pen, c.sq_candidato in indicados)
         for (c, votos), (pct, pen) in zip(pares, taxas(entradas), strict=True)
     ]
 
 
 def _montar_resumo(
-    c: Candidatura, votos: int, pct: float | None, pen: float | None
+    c: Candidatura, votos: int, pct: float | None, pen: float | None, indicado: bool
 ) -> CandidatoResumo:
     return CandidatoResumo(
         ano=c.ano,
@@ -117,7 +148,41 @@ def _montar_resumo(
         votos=votos,
         pct_validos=pct,
         penetracao=pen,
+        indicado=indicado,
     )
+
+
+def kpis_do_grupo(
+    repo: Repositorio,
+    grupo: DefinicaoGrupo,
+    candidaturas: list[Candidatura],
+    *,
+    cargo: str,
+    uf: str | None,
+) -> KpisGrupo | None:
+    """Indicadores do grupo como candidato coletivo (`agregar_grupo`), no cargo e UF pedidos."""
+    if not candidaturas:
+        return None
+    sqs = [c.sq_candidato for c in candidaturas]
+    por_mun = repo.votos_territorio(grupo.ano, sqs, por_zona=False, uf=uf)
+    # `votos_territorio` já devolve Σ dos membros por município; o quadro leva o grupo como
+    # entidade única para que `agregar_grupo` imponha cargo/turno únicos e some por município.
+    votos = pl.DataFrame(
+        {
+            "grupo": [grupo.id] * len(por_mun),
+            "cd_mun_ibge": [v.cd_mun_ibge for v in por_mun],
+            "votos": [v.votos for v in por_mun],
+        },
+        schema={"grupo": pl.String, "cd_mun_ibge": pl.Int64, "votos": pl.Int64},
+    )
+    if votos.is_empty():
+        total = 0
+    else:
+        total = int(agregar_grupo(votos, [grupo.id], grupo.id, entidade="grupo")["votos"].sum())
+    base = repo.base_eleitoral(grupo.ano, cargo, por_zona=False, uf=uf)
+    aptos, validos = sum(b.aptos for b in base), sum(b.validos for b in base)
+    ((pct, pen),) = taxas([(total, aptos, validos)])
+    return KpisGrupo(votos=total, aptos=aptos, validos=validos, pct_validos=pct, penetracao=pen)
 
 
 def listar_candidatos(
@@ -136,11 +201,17 @@ def listar_candidatos(
     votos = repo.votos_totais(grupo.ano, [c.sq_candidato for c in candidaturas])
     bases = BasesPorEscopo(repo)
     itens = sorted(
-        _resumos([(c, votos.get(c.sq_candidato, 0)) for c in candidaturas], bases),
+        _resumos(
+            [(c, votos.get(c.sq_candidato, 0)) for c in candidaturas], bases, catalogo.indicados
+        ),
         key=lambda i: (-i.votos, i.nm_urna, i.sq_candidato),
     )
     return ListaCandidatos(
-        total=len(itens), limite=limite, offset=offset, itens=itens[offset : offset + limite]
+        total=len(itens),
+        limite=limite,
+        offset=offset,
+        itens=itens[offset : offset + limite],
+        kpis=kpis_do_grupo(repo, grupo, candidaturas, cargo=cargo, uf=uf) if cargo else None,
     )
 
 
@@ -175,7 +246,9 @@ class FichaCandidato(BaseModel):
     dt_geracao: str
 
 
-def montar_ficha(repo: Repositorio, ano: int, sq_candidato: int, top: int) -> FichaCandidato:
+def montar_ficha(
+    repo: Repositorio, catalogo: Catalogo, ano: int, sq_candidato: int, top: int
+) -> FichaCandidato:
     """Ficha do candidato; inexistente → 404."""
     c = repo.candidatura(ano, sq_candidato)
     if c is None:
@@ -210,7 +283,7 @@ def montar_ficha(repo: Repositorio, ano: int, sq_candidato: int, top: int) -> Fi
     votos_total = sum(v.votos for v in por_mun)
     contas = contas_de(repo, ano, [c])
     return FichaCandidato(
-        candidato=resumir(c, votos_total, BasesPorEscopo(repo)),
+        candidato=resumir(c, votos_total, BasesPorEscopo(repo), catalogo.indicados),
         votos_total=votos_total,
         votos_por_uf=[VotosUF(uf=u, votos=n) for u, n in sorted(por_uf.items())],
         votos_por_municipio=linhas[:top],

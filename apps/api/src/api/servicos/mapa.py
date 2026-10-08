@@ -28,6 +28,11 @@ class Detalhe(BaseModel):
     aptos: int
     validos: int | None = Field(description="null no H3: não há 'válidos' por célula (§2.2).")
     taxa: float | None = Field(description="Valor do indicador; null = sem dado (denominador 0).")
+    nome: str | None = Field(
+        default=None,
+        description="Nome do município (também nas chaves `IBGE-zona`); null no H3 ou se o "
+        "município não consta do cadastro.",
+    )
 
 
 class EscalaSugerida(BaseModel):
@@ -238,7 +243,7 @@ def montar_mapa(
             grupo_id=grupo_outro,
             sq_candidato=None,
         )[1]
-    detalhes = _detalhes(indicador, linhas)
+    detalhes = _detalhes(indicador, linhas, _nomes(repo, nivel, linhas))
     return Mapa(
         ano=ano,
         nivel=nivel.value,
@@ -261,7 +266,22 @@ def _quadro(linhas: Sequence[Linha]) -> pl.DataFrame:
     )
 
 
-def _detalhes(indicador: Indicador, linhas: Sequence[Linha]) -> dict[str, Detalhe]:
+def _nomes(repo: Repositorio, nivel: Nivel, linhas: Sequence[Linha]) -> dict[int, str]:
+    """Nome por código IBGE dos municípios das `linhas` (vazio no H3, que não tem município)."""
+    if nivel is Nivel.H3:
+        return {}
+    codigos = sorted({_cd_mun(chave) for chave, *_ in linhas})
+    return {m.cd_mun_ibge: m.nome for m in repo.municipios(codigos)}
+
+
+def _cd_mun(chave: str) -> int:
+    """Código IBGE de uma chave `IBGE` ou `IBGE-zona`."""
+    return int(chave.split("-", 1)[0])
+
+
+def _detalhes(
+    indicador: Indicador, linhas: Sequence[Linha], nomes: Mapping[int, str]
+) -> dict[str, Detalhe]:
     """Taxas de todos os territórios de uma vez, pela biblioteca de indicadores."""
     calculado = desempenho.penetracao(desempenho.pct_validos(_quadro(linhas)))
     coluna = {
@@ -275,6 +295,7 @@ def _detalhes(indicador: Indicador, linhas: Sequence[Linha]) -> dict[str, Detalh
             aptos=r["aptos"],
             validos=r["validos"],
             taxa=None if r[coluna] is None else float(r[coluna]),
+            nome=nomes.get(_cd_mun(r["chave"])) if nomes else None,
         )
         for r in calculado.to_dicts()
     }

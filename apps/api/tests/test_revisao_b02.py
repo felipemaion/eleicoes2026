@@ -67,7 +67,10 @@ def test_cache_lru_evicta_e_invalida_por_dt_geracao() -> None:
 def test_mapa_repetido_vem_do_cache() -> None:
     app = criar_app(
         Settings(
-            dir_dados=FIXTURES, arquivo_grupos=FIXTURES / "grupos.yaml", raiz_repositorio=FIXTURES
+            dir_dados=FIXTURES,
+            arquivo_grupos=FIXTURES / "grupos.yaml",
+            raiz_repositorio=FIXTURES,
+            aquecer=False,  # o contador abaixo mede só os pedidos do teste
         )
     )
     with TestClient(app) as c:
