@@ -1152,6 +1152,234 @@
           }
         }
       }
+    },
+    "/api/redes": {
+      "get": {
+        "tags": [
+          "redes"
+        ],
+        "summary": "Instagram dos candidatos do grupo",
+        "description": "Perfis, seguidores, ritmo de posts, engajamento e seguidores por mil votos.\n\nPerfil indisponível (conta pessoal ou inexistente) volta com campos nulos e `status`: nunca\nzero. `excluidos` conta quem fica fora das médias e correlações, por motivo.",
+        "operationId": "redes_api_redes_get",
+        "parameters": [
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Id do grupo em config/grupos.yaml (só 2026).",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo em config/grupos.yaml (só 2026)."
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Redes"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Grupo de outro ano ou desconhecido."
+          },
+          "503": {
+            "description": "Dados de redes sociais ainda não publicados."
+          }
+        }
+      }
+    },
+    "/api/redes/correlacoes": {
+      "get": {
+        "tags": [
+          "redes"
+        ],
+        "summary": "Correlação entre redes e votos",
+        "description": "ρ de Spearman (IC 95 % bootstrap, n, exclusões) e nuvem seguidores × votos por cargo.\n\nDescritivo: correlação não é causalidade. Com menos de 10 candidatos o ρ vem nulo.",
+        "operationId": "correlacoes_api_redes_correlacoes_get",
+        "parameters": [
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Id do grupo em config/grupos.yaml (só 2026).",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo em config/grupos.yaml (só 2026)."
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          },
+          {
+            "name": "por_uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Uma correlação por cargo × UF (deputados de UFs diferentes).",
+              "default": false,
+              "title": "Por Uf"
+            },
+            "description": "Uma correlação por cargo × UF (deputados de UFs diferentes)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Correlacoes"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Grupo de outro ano ou desconhecido."
+          },
+          "503": {
+            "description": "Dados de redes sociais ainda não publicados."
+          }
+        }
+      }
+    },
+    "/api/redes/serie": {
+      "get": {
+        "tags": [
+          "redes"
+        ],
+        "summary": "Série de seguidores no tempo",
+        "description": "Seguidores a cada coleta, desde a primeira (08/10/2026); nunca interpola o passado.",
+        "operationId": "serie_api_redes_serie_get",
+        "parameters": [
+          {
+            "name": "sq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "SQ_CANDIDATO (2026); exclusivo com username.",
+              "title": "Sq"
+            },
+            "description": "SQ_CANDIDATO (2026); exclusivo com username."
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9._]{1,30}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Perfil do Instagram; exclusivo com sq.",
+              "title": "Username"
+            },
+            "description": "Perfil do Instagram; exclusivo com sq."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerieRedes"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Candidato inexistente ou sem nenhuma coleta com seguidores."
+          },
+          "422": {
+            "description": "Informe exatamente um entre `sq` e `username`."
+          },
+          "503": {
+            "description": "Dados de redes sociais ainda não publicados."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1188,6 +1416,110 @@
         "title": "Abrangencia",
         "description": "Região em que o candidato disputa: o front enquadra o mapa por ela."
       },
+      "AgregadoRedes": {
+        "properties": {
+          "n_candidatos": {
+            "type": "integer",
+            "title": "N Candidatos"
+          },
+          "n_com_dados": {
+            "type": "integer",
+            "title": "N Com Dados"
+          },
+          "seguidores_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguidores Total"
+          },
+          "mediana_seguidores": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Seguidores"
+          },
+          "mediana_posts_semana_campanha": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Posts Semana Campanha"
+          },
+          "mediana_engajamento_mediano": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Engajamento Mediano"
+          },
+          "mediana_pct_video": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Pct Video"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_candidatos",
+          "n_com_dados",
+          "seguidores_total",
+          "mediana_seguidores",
+          "mediana_posts_semana_campanha",
+          "mediana_engajamento_mediano",
+          "mediana_pct_video"
+        ],
+        "title": "AgregadoRedes",
+        "description": "Resumo do grupo no recorte, só com as contas com números."
+      },
+      "AjusteLogLog": {
+        "properties": {
+          "intercepto": {
+            "type": "number",
+            "title": "Intercepto"
+          },
+          "inclinacao": {
+            "type": "number",
+            "title": "Inclinacao",
+            "description": "Elasticidade: +1 % de seguidores ↔ +b % de votos."
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intercepto",
+          "inclinacao",
+          "n"
+        ],
+        "title": "AjusteLogLog",
+        "description": "Reta `log10(1+votos) = intercepto + inclinacao · log10(1+seguidores)` (spec §9.6)."
+      },
       "Ano": {
         "type": "integer",
         "enum": [
@@ -1196,6 +1528,39 @@
         ],
         "title": "Ano",
         "description": "Anos de eleição geral suportados."
+      },
+      "BlocoRedes": {
+        "properties": {
+          "perfis": {
+            "items": {
+              "$ref": "#/components/schemas/PerfilRede"
+            },
+            "type": "array",
+            "title": "Perfis",
+            "description": "Vazio = não declarou Instagram ao TSE."
+          },
+          "coletado_em": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Coletado Em",
+            "description": "Coleta mais recente do Instagram (UTC)."
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/FonteRede"
+            },
+            "type": "array",
+            "title": "Fontes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "perfis",
+          "coletado_em",
+          "fontes"
+        ],
+        "title": "BlocoRedes",
+        "description": "Bloco `redes` da ficha: perfis e última coleta."
       },
       "CandidatoResumo": {
         "properties": {
@@ -1663,6 +2028,90 @@
         "title": "ComparativoReceitas",
         "description": "Receitas do grupo 'de' × 'para', 2022 deflacionado ao mês-base."
       },
+      "Correlacoes": {
+        "properties": {
+          "grupo": {
+            "type": "string",
+            "title": "Grupo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf"
+          },
+          "por_uf": {
+            "type": "boolean",
+            "title": "Por Uf"
+          },
+          "recortes": {
+            "items": {
+              "$ref": "#/components/schemas/RecorteCorrelacao"
+            },
+            "type": "array",
+            "title": "Recortes"
+          },
+          "coletado_em": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Coletado Em"
+          },
+          "avisos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avisos",
+            "description": "Ids em `docs/metodologia/publico/textos.json`."
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/FonteRede"
+            },
+            "type": "array",
+            "title": "Fontes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grupo",
+          "ano",
+          "cargo",
+          "uf",
+          "por_uf",
+          "recortes",
+          "coletado_em",
+          "avisos",
+          "dt_geracao",
+          "fontes"
+        ],
+        "title": "Correlacoes",
+        "description": "Corpo de GET /redes/correlacoes."
+      },
       "Detalhe": {
         "properties": {
           "votos": {
@@ -1991,6 +2440,39 @@
         "title": "EvolucaoMunicipio",
         "description": "Evolução numa AMC (município IBGE com desmembramentos agregados, §5.1)."
       },
+      "Excluidos": {
+        "properties": {
+          "sem_instagram": {
+            "type": "integer",
+            "title": "Sem Instagram",
+            "description": "Não declararam Instagram ao TSE."
+          },
+          "nao_coletado": {
+            "type": "integer",
+            "title": "Nao Coletado",
+            "description": "Declararam, mas a coleta ainda não chegou."
+          },
+          "indisponivel": {
+            "type": "integer",
+            "title": "Indisponivel",
+            "description": "Conta pessoal ou inexistente: a API não dá números."
+          },
+          "sem_votos": {
+            "type": "integer",
+            "title": "Sem Votos",
+            "description": "Têm números de rede, mas nenhum voto registrado."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sem_instagram",
+          "nao_coletado",
+          "indisponivel",
+          "sem_votos"
+        ],
+        "title": "Excluidos",
+        "description": "Candidatos fora das médias e correlações, por motivo (cada candidato conta uma vez)."
+      },
       "FaixaReceita": {
         "properties": {
           "minima": {
@@ -2093,6 +2575,17 @@
             "type": "array",
             "title": "Fontes",
             "description": "Procedência dos números da ficha."
+          },
+          "redes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlocoRedes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Instagram: perfis declarados e última coleta. `perfis` vazio = não declarou; null = dado de redes não publicado ou eleição sem coleta (2022)."
           }
         },
         "type": "object",
@@ -2107,7 +2600,8 @@
           "base_ipca",
           "dt_geracao",
           "links",
-          "fontes"
+          "fontes",
+          "redes"
         ],
         "title": "FichaCandidato",
         "description": "Ficha completa: votação, geografia e finanças."
@@ -2150,6 +2644,51 @@
         ],
         "title": "Fonte",
         "description": "De onde vem um número: arquivo oficial, momento da geração e regra aplicada."
+      },
+      "FonteRede": {
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "title": "Dataset",
+            "description": "Id do dataset no catálogo (ex.: `votacao_candidato_munzona`)."
+          },
+          "arquivo_oficial_url": {
+            "type": "string",
+            "title": "Arquivo Oficial Url",
+            "description": "URL do arquivo oficial (ZIP no CDN do TSE etc.)."
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao",
+            "description": "`DT_GERACAO` dos dados publicados pelo TSE."
+          },
+          "coluna_regra": {
+            "type": "string",
+            "title": "Coluna Regra",
+            "description": "Coluna(s) usada(s) e regra aplicada sobre elas."
+          },
+          "metodologia_url": {
+            "type": "string",
+            "title": "Metodologia Url",
+            "description": "Seção da spec que define o número (GitHub)."
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo",
+            "description": "Frase de procedência exibida ao leitor."
+          }
+        },
+        "type": "object",
+        "required": [
+          "dataset",
+          "arquivo_oficial_url",
+          "dt_geracao",
+          "coluna_regra",
+          "metodologia_url",
+          "rotulo"
+        ],
+        "title": "FonteRede",
+        "description": "Fonte com o texto de procedência pronto para a tela."
       },
       "GastoCandidato": {
         "properties": {
@@ -2987,6 +3526,110 @@
         "title": "IndicadorComparado",
         "description": "Um indicador de receita nos dois anos (spec §4.10)."
       },
+      "JanelaRede": {
+        "properties": {
+          "janela": {
+            "type": "string",
+            "enum": [
+              "pre_campanha",
+              "campanha",
+              "pos_eleicao",
+              "total"
+            ],
+            "title": "Janela"
+          },
+          "dias": {
+            "type": "number",
+            "title": "Dias"
+          },
+          "n_posts": {
+            "type": "integer",
+            "title": "N Posts"
+          },
+          "n_videos": {
+            "type": "integer",
+            "title": "N Videos"
+          },
+          "posts_por_semana": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posts Por Semana",
+            "description": "null em janela com menos de 7 dias."
+          },
+          "videos_por_semana": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Videos Por Semana"
+          },
+          "pct_video": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Video",
+            "description": "null sem posts na janela."
+          },
+          "n_posts_engajamento": {
+            "type": "integer",
+            "title": "N Posts Engajamento",
+            "description": "Posts que entram no engajamento."
+          },
+          "engajamento_medio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engajamento Medio",
+            "description": "% dos seguidores por post (§9.2)."
+          },
+          "engajamento_mediano": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engajamento Mediano"
+          }
+        },
+        "type": "object",
+        "required": [
+          "janela",
+          "dias",
+          "n_posts",
+          "n_videos",
+          "posts_por_semana",
+          "videos_por_semana",
+          "pct_video",
+          "n_posts_engajamento",
+          "engajamento_medio",
+          "engajamento_mediano"
+        ],
+        "title": "JanelaRede",
+        "description": "Posts e engajamento da conta analisada numa janela (spec §9.1 e §9.2)."
+      },
       "KpisComparativo": {
         "properties": {
           "penetracao_de": {
@@ -3534,6 +4177,107 @@
         "title": "Nivel",
         "description": "Recorte espacial do mapa."
       },
+      "ParCorrelacao": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "x": {
+            "type": "string",
+            "title": "X",
+            "description": "Coluna do eixo x; o eixo y é sempre `votos`."
+          },
+          "y": {
+            "type": "string",
+            "title": "Y"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N",
+            "description": "Candidatos com os dois valores."
+          },
+          "n_excluidos": {
+            "type": "integer",
+            "title": "N Excluidos",
+            "description": "Candidatos do recorte sem um dos valores."
+          },
+          "rho": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rho",
+            "description": "null com menos de `n_minimo` candidatos."
+          },
+          "ic_inf": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ic Inf"
+          },
+          "ic_sup": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ic Sup"
+          },
+          "n_bootstrap_validos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Bootstrap Validos"
+          },
+          "nivel_ic": {
+            "type": "number",
+            "title": "Nivel Ic"
+          },
+          "n_minimo": {
+            "type": "integer",
+            "title": "N Minimo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "x",
+          "y",
+          "n",
+          "n_excluidos",
+          "rho",
+          "ic_inf",
+          "ic_sup",
+          "n_bootstrap_validos",
+          "nivel_ic",
+          "n_minimo"
+        ],
+        "title": "ParCorrelacao",
+        "description": "ρ de Spearman entre duas medidas dos candidatos de um recorte."
+      },
       "Partido": {
         "properties": {
           "numero": {
@@ -3552,6 +4296,109 @@
         ],
         "title": "Partido",
         "description": "Partido da candidatura."
+      },
+      "PerfilRede": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link",
+            "description": "Endereço público do perfil no Instagram."
+          },
+          "url_tse": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url Tse",
+            "description": "Texto declarado ao TSE; null se só a coleta o tem."
+          },
+          "principal": {
+            "type": "boolean",
+            "title": "Principal",
+            "description": "Declarado primeiro ao TSE (menor `NR_ORDEM`)."
+          },
+          "analisado": {
+            "type": "boolean",
+            "title": "Analisado",
+            "description": "Conta usada nos indicadores: a de mais seguidores entre as com números."
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "`ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial` ou `nao_coletado` (declarado, ainda sem coleta). Só `ok` traz números."
+          },
+          "seguidores": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguidores",
+            "description": "null = indisponível (≠ zero)."
+          },
+          "seguindo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguindo"
+          },
+          "n_midias": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Midias",
+            "description": "Posts da vida inteira da conta (`media_count`)."
+          },
+          "coletado_em": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coletado Em",
+            "description": "Última coleta (UTC); null se nunca coletado."
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "link",
+          "url_tse",
+          "principal",
+          "analisado",
+          "status",
+          "seguidores",
+          "seguindo",
+          "n_midias",
+          "coletado_em"
+        ],
+        "title": "PerfilRede",
+        "description": "Um perfil declarado ao TSE, com a última coleta (campos nulos se não há números)."
       },
       "PessoaEvolucao": {
         "properties": {
@@ -3618,6 +4465,135 @@
         ],
         "title": "Ponto",
         "description": "Local de votação."
+      },
+      "PontoDispersao": {
+        "properties": {
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "sg_uf": {
+            "type": "string",
+            "title": "Sg Uf"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "Conta analisada."
+          },
+          "seguidores": {
+            "type": "integer",
+            "title": "Seguidores"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "razao_obs_esperado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Razao Obs Esperado",
+            "description": "Voto observado ÷ esperado (§9.6)."
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link",
+            "description": "Perfil no Instagram."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sq_candidato",
+          "nm_urna",
+          "sg_uf",
+          "username",
+          "seguidores",
+          "votos",
+          "razao_obs_esperado",
+          "foto_url",
+          "link"
+        ],
+        "title": "PontoDispersao",
+        "description": "Um candidato na nuvem seguidores × votos."
+      },
+      "PontoSerie": {
+        "properties": {
+          "coletado_em": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Coletado Em"
+          },
+          "seguidores": {
+            "type": "integer",
+            "title": "Seguidores"
+          },
+          "delta_abs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Abs",
+            "description": "null no primeiro ponto."
+          },
+          "delta_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Pct"
+          },
+          "dias": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias",
+            "description": "Dias desde a coleta anterior."
+          }
+        },
+        "type": "object",
+        "required": [
+          "coletado_em",
+          "seguidores",
+          "delta_abs",
+          "delta_pct",
+          "dias"
+        ],
+        "title": "PontoSerie",
+        "description": "Seguidores numa coleta e variação desde a coleta válida anterior."
       },
       "Pontos": {
         "properties": {
@@ -3735,6 +4711,418 @@
         ],
         "title": "ReceitaPorVotoGrupo",
         "description": "Receita por voto do grupo: Σ receita **líquida** ÷ Σ votos, só com receita e voto (§4.7)."
+      },
+      "RecorteCorrelacao": {
+        "properties": {
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf",
+            "description": "null quando o recorte soma todas as UFs do cargo."
+          },
+          "n_candidatos": {
+            "type": "integer",
+            "title": "N Candidatos"
+          },
+          "pares": {
+            "items": {
+              "$ref": "#/components/schemas/ParCorrelacao"
+            },
+            "type": "array",
+            "title": "Pares"
+          },
+          "ajuste": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AjusteLogLog"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null com menos de 10 candidatos."
+          },
+          "pontos": {
+            "items": {
+              "$ref": "#/components/schemas/PontoDispersao"
+            },
+            "type": "array",
+            "title": "Pontos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cargo",
+          "uf",
+          "n_candidatos",
+          "pares",
+          "ajuste",
+          "pontos"
+        ],
+        "title": "RecorteCorrelacao",
+        "description": "Correlações de um cargo (ou cargo × UF)."
+      },
+      "RedeCandidato": {
+        "properties": {
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url",
+            "description": "Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura."
+          },
+          "link_tse_candidato": {
+            "$ref": "#/components/schemas/Link",
+            "description": "Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026."
+          },
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "sg_uf": {
+            "type": "string",
+            "title": "Sg Uf"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "partido": {
+            "$ref": "#/components/schemas/Partido"
+          },
+          "votos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Votos",
+            "description": "Votos nominais válidos; null = sem voto registrado."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "nao_encontrado",
+              "nao_comercial",
+              "nao_coletado",
+              "sem_rede"
+            ],
+            "title": "Status"
+          },
+          "tem_dados": {
+            "type": "boolean",
+            "title": "Tem Dados",
+            "description": "A conta analisada tem seguidores (conta com números)."
+          },
+          "perfis": {
+            "items": {
+              "$ref": "#/components/schemas/PerfilRede"
+            },
+            "type": "array",
+            "title": "Perfis"
+          },
+          "seguidores": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguidores"
+          },
+          "seguindo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguindo"
+          },
+          "seguidores_por_mil_votos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seguidores Por Mil Votos"
+          },
+          "votos_por_mil_seguidores": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Votos Por Mil Seguidores"
+          },
+          "posts_semana_campanha": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posts Semana Campanha"
+          },
+          "posts_semana_pos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posts Semana Pos"
+          },
+          "variacao_ritmo_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variacao Ritmo Pct",
+            "description": "Pós-eleição vs. campanha (§9.1)."
+          },
+          "pct_video": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Video"
+          },
+          "engajamento_mediano": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engajamento Mediano",
+            "description": "Janela da campanha."
+          },
+          "engajamento_medio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engajamento Medio"
+          },
+          "janelas": {
+            "items": {
+              "$ref": "#/components/schemas/JanelaRede"
+            },
+            "type": "array",
+            "title": "Janelas",
+            "description": "Conta analisada; vazio sem números."
+          },
+          "voto_esperado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VotoEsperado"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null sem números ou com menos de 10 candidatos com dados no cargo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "foto_url",
+          "link_tse_candidato",
+          "sq_candidato",
+          "nm_urna",
+          "sg_uf",
+          "cargo",
+          "partido",
+          "votos",
+          "status",
+          "tem_dados",
+          "perfis",
+          "seguidores",
+          "seguindo",
+          "seguidores_por_mil_votos",
+          "votos_por_mil_seguidores",
+          "posts_semana_campanha",
+          "posts_semana_pos",
+          "variacao_ritmo_pct",
+          "pct_video",
+          "engajamento_mediano",
+          "engajamento_medio",
+          "janelas",
+          "voto_esperado"
+        ],
+        "title": "RedeCandidato",
+        "description": "Candidato com seus perfis e indicadores de redes."
+      },
+      "Redes": {
+        "properties": {
+          "grupo": {
+            "type": "string",
+            "title": "Grupo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf"
+          },
+          "candidatos": {
+            "items": {
+              "$ref": "#/components/schemas/RedeCandidato"
+            },
+            "type": "array",
+            "title": "Candidatos",
+            "description": "Ordenados por votos (maior primeiro)."
+          },
+          "agregado": {
+            "$ref": "#/components/schemas/AgregadoRedes"
+          },
+          "excluidos": {
+            "$ref": "#/components/schemas/Excluidos"
+          },
+          "coletado_em": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Coletado Em",
+            "description": "Coleta mais recente do Instagram (UTC)."
+          },
+          "avisos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avisos",
+            "description": "Ids em `docs/metodologia/publico/textos.json`."
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/FonteRede"
+            },
+            "type": "array",
+            "title": "Fontes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grupo",
+          "ano",
+          "cargo",
+          "uf",
+          "candidatos",
+          "agregado",
+          "excluidos",
+          "coletado_em",
+          "avisos",
+          "dt_geracao",
+          "fontes"
+        ],
+        "title": "Redes",
+        "description": "Corpo de GET /redes.",
+        "examples": [
+          {
+            "agregado": {
+              "mediana_engajamento_mediano": 20.95,
+              "mediana_pct_video": 33.3,
+              "mediana_posts_semana_campanha": 0.56,
+              "mediana_seguidores": 10500.0,
+              "n_candidatos": 2,
+              "n_com_dados": 1,
+              "seguidores_total": 10500
+            },
+            "ano": 2026,
+            "avisos": [
+              "redes_contas_sem_dados"
+            ],
+            "candidatos": [],
+            "cargo": "DEPUTADO FEDERAL",
+            "coletado_em": "2026-10-08T12:00:00Z",
+            "dt_geracao": "2026-10-06",
+            "excluidos": {
+              "indisponivel": 1,
+              "nao_coletado": 0,
+              "sem_instagram": 0,
+              "sem_votos": 0
+            },
+            "fontes": [],
+            "grupo": "missao_2026",
+            "uf": "SP"
+          }
+        ]
       },
       "ResultadoBusca": {
         "properties": {
@@ -4300,6 +5688,66 @@
         "title": "ResumoReceitasOut",
         "description": "Receita por categoria (§4.1), composição (§4.5) e repasses entre candidatos (§4.6)."
       },
+      "ResumoSerie": {
+        "properties": {
+          "n_snapshots": {
+            "type": "integer",
+            "title": "N Snapshots"
+          },
+          "seguidores_inicial": {
+            "type": "integer",
+            "title": "Seguidores Inicial"
+          },
+          "seguidores_final": {
+            "type": "integer",
+            "title": "Seguidores Final"
+          },
+          "delta_abs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Abs"
+          },
+          "delta_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Pct"
+          },
+          "dias": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_snapshots",
+          "seguidores_inicial",
+          "seguidores_final",
+          "delta_abs",
+          "delta_pct",
+          "dias"
+        ],
+        "title": "ResumoSerie",
+        "description": "Do primeiro ao último ponto; variações nulas com um só ponto."
+      },
       "SaldoGrupo": {
         "properties": {
           "saldo_contratado": {
@@ -4371,6 +5819,119 @@
         ],
         "title": "Saude",
         "description": "Estado da API e dos dados."
+      },
+      "SerieConta": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Situação na coleta mais recente (`ok`, `nao_encontrado`…)."
+          },
+          "pontos": {
+            "items": {
+              "$ref": "#/components/schemas/PontoSerie"
+            },
+            "type": "array",
+            "title": "Pontos",
+            "description": "Só coletas com seguidores; pelo menos uma."
+          },
+          "resumo": {
+            "$ref": "#/components/schemas/ResumoSerie"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "link",
+          "status",
+          "pontos",
+          "resumo"
+        ],
+        "title": "SerieConta",
+        "description": "Série de seguidores de um perfil."
+      },
+      "SerieRedes": {
+        "properties": {
+          "sq_candidato": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nm Urna"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SerieConta"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "primeira_coleta": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Primeira Coleta",
+            "description": "A série não existe antes disto."
+          },
+          "coletado_em": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Coletado Em"
+          },
+          "avisos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Avisos"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/FonteRede"
+            },
+            "type": "array",
+            "title": "Fontes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sq_candidato",
+          "nm_urna",
+          "series",
+          "primeira_coleta",
+          "coletado_em",
+          "avisos",
+          "dt_geracao",
+          "fontes"
+        ],
+        "title": "SerieRedes",
+        "description": "Corpo de GET /redes/serie."
       },
       "UF": {
         "type": "string",
@@ -4499,6 +6060,31 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VotoEsperado": {
+        "properties": {
+          "votos_esperados": {
+            "type": "number",
+            "title": "Votos Esperados"
+          },
+          "residuo_log10": {
+            "type": "number",
+            "title": "Residuo Log10"
+          },
+          "razao_obs_esperado": {
+            "type": "number",
+            "title": "Razao Obs Esperado",
+            "description": "2 = o dobro do esperado; 0,5 = metade."
+          }
+        },
+        "type": "object",
+        "required": [
+          "votos_esperados",
+          "residuo_log10",
+          "razao_obs_esperado"
+        ],
+        "title": "VotoEsperado",
+        "description": "Voto observado × esperado pelo tamanho da conta (ajuste log-log, spec §9.6)."
       },
       "VotosMunicipio": {
         "properties": {

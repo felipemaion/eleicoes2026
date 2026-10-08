@@ -18,7 +18,7 @@ from api.config import VERSAO, Settings, obter_settings
 from api.erros import ErroDominio
 from api.repositorio.base import DadosIndisponiveis, MemoriaInsuficiente
 from api.repositorio.duckdb import RepositorioDuckDB
-from api.rotas import dominio, meta, saude
+from api.rotas import dominio, meta, redes, saude
 from api.servicos.grupos import carregar_catalogo
 from api.servicos.meta import carregar_grupos
 
@@ -89,6 +89,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(saude.router, prefix="/api")
     app.include_router(meta.router, prefix="/api")
     app.include_router(dominio.router, prefix="/api")
+    app.include_router(redes.router, prefix="/api")
     app.state.versao_app = versao_app
     # Reforço do sha: mudança de contrato invalida o cache mesmo que o sha não chegue (ex.: dev).
     esquema = json.dumps(app.openapi(), sort_keys=True).encode()

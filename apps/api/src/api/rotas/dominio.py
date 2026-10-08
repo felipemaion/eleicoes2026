@@ -116,7 +116,7 @@ def ficha(
 ) -> FichaCandidato:
     """Votos por UF e município (top N), gastos, receitas por fonte e custo por voto."""
     return cache.obter(
-        repo.dt_geracao(),
+        repo.versao_dados(),  # a ficha traz o bloco de redes, coletado todo dia
         ("ficha", ano, sq_candidato, top),
         lambda: montar_ficha(repo, catalogo, ano.value, sq_candidato, top),
     )

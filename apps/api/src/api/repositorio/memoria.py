@@ -12,7 +12,11 @@ from api.repositorio.modelos import (
     Municipio,
     ParDePessoa,
     PontoVotacao,
+    PostRede,
     ReceitaBruta,
+    RedeDeclarada,
+    RedesMeta,
+    SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
@@ -55,6 +59,10 @@ class DadosMemoria:
     receitas: dict[int, list[ReceitaBruta]] = field(default_factory=dict)
     despesas: dict[int, list[DespesaBruta]] = field(default_factory=dict)
     ipca: list[VariacaoIpca] = field(default_factory=list)
+    redes_declaradas: list[tuple[int, RedeDeclarada]] = field(default_factory=list)  # (ano, …)
+    redes_snapshots: list[tuple[int, SnapshotPerfil]] = field(default_factory=list)  # (ano, …)
+    redes_posts: list[PostRede] = field(default_factory=list)
+    redes_meta: RedesMeta | None = None
 
 
 class RepositorioMemoria:
@@ -88,6 +96,42 @@ class RepositorioMemoria:
     def dt_geracao(self) -> str:
         """DT_GERACAO fixa."""
         return self._dt
+
+    def versao_dados(self) -> str:
+        """`dt_geracao` + coleta de redes, como no DuckDB."""
+        meta = self._d.redes_meta
+        return self._dt if meta is None else f"{self._dt}|{meta.coletado_em.isoformat()}"
+
+    def redes_meta(self) -> RedesMeta | None:
+        """Meta informada na construção."""
+        return self._d.redes_meta
+
+    def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
+        """Declarados dos `sqs`, por (sq, ordem, username)."""
+        achadas = [r for a, r in self._d.redes_declaradas if a == ano and r.sq_candidato in sqs]
+        return sorted(achadas, key=lambda r: (r.sq_candidato, r.nr_ordem, r.username))
+
+    def redes_perfis(
+        self,
+        ano: int,
+        *,
+        sqs: Sequence[int] | None = None,
+        usernames: Sequence[str] | None = None,
+    ) -> list[SnapshotPerfil]:
+        """Snapshots filtrados, por (username, sq, coleta)."""
+        achados = [
+            s
+            for a, s in self._d.redes_snapshots
+            if a == ano
+            and (sqs is None or s.sq_candidato in sqs)
+            and (usernames is None or s.username in usernames)
+        ]
+        return sorted(achados, key=lambda s: (s.username, s.sq_candidato, s.coletado_em))
+
+    def redes_posts(self, usernames: Sequence[str]) -> list[PostRede]:
+        """Posts dos perfis, por (username, data, id)."""
+        achados = [p for p in self._d.redes_posts if p.username in usernames]
+        return sorted(achados, key=lambda p: (p.username, p.timestamp, p.media_id))
 
     def tp_prestacao_contas(self, ano: int) -> str:
         """Situação fixa por ano (padrão FINAL)."""

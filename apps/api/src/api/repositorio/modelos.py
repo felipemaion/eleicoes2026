@@ -1,6 +1,7 @@
 """Linhas devolvidas pelo Repositorio: dados puros, sem regra de negócio."""
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from api.texto import nivel_relevancia
 
@@ -127,3 +128,48 @@ class ParDePessoa:
 
     de: Candidatura
     para: Candidatura
+
+
+@dataclass(frozen=True)
+class RedeDeclarada:
+    """Perfil declarado ao TSE por uma candidatura (`principal` = o declarado primeiro)."""
+
+    sq_candidato: int
+    username: str
+    url_tse: str
+    nr_ordem: int
+    principal: bool
+
+
+@dataclass(frozen=True)
+class SnapshotPerfil:
+    """Uma coleta de um perfil; contagens nulas = perfil indisponível, nunca zero."""
+
+    sq_candidato: int
+    username: str
+    status: str
+    seguidores: int | None
+    seguindo: int | None
+    n_midias: int | None
+    coletado_em: datetime  # UTC, sem fuso (o indicadores trata naïve como UTC)
+
+
+@dataclass(frozen=True)
+class PostRede:
+    """Último estado lido de um post; curtidas nulas = ocultas pelo dono."""
+
+    username: str
+    media_id: str
+    timestamp: datetime
+    media_type: str
+    curtidas: int | None
+    comentarios: int | None
+    coletado_em: datetime
+
+
+@dataclass(frozen=True)
+class RedesMeta:
+    """Procedência dos dados de redes publicados."""
+
+    coletado_em: datetime  # coleta mais recente (UTC)
+    dt_geracao_tse: str  # DT_GERACAO do cadastro de redes do TSE

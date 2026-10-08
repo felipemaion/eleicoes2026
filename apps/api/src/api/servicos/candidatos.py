@@ -22,6 +22,7 @@ from api.servicos.contas import (
 )
 from api.servicos.escopo import BasesPorEscopo, uf_da_base
 from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
+from api.servicos.redes_perfis import BlocoRedes, bloco_ficha
 
 
 class Partido(BaseModel):
@@ -383,6 +384,10 @@ class FichaCandidato(BaseModel):
         "se foi `verificado` e, se não, o que conferir."
     )
     fontes: list[Fonte] = Field(description="Procedência dos números da ficha.")
+    redes: BlocoRedes | None = Field(
+        description="Instagram: perfis declarados e última coleta. `perfis` vazio = não declarou; "
+        "null = dado de redes não publicado ou eleição sem coleta (2022)."
+    )
 
 
 def montar_ficha(
@@ -440,6 +445,7 @@ def montar_ficha(
         links=links_da_candidatura(
             ano=ano, sq_candidato=sq_candidato, uf=c.sg_uf, cargo=c.ds_cargo
         ),
+        redes=bloco_ficha(repo, c),
         fontes=fontes(
             ["consulta_cand", "votacao_candidato_munzona", "detalhe_votacao_munzona"]
             + (["prestacao_contas"] if contas.por_candidato else [])

@@ -366,6 +366,70 @@ def _escrever(
     con.execute(f"COPY {nome} TO ? (FORMAT PARQUET)", [str(destino)])
 
 
+def _ts(texto: str) -> str:
+    """Instante UTC em ISO (a coluna é TIMESTAMPTZ, como no contrato `redes`)."""
+    return f"{texto}+00:00"
+
+
+COLETA_1, COLETA_2 = _ts("2026-10-07 10:00:00"), _ts("2026-10-08 12:00:00")
+# Cobre: candidato com 2 perfis (sq 3), 2 snapshots (ana_alves) e 1 (os demais), perfil
+# indisponível (sq 5), declarado sem coleta (sq 4) e sem declaração (presidente, sq 11).
+REDES_CANDIDATOS = [
+    (2026, 3, "instagram", "ana_alves", "https://instagram.com/ana_alves", 1, True, DT),
+    (2026, 3, "instagram", "ana_campanha", "https://instagram.com/ana_campanha", 2, False, DT),
+    (2026, 5, "instagram", "bruno_lima", "https://instagram.com/bruno_lima", 1, True, DT),
+    (2026, 7, "instagram", "daniel_dias", "https://instagram.com/daniel_dias", 1, True, DT),
+    (2026, 4, "instagram", "carlos_cesar", "https://instagram.com/carlos_cesar", 1, True, DT),
+]
+REDES_PERFIS = [
+    (3, 2026, "instagram", "ana_alves", "ok", 10000, 300, 120, COLETA_1),
+    (3, 2026, "instagram", "ana_alves", "ok", 10500, 301, 125, COLETA_2),
+    (3, 2026, "instagram", "ana_campanha", "ok", 800, 10, 20, COLETA_2),
+    (5, 2026, "instagram", "bruno_lima", "nao_encontrado", None, None, None, COLETA_2),
+    (7, 2026, "instagram", "daniel_dias", "ok", 4000, 100, 60, COLETA_2),
+]
+# (username, media_id, timestamp, media_type, product_type, curtidas, comentários)
+_POSTS = [
+    ("ana_alves", "a1", "2026-03-10 15:00:00", "VIDEO", "FEED", 500, 50),
+    ("ana_alves", "a2", "2026-08-20 15:00:00", "IMAGE", "FEED", 1000, 100),
+    ("ana_alves", "a3", "2026-09-10 15:00:00", "VIDEO", "REELS", 2000, 200),
+    ("ana_alves", "a4", "2026-10-05 01:00:00", "IMAGE", "FEED", None, 10),  # 04/10 22h em Brasília
+    ("ana_alves", "a5", "2026-10-07 20:00:00", "IMAGE", "FEED", 90, 9),  # <48h na coleta
+    ("ana_alves", "a6", "2026-09-20 15:00:00", "CAROUSEL_ALBUM", "FEED", 3000, 300),
+    ("ana_campanha", "c1", "2026-09-01 15:00:00", "IMAGE", "FEED", 80, 8),
+    ("daniel_dias", "d1", "2026-09-05 15:00:00", "IMAGE", "FEED", 400, 40),
+    ("daniel_dias", "d2", "2026-09-06 15:00:00", "VIDEO", "REELS", 800, 80),
+]
+REDES_POSTS = [(u, m, _ts(t), mt, pt, lk, cm, f"https://instagram.com/p/{m}", COLETA_2)
+               for u, m, t, mt, pt, lk, cm in _POSTS]  # fmt: skip
+
+
+def _redes(con: duckdb.DuckDBPyConnection) -> None:
+    """Escreve `redes_candidatos` (hive) e `redes/redes_perfis|redes_posts` (contratos `redes`)."""
+    ts = "TIMESTAMPTZ"
+    _escrever(
+        con, "redes_candidatos",
+        dict(ano_eleicao="SMALLINT", sq_candidato=INT, rede=TXT, username=TXT, url_tse=TXT,
+             nr_ordem="INTEGER", principal="BOOLEAN", dt_geracao=DAT),
+        REDES_CANDIDATOS,
+        DESTINO / "redes_candidatos" / "ano=2026" / "redes_candidatos.parquet",
+    )  # fmt: skip
+    _escrever(
+        con, "redes_perfis",
+        dict(sq_candidato=INT, ano_eleicao="SMALLINT", rede=TXT, username=TXT, status=TXT,
+             followers_count=INT, follows_count=INT, media_count=INT, coletado_em=ts),
+        REDES_PERFIS,
+        DESTINO / "redes" / "redes_perfis.parquet",
+    )  # fmt: skip
+    _escrever(
+        con, "redes_posts",
+        dict(username=TXT, media_id=TXT, timestamp=ts, media_type=TXT, media_product_type=TXT,
+             like_count=INT, comments_count=INT, permalink=TXT, coletado_em=ts),
+        REDES_POSTS,
+        DESTINO / "redes" / "redes_posts.parquet",
+    )  # fmt: skip
+
+
 def main() -> None:
     """Recria tests/fixtures: datasets em hive, provisórios flat e manifesto."""
     if DESTINO.exists():
@@ -390,6 +454,7 @@ def main() -> None:
             DESTINO / nome / f"{nome}.parquet" if nome == "ipca" else DESTINO / f"{nome}.parquet"
         )
         _escrever(con, nome, colunas, linhas, destino)
+    _redes(con)
     (DESTINO / "manifesto.json").write_text(
         json.dumps({"tp_prestacao_contas": {"2022": "FINAL", "2026": "PARCIAL"}}, indent=2) + "\n"
     )
