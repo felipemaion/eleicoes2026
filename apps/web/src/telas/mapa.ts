@@ -1,5 +1,5 @@
 import { paramsDeFiltros } from "../dados/adaptadores";
-import { criarCliente } from "../dados/cliente";
+import { criarCliente, foiCancelada } from "../dados/cliente";
 import type { Candidato, RespostaMapa, RespostaMunicipio } from "../dados/contrato";
 import { formatarInteiro, formatarPercentual } from "../formato";
 import { campoSelect, h, nota, titulo } from "./dom";
@@ -31,6 +31,9 @@ export const tela: Tela = {
     let candidato = "";
     let densidade = true;
     let vivo = true;
+    let seqAtualizar = 0;
+    let seqMun = 0;
+    let ctrlMun: AbortController | null = null;
 
     const status = h("div", { className: "estado" });
     const area = h("div", { className: "mapa-area" });
@@ -47,7 +50,11 @@ export const tela: Tela = {
     const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
     const mun = campoSelect("Resumo do município", "municipio", [{ valor: "", texto: "Selecione…" }], "", (v) => {
       if (v === "") return;
-      cliente.municipio(v).then((m) => { if (vivo) desenharMunicipio(painel, m); }, (e: unknown) => { if (vivo) mostrarErro(painel, e, () => { mun.select.dispatchEvent(new Event("change")); }); });
+      ctrlMun?.abort();
+      const ctrl = (ctrlMun = new AbortController());
+      const minha = ++seqMun;
+      const atual = (): boolean => vivo && minha === seqMun;
+      cliente.municipio(v, ctrl.signal).then((m) => { if (atual()) desenharMunicipio(painel, m); }, (e: unknown) => { if (atual() && !foiCancelada(e)) mostrarErro(painel, e, () => { mun.select.dispatchEvent(new Event("change")); }); });
     });
     const dens = h("input", { type: "checkbox", name: "densidade", checked: densidade });
     dens.addEventListener("change", () => { densidade = dens.checked; void pontos(); });
@@ -79,21 +86,23 @@ export const tela: Tela = {
       try {
         await mapa.mostrarPontos(densidade ? parametros() : null);
       } catch (e) {
-        if (vivo) mostrarErro(status, e, () => { void pontos(); });
+        // Cancelada = substituída por pedido mais novo; o erro "real" só vale se ainda for o atual.
+        if (vivo && !foiCancelada(e)) mostrarErro(status, e, () => { void pontos(); });
       }
     }
 
     async function atualizar(): Promise<void> {
+      const minha = ++seqAtualizar;
       status.replaceChildren(h("p", { textContent: "Carregando…" }));
       status.firstElementChild?.setAttribute("role", "status");
       try {
         const r = await mapa.atualizar(parametros());
-        if (!vivo || r === null) return;
+        if (!vivo || r === null || minha !== seqAtualizar) return;
         preencherMunicipios(r);
         status.replaceChildren();
         await pontos();
       } catch (e) {
-        if (vivo) mostrarErro(status, e, () => { void atualizar(); });
+        if (vivo && minha === seqAtualizar && !foiCancelada(e)) mostrarErro(status, e, () => { void atualizar(); });
       }
     }
 

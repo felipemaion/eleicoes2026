@@ -58,3 +58,16 @@ describe("cliente — endpoints de domínio", () => {
     for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio"] as const) expect(typeof c[m]).toBe("function");
   });
 });
+
+describe("cliente — cancelamento", () => {
+  it("repassa o AbortSignal ao fetch", async () => {
+    const sinais: (AbortSignal | undefined)[] = [];
+    vi.stubGlobal("fetch", (_u: string, init?: RequestInit) => {
+      sinais.push(init?.signal ?? undefined);
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ pontos: [] }) });
+    });
+    const ac = new AbortController();
+    await criarCliente().pontos({ uf: "SE" }, ac.signal);
+    expect(sinais[0]).toBe(ac.signal);
+  });
+});

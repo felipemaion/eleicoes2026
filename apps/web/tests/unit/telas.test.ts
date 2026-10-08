@@ -194,3 +194,81 @@ describe("candidato", () => {
     expect(chamou("sq_candidato=1")).toBe(true);
   });
 });
+
+describe("mapa — corridas de requisição", () => {
+  type Resp = { ok: boolean; status: number; json: () => Promise<unknown> };
+  /** fetch controlável: cada chamada a `caminho` fica pendente até `resolver`/`falhar`. */
+  function controlar(caminho: string): { resolver(i: number, corpo: unknown): void; falhar(i: number): void; n(): number } {
+    const pend: ((r: Resp) => void)[] = [];
+    const base = (globalThis.fetch as unknown as (u: string, i?: RequestInit) => Promise<Resp>);
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      if ((url.split("?")[0] ?? url) !== caminho) return base(url, init);
+      return new Promise<Resp>((res) => { pend.push(res); });
+    }));
+    return {
+      resolver: (i, corpo) => { pend[i]?.({ ok: true, status: 200, json: () => Promise.resolve(corpo) }); },
+      falhar: (i) => { pend[i]?.({ ok: false, status: 500, json: () => Promise.resolve({}) }); },
+      n: () => pend.length,
+    };
+  }
+  const trocar = (nome: string, valor: string): void => {
+    const s = el.querySelector<HTMLSelectElement>(`select[name=${nome}]`) as HTMLSelectElement;
+    s.value = valor;
+    s.dispatchEvent(new Event("change"));
+  };
+
+  it("erro de requisição de /mapa obsoleta não sobrescreve o mapa válido", async () => {
+    const c = controlar("/api/mapa");
+    await desenhar("mapa");
+    await vi.waitFor(() => { expect(c.n()).toBe(1); });
+    trocar("indicador", "swing");
+    await vi.waitFor(() => { expect(c.n()).toBe(2); });
+    c.resolver(1, mapa);
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.definirValores).toHaveBeenCalledTimes(1); });
+    c.falhar(0);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(el.querySelector(".estado [role=alert]")).toBeNull();
+    expect(el.textContent).not.toMatch(/falhou/);
+  });
+
+  it("pontos antigos não substituem os novos (nem o ramo de densidade desligada)", async () => {
+    const c = controlar("/api/mapa/pontos");
+    await desenhar("mapa");
+    await vi.waitFor(() => { expect(c.n()).toBe(1); });
+    trocar("indicador", "swing");
+    await vi.waitFor(() => { expect(c.n()).toBe(2); });
+    const m = mapaFalso.instancias[0];
+    c.resolver(1, { pontos: [{ lat: 1, lon: 1, votos: 7 }] });
+    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(1); });
+    c.resolver(0, { pontos: [{ lat: 2, lon: 2, votos: 9 }] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m?.definirPontos).toHaveBeenCalledTimes(1);
+    // desligar a densidade com um pedido ainda pendente: o pedido velho não pode religar os pontos
+    trocar("indicador", "lq");
+    await vi.waitFor(() => { expect(c.n()).toBe(3); });
+    const dens = el.querySelector<HTMLInputElement>("input[name=densidade]") as HTMLInputElement;
+    dens.checked = false;
+    dens.dispatchEvent(new Event("change"));
+    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(2); });
+    c.resolver(2, { pontos: [{ lat: 3, lon: 3, votos: 1 }] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m?.definirPontos).toHaveBeenCalledTimes(2);
+    expect((m?.definirPontos.mock.calls[1]?.[0] as { features: unknown[] }).features).toHaveLength(0);
+  });
+
+  it("resumo de município antigo não sobrescreve o mais novo", async () => {
+    const c = controlar("/api/municipios/2800308");
+    await desenhar("mapa");
+    await vi.waitFor(() => { expect(el.querySelector<HTMLSelectElement>("select[name=municipio]")?.options.length).toBeGreaterThan(2); });
+    const sel = el.querySelector<HTMLSelectElement>("select[name=municipio]") as HTMLSelectElement;
+    const outro = [...sel.options].find((o) => o.value !== "" && o.value !== "2800308") as HTMLOptionElement;
+    trocar("municipio", "2800308");
+    await vi.waitFor(() => { expect(c.n()).toBe(1); });
+    // segundo município responde direto pela rota-base (fixture), mas o ibge não existe: usa 2800308 de novo
+    trocar("municipio", outro.value);
+    await new Promise((r) => setTimeout(r, 20));
+    c.resolver(0, municipio);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(el.querySelector(".painel-municipio")?.textContent).not.toContain("Aracaju");
+  });
+});
