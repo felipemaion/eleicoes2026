@@ -258,3 +258,21 @@ def test_zip_sem_linhas_de_dados_e_ignorado(tmp_path: Path) -> None:
     stats = processar_secao(2022, raw, proc, ufs=["ZZ"])
     assert stats["linhas_origem"] == 0
     assert not list((proc / "votos_local").rglob("ZZ.parquet"))
+
+
+def test_baixa_uf_a_uf_antes_de_processar(tmp_path: Path) -> None:
+    """O gancho `baixar` recebe cada alvo; o ZIP pode nascer nele e sumir depois."""
+    raw, proc = montar_raw(tmp_path)
+    zip_ = raw / "tse" / "votacao_secao" / "votacao_secao_2022_AC.zip"
+    conteudo = zip_.read_bytes()
+    zip_.unlink()
+    chamados: list[str] = []
+
+    def baixar(alvo: object) -> None:
+        chamados.append(alvo.destino)  # type: ignore[attr-defined]
+        zip_.write_bytes(conteudo)
+
+    processar_secao(2022, raw, proc, ufs=["AC"], baixar=baixar, descartar_zip=True)
+    assert chamados == ["tse/votacao_secao/votacao_secao_2022_AC.zip"]
+    assert not zip_.exists()
+    assert list((proc / "votos_local").rglob("AC.parquet"))

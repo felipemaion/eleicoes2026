@@ -16,6 +16,7 @@ import logging
 import os
 import shutil
 import tempfile
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -24,7 +25,7 @@ import h3  # type: ignore[import-untyped]  # h3 4.x não publica stubs
 import polars as pl
 from contratos import CONTRATOS, Contrato, validar
 
-from etl.fontes.catalogo import alvos
+from etl.fontes.catalogo import Alvo, alvos
 from etl.manifesto import Manifesto
 from etl.processar import ErroProcessamento, _conferir_municipios, _crosswalk
 from etl.tse_csv import BLOCO_BYTES, blocos_utf8, ler_csv, scan_texto
@@ -311,13 +312,15 @@ def processar_secao(
     ufs: list[str] | None = None,
     manifesto: Manifesto | None = None,
     descartar_zip: bool = False,
+    baixar: Callable[[Alvo], object] | None = None,
     bloco_bytes: int = BLOCO_BYTES,
 ) -> Stats:
     """Processa ``votacao_secao`` de ``ano`` (todas as UFs do catálogo ou só ``ufs``).
 
     ``descartar_zip`` apaga cada ZIP depois de validado e publicado: o disco local não
     comporta os ~8 GB brutos dos dois anos; o sha256 continua no manifesto e o arquivo pode
-    ser baixado de novo. Devolve os totais para o handoff (inclui ``por_uf``).
+    ser baixado de novo. ``baixar`` (opcional) é chamado com cada alvo antes da leitura, para
+    baixar UF a UF sem acumular os ZIPs. Devolve os totais para o handoff (inclui ``por_uf``).
     """
     cross = _crosswalk(raiz_raw, raiz_proc, ano)
     por_uf: dict[str, Stats] = {}
@@ -325,6 +328,8 @@ def processar_secao(
         nome_uf = alvo.destino.rsplit("_", 1)[1].removesuffix(".zip")
         if ufs and nome_uf not in ufs:
             continue
+        if baixar:
+            baixar(alvo)
         zip_path = raiz_raw / alvo.destino
         if not zip_path.exists():
             raise ErroProcessamento(f"{zip_path} não existe; rode `etl baixar` antes")

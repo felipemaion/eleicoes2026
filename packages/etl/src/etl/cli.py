@@ -21,6 +21,7 @@ from etl.manifesto import Manifesto
 from etl.municipios import ErroMunicipios
 from etl.pipeline_geo import construir_geo
 from etl.processar import CONTAS, FONTES, ErroProcessamento, processar_fonte
+from etl.secao import ALERTA_SEM_COORDENADA, processar_secao
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -47,7 +48,43 @@ def _parser() -> argparse.ArgumentParser:
     g.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     g.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
     g.add_argument("--saida", type=Path, default=Path("data/processed/tiles"))
+    s = sub.add_parser("secao", help="votacao_secao → votos_local, totais_local e locais_h3")
+    s.add_argument("--ano", type=int, required=True)
+    s.add_argument("--uf", action="append", help="repetível; padrão: todas as UFs do catálogo")
+    s.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
+    s.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    s.add_argument("--baixar", action="store_true", help="baixa cada UF antes de processá-la")
+    s.add_argument(
+        "--descartar-zip", action="store_true", help="apaga o ZIP de cada UF após validar"
+    )
     return p
+
+
+def _secao(args: argparse.Namespace) -> int:
+    manifesto = Manifesto(args.raiz_raw / "manifesto.json")
+    try:
+        with httpx.Client(timeout=httpx.Timeout(30.0, read=120.0)) as cliente:
+            baixador = Baixador(args.raiz_raw, manifesto, cliente)
+            stats = processar_secao(
+                args.ano,
+                args.raiz_raw,
+                args.raiz_processed,
+                ufs=args.uf,
+                manifesto=manifesto,
+                descartar_zip=args.descartar_zip,
+                baixar=baixador.baixar if args.baixar else None,
+            )
+    except (ErroProcessamento, ContratoViolado, DownloadError) as e:
+        print(f"FALHA secao: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(stats, ensure_ascii=False, indent=2, default=str))
+    if stats["pct_votos_sem_coordenada"] > ALERTA_SEM_COORDENADA:
+        print(
+            f"ALERTA: {stats['pct_votos_sem_coordenada']:.1%} dos votos nominais em locais sem "
+            f"coordenada (limite {ALERTA_SEM_COORDENADA:.0%})",
+            file=sys.stderr,
+        )
+    return 0
 
 
 def _geo(args: argparse.Namespace) -> int:
@@ -94,6 +131,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.comando == "geo":
         return _geo(args)
+    if args.comando == "secao":
+        return _secao(args)
     if args.comando == "processar":
         return _processar(args)
     try:
