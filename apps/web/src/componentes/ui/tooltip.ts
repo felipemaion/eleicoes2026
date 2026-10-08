@@ -30,7 +30,7 @@ export function corpoRico(c: ConteudoRico): DocumentFragment {
     f.append(cab);
   } else f.append(t);
   const dl = document.createElement("dl");
-  dl.className = "tooltip-lista";
+  dl.className = "tooltip-lista tooltip-lista--dados";
   for (const [r, v] of c.linhas) {
     const dt = document.createElement("dt");
     dt.textContent = r;

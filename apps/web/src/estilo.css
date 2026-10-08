@@ -127,6 +127,8 @@ footer p { margin: var(--esp-1) 0; }
   position: fixed; z-index: 1500; width: max-content; max-width: 22rem; padding: 0.65rem 0.8rem; border-radius: 0.5rem;
   background: var(--cor-superficie-alta); color: var(--cor-texto); border: 1px solid var(--cor-destaque);
   box-shadow: var(--sombra); font-size: 0.875rem; line-height: 1.45; font-weight: 400; text-align: left; overflow-wrap: anywhere;
+  /* Balões vivem dentro de elementos nowrap (KPI): sem isto herdam e o texto corrido não quebra. */
+  white-space: normal;
 }
 .tooltip[hidden] { display: none; }
 .tooltip::before {
@@ -137,8 +139,10 @@ footer p { margin: var(--esp-1) 0; }
 .tooltip[data-lado="cima"]::before { bottom: -0.4rem; border-right: 1px solid var(--cor-destaque); border-bottom: 1px solid var(--cor-destaque); }
 .tooltip-flutuante, .tooltip-titulo { display: block; margin-bottom: 0.3rem; color: var(--cor-destaque); font-size: 0.95rem; }
 .tooltip-lista { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.75rem; margin: 0; }
-.tooltip-lista dt { color: var(--cor-texto-suave); white-space: nowrap; }
-.tooltip-lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tooltip-lista dt { color: var(--cor-texto-suave); }
+.tooltip-lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* nowrap só no tooltip de dados (rótulo curto + número); texto corrido quebra normalmente. */
+.tooltip-lista--dados dt, .tooltip-lista--dados dd { white-space: nowrap; }
 .tooltip-cabeca { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.3rem; }
 .tooltip-cabeca .tooltip-titulo { margin: 0; }
 
