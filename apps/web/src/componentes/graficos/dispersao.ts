@@ -7,6 +7,8 @@ export interface PontoCustoVoto {
   rotulo: string;
   custo: number;
   votos: number;
+  /** Linhas do tooltip (rótulo, valor); o título é o próprio rótulo. */
+  detalhe?: readonly (readonly [string, string])[];
 }
 
 export interface OpcoesDispersao {

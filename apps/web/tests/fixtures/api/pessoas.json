@@ -102,15 +102,15 @@
     {
       "pessoa_id_publico": "cccccccccccc",
       "nome": "CARLA DIAS",
-      "mesmo_cargo": true,
-      "comparavel": true,
+      "mesmo_cargo": false,
+      "comparavel": false,
       "de": {
         "ano": 2022,
         "sq_candidato": 103,
         "nm_urna": "CARLA DIAS",
         "nome": "CARLA DIAS DA SILVA",
         "numero": 1503,
-        "cargo": "DEPUTADO ESTADUAL",
+        "cargo": "VEREADOR",
         "uf": "SP",
         "partido": {
           "numero": 30,
