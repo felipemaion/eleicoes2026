@@ -5,6 +5,7 @@ spec tem explicação pública, que os limites de tamanho valem e que as referê
 (vetor, âncora da spec, avisos citados pelas telas, placeholders) apontam para algo existente.
 """
 
+import csv
 import json
 import re
 from pathlib import Path
@@ -18,6 +19,7 @@ TEXTOS = METODOLOGIA / "publico" / "textos.json"
 COMO_LER = METODOLOGIA / "publico" / "README.md"
 SPEC = METODOLOGIA / "indicadores.md"
 VETORES = sorted((METODOLOGIA / "vetores").glob("*.json"))
+REFERENCIA_MBL = RAIZ / "data" / "reference" / "mbl_2022.csv"
 
 CAMPOS_INDICADOR = ("titulo", "resumo", "como_ler", "unidade", "denominador", "cuidado", "fonte")
 TELAS = ("visao_geral", "mapa", "gastos", "evolucao", "candidato")
@@ -125,9 +127,65 @@ def test_glossario(textos: dict[str, Any]) -> None:
 
 
 def test_placeholders_declarados(textos: dict[str, Any]) -> None:
-    declarados = set(textos["placeholders"])
-    usados = {p for s in _textos_de(textos) for p in PLACEHOLDER.findall(s)}
-    assert usados <= declarados, f"placeholders não declarados: {sorted(usados - declarados)}"
+    # Placeholders globais valem em todo o arquivo; os do comparador ({busca}, {n}…) são
+    # preenchidos só pela tela do comparador e não podem vazar para outras seções.
+    globais = set(textos["placeholders"])
+    fora = {k: v for k, v in textos.items() if k != "comparador"}
+    usados = {p for s in _textos_de(fora) for p in PLACEHOLDER.findall(s)}
+    assert usados <= globais, f"placeholders não declarados: {sorted(usados - globais)}"
+    comp = textos["comparador"]
+    locais = globais | set(comp["placeholders"])
+    usados_comp = {p for s in _textos_de(comp["ui"]) for p in PLACEHOLDER.findall(s)}
+    assert usados_comp <= locais, f"comparador: placeholders {sorted(usados_comp - locais)}"
+
+
+def _referencia_mbl() -> list[dict[str, str]]:
+    with REFERENCIA_MBL.open(encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def _nome_publico(nome_urna: str) -> str:
+    return nome_urna.title()
+
+
+GRUPOS_EXPLICADOS = ("mbl_2022_indicados", "mbl_2022", "mbl_2026", "missao_2026")
+TERMOS_DO_COMPARADOR = ("indicados", "grupo_mbl_2022", "grupo_mbl_2026", "comparador")
+
+
+def test_glossario_explica_indicados_grupos_e_comparador(textos: dict[str, Any]) -> None:
+    glossario = textos["glossario"]
+    for chave in TERMOS_DO_COMPARADOR:
+        assert chave in glossario, f"glossário sem {chave!r}"
+    ref = _referencia_mbl()
+    indicados = [_nome_publico(r["nome"]) for r in ref if r["origem"] == "indicado"]
+    assert len(indicados) == 4
+    for nome in indicados:
+        assert nome in glossario["indicados"]["definicao"], f"indicados não cita {nome}"
+    assert f"{len(ref)} candidaturas" in glossario["grupo_mbl_2022"]["definicao"]
+    fora_do_missao = [r for r in ref if r["partido_2026"] != "MISSÃO" and r["sq_candidato_2026"]]
+    for r in fora_do_missao:
+        assert _nome_publico(r["nome"]) in glossario["grupo_mbl_2026"]["definicao"]
+    for termo in ("cargo", "zona"):
+        assert termo in glossario["comparador"]["definicao"]
+
+
+def test_textos_do_comparador(textos: dict[str, Any]) -> None:
+    comp = textos["comparador"]
+    limites: dict[str, int] = textos["limites"]
+    assert comp["ui"], "comparador sem textos de interface"
+    for chave, valor in comp["ui"].items():
+        assert isinstance(valor, str) and valor.strip(), f"comparador.ui.{chave} vazio"
+        assert len(valor) <= limites["aviso"], f"comparador.ui.{chave} acima do limite"
+    assert set(comp["nota_grupo"]) == set(GRUPOS_EXPLICADOS)
+    for chave, nota in comp["nota_grupo"].items():
+        assert 0 < len(nota) <= limites["definicao"], f"comparador.nota_grupo.{chave}"
+    # Os nomes dos indicados vêm da referência, não de memória.
+    ref = _referencia_mbl()
+    for r in ref:
+        if r["origem"] == "indicado":
+            assert _nome_publico(r["nome"]) in comp["nota_grupo"]["mbl_2022_indicados"]
+    assert "{busca}" in comp["ui"]["sem_resultado"]
+    assert "{n}" in comp["ui"]["refine"] and "{total}" in comp["ui"]["refine"]
 
 
 def test_sem_espacos_sobrando(textos: dict[str, Any]) -> None:
@@ -139,5 +197,6 @@ def test_sem_espacos_sobrando(textos: dict[str, Any]) -> None:
 def test_pagina_como_ler_existe_e_cobre_os_avisos() -> None:
     texto = COMO_LER.read_text(encoding="utf-8")
     assert texto.startswith("# Como ler este painel")
-    for termo in ("penetração", "legenda", "rezoneamento", "PTB", "parciais", "IPCA"):
+    termos = ("penetração", "legenda", "rezoneamento", "PTB", "parciais", "IPCA", "indicados")
+    for termo in (*termos, "Beraldo", "comparador"):
         assert termo.lower() in texto.lower(), f"'Como ler' não menciona {termo}"
