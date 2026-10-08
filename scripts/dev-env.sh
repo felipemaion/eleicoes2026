@@ -63,7 +63,7 @@ for papel in $PAPEIS; do
   tmux select-pane -t "$painel" -T "$papel"
   # Publicar e integrar é do orquestrador: push/PR/merge negados só aos agentes. O settings.json
   # do projeto vale também para a sessão do orquestrador, que precisa publicar.
-  comando="claude --agent $papel --model $modelo --permission-mode acceptEdits --disallowedTools 'Bash(git push:*)' 'Bash(gh pr merge:*)' 'Bash(gh pr create:*)'"
+  comando="claude --agent $papel --model $modelo --permission-mode auto --disallowedTools 'Bash(git push:*)' 'Bash(gh pr merge:*)' 'Bash(gh pr create:*)'"
   [ -n "$SECO" ] && comando="echo '[verificacao] $comando'"
   tmux send-keys -t "$painel" "clear && $RAIZ/scripts/agent-title.sh $papel fim >/dev/null && $comando" C-m
 done
