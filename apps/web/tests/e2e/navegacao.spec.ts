@@ -33,3 +33,12 @@ test("sem rolagem horizontal em 360 px", async ({ page }) => {
     expect(sobra).toBeLessThanOrEqual(0);
   }
 });
+
+test("skip link foca o conteúdo sem resetar tela nem filtros", async ({ page }) => {
+  await page.goto("/#/gastos?uf=SP&ano=2022");
+  await page.getByRole("link", { name: "Pular para o conteúdo" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#\/gastos\?uf=SP&ano=2022/);
+  await expect(page.locator("#principal")).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1, name: "Gastos" })).toBeVisible();
+});

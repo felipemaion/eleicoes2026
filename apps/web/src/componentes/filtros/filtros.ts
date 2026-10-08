@@ -15,8 +15,17 @@ const CAMPOS = [
   doTipo({ chave: "ano", rotulo: "Ano", opcoes: ANOS.map((a) => ({ valor: a, texto: String(a) })) }),
 ];
 
+/** Aplica a opção escolhida mantendo a chave e o tipo do valor correlacionados. */
+function aplicar<K extends keyof Filtros>(store: Store, campo: Campo<K>, bruto: string): void {
+  const op = campo.opcoes.find((o) => String(o.valor) === bruto);
+  if (!op) return;
+  const parcial: Partial<Filtros> = {};
+  parcial[campo.chave] = op.valor;
+  store.definir(parcial);
+}
+
 /** Desenha os selects de filtro e mantém o valor exibido em sincronia com o store. */
-export function render(container: HTMLElement, store: Store): void {
+export function render(container: HTMLElement, store: Store): () => void {
   const form = document.createElement("form");
   form.className = "filtros";
   form.setAttribute("aria-label", "Filtros");
@@ -28,10 +37,7 @@ export function render(container: HTMLElement, store: Store): void {
     const select = document.createElement("select");
     select.name = campo.chave;
     for (const o of campo.opcoes) select.add(new Option(o.texto, String(o.valor)));
-    select.addEventListener("change", () => {
-      const op = campo.opcoes.find((o) => String(o.valor) === select.value);
-      if (op) store.definir({ [campo.chave]: op.valor });
-    });
+    select.addEventListener("change", () => { aplicar(store, campo, select.value); });
     label.append(select);
     form.append(label);
     return { campo, select };
@@ -42,6 +48,7 @@ export function render(container: HTMLElement, store: Store): void {
     for (const { campo, select } of selects) select.value = String(filtros[campo.chave]);
   };
   sincronizar();
-  store.assinar(sincronizar);
+  const cancelar = store.assinar(sincronizar);
   container.replaceChildren(form);
+  return () => { cancelar(); container.replaceChildren(); };
 }

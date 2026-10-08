@@ -6,6 +6,7 @@ import { cssDasCores } from "./paletas";
 import { ligarStoreAoHash, ROTULOS_TELA } from "./rotas";
 import { criarStore, TELAS, type Estado } from "./store";
 import { TELAS_POR_CHAVE } from "./telas";
+import { criarGerenciadorDeTelas } from "./telas/ciclo";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}): HTMLElementTagNameMap[K] {
   return Object.assign(document.createElement(tag), props);
@@ -41,6 +42,12 @@ function montar(raiz: HTMLElement): void {
 
   renderFiltros(areaFiltros, store);
 
+  const gerenciador = criarGerenciadorDeTelas(principal, TELAS_POR_CHAVE);
+  // O skip link aponta para #principal; deixar o navegador mudar o hash dispararia a rota.
+  document.querySelector<HTMLAnchorElement>("a.pular")?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    principal.focus();
+  });
   let telaAnterior: string | null = null;
   const desenhar = (e: Readonly<Estado>): void => {
     for (const { chave, a } of links) {
@@ -48,7 +55,7 @@ function montar(raiz: HTMLElement): void {
       if (chave === e.tela) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
     }
-    TELAS_POR_CHAVE[e.tela].render(principal, e);
+    gerenciador.desenhar(e);
     document.title = `${TELAS_POR_CHAVE[e.tela].titulo} — Eleições 2026`;
     // Só move o foco ao trocar de tela, para leitores de tela anunciarem o novo título.
     if (telaAnterior !== null && telaAnterior !== e.tela) principal.querySelector("h1")?.focus();

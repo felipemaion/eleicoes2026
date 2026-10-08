@@ -18,7 +18,9 @@ function escolher<T extends string | number>(validos: readonly T[], bruto: strin
   return validos.find((v) => String(v) === bruto) ?? padrao;
 }
 
-export function lerHash(hash: string): Rota {
+/** Hash vazio = rota padrão; hash que não começa com `#/` (âncora como `#principal`) não é rota → null. */
+export function lerHash(hash: string): Rota | null {
+  if (hash !== "" && hash !== "#" && !hash.startsWith("#/")) return null;
   const [caminho = "", consulta = ""] = hash.replace(/^#\/?/, "").split("?");
   const q = new URLSearchParams(consulta);
   return {
@@ -44,12 +46,13 @@ export function formatarHash(tela: Tela, filtros: Filtros): string {
 /** Sincroniza store ↔ hash nos dois sentidos. Retorna função que desliga a ligação. */
 export function ligarStoreAoHash(store: Store, janela: Window): () => void {
   const doHash = (): void => {
-    const { tela, filtros } = lerHash(janela.location.hash);
-    store.definir(filtros, tela);
+    const rota = lerHash(janela.location.hash);
+    if (rota) store.definir(rota.filtros, rota.tela);
   };
   const paraHash = (e: Readonly<Estado>): void => {
     const novo = formatarHash(e.tela, e.filtros);
-    if (janela.location.hash !== novo) janela.location.hash = novo;
+    // replaceState: mudar filtro não deve empilhar uma entrada de histórico por clique.
+    if (janela.location.hash !== novo) janela.history.replaceState(null, "", novo);
   };
   doHash();
   const desassinar = store.assinar(paraHash);

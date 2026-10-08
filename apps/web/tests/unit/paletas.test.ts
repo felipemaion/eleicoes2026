@@ -9,7 +9,17 @@ describe("paletas", () => {
   });
 
   it("divergente é simétrica em torno de um neutro claro", () => {
-    expect(PALETAS.divergente[3]).toMatch(/^#/);
+    const d = PALETAS.divergente;
+    // neutro claro: contraste com branco < 1.2 (quase branco)
+    expect(contraste(d[3], "#ffffff")).toBeLessThan(1.2);
+    // extremos distinguíveis do neutro nos dois lados (PuOr não é simétrica em luminância)
+    expect(contraste(d[0], d[3])).toBeGreaterThan(3);
+    expect(contraste(d[6], d[3])).toBeGreaterThan(3);
+    // degraus se afastam do neutro de forma monotônica nos dois lados
+    expect(contraste(d[2], d[3])).toBeLessThan(contraste(d[1], d[3]));
+    expect(contraste(d[1], d[3])).toBeLessThan(contraste(d[0], d[3]));
+    expect(contraste(d[4], d[3])).toBeLessThan(contraste(d[5], d[3]));
+    expect(contraste(d[5], d[3])).toBeLessThan(contraste(d[6], d[3]));
   });
 
   it("cores são únicas dentro de cada paleta", () => {

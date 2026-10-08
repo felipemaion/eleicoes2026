@@ -8,6 +8,12 @@ export interface Meta {
   fonte: string;
 }
 
+function ehMeta(x: unknown): x is Meta {
+  if (typeof x !== "object" || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o["fonte"] === "string" && (o["dt_geracao"] === null || typeof o["dt_geracao"] === "string");
+}
+
 export interface ClienteApi {
   meta(): Promise<Meta>;
 }
@@ -17,7 +23,9 @@ export function criarCliente(base = "/api"): ClienteApi {
     async meta() {
       const r = await fetch(`${base}/meta`);
       if (!r.ok) throw new Error(`GET ${base}/meta falhou: ${String(r.status)}`);
-      return (await r.json()) as Meta;
+      const corpo: unknown = await r.json();
+      if (!ehMeta(corpo)) throw new Error(`GET ${base}/meta: resposta inesperada`);
+      return corpo;
     },
   };
 }

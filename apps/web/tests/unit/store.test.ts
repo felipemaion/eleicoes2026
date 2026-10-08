@@ -40,4 +40,36 @@ describe("hash", () => {
     expect(store.obter().filtros).toMatchObject({ uf: "PR", ano: 2022 });
     desligar();
   });
+
+  it("hash de âncora (#principal) é ignorado e não reseta tela nem filtros", () => {
+    expect(lerHash("#principal")).toBeNull();
+    const store = criarStore();
+    const desligar = ligarStoreAoHash(store, window);
+    store.definir({ uf: "RJ", ano: 2022 }, "gastos");
+    window.history.replaceState(null, "", "#principal");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    expect(store.obter().tela).toBe("gastos");
+    expect(store.obter().filtros).toMatchObject({ uf: "RJ", ano: 2022 });
+    desligar();
+  });
+
+  it("mudar filtro não empilha histórico (replaceState)", () => {
+    const store = criarStore();
+    const desligar = ligarStoreAoHash(store, window);
+    const antes = window.history.length;
+    store.definir({ uf: "SP" });
+    store.definir({ uf: "MG" });
+    expect(window.history.length).toBe(antes);
+    expect(window.location.hash).toContain("uf=MG");
+    desligar();
+  });
+
+  it("assinar devolve função que cancela a assinatura", () => {
+    const store = criarStore();
+    const o = vi.fn();
+    const cancelar = store.assinar(o);
+    cancelar();
+    store.definir({ uf: "AC" });
+    expect(o).not.toHaveBeenCalled();
+  });
 });
