@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contraste, PALETAS, TEMAS } from "../../src/paletas";
+import { contraste, cssDasCores, luminancia, OFICIAL_MISSAO, PALETAS, TEMAS } from "../../src/paletas";
 
 describe("paletas", () => {
   it("tem o nº de classes esperado", () => {
@@ -39,7 +39,33 @@ describe("paletas", () => {
       expect(contraste(t.semDado, t.superficie)).toBeGreaterThanOrEqual(1.2);
     }
     expect(contraste(TEMAS.claro.semDado, PALETAS.sequencial[0])).toBeGreaterThanOrEqual(1.3);
+    expect(contraste(TEMAS.escuro.semDado, PALETAS.sequencial[0])).toBeGreaterThanOrEqual(1.3);
     expect(TEMAS.claro.semDado).not.toBe(TEMAS.escuro.semDado);
+  });
+
+  it("identidade Missão: preto/amarelo oficiais, tema escuro por padrão", () => {
+    expect(OFICIAL_MISSAO.preto).toBe("#070d0c");
+    expect(OFICIAL_MISSAO.amarelo).toBe("#fcbe26");
+    expect(TEMAS.escuro.fundo).toBe(OFICIAL_MISSAO.preto);
+    expect(TEMAS.escuro.acento).toBe(OFICIAL_MISSAO.amarelo);
+    expect(cssDasCores()).toMatch(/^:root\{[^}]*--cor-fundo:#070d0c/);
+  });
+
+  it("amarelo nunca é texto sobre branco: no tema claro o destaque tem ≥ 4.5:1 com o fundo", () => {
+    expect(contraste(TEMAS.claro.destaque, TEMAS.claro.fundo)).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(TEMAS.escuro.destaque, TEMAS.escuro.fundo)).toBeGreaterThanOrEqual(4.5);
+    for (const t of Object.values(TEMAS)) {
+      expect(contraste(t.textoAcento, t.acento)).toBeGreaterThanOrEqual(7);
+      expect(contraste(t.dado, t.fundo)).toBeGreaterThanOrEqual(3);
+      expect(contraste(t.dado, t.superficie)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("sequencial vai do claro ao escuro e é visível sobre a superfície do mapa nos dois temas", () => {
+    const s = PALETAS.sequencial;
+    for (let i = 1; i < s.length; i++) expect(luminancia(s[i] as string)).toBeLessThan(luminancia(s[i - 1] as string));
+    // No tema claro a classe mais clara fica próxima do fundo do mapa: as bordas dos polígonos fazem a separação.
+    for (const cor of s) expect(contraste(cor, TEMAS.escuro.superficie)).toBeGreaterThanOrEqual(1.5);
   });
 
   it("contraste calcula valores de referência", () => {

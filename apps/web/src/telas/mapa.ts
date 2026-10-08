@@ -3,6 +3,7 @@ import { criarCliente, foiCancelada } from "../dados/cliente";
 import type { IndicadorApi, RespostaMapa } from "../dados/contrato";
 import type { Nivel } from "../componentes/mapa/mapa";
 import { campoSelect, h, nota, titulo } from "./dom";
+import { iniciarCarga } from "../componentes/ui/sobreposicao";
 import { mostrarErro } from "./estados";
 import { geometria, niveisDisponiveis, UF_DA_DEMONSTRACAO } from "./mapa-embutido";
 import { criarPainelMapa } from "./painel-mapa";
@@ -125,8 +126,8 @@ export const tela: Tela = {
 
     async function atualizar(): Promise<void> {
       const minha = ++seqAtualizar;
-      status.replaceChildren(h("p", { textContent: "Carregando…" }));
-      status.firstElementChild?.setAttribute("role", "status");
+      status.replaceChildren();
+      const fim = iniciarCarga("Carregando o mapa…");
       try {
         const r: RespostaMapa | null = await mapa.atualizar(parametros());
         if (!vivo || r === null || minha !== seqAtualizar) return;
@@ -135,6 +136,8 @@ export const tela: Tela = {
         await pontos();
       } catch (e) {
         if (vivo && minha === seqAtualizar && !foiCancelada(e)) mostrarErro(status, e, () => { void atualizar(); });
+      } finally {
+        fim();
       }
     }
 

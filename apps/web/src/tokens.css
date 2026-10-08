@@ -4,12 +4,15 @@
   --fonte-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --texto-pequeno: 0.875rem;
   --texto-base: 1rem;
-  --texto-h1: clamp(1.4rem, 1.1rem + 1.5vw, 2rem);
+  --texto-h1: clamp(1.4rem, 1.1rem + 1vw, 2rem);
   --esp-1: 0.25rem;
   --esp-2: 0.5rem;
   --esp-3: 1rem;
   --esp-4: 1.5rem;
   --esp-5: 2.5rem;
   --raio: 0.5rem;
-  --largura-max: 72rem;
+  --largura-texto: 72ch;
+  --largura-lateral: 15.5rem;
+  --altura-topo: 3.5rem;
+  --sombra: 0 6px 24px rgb(0 0 0 / 0.35);
 }

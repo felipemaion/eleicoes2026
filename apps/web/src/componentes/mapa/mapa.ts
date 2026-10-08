@@ -15,6 +15,7 @@ import { criarLegenda } from "../escalas/legenda";
 import { expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoes";
 import { limitesDe, type Limites } from "./geo";
 import { limitesDosIds } from "../../dados/limites-uf";
+import { ancoraEm, corpoRico, encaixar } from "../ui/tooltip";
 import { textoTooltip, type DetalheLocal } from "./tooltip";
 
 /** Hachura diagonal 8×8 para áreas de n baixo; a cor vem do tema, então é lida na hora de desenhar. */
@@ -119,7 +120,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
   const areaLegenda = document.createElement("div");
   areaLegenda.className = "mapa-legenda";
   const tooltip = document.createElement("div");
-  tooltip.className = "mapa-tooltip";
+  tooltip.className = "tooltip mapa-tooltip";
   tooltip.id = `mapa-tooltip-${Math.random().toString(36).slice(2, 8)}`;
   tooltip.setAttribute("role", "tooltip");
   tooltip.hidden = true;
@@ -254,24 +255,15 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     const d = detalhesPorNivel.get(nivel)?.[id];
     const base: DetalheLocal = { ...(valor === undefined ? {} : { taxa: valor }), ...d, nome: nomeDe(nivel, id) };
     const c = textoTooltip(base, { unidade: metaAtual.unidade, formatarTaxa });
-    const titulo = document.createElement("strong");
-    titulo.textContent = c.titulo;
-    const dl = document.createElement("dl");
-    for (const [rotulo, v] of c.linhas) {
-      const dt = document.createElement("dt");
-      dt.textContent = rotulo;
-      const dd = document.createElement("dd");
-      dd.textContent = v;
-      dl.append(dt, dd);
-    }
-    tooltip.replaceChildren(titulo, dl);
+    tooltip.replaceChildren(corpoRico(c));
     posicionarTooltip(x, y);
   }
 
   function posicionarTooltip(x: number, y: number): void {
-    tooltip.style.left = `${String(x + 12)}px`;
-    tooltip.style.top = `${String(y + 12)}px`;
     tooltip.hidden = false;
+    // Coordenadas do mapa → viewport: o balão é `position: fixed` para nunca ser cortado pelo quadro.
+    const q = quadro.getBoundingClientRect();
+    encaixar(tooltip, ancoraEm(q.left + x, q.top + y));
   }
 
   function destacar(id: string | null): void {
@@ -391,6 +383,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     }
   };
   temaEscuro.addEventListener("change", aoTrocarTema);
+  // Alternância manual de tema (botão do cabeçalho) avisa por evento: MapLibre não lê var().
+  window.addEventListener("tema-alterado", aoTrocarTema);
 
   function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala, detalhes?: Readonly<Record<string, DetalheParcial>>): void {
     const f = garantirNivel(n);
@@ -447,21 +441,22 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
         if (existente) void existente.setData(pontos);
         else mapa.addSource("locais", { type: "geojson", data: pontos });
         for (const id of ["pontos-circulo", "pontos-calor"]) if (mapa.getLayer(id)) mapa.removeLayer(id);
-        const rampa = PALETAS.sequencial;
+        // Azul do lado "acima" da divergente: destaca-se do coroplético amarelo/âmbar sem usar a mesma escala.
+        const rampa = PALETAS.divergente;
         mapa.addLayer({
           id: "pontos-calor", type: "heatmap", source: "locais", maxzoom: 10,
           paint: {
             "heatmap-weight": expressaoPesoCalor(votosMax) as ExpressionSpecification,
             "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 5, 12, 10, 30],
             "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 8, 0.85, 10, 0],
-            "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(255,255,255,0)", 0.2, rampa[1], 0.4, rampa[3], 0.7, rampa[5], 1, rampa[6]],
+            "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(31,83,133,0)", 0.2, rampa[6], 0.45, rampa[5], 0.75, rampa[4], 1, "#ffffff"],
           },
         });
         mapa.addLayer({
           id: "pontos-circulo", type: "circle", source: "locais", minzoom: 8,
           paint: {
             "circle-radius": expressaoRaioCirculo(votosMax, 18) as ExpressionSpecification,
-            "circle-color": rampa[5], "circle-opacity": 0.7, "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
+            "circle-color": rampa[5], "circle-opacity": 0.8, "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
           },
         });
       });
@@ -474,6 +469,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       ouvintesMapa.splice(0).forEach((f) => { f(); });
       fila.length = 0;
       temaEscuro.removeEventListener("change", aoTrocarTema);
+      window.removeEventListener("tema-alterado", aoTrocarTema);
       mapa.remove();
       container.replaceChildren();
     },

@@ -2,7 +2,8 @@ import "./tokens.css";
 import "./estilo.css";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
-import { cssDasCores } from "./paletas";
+import { criarSobreposicao, definirSobreposicaoGlobal } from "./componentes/ui/sobreposicao";
+import { cssDasCores, TEMAS } from "./paletas";
 import { ligarStoreAoHash, rotaExiste, ROTULOS_TELA } from "./rotas";
 import { criarStore, TELAS, type Estado } from "./store";
 import { TELAS_POR_CHAVE } from "./telas";
@@ -15,14 +16,37 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLEl
   return Object.assign(document.createElement(tag), props);
 }
 
+const CHAVE_TEMA = "eleicoes2026:tema";
+
+/** Tema escuro (identidade Missão) é o padrão; o claro é escolha explícita, lembrada neste navegador. */
+function ligarTema(botao: HTMLButtonElement): void {
+  const aplicar = (claro: boolean): void => {
+    if (claro) document.documentElement.dataset["tema"] = "claro";
+    else delete document.documentElement.dataset["tema"];
+    botao.setAttribute("aria-pressed", String(claro));
+    botao.textContent = claro ? "Tema escuro" : "Tema claro";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", (claro ? TEMAS.claro : TEMAS.escuro).fundo);
+    window.dispatchEvent(new Event("tema-alterado"));
+  };
+  let salvo = false;
+  try { salvo = window.localStorage.getItem(CHAVE_TEMA) === "claro"; } catch { /* armazenamento bloqueado: segue no padrão */ }
+  aplicar(salvo);
+  botao.addEventListener("click", () => {
+    const claro = document.documentElement.dataset["tema"] !== "claro";
+    aplicar(claro);
+    try { window.localStorage.setItem(CHAVE_TEMA, claro ? "claro" : "escuro"); } catch { /* sem persistência */ }
+  });
+}
+
 function montar(raiz: HTMLElement): void {
   const estilo = el("style");
   estilo.textContent = cssDasCores();
   document.head.append(estilo);
 
   const store = criarStore();
-  const cabecalho = el("header");
-  const titulo = el("h2", { textContent: "Eleições 2026 · Partido Missão (14)" });
+  const cabecalho = el("header", { className: "topo" });
+  const marca = el("h2", { className: "marca-site" });
+  marca.append(el("span", { className: "selo", textContent: "14" }), "Eleições 2026", el("span", { className: "sub", textContent: " · Partido Missão" }));
   const nav = el("nav");
   nav.setAttribute("aria-label", "Telas");
   const lista = el("ul");
@@ -34,8 +58,13 @@ function montar(raiz: HTMLElement): void {
     return { chave, a };
   });
   nav.append(lista);
+  const botaoTema = el("button", { type: "button", className: "tema-botao" });
+  cabecalho.append(marca, nav, botaoTema);
+  ligarTema(botaoTema);
+  const lateral = el("aside", { className: "lateral" });
+  lateral.setAttribute("aria-label", "Filtros");
   const areaFiltros = el("div");
-  cabecalho.append(titulo, nav, areaFiltros);
+  lateral.append(el("h2", { textContent: "Filtros" }), areaFiltros);
 
   const principal = el("main", { id: "principal", tabIndex: -1 });
   const rodape = el("footer");
@@ -45,7 +74,11 @@ function montar(raiz: HTMLElement): void {
   const aRepo = el("a", { textContent: "Código no GitHub", href: REPOSITORIO, rel: "noopener" });
   links.append(aMetodologia, " · ", aRepo);
   rodape.append(fonte, links);
-  raiz.append(cabecalho, principal, rodape);
+  const corpo = el("div", { className: "corpo" });
+  corpo.append(lateral, principal);
+  raiz.classList.add("app");
+  raiz.append(cabecalho, corpo, rodape);
+  definirSobreposicaoGlobal(criarSobreposicao(document.body, principal));
 
   renderFiltros(areaFiltros, store);
 

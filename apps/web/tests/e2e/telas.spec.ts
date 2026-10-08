@@ -19,6 +19,8 @@ test("visão geral: KPIs, ranking, avisos públicos e ajuda '?' por teclado", as
 
 test("mapa: coroplético, troca de indicador sem recarregar geometria e painel do município", async ({ page }) => {
   const urls = await simularApi(page);
+  // O teste descreve o cenário "sem PMTiles publicados": não pode depender de data/processed/tiles local.
+  await page.route("**/tiles/manifesto.json", (r) => r.fulfill({ status: 404, body: "" }));
   await page.goto("/#/mapa?uf=SE");
   await expect(page.locator(".mapa-quadro canvas")).toBeVisible({ timeout: 15_000 });
   await expect(page.locator(".mapa-legenda svg")).toContainText("Denominador");

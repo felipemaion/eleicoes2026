@@ -56,7 +56,15 @@ export function kpisDoGrupo(l: RespostaCandidatos, g: RespostaGastos): Kpi[] {
 }
 
 export function rankingDeCandidatos(cs: readonly Candidato[]): Barra[] {
-  return [...cs].sort((a, b) => b.votos - a.votos).map((c) => ({ rotulo: c.nm_urna, valor: c.votos }));
+  return [...cs].sort((a, b) => b.votos - a.votos).map((c) => ({
+    rotulo: c.nm_urna, valor: c.votos,
+    detalhe: [
+      ["Partido", `${c.partido.sigla} (${String(c.partido.numero)})`],
+      ["UF", c.sg_uf],
+      ["Cargo", c.cargo.replace(/_/g, " ").toLowerCase()],
+      ...(c.resultado ? [["Resultado", c.resultado.toLowerCase()] as const] : []),
+    ],
+  }));
 }
 
 export function dispersaoCustoVoto(g: RespostaGastos, base: "contratado" | "pago"): PontoCustoVoto[] {
