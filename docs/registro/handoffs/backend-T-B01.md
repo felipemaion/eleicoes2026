@@ -27,3 +27,9 @@
 
 ## Como verificar
 `make lint && make test` (59 testes, cobertura ~94%); `make openapi` não deve gerar diff.
+
+## Revisão (PR #23)
+- Cursor por consulta (`_coluna`) — teste com `ThreadPoolExecutor` em `/api/meta`.
+- 503 sem detalhes (`{"codigo": "dados_indisponiveis"}`); causa vai para `logger.error`.
+- `Repositorio.ping()` (`SELECT 1 FROM candidatos LIMIT 1`) usado por `/api/health`.
+- `yield` do lifespan em `try/finally`; caminhos padrão absolutos a partir da raiz do repo.

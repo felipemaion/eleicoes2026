@@ -1,5 +1,6 @@
 """Fábrica da aplicação FastAPI."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -13,6 +14,8 @@ from api.repositorio.duckdb import RepositorioDuckDB
 from api.rotas import meta, saude
 from api.servicos.meta import carregar_grupos
 
+logger = logging.getLogger(__name__)
+
 
 def criar_app(settings: Settings | None = None) -> FastAPI:
     """Monta a app; `settings` explícito facilita testes."""
@@ -22,15 +25,16 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.grupos = carregar_grupos(cfg.arquivo_grupos)
         app.state.repositorio = None
-        app.state.erro_dados = ""
         try:
             app.state.repositorio = RepositorioDuckDB(cfg.dir_dados, threads=cfg.threads)
         except DadosIndisponiveis as erro:
             # Não derruba o processo: /api/health responde 503 e o deploy reverte.
-            app.state.erro_dados = str(erro)
-        yield
-        if app.state.repositorio is not None:
-            app.state.repositorio.fechar()
+            logger.error("dados indisponíveis: %s", erro)
+        try:
+            yield
+        finally:
+            if app.state.repositorio is not None:
+                app.state.repositorio.fechar()
 
     app = FastAPI(
         title="Eleicoes2026 API",

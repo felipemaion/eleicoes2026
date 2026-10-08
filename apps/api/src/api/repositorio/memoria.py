@@ -26,5 +26,8 @@ class RepositorioMemoria:
         """Cargos fixos."""
         return list(self._cargos)
 
+    def ping(self) -> None:
+        """Sempre saudável."""
+
     def fechar(self) -> None:
         """Nada a liberar."""

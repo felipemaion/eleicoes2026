@@ -6,6 +6,8 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 VERSAO = "0.1.0"
+# Raiz do repositório (apps/api/src/api/config.py → 4 níveis acima); em produção use env absoluto.
+RAIZ = Path(__file__).resolve().parents[4]
 
 
 class Settings(BaseSettings):
@@ -13,8 +15,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="ELEICOES_", env_file=".env", extra="ignore")
 
-    dir_dados: Path = Path("data/processed")
-    arquivo_grupos: Path = Path("config/grupos.yaml")
+    dir_dados: Path = RAIZ / "data" / "processed"
+    arquivo_grupos: Path = RAIZ / "config" / "grupos.yaml"
     # ADR 0002: o servidor tem pouca CPU; 2 threads é o teto.
     threads: int = 2
     cors_origens: list[str] = ["http://localhost:5173"]

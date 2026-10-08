@@ -26,6 +26,10 @@ class Repositorio(Protocol):
         """Cargos com candidaturas."""
         ...
 
+    def ping(self) -> None:
+        """Levanta DadosIndisponiveis se os dados não respondem."""
+        ...
+
     def fechar(self) -> None:
         """Libera a conexão."""
         ...

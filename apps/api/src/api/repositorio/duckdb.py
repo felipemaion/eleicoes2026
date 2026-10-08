@@ -37,7 +37,20 @@ class RepositorioDuckDB:
         return int(linha[0])
 
     def _coluna(self, sql: str) -> list[object]:
-        return [linha[0] for linha in self._con.execute(sql).fetchall()]
+        # Rotas `def` rodam no threadpool: cada consulta usa um cursor próprio (conexão filha),
+        # pois a conexão única não é segura para uso concorrente.
+        cursor = self._con.cursor()
+        try:
+            return [linha[0] for linha in cursor.execute(sql).fetchall()]
+        finally:
+            cursor.close()
+
+    def ping(self) -> None:
+        """Prova que os dados respondem; levanta DadosIndisponiveis se não."""
+        try:
+            self._coluna("SELECT 1 FROM candidatos LIMIT 1")
+        except duckdb.Error as erro:
+            raise DadosIndisponiveis("consulta de ping falhou") from erro
 
     def dt_geracao(self) -> str:
         """DT_GERACAO do manifesto."""
