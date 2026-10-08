@@ -1,0 +1,467 @@
+{
+  "versao": 1,
+  "atualizado_em": "2026-10-07",
+  "fonte_metodologica": "docs/metodologia/indicadores.md",
+  "limites": {
+    "titulo": 60,
+    "resumo": 160,
+    "como_ler": 400,
+    "cuidado": 300,
+    "subtitulo": 160,
+    "nota_rodape": 400,
+    "aviso": 400,
+    "definicao": 300
+  },
+  "placeholders": {
+    "dt_geracao": "data e hora de geração do arquivo do TSE usado na tela (DT_GERACAO), ex. 07/10/2026 08:00",
+    "mes_base_ipca": "mês-base da correção monetária, ex. set/2026 (enquanto não sair, o último mês publicado do IPCA)"
+  },
+  "indicadores": {
+    "votos_nominais": {
+      "titulo": "Votos nominais",
+      "resumo": "Votos dados ao número do candidato e considerados válidos pelo TSE.",
+      "como_ler": "É a contagem bruta de votos do candidato. No mapa aparece como círculos (quanto maior a área, mais votos), nunca como cor de município: um município grande tem mais votos só por ter mais eleitores. Para comparar lugares de tamanhos diferentes, use a penetração.",
+      "unidade": "votos",
+      "denominador": "não se aplica (contagem absoluta)",
+      "cuidado": "Votos de legenda (só no número do partido) não entram aqui. Em 2026 o total pode mudar com julgamentos de candidaturas sub judice.",
+      "fonte": "TSE — votação nominal por município e zona (votacao_candidato_munzona)",
+      "vetor": "votos_nominais",
+      "spec": "votos-nominais"
+    },
+    "pct_validos": {
+      "titulo": "% dos votos válidos",
+      "resumo": "Fatia dos votos válidos do cargo que foi para o candidato ou grupo naquele lugar.",
+      "como_ler": "Mostra o peso do candidato na disputa local: 5 % quer dizer que 1 em cada 20 votos válidos para o cargo foi para ele. Votos válidos excluem brancos e nulos e, nas eleições proporcionais, incluem os votos de legenda. Bom para comparar candidatos da mesma eleição; para comparar 2022 com 2026, prefira a penetração.",
+      "unidade": "% (diferenças em pontos percentuais, p.p.)",
+      "denominador": "votos válidos do mesmo cargo, turno e lugar",
+      "cuidado": "Varia com o comparecimento e com o número de concorrentes, por isso não é a melhor medida entre eleições. No Senado de 2026 cada eleitor dá dois votos; as porcentagens somam 100 % sobre o total desses votos.",
+      "fonte": "TSE — votação nominal e detalhe da votação por município e zona",
+      "vetor": "pct_validos",
+      "spec": "pct-validos"
+    },
+    "penetracao": {
+      "titulo": "Penetração (votos por mil eleitores)",
+      "resumo": "Quantos votos o candidato ou grupo teve para cada mil eleitores aptos a votar no lugar.",
+      "como_ler": "É a medida principal do painel. 12 ‰ significa 12 votos para cada mil eleitores aptos. Como o denominador é o eleitorado, e não quem compareceu, o número não depende da abstenção nem de quantos candidatos concorreram — por isso é a medida usada para comparar 2022 com 2026 e para colorir o mapa.",
+      "unidade": "‰ (votos por mil eleitores aptos)",
+      "denominador": "eleitores aptos do mesmo cargo e turno no lugar",
+      "cuidado": "Em municípios pequenos a taxa oscila muito com poucos votos; esses casos aparecem hachurados como estimativa instável.",
+      "fonte": "TSE — votação nominal e detalhe da votação (eleitores aptos) por município e zona",
+      "vetor": "penetracao",
+      "spec": "penetracao"
+    },
+    "votos_legenda": {
+      "titulo": "Votos de legenda e votação do partido",
+      "resumo": "Votos dados só ao número do partido, somados aos nominais dos candidatos na votação do partido.",
+      "como_ler": "Na eleição para deputado o eleitor pode votar só no partido (legenda). Esses votos contam para o partido conquistar cadeiras, mas não são de nenhum candidato. A votação do partido é a soma dos votos nominais dos seus candidatos com os de legenda.",
+      "unidade": "votos",
+      "denominador": "não se aplica (contagem absoluta)",
+      "cuidado": "Votos de legenda nunca são repartidos entre candidatos. Votos de candidato com registro indeferido podem ser convertidos em legenda pelo TSE.",
+      "fonte": "TSE — votação por partido, município e zona (votacao_partido_munzona)",
+      "vetor": "votos_legenda",
+      "spec": "votos-de-legenda"
+    },
+    "votacao_em_qe": {
+      "titulo": "Votação em quocientes eleitorais",
+      "resumo": "Quantas vezes a votação do partido no estado cabe no quociente eleitoral: mede a distância até as cadeiras.",
+      "como_ler": "O quociente eleitoral é o número de votos válidos do estado dividido pelo número de vagas. Um partido com 2,4 quocientes garante duas cadeiras pelas regras iniciais e disputa outras na distribuição das sobras. Abaixo de 1, não garante cadeira pelo quociente.",
+      "unidade": "quocientes (número puro)",
+      "denominador": "quociente eleitoral do cargo no estado",
+      "cuidado": "A distribuição das sobras não é simulada aqui; os eleitos exibidos são os oficiais do TSE.",
+      "fonte": "TSE — detalhe da votação e número de vagas por cargo e UF",
+      "vetor": "votos_legenda",
+      "spec": "votos-de-legenda"
+    },
+    "votos_km2": {
+      "titulo": "Votos por km²",
+      "resumo": "Votos do candidato divididos pela área do município. Aparece só como informação complementar.",
+      "como_ler": "Ajuda a ter noção de escala ao passar o mouse sobre um município, mas não mede desempenho: cidades densas sempre terão mais votos por km². Por isso não é usado para colorir o mapa.",
+      "unidade": "votos/km²",
+      "denominador": "área territorial do município (IBGE)",
+      "cuidado": "Reproduz a densidade da população, não a força do candidato.",
+      "fonte": "TSE (votos) e IBGE (área territorial dos municípios)",
+      "vetor": "votos_km2",
+      "spec": "votos-por-km2"
+    },
+    "lq": {
+      "titulo": "Quociente locacional (LQ)",
+      "resumo": "Compara a força do candidato num município com a força dele no estado inteiro.",
+      "como_ler": "LQ = 1: o candidato tem no município a mesma fatia dos válidos que tem no estado. LQ = 2: o dobro (o município é um ponto forte). LQ = 0,5: metade. No mapa, tons de um lado indicam acima da média do candidato e do outro, abaixo; a escala é simétrica em torno de 1.",
+      "unidade": "razão (número puro; 1 = igual à média do estado)",
+      "denominador": "fatia dos válidos do candidato no estado inteiro",
+      "cuidado": "Com poucos votos esperados o LQ é instável e aparece hachurado. É uma medida relativa ao próprio candidato, não compara candidatos entre si.",
+      "fonte": "TSE — votação nominal e detalhe da votação por município",
+      "vetor": "lq",
+      "spec": "quociente-locacional"
+    },
+    "concentracao": {
+      "titulo": "Concentração da votação",
+      "resumo": "Mede se a votação vem de poucos municípios ou de muitos (HHI e número efetivo de municípios).",
+      "como_ler": "O número efetivo de municípios diz de quantos municípios 'equivalentes' vem a votação: 1 indica tudo num só lugar; 50 indica votação espalhada. O HHI é o inverso dessa medida (de 0 a 1; perto de 1 = concentrado). Leia junto com o total de votos.",
+      "unidade": "número efetivo de municípios; HHI de 0 a 1",
+      "denominador": "votação total do candidato no estado",
+      "cuidado": "Candidatos com poucos votos parecem mais concentrados por simples acaso. Não compara bem candidatos de estados com número muito diferente de municípios.",
+      "fonte": "TSE — votação nominal por município; Laakso e Taagepera (1979)",
+      "vetor": "concentracao",
+      "spec": "concentracao"
+    },
+    "indice_g": {
+      "titulo": "Índice G de concentração",
+      "resumo": "Mostra quanto a votação do candidato se afasta da distribuição do eleitorado pelo estado.",
+      "como_ler": "Zero significa votação distribuída exatamente como os eleitores: cada município deu ao candidato a mesma fatia que tem do eleitorado. Quanto maior, mais a votação se concentra em lugares específicos. É o eixo de concentração da tipologia de Ames.",
+      "unidade": "número puro (0 = distribuída como o eleitorado)",
+      "denominador": "fatias do eleitorado apto por município",
+      "cuidado": "Cresce mecanicamente com poucos votos; compare candidatos do mesmo cargo e estado.",
+      "fonte": "TSE; Avelino, Biderman e Silva (2011, Dados)",
+      "vetor": "concentracao",
+      "spec": "concentracao"
+    },
+    "dominancia": {
+      "titulo": "Dominância (Ames)",
+      "resumo": "Fatia média que o candidato tem dos votos válidos nos municípios onde busca seus votos.",
+      "como_ler": "Calcula a fatia do candidato em cada município e faz a média dando mais peso aos municípios que mais lhe deram votos. Valor alto: onde o candidato tem votos, ele domina a disputa local. Valor baixo: divide o eleitorado com muitos concorrentes. É o eixo de dominância da tipologia de Ames.",
+      "unidade": "proporção de 0 a 1",
+      "denominador": "votos válidos do cargo em cada município",
+      "cuidado": "Depende do número de concorrentes em cada lugar; compare candidatos do mesmo cargo e estado.",
+      "fonte": "TSE; Ames (1995, American Journal of Political Science)",
+      "vetor": "concentracao",
+      "spec": "concentracao"
+    },
+    "tipologia_ames": {
+      "titulo": "Perfil espacial do voto (tipologia de Ames)",
+      "resumo": "Classifica a votação em quatro perfis, cruzando concentração e dominância.",
+      "como_ler": "Concentrado e dominante: o reduto clássico. Concentrado e compartilhado: votos em poucas áreas, disputadas com outros. Disperso e dominante: forte em muitos lugares. Disperso e compartilhado: voto de opinião, espalhado. O corte é a mediana dos candidatos competitivos do mesmo cargo e estado, de todos os partidos.",
+      "unidade": "categoria (4 perfis)",
+      "denominador": "medianas do cargo no estado entre candidaturas com ao menos 10 % do quociente eleitoral",
+      "cuidado": "É uma classificação relativa à disputa daquele estado e ano. Candidatos com votação abaixo do piso recebem perfil com aviso de baixa confiabilidade.",
+      "fonte": "TSE; Ames (1995); Avelino, Biderman e Silva (2011)",
+      "vetor": "tipologia_ames",
+      "spec": "tipologia-de-ames"
+    },
+    "n_baixo": {
+      "titulo": "Estimativa instável (n baixo)",
+      "resumo": "Marca lugares em que se esperariam menos de 20 votos para o candidato: ali a taxa oscila muito.",
+      "como_ler": "Áreas hachuradas e mais claras no mapa têm tão poucos votos esperados que uma diferença pequena muda muito a taxa. Não ignore esses lugares, mas não tire conclusões firmes deles. O limite de 20 é o usado por órgãos de estatística de saúde para taxas não confiáveis.",
+      "unidade": "sim/não",
+      "denominador": "votos esperados = eleitores aptos × taxa do candidato no estado",
+      "cuidado": "A marca indica pouca informação, não erro no dado.",
+      "fonte": "Critério NCHS/CDC (menos de 20 eventos) aplicado aos dados do TSE",
+      "vetor": "n_baixo",
+      "spec": "n-baixo"
+    },
+    "suavizacao_eb": {
+      "titulo": "Penetração suavizada",
+      "resumo": "Versão da penetração que puxa as taxas instáveis de municípios pequenos para perto da média do estado.",
+      "como_ler": "Em municípios pequenos poucos votos a mais ou a menos mudam muito a taxa. A suavização (Bayes empírico) dá menos peso a esses casos e os aproxima da média estadual; municípios grandes quase não mudam. O mapa mostra por padrão a taxa original; a suavizada é uma alternância e aparece no detalhe.",
+      "unidade": "‰ (votos por mil eleitores aptos)",
+      "denominador": "eleitores aptos, com média do estado como referência",
+      "cuidado": "É uma estimativa, não o resultado oficial. Usada para rankings e mapas de agrupamento, onde as taxas extremas de lugares pequenos enganariam.",
+      "fonte": "TSE; Marshall (1991, Applied Statistics)",
+      "vetor": "suavizacao_eb",
+      "spec": "suavizacao-bayesiana-empirica"
+    },
+    "moran_lisa": {
+      "titulo": "Agrupamentos espaciais (Moran e LISA)",
+      "resumo": "Indica se municípios vizinhos têm desempenho parecido e onde ficam os agrupamentos de força ou fraqueza.",
+      "como_ler": "O Moran global resume o mapa: positivo indica que vizinhos se parecem. O LISA marca cada município: alto-alto (forte cercado de fortes), baixo-baixo, alto-baixo e baixo-alto; os demais ficam em cinza (sem padrão significativo). Usa a penetração suavizada.",
+      "unidade": "índice (Moran) e categoria (LISA)",
+      "denominador": "penetração suavizada dos municípios vizinhos",
+      "cuidado": "Com muitos municípios testados ao mesmo tempo, alguns aparecem significativos por acaso. Depende da definição de vizinhança.",
+      "fonte": "TSE; Moran (1950); Anselin (1995, Geographical Analysis)",
+      "vetor": "moran_lisa",
+      "spec": "moran-global-e-lisa"
+    },
+    "agregacao_h3": {
+      "titulo": "Mapa de hexágonos (densidade de votos)",
+      "resumo": "Votos e penetração somados por hexágonos de tamanho fixo, a partir dos locais de votação.",
+      "como_ler": "Cada hexágono reúne os locais de votação dentro dele. Como têm o mesmo tamanho em 2022 e 2026, permitem comparar os dois anos sem depender das zonas eleitorais, que mudaram. Ao aproximar o mapa os hexágonos ficam menores e mostram diferenças entre bairros.",
+      "unidade": "votos e ‰ por hexágono",
+      "denominador": "eleitores aptos dos locais de votação do hexágono",
+      "cuidado": "Locais sem coordenada válida ficam fora dos hexágonos (mas dentro do município). Quando passam de 5 % dos votos do município, o mapa avisa.",
+      "fonte": "TSE — votação por seção e locais de votação; grade H3",
+      "vetor": "agregacao_h3",
+      "spec": "agregacao-h3"
+    },
+    "receitas": {
+      "titulo": "Receitas por fonte",
+      "resumo": "De onde veio o dinheiro da campanha: fundos públicos, doações de pessoas, recursos próprios e outros.",
+      "como_ler": "Fundo Eleitoral (FEFC) e Fundo Partidário são dinheiro público repassado pelos partidos. Pessoas físicas incluem doações pela internet; recursos próprios são do próprio candidato; financiamento coletivo é a 'vaquinha' online. As barras somam toda a receita declarada, em dinheiro e estimável.",
+      "unidade": "R$; fatias em %",
+      "denominador": "receita total declarada (financeira + estimável)",
+      "cuidado": "Contas de 2026 são parciais até a prestação final. Transferências entre candidatos do mesmo grupo são descontadas no total do grupo para não contar duas vezes.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "receita-por-fonte"
+    },
+    "pct_publico": {
+      "titulo": "% de recursos públicos",
+      "resumo": "Parte da receita da campanha que veio do Fundo Eleitoral (FEFC) e do Fundo Partidário.",
+      "como_ler": "Mostra quanto a campanha dependeu de dinheiro público. 80 % quer dizer que 4 de cada 5 reais vieram dos fundos públicos distribuídos pelo partido.",
+      "unidade": "%",
+      "denominador": "receita total declarada",
+      "cuidado": "Contas de 2026 parciais: a fatia pode mudar até a prestação final.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "receita-por-fonte"
+    },
+    "pct_autofinanciamento": {
+      "titulo": "% de autofinanciamento",
+      "resumo": "Parte da receita da campanha que o próprio candidato colocou do seu bolso.",
+      "como_ler": "Indica quanto a campanha dependeu de recursos do próprio candidato. Valores altos são comuns em candidaturas com pouco acesso aos fundos do partido.",
+      "unidade": "%",
+      "denominador": "receita total declarada",
+      "cuidado": "Contas de 2026 parciais. O limite legal de autofinanciamento é de 10 % do teto de gastos do cargo.",
+      "fonte": "TSE — prestação de contas de candidatos (receitas_candidatos)",
+      "vetor": "receitas",
+      "spec": "receita-por-fonte"
+    },
+    "custo_por_voto": {
+      "titulo": "Custo por voto",
+      "resumo": "Despesa da campanha dividida pelos votos nominais obtidos.",
+      "como_ler": "Quanto a campanha gastou para cada voto. Há duas versões: contratada (tudo o que foi contratado) e paga (o que já foi efetivamente pago). Para um grupo, soma-se a despesa e divide-se pela soma dos votos. Valores de 2022 aparecem corrigidos pela inflação.",
+      "unidade": "R$ por voto (2022 em R$ de {mes_base_ipca}, corrigido pelo IPCA)",
+      "denominador": "votos nominais válidos do candidato ou grupo",
+      "cuidado": "Contas de 2026 parciais: o custo tende a subir até a prestação final. Repasses a outros candidatos ou partidos não contam como despesa da campanha. Candidato sem votos fica sem valor.",
+      "fonte": "TSE — despesas contratadas e pagas de candidatos e votação nominal",
+      "vetor": "custo_por_voto",
+      "spec": "custo-por-voto"
+    },
+    "divida": {
+      "titulo": "Despesa ainda não paga",
+      "resumo": "Diferença entre a despesa contratada e a despesa já paga pela campanha.",
+      "como_ler": "Valor contratado que ainda não aparece como pago. Pode ser dívida de campanha ou apenas pagamento ainda não lançado na prestação de contas.",
+      "unidade": "R$",
+      "denominador": "não se aplica (diferença em reais)",
+      "cuidado": "Com contas parciais, boa parte da diferença costuma ser só atraso de lançamento.",
+      "fonte": "TSE — despesas contratadas e pagas de candidatos",
+      "vetor": "custo_por_voto",
+      "spec": "custo-por-voto"
+    },
+    "deflacao_ipca": {
+      "titulo": "Correção pela inflação (IPCA)",
+      "resumo": "Valores de 2022 atualizados pelo IPCA para que reais de 2022 e de 2026 sejam comparáveis.",
+      "como_ler": "Um real de setembro de 2022 comprava mais do que um real de 2026. Os valores de 2022 são multiplicados pela inflação acumulada (IPCA) até o mês-base indicado na tela; os de 2026 ficam como declarados.",
+      "unidade": "R$ de {mes_base_ipca}",
+      "denominador": "não se aplica (fator de correção)",
+      "cuidado": "Enquanto o IPCA de setembro de 2026 não é publicado, a base é o último mês disponível, sempre informado na tela.",
+      "fonte": "Banco Central — SGS série 433 (IPCA, variação mensal)",
+      "vetor": "deflacao_ipca",
+      "spec": "deflacao-ipca"
+    },
+    "evolucao": {
+      "titulo": "Evolução 2022 → 2026",
+      "resumo": "Diferença de desempenho entre 2022 e 2026 no mesmo município, para o mesmo cargo.",
+      "como_ler": "A medida principal é a variação da penetração (pontos por mil eleitores): positiva, o grupo ganhou espaço no município. Na tabela aparecem também a variação em pontos percentuais dos válidos (swing), a retenção (votos de 2026 ÷ votos de 2022) e o ganho em número de votos.",
+      "unidade": "‰ (penetração), p.p. (swing), razão (retenção), votos (ganho)",
+      "denominador": "eleitores aptos de cada ano no mesmo município",
+      "cuidado": "Compara municípios, nunca zonas. Municípios criados depois de 2022 são somados aos de origem. Só o 1º turno. O Senado não entra: em 2022 houve uma vaga e em 2026 duas.",
+      "fonte": "TSE — votação nominal e detalhe da votação, 2022 e 2026",
+      "vetor": "evolucao",
+      "spec": "evolucao-2022-2026"
+    },
+    "sobreposicao_redutos": {
+      "titulo": "Sobreposição de redutos",
+      "resumo": "Mede se os pontos fortes de 2026 são os mesmos de 2022.",
+      "como_ler": "Reduto é o município em que o candidato tem pelo menos o dobro da força que tem no estado (LQ ≥ 2). A sobreposição (Jaccard) vai de 0 (nenhum reduto em comum) a 1 (os mesmos). A correlação de postos (Spearman), de -1 a 1, diz se a ordem dos municípios, do mais forte ao mais fraco, se manteve.",
+      "unidade": "Jaccard de 0 a 1; Spearman de -1 a 1",
+      "denominador": "municípios com quociente locacional definido nos dois anos",
+      "cuidado": "Municípios com votos esperados insuficientes não contam como reduto.",
+      "fonte": "TSE — votação nominal por município, 2022 e 2026",
+      "vetor": "sobreposicao_redutos",
+      "spec": "sobreposicao-de-redutos"
+    },
+    "por_candidato": {
+      "titulo": "Por candidato e mesmos candidatos",
+      "resumo": "Divide os resultados do grupo pelo número de candidaturas, ou compara só quem disputou as duas eleições.",
+      "como_ler": "Um grupo com mais candidatos tende a ter mais votos só por isso. Dividir pelo número de candidaturas aptas no cargo torna grupos de tamanhos diferentes comparáveis. O recorte 'mesmos candidatos' compara apenas as pessoas presentes nos dois grupos. O número de candidaturas aparece sempre ao lado.",
+      "unidade": "a do indicador original, por candidatura",
+      "denominador": "candidaturas aptas do grupo no cargo e no recorte",
+      "cuidado": "Por cargo, os grupos têm poucas candidaturas; com menos de 3 o painel não faz ranking.",
+      "fonte": "TSE — candidaturas e votação; grupos definidos no painel",
+      "vetor": "por_candidato",
+      "spec": "por-candidato-e-mesmos-candidatos"
+    }
+  },
+  "telas": {
+    "visao_geral": {
+      "titulo": "Partido Missão nas eleições de 2026",
+      "subtitulo": "Votação, eleitos e gastos dos candidatos do Missão (14), comparados ao grupo do MBL em 2022. Escolha o cargo e o estado.",
+      "nota_rodape": "Fonte: TSE (resultados e prestação de contas) e BCB (IPCA). Dados gerados pelo TSE em {dt_geracao}. Votos de legenda são do partido, não de candidatos. Metodologia em \"Como ler este painel\".",
+      "indicadores": ["votos_legenda", "penetracao", "pct_validos", "votacao_em_qe", "custo_por_voto", "pct_publico", "evolucao", "por_candidato"],
+      "avisos": ["contas_parciais", "legenda_nao_atribuida", "grupo_mbl_2022", "numero_14_em_2022", "resultado_sub_judice"]
+    },
+    "mapa": {
+      "titulo": "Onde vieram os votos",
+      "subtitulo": "Penetração (votos por mil eleitores aptos) por município ou zona e densidade de votos em hexágonos.",
+      "nota_rodape": "Fonte: TSE (votação por município, zona e seção; locais de votação). Dados gerados em {dt_geracao}. Cores mostram taxas; quantidades de votos aparecem em círculos ou hexágonos. Áreas hachuradas: estimativa instável.",
+      "indicadores": ["penetracao", "votos_nominais", "pct_validos", "lq", "n_baixo", "suavizacao_eb", "agregacao_h3", "votos_km2", "moran_lisa"],
+      "avisos": ["n_baixo", "rezoneamento", "legenda_nao_atribuida"]
+    },
+    "gastos": {
+      "titulo": "Quanto custaram as campanhas",
+      "subtitulo": "Receitas por fonte, despesas e custo por voto dos candidatos do grupo, com valores de 2022 corrigidos pela inflação.",
+      "nota_rodape": "Fonte: TSE (prestação de contas de candidatos) e BCB (IPCA, série 433). Contas de 2026 geradas em {dt_geracao}. Valores de 2022 em R$ de {mes_base_ipca}.",
+      "indicadores": ["receitas", "pct_publico", "pct_autofinanciamento", "custo_por_voto", "divida", "deflacao_ipca"],
+      "avisos": ["contas_parciais", "ipca"]
+    },
+    "evolucao": {
+      "titulo": "De 2022 para 2026",
+      "subtitulo": "Como mudou o desempenho do grupo entre o MBL de 2022 e o Missão de 2026, no mesmo cargo, município a município.",
+      "nota_rodape": "Fonte: TSE, eleições de 2022 e 2026, 1º turno. Comparação por município (IBGE) e hexágonos, nunca por zona eleitoral. Dados de 2026 gerados em {dt_geracao}.",
+      "indicadores": ["evolucao", "por_candidato", "sobreposicao_redutos", "penetracao", "lq"],
+      "avisos": ["rezoneamento", "grupo_mbl_2022", "numero_14_em_2022", "senado_fora_evolucao"]
+    },
+    "candidato": {
+      "titulo": "Desempenho do candidato",
+      "subtitulo": "Votação, perfil espacial do voto, redutos e gastos de campanha de uma candidatura.",
+      "nota_rodape": "Fonte: TSE (resultados, candidaturas e prestação de contas). Dados gerados em {dt_geracao}. Valores de 2022 em R$ de {mes_base_ipca}.",
+      "indicadores": ["votos_nominais", "pct_validos", "penetracao", "lq", "concentracao", "indice_g", "dominancia", "tipologia_ames", "sobreposicao_redutos", "receitas", "custo_por_voto"],
+      "avisos": ["contas_parciais", "resultado_sub_judice", "legenda_nao_atribuida"]
+    }
+  },
+  "avisos": {
+    "contas_parciais": {
+      "titulo": "Contas de 2026 parciais",
+      "texto": "As prestações de contas de 2026 ainda não são finais: receitas e despesas podem ser lançadas ou corrigidas até a prestação final. Os números desta tela refletem os dados do TSE gerados em {dt_geracao}.",
+      "nivel": "atencao"
+    },
+    "legenda_nao_atribuida": {
+      "titulo": "Votos de legenda",
+      "texto": "Votos dados só ao número do partido (legenda) contam para o partido e para a divisão de cadeiras, mas não são atribuídos a nenhum candidato. Eles aparecem apenas na votação do partido.",
+      "nivel": "info"
+    },
+    "rezoneamento": {
+      "titulo": "Zonas eleitorais mudaram",
+      "texto": "Entre 2022 e 2026 a Justiça Eleitoral criou, extinguiu e redesenhou zonas eleitorais. Uma zona com o mesmo número pode cobrir outra área. Por isso as comparações entre anos usam municípios e hexágonos, nunca zonas.",
+      "nivel": "atencao"
+    },
+    "grupo_mbl_2022": {
+      "titulo": "Quem está no grupo MBL 2022",
+      "texto": "O grupo MBL 2022 reúne 18 candidaturas de 2022: 4 indicadas pelo MBL e 14 de pessoas que, em 2026, concorreram pelo Missão e também disputaram 2022, por qualquer partido. Várias destas não eram do MBL em 2022. O recorte \"indicados\" mostra só as 4 primeiras.",
+      "nivel": "atencao"
+    },
+    "numero_14_em_2022": {
+      "titulo": "O 14 em 2022 era do PTB",
+      "texto": "Em 2022 o número 14 pertencia ao PTB, partido sem relação com o Missão e hoje extinto (fundiu-se ao Patriota em 2023, formando o PRD). Votos no 14 em 2022 não são votos do Missão; o painel compara pessoas e grupos, não o número.",
+      "nivel": "atencao"
+    },
+    "resultado_sub_judice": {
+      "titulo": "Resultados podem mudar",
+      "texto": "Candidaturas com registro sub judice podem ter os votos validados, anulados ou convertidos em legenda depois de julgamento. Os totais refletem a situação nos dados do TSE gerados em {dt_geracao}.",
+      "nivel": "info"
+    },
+    "n_baixo": {
+      "titulo": "Estimativa instável",
+      "texto": "Áreas hachuradas teriam menos de 20 votos esperados para o candidato. Nelas, poucos votos mudam muito a taxa: observe, mas não tire conclusões firmes.",
+      "nivel": "info"
+    },
+    "ipca": {
+      "titulo": "Valores corrigidos pela inflação",
+      "texto": "Valores de 2022 estão em reais de {mes_base_ipca}, corrigidos pelo IPCA (Banco Central, série 433). Valores de 2026 estão como declarados.",
+      "nivel": "info"
+    },
+    "senado_fora_evolucao": {
+      "titulo": "Senado fora da comparação",
+      "texto": "Em 2022 cada estado elegeu um senador (um voto por eleitor) e em 2026 elege dois (dois votos). As taxas não são comparáveis, por isso o Senado não aparece na evolução.",
+      "nivel": "info"
+    }
+  },
+  "glossario": {
+    "eleitores_aptos": {
+      "termo": "Eleitores aptos",
+      "definicao": "Pessoas com título regular que podiam votar naquele lugar, tenham comparecido ou não. É o denominador da penetração."
+    },
+    "votos_validos": {
+      "termo": "Votos válidos",
+      "definicao": "Votos dados a candidatos ou partidos. Excluem brancos e nulos. Nas eleições para deputado incluem os votos de legenda."
+    },
+    "voto_nominal": {
+      "termo": "Voto nominal",
+      "definicao": "Voto dado ao número de um candidato."
+    },
+    "voto_legenda": {
+      "termo": "Voto de legenda",
+      "definicao": "Voto dado só ao número do partido (dois dígitos) numa eleição para deputado. Conta para o partido, não para candidato."
+    },
+    "lista_aberta": {
+      "termo": "Sistema proporcional de lista aberta",
+      "definicao": "Regra das eleições para deputado: as cadeiras são divididas entre partidos pela votação total de cada um e ocupadas pelos candidatos mais votados de cada partido."
+    },
+    "quociente_eleitoral": {
+      "termo": "Quociente eleitoral",
+      "definicao": "Votos válidos do estado divididos pelo número de vagas do cargo. Indica quantos votos 'valem' uma cadeira."
+    },
+    "quociente_partidario": {
+      "termo": "Quociente partidário",
+      "definicao": "Votação do partido dividida pelo quociente eleitoral, sem a parte fracionária: número de cadeiras garantidas antes da distribuição das sobras."
+    },
+    "federacao": {
+      "termo": "Federação partidária",
+      "definicao": "União de partidos que atuam como um só na eleição e no Legislativo por pelo menos quatro anos. O quociente é calculado para a federação."
+    },
+    "zona_eleitoral": {
+      "termo": "Zona eleitoral",
+      "definicao": "Divisão administrativa da Justiça Eleitoral, que pode abranger parte de um município ou vários. Seus limites mudam com o tempo (rezoneamento)."
+    },
+    "rezoneamento": {
+      "termo": "Rezoneamento",
+      "definicao": "Criação, extinção ou redesenho de zonas eleitorais pelos tribunais regionais. Faz com que a mesma zona, pelo número, não seja comparável entre eleições."
+    },
+    "hexagono_h3": {
+      "termo": "Hexágono (H3)",
+      "definicao": "Célula de uma grade de hexágonos de tamanho fixo que cobre o mapa. Agrupa locais de votação próximos e permite comparar anos sem depender de zonas."
+    },
+    "municipio_comparavel": {
+      "termo": "Município comparável",
+      "definicao": "Municípios criados depois de 2022 somados ao município de origem, para que a comparação entre anos use sempre a mesma área."
+    },
+    "penetracao": {
+      "termo": "Penetração",
+      "definicao": "Votos por mil eleitores aptos (‰). Medida principal do painel para mapas e comparações entre anos."
+    },
+    "pontos_percentuais": {
+      "termo": "Pontos percentuais (p.p.)",
+      "definicao": "Diferença entre duas porcentagens. Passar de 4 % para 6 % é um aumento de 2 p.p. (e de 50 % em termos relativos)."
+    },
+    "reduto": {
+      "termo": "Reduto",
+      "definicao": "Município em que o candidato tem pelo menos o dobro da força que tem no estado (quociente locacional maior ou igual a 2), com votos esperados suficientes."
+    },
+    "fefc": {
+      "termo": "Fundo Eleitoral (FEFC)",
+      "definicao": "Fundo Especial de Financiamento de Campanha: dinheiro público distribuído aos partidos em ano de eleição e repassado aos candidatos."
+    },
+    "fundo_partidario": {
+      "termo": "Fundo Partidário",
+      "definicao": "Dinheiro público repassado mensalmente aos partidos, que pode ser usado também em campanhas."
+    },
+    "financiamento_coletivo": {
+      "termo": "Financiamento coletivo",
+      "definicao": "Doações de pessoas físicas arrecadadas por plataformas de 'vaquinha' online autorizadas pela Justiça Eleitoral."
+    },
+    "recursos_proprios": {
+      "termo": "Recursos próprios",
+      "definicao": "Dinheiro do próprio candidato aplicado na campanha."
+    },
+    "despesa_contratada_paga": {
+      "termo": "Despesa contratada e despesa paga",
+      "definicao": "Contratada é o gasto assumido pela campanha; paga é o que já saiu do caixa. A diferença pode ser dívida ou atraso de lançamento."
+    },
+    "prestacao_parcial": {
+      "termo": "Prestação de contas parcial",
+      "definicao": "Declaração de receitas e despesas entregue durante a campanha. Só a prestação final, entregue depois da eleição, fecha as contas."
+    },
+    "ipca": {
+      "termo": "IPCA",
+      "definicao": "Índice oficial de inflação do Brasil, calculado pelo IBGE. Usado aqui para trazer valores de 2022 a reais de hoje."
+    },
+    "sub_judice": {
+      "termo": "Sub judice",
+      "definicao": "Candidatura cujo registro ainda está em julgamento. Seus votos podem ser validados ou anulados depois da eleição."
+    },
+    "turno": {
+      "termo": "1º e 2º turno",
+      "definicao": "Para governador e presidente pode haver 2º turno. O painel nunca soma turnos e compara anos só pelo 1º turno."
+    }
+  }
+}
