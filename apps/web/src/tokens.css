@@ -1,0 +1,15 @@
+/* Tokens não-cromáticos. As cores vêm de src/paletas.ts (fonte única) e são injetadas no <head>. */
+:root {
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fonte-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --texto-pequeno: 0.875rem;
+  --texto-base: 1rem;
+  --texto-h1: clamp(1.4rem, 1.1rem + 1.5vw, 2rem);
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 1rem;
+  --esp-4: 1.5rem;
+  --esp-5: 2.5rem;
+  --raio: 0.5rem;
+  --largura-max: 72rem;
+}
