@@ -50,3 +50,30 @@ test("sair da tela do mapa libera o WebGL (sem canvas órfão)", async ({ page }
   await page.getByRole("navigation", { name: "Telas" }).getByRole("link", { name: "Gastos" }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
 });
+
+test("criar e destruir o mapa 20× não esgota contextos WebGL", async ({ page }) => {
+  const avisos: string[] = [];
+  page.on("console", (m) => { if (m.text().includes("Too many active WebGL contexts")) avisos.push(m.text()); });
+  await page.goto("/#/mapa");
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+  const nav = page.getByRole("navigation", { name: "Telas" });
+  for (let i = 0; i < 20; i++) {
+    await nav.getByRole("link", { name: "Gastos" }).click();
+    await expect(page.locator("canvas")).toHaveCount(0);
+    await nav.getByRole("link", { name: "Mapa" }).click();
+    await expect(page.locator(".mapa-quadro canvas")).toHaveCount(1);
+  }
+  expect(avisos).toEqual([]);
+});
+
+test("teclado: o canvas não é focável e as setas funcionam com o foco no quadro", async ({ page }) => {
+  await page.goto("/#/mapa");
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".mapa-quadro canvas")).toHaveAttribute("tabindex", "-1");
+  await page.keyboard.press("Tab");
+  await page.locator(".mapa-quadro").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  await page.locator("body").click({ position: { x: 1, y: 1 } });
+  await expect(page.getByRole("tooltip")).toBeHidden();
+});

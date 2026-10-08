@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { limitesDe } from "../../src/componentes/mapa/geo";
-import { expressaoRaioCirculo, expressaoPesoCalor } from "../../src/componentes/mapa/expressoes";
+import { expressaoRaioCirculo, expressaoPesoCalor, soFinitos } from "../../src/componentes/mapa/expressoes";
 import { textoTooltip } from "../../src/componentes/mapa/tooltip";
 
 describe("limitesDe", () => {
@@ -47,5 +47,11 @@ describe("textoTooltip", () => {
   it("mostra 'sem dado' em vez de zero quando falta valor", () => {
     const t = textoTooltip({ nome: "X" }, { unidade: "u", formatarTaxa: String });
     expect(t.linhas.map((l) => l[1])).toEqual(["sem dado", "sem dado", "sem dado"]);
+  });
+});
+
+describe("soFinitos", () => {
+  it("descarta NaN e ±Infinity, mantém zero e negativos", () => {
+    expect(soFinitos({ a: 0, b: Number.NaN, c: Infinity, d: -Infinity, e: -1.5 })).toEqual({ a: 0, e: -1.5 });
   });
 });

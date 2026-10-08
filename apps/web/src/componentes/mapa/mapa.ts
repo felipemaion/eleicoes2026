@@ -12,7 +12,7 @@ import { formatarPercentual } from "../../formato";
 import { PALETAS } from "../../paletas";
 import { expressaoCor, validarCoropletico, type Escala, type MetaIndicador } from "../escalas/escalas";
 import { criarLegenda } from "../escalas/legenda";
-import { expressaoPesoCalor, expressaoRaioCirculo } from "./expressoes";
+import { expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoes";
 import { limitesDe, type Limites } from "./geo";
 import { textoTooltip, type DetalheLocal } from "./tooltip";
 
@@ -101,7 +101,11 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     fitBoundsOptions: { padding: 24 },
     attributionControl: { compact: true },
     cooperativeGestures: false,
+    // O teclado é do quadro (setas percorrem as áreas); o canvas não deve virar um 2º foco.
+    keyboard: false,
   });
+  // O MapLibre deixa o canvas com tabindex=0 mesmo com keyboard:false; fora da ordem de Tab, o foco é só do quadro.
+  mapa.getCanvas().tabIndex = -1;
   mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   let carregado = false;
@@ -147,16 +151,38 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     return mapa.getLayer("pontos-calor") ? "pontos-calor" : undefined;
   }
 
-  function nomeDe(n: Nivel, id: string): string {
-    const d = detalhesPorNivel.get(n)?.[id];
-    if (d) return d.nome;
+  const colador = new Intl.Collator("pt-BR");
+  const nomesGeo = new Map<Nivel, Map<string, string>>();
+  const idsOrdenados = new Map<Nivel, string[]>();
+
+  /** id→nome indexado uma vez por nível (antes era `find` linear a cada comparação do sort). */
+  function nomesDaGeometria(n: Nivel): Map<string, string> {
+    let m = nomesGeo.get(n);
+    if (m) return m;
+    m = new Map();
     const f = opcoes.fontes[n];
     if (f?.tipo === "geojson") {
-      const feat = f.dados.features.find((x) => String(x.properties?.[f.idPropriedade]) === id);
-      const nome: unknown = feat?.properties?.["nome"];
-      if (typeof nome === "string") return nome;
+      for (const x of f.dados.features) {
+        const nome: unknown = x.properties?.["nome"];
+        if (typeof nome === "string") m.set(String(x.properties?.[f.idPropriedade]), nome);
+      }
     }
-    return id;
+    nomesGeo.set(n, m);
+    return m;
+  }
+
+  function nomeDe(n: Nivel, id: string): string {
+    return detalhesPorNivel.get(n)?.[id]?.nome ?? nomesDaGeometria(n).get(id) ?? id;
+  }
+
+  function ordenados(n: Nivel): string[] {
+    let ids = idsOrdenados.get(n);
+    if (!ids) {
+      const nomes = new Map(Object.keys(valoresPorNivel.get(n) ?? {}).map((id) => [id, nomeDe(n, id)]));
+      ids = [...nomes.keys()].sort((x, y) => colador.compare(nomes.get(x) ?? x, nomes.get(y) ?? y));
+      idsOrdenados.set(n, ids);
+    }
+    return ids;
   }
 
   function mostrarTooltip(id: string, x: number, y: number): void {
@@ -175,6 +201,10 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       dl.append(dt, dd);
     }
     tooltip.replaceChildren(titulo, dl);
+    posicionarTooltip(x, y);
+  }
+
+  function posicionarTooltip(x: number, y: number): void {
     tooltip.style.left = `${String(x + 12)}px`;
     tooltip.style.top = `${String(y + 12)}px`;
     tooltip.hidden = false;
@@ -201,6 +231,8 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       if (n !== nivel) return;
       const id = e.features?.[0]?.properties[f.idPropriedade] as string | number | undefined;
       if (id === undefined) return;
+      // Mesmo id: só segue o cursor, sem refazer DOM do tooltip nem feature-state.
+      if (String(id) === destacado) { posicionarTooltip(e.point.x, e.point.y); return; }
       destacar(String(id));
       mostrarTooltip(String(id), e.point.x, e.point.y);
     };
@@ -213,7 +245,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
   // Teclado: setas percorrem as áreas com valor, na ordem do nome.
   let posicao = -1;
   const aoTeclar = (e: KeyboardEvent): void => {
-    const ids = Object.keys(valoresPorNivel.get(nivel) ?? {}).sort((a, b) => nomeDe(nivel, a).localeCompare(nomeDe(nivel, b), "pt-BR"));
+    const ids = ordenados(nivel);
     if (ids.length === 0) return;
     if (e.key === "Escape") { posicao = -1; esconderTooltip(); return; }
     const passo = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
@@ -227,10 +259,14 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     mostrarTooltip(id, 8, 8);
   };
   quadro.addEventListener("keydown", aoTeclar);
-  const aoSairFoco = (): void => { esconderTooltip(); };
-  quadro.addEventListener("blur", aoSairFoco);
+  // focusout (borbulha) em vez de blur; ignora a troca de foco entre filhos do próprio quadro.
+  const aoSairFoco = (e: FocusEvent): void => {
+    if (e.relatedTarget instanceof Node && quadro.contains(e.relatedTarget)) return;
+    esconderTooltip();
+  };
+  quadro.addEventListener("focusout", aoSairFoco);
 
-  function preencherTabela(valores: Readonly<Record<string, number>>, meta: MetaIndicador, detalhes?: Readonly<Record<string, DetalheLocal>>): void {
+  function preencherTabela(n: Nivel, valores: Readonly<Record<string, number>>, meta: MetaIndicador, detalhes?: Readonly<Record<string, DetalheLocal>>): void {
     const resumo = document.createElement("summary");
     resumo.textContent = `Tabela de valores: ${meta.nome}`;
     const t = document.createElement("table");
@@ -238,10 +274,10 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     cap.textContent = `${meta.nome} (${meta.unidade}); denominador: ${meta.denominador}`;
     const cab = document.createElement("tr");
     for (const h of ["Área", "Taxa", "Votos", "Eleitorado"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; cab.append(th); }
-    const corpo = Object.keys(valores).sort((a, b) => nomeDe(nivel, a).localeCompare(nomeDe(nivel, b), "pt-BR")).map((id) => {
+    const corpo = ordenados(n).map((id) => {
       const d = detalhes?.[id];
       const tr = document.createElement("tr");
-      const c = textoTooltip({ nome: nomeDe(nivel, id), ...(d?.votos === undefined ? {} : { votos: d.votos }), taxa: valores[id] ?? 0, ...(d?.eleitorado === undefined ? {} : { eleitorado: d.eleitorado }) }, { unidade: meta.unidade, formatarTaxa });
+      const c = textoTooltip({ nome: nomeDe(n, id), ...(d?.votos === undefined ? {} : { votos: d.votos }), taxa: valores[id] ?? 0, ...(d?.eleitorado === undefined ? {} : { eleitorado: d.eleitorado }) }, { unidade: meta.unidade, formatarTaxa });
       const th = document.createElement("th");
       th.scope = "row";
       th.textContent = c.titulo;
@@ -251,6 +287,12 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     t.append(cap, cab, ...corpo);
     tabela.replaceChildren(resumo, t);
   }
+
+  // A tabela (~28 mil nós com 5.570 municípios) só é montada quando o <details> é aberto.
+  let tabelaPendente: (() => void) | null = null;
+  tabela.addEventListener("toggle", () => {
+    if (tabela.open && tabelaPendente) { const f = tabelaPendente; tabelaPendente = null; f(); }
+  });
 
   function aplicarValores(n: Nivel, valores: Readonly<Record<string, number>>, escala: Escala): void {
     const f = garantirNivel(n);
@@ -268,13 +310,20 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     definirValores(valores, escala, meta, detalhes) {
       validarCoropletico(meta);
       const legenda = criarLegenda(escala, meta, meta.tipo === "taxa" ? { formatar: formatarTaxa } : {});
-      valoresPorNivel.set(nivel, { ...valores });
+      const finitos = soFinitos(valores);
+      valoresPorNivel.set(nivel, finitos);
+      idsOrdenados.delete(nivel);
       if (detalhes) detalhesPorNivel.set(nivel, { ...detalhes });
       metaAtual = meta;
       const n = nivel;
-      quandoPronto(() => { aplicarValores(n, valores, escala); });
+      quandoPronto(() => { aplicarValores(n, finitos, escala); });
       areaLegenda.replaceChildren(legenda);
-      preencherTabela(valores, meta, detalhes);
+      const resumo = document.createElement("summary");
+      resumo.textContent = `Tabela de valores: ${meta.nome}`;
+      tabela.replaceChildren(resumo);
+      const nTabela = nivel;
+      tabelaPendente = () => { preencherTabela(nTabela, finitos, meta, detalhes); };
+      if (tabela.open) { const f = tabelaPendente; tabelaPendente = null; f(); }
     },
     definirNivel(novo) {
       if (!opcoes.fontes[novo]) throw new Error(`Nível "${novo}" sem fonte de geometria configurada.`);
@@ -320,7 +369,7 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     estatisticas: () => ({ ...stats }),
     destruir() {
       quadro.removeEventListener("keydown", aoTeclar);
-      quadro.removeEventListener("blur", aoSairFoco);
+      quadro.removeEventListener("focusout", aoSairFoco);
       ouvintesMapa.splice(0).forEach((f) => { f(); });
       fila.length = 0;
       mapa.remove();

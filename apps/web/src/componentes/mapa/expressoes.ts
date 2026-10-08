@@ -13,3 +13,8 @@ export function expressaoPesoCalor(votosMax: number): Expressao {
   if (!(votosMax > 0)) throw new Error("expressaoPesoCalor: votosMax deve ser > 0.");
   return ["min", 1, ["/", votos, votosMax]];
 }
+
+/** Remove NaN/±Infinity: no MapLibre cairiam na classe 0 em vez de "sem dado". */
+export function soFinitos(valores: Readonly<Record<string, number>>): Record<string, number> {
+  return Object.fromEntries(Object.entries(valores).filter(([, v]) => Number.isFinite(v)));
+}

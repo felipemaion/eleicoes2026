@@ -27,6 +27,20 @@ describe("escalaQuantil", () => {
     expect(e.cores).toHaveLength(e.quebras.length + 1);
   });
 
+  it("muitos zeros: sem classe vazia, zero na 1ª classe e cor do topo usada", () => {
+    const paleta = PALETAS.sequencial.slice(0, 4);
+    const e = escalaQuantil([0, 0, 0, 0, 0, 0, 1, 2], paleta);
+    expect(e.quebras[0]).toBeGreaterThan(0);
+    expect(e.classe(0)).toBe(0);
+    expect(e.cor(0)).toBe(paleta[0]);
+    expect(e.cor(2)).toBe(paleta[3]);
+  });
+
+  it("NaN e ±Infinity viram sem dado", () => {
+    const e = escalaQuantil(cem, PALETAS.sequencial);
+    for (const v of [Number.NaN, Infinity, -Infinity]) expect(e.classe(v)).toBe(-1);
+  });
+
   it("falha alto sem dados", () => {
     expect(() => escalaQuantil([], PALETAS.sequencial)).toThrow(/sem valores/i);
   });

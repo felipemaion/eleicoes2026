@@ -51,7 +51,7 @@ function criar(tipo: Escala["tipo"], quebras: readonly number[], cores: readonly
   }
   if (cores.length !== quebras.length + 1) throw new Error(`Esperadas ${String(quebras.length + 1)} cores para ${String(quebras.length)} quebras; recebidas ${String(cores.length)}.`);
   const indice = scaleThreshold().domain([...quebras]).range(cores.map((_, i) => i));
-  const classe = (v: number | null | undefined): number => (v === null || v === undefined || Number.isNaN(v) ? -1 : indice(v));
+  const classe = (v: number | null | undefined): number => (v === null || v === undefined || !Number.isFinite(v) ? -1 : indice(v));
   return {
     tipo,
     quebras,
@@ -68,8 +68,14 @@ export function escalaQuantil(valores: readonly number[], cores: readonly string
   const validos = valores.filter((v) => Number.isFinite(v));
   if (validos.length === 0) throw new Error("escalaQuantil: sem valores.");
   const brutas = scaleQuantile<string>().domain(validos).range([...cores]).quantiles();
-  const quebras = [...new Set(brutas)];
-  return criar("quantil", quebras, cores.slice(0, quebras.length + 1));
+  const minimo = Math.min(...validos);
+  // Quebra <= mínimo deixa a classe 0 vazia ("< 0" sem nenhum dado): descarta e reamostra a paleta
+  // para que a classe mais alta continue usando a cor do topo.
+  const quebras = [...new Set(brutas)].filter((q) => q > minimo);
+  const k = quebras.length + 1;
+  const ultima = cores.length - 1;
+  const amostradas = Array.from({ length: k }, (_, i) => cores[k === 1 ? ultima : Math.round((i * ultima) / (k - 1))] ?? COR_SEM_DADO);
+  return criar("quantil", quebras, amostradas);
 }
 
 /** Quebras fixas — use para aplicar as MESMAS quebras a 2022 e 2026. */
