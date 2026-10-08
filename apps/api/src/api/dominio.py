@@ -1,0 +1,73 @@
+"""Enums de parâmetros validados na borda HTTP.
+
+TODO(T-D02): mover para `packages/contratos` quando o pacote publicar os enums de UF, cargo e
+ano; até lá esta é a única definição (nenhum router declara string livre).
+"""
+
+from enum import IntEnum, StrEnum
+
+
+class Cargo(StrEnum):
+    """`ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza)."""
+
+    PRESIDENTE = "PRESIDENTE"
+    GOVERNADOR = "GOVERNADOR"
+    SENADOR = "SENADOR"
+    DEPUTADO_FEDERAL = "DEPUTADO FEDERAL"
+    DEPUTADO_ESTADUAL = "DEPUTADO ESTADUAL"
+    DEPUTADO_DISTRITAL = "DEPUTADO DISTRITAL"
+
+
+class UF(StrEnum):
+    """Unidades da federação (sem exterior: `ZZ` não tem mapa)."""
+
+    AC = "AC"
+    AL = "AL"
+    AM = "AM"
+    AP = "AP"
+    BA = "BA"
+    CE = "CE"
+    DF = "DF"
+    ES = "ES"
+    GO = "GO"
+    MA = "MA"
+    MG = "MG"
+    MS = "MS"
+    MT = "MT"
+    PA = "PA"
+    PB = "PB"
+    PE = "PE"
+    PI = "PI"
+    PR = "PR"
+    RJ = "RJ"
+    RN = "RN"
+    RO = "RO"
+    RR = "RR"
+    RS = "RS"
+    SC = "SC"
+    SE = "SE"
+    SP = "SP"
+    TO = "TO"
+
+
+class Ano(IntEnum):
+    """Anos de eleição geral suportados."""
+
+    A2022 = 2022
+    A2026 = 2026
+
+
+class Nivel(StrEnum):
+    """Recorte espacial do mapa."""
+
+    MUNICIPIO = "municipio"
+    ZONA = "zona"
+    H3 = "h3"
+
+
+class Indicador(StrEnum):
+    """Indicadores mapeáveis (spec §2): taxas em coroplético, absoluto em símbolo."""
+
+    PENETRACAO = "penetracao"
+    PCT_VALIDOS = "pct_validos"
+    VOTOS = "votos"

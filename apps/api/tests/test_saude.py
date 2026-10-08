@@ -29,7 +29,7 @@ def test_health_ok(cliente: TestClient) -> None:
     corpo = r.json()
     assert corpo["status"] == "ok"
     assert corpo["versao"]
-    assert corpo["dt_geracao"] == "2026-10-06T12:00:00"
+    assert corpo["dt_geracao"] == "2026-10-06"
 
 
 def test_health_503_quando_dados_nao_abrem(tmp_path: Path) -> None:
@@ -46,7 +46,7 @@ def test_meta_lista_anos_ufs_cargos_e_grupos(cliente: TestClient) -> None:
     assert corpo["cargos"] == ["DEPUTADO ESTADUAL", "DEPUTADO FEDERAL"]
     ids = {g["id"] for g in corpo["grupos"]}
     assert {"missao_2026", "mbl_2022"} <= ids
-    assert corpo["dt_geracao"] == "2026-10-06T12:00:00"
+    assert corpo["dt_geracao"] == "2026-10-06"
 
 
 def test_meta_503_quando_dados_nao_abrem(tmp_path: Path) -> None:

@@ -1,3 +1,6 @@
 {
-  "dt_geracao": "2026-10-06T12:00:00"
+  "tp_prestacao_contas": {
+    "2022": "FINAL",
+    "2026": "PARCIAL"
+  }
 }
