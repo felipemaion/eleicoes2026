@@ -64,7 +64,7 @@ export function criarTabelaPessoas(linhasIniciais: readonly LinhaComparativa[]):
       const tr = document.createElement("tr");
       COLUNAS.forEach((c, i) => {
         const cel = document.createElement(i === 0 ? "th" : "td");
-        if (i === 0) (cel as HTMLTableCellElement).scope = "row";
+        if (i === 0) cel.scope = "row";
         else if (!c.texto) cel.className = "numero";
         cel.textContent = c.celula(l);
         tr.append(cel);

@@ -8,7 +8,7 @@ export async function simularApi(page: Page, sobrescrever: Record<string, { stat
   const urls: string[] = [];
   const rotas: Record<string, string> = {
     "/api/meta": "meta", "/api/grupos": "grupos", "/api/candidatos": "candidatos", "/api/busca": "busca", "/api/mapa": "mapa", "/api/mapa/pontos": "mapa-pontos",
-    "/api/gastos": "gastos", "/api/comparativo": "comparativo", "/api/candidatos/2026/1": "ficha", "/api/municipios/2800308": "municipio",
+    "/api/gastos": "gastos", "/api/comparativo": "comparativo", "/api/candidatos/2026/1": "ficha", "/api/evolucao/pessoas": "pessoas", "/api/municipios/2800308": "municipio",
   };
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());

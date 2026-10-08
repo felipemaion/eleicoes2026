@@ -342,8 +342,8 @@ describe("evolução — escolha de candidatos", () => {
   it("a tabela ordena ao clicar no cabeçalho e informa aria-sort", async () => {
     await desenhar("evolucao", estado("evolucao", { pessoas: `${A},${B}` }));
     await vi.waitFor(() => { expect(el.querySelectorAll("table.tabela-pessoas tbody tr")).toHaveLength(2); });
-    const nomes = (): string[] => [...el.querySelectorAll("table.tabela-pessoas tbody tr th")].map((t) => t.textContent ?? "");
-    const botao = [...el.querySelectorAll<HTMLButtonElement>("table.tabela-pessoas thead button")].find((b) => b.textContent?.includes("Votos 2026")) as HTMLButtonElement;
+    const nomes = (): string[] => [...el.querySelectorAll("table.tabela-pessoas tbody tr th")].map((t) => t.textContent);
+    const botao = [...el.querySelectorAll<HTMLButtonElement>("table.tabela-pessoas thead button")].find((b) => b.textContent.includes("Votos 2026")) as HTMLButtonElement;
     botao.click();
     const primeiro = nomes();
     el.querySelector<HTMLButtonElement>('table.tabela-pessoas thead button[data-coluna="votos_para"]')?.click();
@@ -375,7 +375,7 @@ describe("evolução — escolha de candidatos", () => {
   it("pessoa que não entra no comparativo (outro cargo/Senado) vem desabilitada e explicada", async () => {
     await desenhar("evolucao");
     await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
-    const carla = [...el.querySelectorAll<HTMLElement>(".pessoa-item")].find((x) => x.textContent?.includes("CARLA")) as HTMLElement;
+    const carla = [...el.querySelectorAll<HTMLElement>(".pessoa-item")].find((x) => x.textContent.includes("CARLA")) as HTMLElement;
     expect(carla.querySelector<HTMLInputElement>("input")?.disabled).toBe(true);
     expect(carla.textContent).toMatch(/não concorreu ao mesmo cargo|fora do comparativo/i);
   });

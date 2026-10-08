@@ -7,7 +7,7 @@ import { render as renderEmpilhado } from "../componentes/graficos/empilhado";
 import { render as renderKpi, type Kpi } from "../componentes/graficos/kpi";
 import { campoSelect, h, nota, titulo } from "./dom";
 import { carregar } from "./estados";
-import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
+import { ajuda, avisosUi, cabecalhoDaTela, fonteUi, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
 export const tela: Tela = {
@@ -29,15 +29,15 @@ export const tela: Tela = {
         let base: "contratado" | "pago" = "contratado";
         const kpis: Kpi[] = [];
         const { agregado: ag, receitas: rc } = g;
-        if (ag.custo_voto_contratado !== null) kpis.push({ rotulo: "Custo por voto contratado", ajuda: "custo_por_voto", valor: ag.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos" });
-        if (ag.custo_voto_pago !== null) kpis.push({ rotulo: "Custo por voto pago", ajuda: "custo_por_voto", valor: ag.custo_voto_pago, formato: "moeda", unidade: "R$ pagos ÷ votos" });
-        if (rc.pct_publico !== null) kpis.push({ rotulo: "% recursos públicos", ajuda: "pct_publico", valor: rc.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
-        if (rc.pct_autofinanciamento !== null) kpis.push({ rotulo: "% autofinanciamento", ajuda: "pct_autofinanciamento", valor: rc.pct_autofinanciamento, formato: "pontos", unidade: "recursos próprios ÷ receitas" });
+        if (ag.custo_voto_contratado !== null) kpis.push({ fonte: "contas", rotulo: "Custo por voto contratado", ajuda: "custo_por_voto", valor: ag.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos" });
+        if (ag.custo_voto_pago !== null) kpis.push({ fonte: "contas", rotulo: "Custo por voto pago", ajuda: "custo_por_voto", valor: ag.custo_voto_pago, formato: "moeda", unidade: "R$ pagos ÷ votos" });
+        if (rc.pct_publico !== null) kpis.push({ fonte: "contas", rotulo: "% recursos públicos", ajuda: "pct_publico", valor: rc.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
+        if (rc.pct_autofinanciamento !== null) kpis.push({ fonte: "contas", rotulo: "% autofinanciamento", ajuda: "pct_autofinanciamento", valor: rc.pct_autofinanciamento, formato: "pontos", unidade: "recursos próprios ÷ receitas" });
         const ctx = { dt_geracao: g.dt_geracao, mes_base_ipca: g.base_ipca ?? undefined, contas_parciais: g.contas_parciais };
         const areaKpi = h("div");
         const areaDispersao = h("div");
         const areaReceita = h("div");
-        const k = renderKpi(areaKpi, kpis, { ajuda: (k) => ajuda(k, ctx) });
+        const k = renderKpi(areaKpi, kpis, { ajuda: (k) => ajuda(k, ctx), fonte: () => fonteUi(g.fontes, ["prestacao_contas"]) });
         let consulta = "";
         const pontos = (): ReturnType<typeof pontosDeGastos> => pontosDeGastos(g, candidatos, base);
         const referencia = (): { custoPorVoto: number; rotulo: string } | undefined => {
@@ -70,7 +70,7 @@ export const tela: Tela = {
           ...[avisosUi("gastos", ctx)].filter((x) => x !== null), h("div", { className: "controles" }, seletor.rotulo, busca), estado, areaKpi,
           h("h2", { textContent: "Custo × votos" }), areaDispersao,
           nota("Passe o mouse (ou foque com Tab) sobre um círculo para ver o candidato. Escala logarítmica nos dois eixos; candidatos com custo ou votos zero ficam na faixa “0”. Custo por voto não é mostrado em mapa."),
-          h("h2", { textContent: "Receita por fonte" }), areaReceita,
+          h("h2", {}, "Receita por fonte ", fonteUi(g.fontes, ["prestacao_contas"])), areaReceita,
           rodapeUi("gastos", ctx),
         );
         return () => { k.destruir(); d.destruir(); e.destruir(); };
