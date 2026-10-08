@@ -158,6 +158,62 @@ describe("dispersão custo × votos (log)", () => {
   });
 });
 
+describe("dispersão: hover, destaque e referência", () => {
+  const pts = [
+    { id: "1", rotulo: "Ana", custo: 1000, votos: 500, detalhe: [["Partido", "MISSÃO (14)"], ["Votos", "500"]] as const },
+    { id: "2", rotulo: "Beto", custo: 100000, votos: 20000, detalhe: [["Partido", "NOVO (30)"]] as const },
+  ];
+  const balao = (): HTMLElement | null => document.querySelector(".tooltip-flutuante:not([hidden])");
+  it("hover e foco abrem o tooltip rico do ponto; sair e Esc fecham", () => {
+    dispersao.render(el, pts, { titulo: "t" });
+    const m = el.querySelector('circle[data-id="1"]') as SVGElement;
+    m.dispatchEvent(new MouseEvent("mouseenter", { clientX: 100, clientY: 100 }));
+    expect(balao()?.textContent).toContain("Ana");
+    expect(balao()?.textContent).toContain("MISSÃO (14)");
+    m.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(balao()).toBeNull();
+    m.dispatchEvent(new FocusEvent("focus"));
+    expect(balao()?.textContent).toContain("Ana");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(balao()).toBeNull();
+  });
+  it("o ponto expõe o texto do tooltip também em data-tooltip (teste e leitor de tela)", () => {
+    dispersao.render(el, pts, { titulo: "t" });
+    expect(el.querySelector('circle[data-id="2"]')?.getAttribute("data-tooltip")).toContain("NOVO (30)");
+  });
+  it("destaque realça só os ids dados e atenua o resto; destacar() troca sem redesenhar", () => {
+    const g = dispersao.render(el, pts, { titulo: "t", destaque: new Set(["2"]) });
+    expect(el.querySelector('circle[data-id="2"]')?.classList.contains("destaque")).toBe(true);
+    expect(el.querySelector('circle[data-id="1"]')?.classList.contains("atenuado")).toBe(true);
+    const antes = el.querySelector('circle[data-id="1"]');
+    g.destacar(new Set(["1"]));
+    expect(el.querySelector('circle[data-id="1"]')).toBe(antes);
+    expect(antes?.classList.contains("destaque")).toBe(true);
+    g.destacar(new Set());
+    expect(el.querySelectorAll("circle.atenuado")).toHaveLength(0);
+  });
+  it("linha de referência (custo por voto mediano) com rótulo e entrada na tabela", () => {
+    dispersao.render(el, pts, { titulo: "t", referencia: { custoPorVoto: 5, rotulo: "Mediana: R$ 5,00 por voto" } });
+    const l = el.querySelector("line.referencia") as SVGLineElement;
+    expect(l).not.toBeNull();
+    expect(Number.isFinite(Number(l.getAttribute("x1")))).toBe(true);
+    expect(el.querySelector(".referencia-rotulo")?.textContent).toContain("Mediana");
+  });
+});
+
+describe("empilhado: hover", () => {
+  it("o segmento mostra fonte, valor e % do total da barra", () => {
+    empilhado.render(el, [{ rotulo: "Ana", valores: { FEFC: 300, Doações: 100 } }], { titulo: "t" });
+    const m = [...el.querySelectorAll("rect.marca")].find((r) => r.getAttribute("aria-label")?.includes("FEFC")) as SVGElement;
+    m.dispatchEvent(new MouseEvent("mouseenter", { clientX: 50, clientY: 50 }));
+    const b = document.querySelector(".tooltip-flutuante:not([hidden])");
+    expect(b?.textContent).toContain("FEFC");
+    expect(b?.textContent).toContain("75");
+    expect(b?.textContent).toContain("R$");
+    m.dispatchEvent(new MouseEvent("mouseleave"));
+  });
+});
+
 describe("empilhado", () => {
   const dados = [
     { rotulo: "Ana", valores: { "Fundo partidário": 100, "Pessoas físicas": 50 } },

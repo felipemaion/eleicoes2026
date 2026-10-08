@@ -31,7 +31,8 @@ describe("pontosDeGastos", () => {
     expect(Object.fromEntries(ana?.detalhe ?? [])["Partido"]).toBe("indisponível");
   });
   it("custo por voto vira 'sem votos' quando não há voto", () => {
-    const g: RespostaGastos = { ...G, por_candidato: [{ ...G.por_candidato[0]!, custo: { ...G.por_candidato[0]!.custo, votos: 0, custo_voto_contratado: null } }] };
+    const um = G.por_candidato[0] ?? (() => { throw new Error("fixture sem gastos"); })();
+    const g: RespostaGastos = { ...G, por_candidato: [{ ...um, custo: { ...um.custo, votos: 0, custo_voto_contratado: null } }] };
     expect(Object.fromEntries(pontosDeGastos(g, C.itens, "contratado")[0]?.detalhe ?? [])["Custo por voto (contratado)"]).toBe("sem votos");
   });
 });

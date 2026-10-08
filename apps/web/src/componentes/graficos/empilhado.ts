@@ -1,5 +1,7 @@
 import { axisBottom, scaleBand, scaleLinear, select } from "d3";
 import { formatarCompacto, formatarMoeda } from "../../formato";
+import { corpoRico, criarFlutuante, ligarMarca } from "../ui/tooltip";
+import { formatarPercentual } from "../../formato";
 import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface ReceitaPorFonte {
@@ -41,6 +43,12 @@ function agrupar(dados: readonly ReceitaPorFonte[], o: OpcoesEmpilhado): { fonte
   return { fontes, linhas };
 }
 
+let balao: ReturnType<typeof criarFlutuante> | null = null;
+function tooltipEmpilhado(): ReturnType<typeof criarFlutuante> {
+  if (!balao || !balao.elemento.isConnected) balao = criarFlutuante();
+  return balao;
+}
+
 function desenhar(container: HTMLElement, brutos: readonly ReceitaPorFonte[], o: OpcoesEmpilhado): void {
   if (brutos.length === 0) { mensagemVazia(container); return; }
   const { fontes, linhas: dados } = agrupar(brutos, o);
@@ -65,6 +73,10 @@ function desenhar(container: HTMLElement, brutos: readonly ReceitaPorFonte[], o:
       if (v <= 0) return;
       const r = no("rect", { class: "marca", x: x(acum), y: yi, width: x(acum + v) - x(acum), height: y.bandwidth(), fill: COR.serie[k] ?? COR.principal, stroke: "var(--cor-fundo)" });
       marcaAcessivel(r, `${d.rotulo} — ${f}: ${formatarMoeda(v)}`);
+      const tot = total(d);
+      const linhas: [string, string][] = [["Valor", formatarMoeda(v)], ["Parte da receita", tot > 0 ? formatarPercentual(v / tot) : "—"], ["Receita total", formatarMoeda(tot)]];
+      r.dataset["tooltip"] = [`${d.rotulo} — ${f}`, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
+      ligarMarca(r, tooltipEmpilhado(), () => corpoRico({ titulo: `${d.rotulo} — ${f}`, linhas }));
       svg.append(r);
       acum += v;
     });
