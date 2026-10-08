@@ -18,7 +18,7 @@ export default defineConfig({
   // Produção é same-origin na raiz (Caddy): `/api`, `/tiles`, `/assets`.
   base: "/",
   build: { target: "es2022", sourcemap: true },
-  test: { environment: "jsdom", include: ["tests/unit/**/*.test.ts"] },
+  test: { environment: "jsdom", setupFiles: ["tests/unit/preparar-jsdom.ts"], include: ["tests/unit/**/*.test.ts"] },
   // Em dev o ETL grava os tiles em data/processed/tiles; em produção quem serve /tiles/ é o Caddy.
   plugins: [servirTiles(fileURLToPath(new URL("../../data/processed/tiles", import.meta.url)))],
 });
