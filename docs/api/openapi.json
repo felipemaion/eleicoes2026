@@ -814,7 +814,7 @@
           "DEPUTADO DISTRITAL"
         ],
         "title": "Cargo",
-        "description": "`ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza)."
+        "description": "`ds_cargo` em maiúsculas; o ETL grava em caixa de título e as views aplicam `upper`."
       },
       "ComparacaoResumo": {
         "properties": {

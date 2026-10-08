@@ -71,12 +71,14 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "ipca": ("mes", "variacao"),
 }  # fmt: skip
 # `ano` vem da partição hive (`ano=AAAA/`): é ele que o DuckDB poda, sem abrir os outros anos.
+# `ds_cargo` vem em caixa de título do TSE ("Deputado Federal"); `upper` casa com o enum `Cargo`.
 # Turno 1 em todas as views: 2º turno tem decisão própria (spec §1.3).
 _VIEWS = {
     "candidatos": (
         "consulta_cand",
         "SELECT ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"
-        " ds_cargo, nr_partido, sg_partido, ds_situacao_candidatura, ds_sit_tot_turno"
+        " upper(ds_cargo) AS ds_cargo, nr_partido, sg_partido, ds_situacao_candidatura,"
+        " ds_sit_tot_turno"
         " FROM {fonte} WHERE nr_turno = 1",
     ),
     # Votos nominais válidos somados nas zonas e no voto em trânsito (spec §2.1).
@@ -88,7 +90,7 @@ _VIEWS = {
     ),
     "eleitorado_munzona": (
         "detalhe_votacao_munzona",
-        "SELECT ano, sg_uf, ds_cargo, cd_mun_ibge, nr_zona,"
+        "SELECT ano, sg_uf, upper(ds_cargo) AS ds_cargo, cd_mun_ibge, nr_zona,"
         " SUM(qt_aptos)::BIGINT AS aptos, SUM(qt_total_votos_validos)::BIGINT AS votos_validos"
         " FROM {fonte} WHERE nr_turno = 1 GROUP BY ALL",
     ),

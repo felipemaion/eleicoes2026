@@ -24,7 +24,8 @@ from pathlib import Path
 import duckdb
 
 DESTINO = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
-DF, DE = "DEPUTADO FEDERAL", "DEPUTADO ESTADUAL"
+# Caixa do ETL real (T-B03): "Deputado Federal"; a API normaliza para o enum em maiúsculas.
+DF, DE = "Deputado Federal", "Deputado Estadual"
 SP, CAMP, SANTOS, RIO = 3550308, 3509502, 3548500, 3304557
 
 TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
