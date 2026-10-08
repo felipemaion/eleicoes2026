@@ -12,6 +12,7 @@ dependencies = [
     "fastexcel>=0.21.0",
     "pyshp>=3.1.6",
     "h3>=4.5.0",
+    "pillow>=11",
 ]
 
 [project.scripts]
