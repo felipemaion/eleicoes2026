@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from api.texto import nivel_relevancia
+
 
 @dataclass(frozen=True)
 class Candidatura:
@@ -19,6 +21,12 @@ class Candidatura:
     ds_sit_tot_turno: str | None
     nr_candidato: int | None = None  # número de urna (busca)
     nm_civil: str | None = None  # nome civil (busca); nunca documento
+
+    def nivel(self, termo: str) -> int:
+        """Nível de relevância (0 = melhor) para o termo normalizado; ver `nivel_relevancia`."""
+        return nivel_relevancia(
+            self.nm_urna, self.nm_civil, self.sg_partido, self.nr_candidato, self.nr_partido, termo
+        )
 
 
 @dataclass(frozen=True)

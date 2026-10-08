@@ -14,6 +14,10 @@ from api.servicos.comparativo import ANO_DE, ANO_PARA
 from api.servicos.grupos import Catalogo
 from api.texto import normalizar
 
+# Candidatos que o repositório devolve (já nos melhores níveis) para o desempate por votos: votos
+# não estão na tabela de candidaturas, então o corte exato por votos só cabe numa janela limitada.
+JANELA_RELEVANCIA = 500
+
 
 class CandidaturaBusca(BaseModel):
     """Candidatura achada: o bastante para listar, escolher e enquadrar o mapa."""
@@ -74,13 +78,19 @@ class ResultadoBusca(BaseModel):
     )
 
 
+def _votos_de(repo: Repositorio, candidaturas: Sequence[Candidatura]) -> dict[int, int]:
+    """Votos nominais por `sq_candidato`, buscados uma vez por ano."""
+    votos: dict[int, int] = {}
+    for ano in {c.ano for c in candidaturas}:
+        votos |= repo.votos_totais(ano, [c.sq_candidato for c in candidaturas if c.ano == ano])
+    return votos
+
+
 def _itens(
     repo: Repositorio, catalogo: Catalogo, candidaturas: Sequence[Candidatura]
 ) -> dict[int, CandidaturaBusca]:
     """Candidaturas → itens por `sq_candidato`, com os votos buscados uma vez por ano."""
-    votos: dict[int, int] = {}
-    for ano in {c.ano for c in candidaturas}:
-        votos |= repo.votos_totais(ano, [c.sq_candidato for c in candidaturas if c.ano == ano])
+    votos = _votos_de(repo, candidaturas)
     return {
         c.sq_candidato: CandidaturaBusca(
             ano=c.ano,
@@ -126,9 +136,17 @@ def buscar(
             )
         ano, partido, sqs = grupo.ano, grupo.partido, sorted(grupo.sqs)
     total, achadas = repo.buscar_candidaturas(
-        termo=termo, ano=ano, cargo=cargo, uf=uf, partido=partido, sqs=sqs, limite=limite
+        termo=termo,
+        ano=ano,
+        cargo=cargo,
+        uf=uf,
+        partido=partido,
+        sqs=sqs,
+        limite=max(limite, JANELA_RELEVANCIA),
     )
     itens = _itens(repo, catalogo, achadas)
+    # sort estável: empate total mantém a ordem do repositório (ano desc, nome, sq)
+    achadas = sorted(achadas, key=lambda c: (c.nivel(termo), -itens[c.sq_candidato].votos))[:limite]
     return ResultadoBusca(
         total=total,
         limite=limite,
@@ -176,8 +194,22 @@ def listar_pessoas(
     """
     termo = normalizar(q) if q else None
     total, pares = repo.pares_de_pessoas(
-        ANO_DE, ANO_PARA, termo=termo or None, uf=uf, cargo=cargo, limite=limite
+        ANO_DE,
+        ANO_PARA,
+        termo=termo or None,
+        uf=uf,
+        cargo=cargo,
+        limite=max(limite, JANELA_RELEVANCIA) if termo else limite,
     )
+    if termo:
+        votos = _votos_de(repo, [c for p in pares for c in (p.de, p.para)])
+        pares = sorted(
+            pares,
+            key=lambda p: (
+                min(p.de.nivel(termo), p.para.nivel(termo)),
+                -votos.get(p.para.sq_candidato, 0),
+            ),
+        )[:limite]
     na_pagina = {id_publico(p.para.pessoa_id) for p in pares}
     faltam = [p for p in dict.fromkeys(pessoas) if p not in na_pagina]
     if faltam:
