@@ -141,6 +141,7 @@ class RepositorioDuckDB:
                     colunas = ", ".join(COLUNAS_MINIMAS[nome])
                     self._view(nome, f"SELECT {colunas} FROM {fontes[nome]}")  # noqa: S608
             self._ipca: list[VariacaoIpca] | None = None
+            self._municipios: list[Municipio] | None = None
             self._tem_h3 = bool(fontes["locais_h3"])
             self._criar_views_compostas(fontes)
             self._criar_views_prestacao(fontes)
@@ -384,16 +385,21 @@ class RepositorioDuckDB:
         return Candidatura(*linhas[0]) if linhas else None  # type: ignore[arg-type]
 
     def municipios(self, codigos: Sequence[int] | None = None) -> list[Municipio]:
-        """Municípios (todos ou os pedidos)."""
-        base = "SELECT cd_mun_ibge, cd_amc, nome, uf, area_km2 FROM municipios"
-        if codigos is None:
-            linhas = self._linhas(base + " ORDER BY cd_mun_ibge")
-        else:
+        """Municípios (todos ou os pedidos), ordenados por código.
+
+        A tabela (~5,6 mil linhas) é imutável durante o processo e a view varre Parquet de dois
+        anos (~0,3 s): lê-se uma vez e filtra em memória.
+        """
+        if self._municipios is None:
             linhas = self._linhas(
-                base + " WHERE cd_mun_ibge IN (SELECT unnest(?::BIGINT[])) ORDER BY cd_mun_ibge",
-                [list(codigos)],
+                "SELECT cd_mun_ibge, cd_amc, nome, uf, area_km2 FROM municipios"
+                " ORDER BY cd_mun_ibge"
             )
-        return [Municipio(*linha) for linha in linhas]  # type: ignore[arg-type]
+            self._municipios = [Municipio(*linha) for linha in linhas]  # type: ignore[arg-type]
+        if codigos is None:
+            return list(self._municipios)
+        pedidos = set(codigos)
+        return [m for m in self._municipios if m.cd_mun_ibge in pedidos]
 
     def votos_territorio(
         self,
