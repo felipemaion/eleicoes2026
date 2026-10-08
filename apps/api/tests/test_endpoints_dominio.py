@@ -257,6 +257,32 @@ def test_pontos_densidade_ordenados_por_votos(api: TestClient) -> None:
     assert corpo["pontos"][0]["lat"] == pytest.approx(-23.55)
 
 
+def test_pontos_ignora_local_sem_coordenada_e_informa_o_peso(api: TestClient) -> None:
+    """T-B06: local sem lat/lon (120 de 1300 votos) não derruba a rota nem some em silêncio."""
+    resposta = api.get(
+        "/api/mapa/pontos", params={"ano": 2026, "cargo": DF, "uf": "SP", "grupo": "missao_2026"}
+    )
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["total"] == 5  # o local sem coordenada não conta como ponto
+    assert all(p["lat"] is not None and p["lon"] is not None for p in corpo["pontos"])
+    assert corpo["votos_sem_coordenada"] == 120
+    assert corpo["pct_votos_sem_coordenada"] == pytest.approx(120 / 1300 * 100, abs=0.01)
+
+
+def test_mapa_h3_informa_votos_sem_coordenada(api: TestClient) -> None:
+    corpo = _mapa(api, nivel="h3")
+    assert corpo["votos_sem_coordenada"] == 120
+    assert corpo["pct_votos_sem_coordenada"] == pytest.approx(120 / 1300 * 100, abs=0.01)
+    assert "88a81000a1fffff" in corpo["valores"]  # o resto segue intacto
+
+
+def test_mapa_municipio_nao_tem_aviso_de_coordenada(api: TestClient) -> None:
+    corpo = _mapa(api, nivel="municipio")
+    assert corpo["votos_sem_coordenada"] is None
+    assert corpo["pct_votos_sem_coordenada"] is None
+
+
 def test_pontos_limite_e_offset(api: TestClient) -> None:
     base = {"ano": 2026, "cargo": DF, "uf": "SP", "grupo": "missao_2026"}
     pagina = api.get("/api/mapa/pontos", params={**base, "limite": 2}).json()

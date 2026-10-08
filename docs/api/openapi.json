@@ -1894,6 +1894,30 @@
             "type": "integer",
             "title": "N Candidaturas"
           },
+          "votos_sem_coordenada": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Votos Sem Coordenada",
+            "description": "Só no H3: votos do recorte em locais sem coordenada, que não aparecem em nenhuma célula. null nos demais níveis."
+          },
+          "pct_votos_sem_coordenada": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Votos Sem Coordenada",
+            "description": "`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%)."
+          },
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
@@ -2071,6 +2095,16 @@
             "title": "Truncado",
             "description": "Há mais páginas além desta."
           },
+          "votos_sem_coordenada": {
+            "type": "integer",
+            "title": "Votos Sem Coordenada",
+            "description": "Votos do recorte (UF inteira, não só a página) em locais sem coordenada, que não viram ponto."
+          },
+          "pct_votos_sem_coordenada": {
+            "type": "number",
+            "title": "Pct Votos Sem Coordenada",
+            "description": "`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%)."
+          },
           "pontos": {
             "items": {
               "$ref": "#/components/schemas/Ponto"
@@ -2090,6 +2124,8 @@
           "limite",
           "offset",
           "truncado",
+          "votos_sem_coordenada",
+          "pct_votos_sem_coordenada",
           "pontos",
           "dt_geracao"
         ],

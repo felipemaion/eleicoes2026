@@ -59,6 +59,14 @@ class CelulaH3:
 
 
 @dataclass(frozen=True)
+class VotosSemCoordenada:
+    """Votos do recorte em locais sem coordenada (ou sem célula H3) e o total do recorte."""
+
+    sem_coordenada: int
+    total: int
+
+
+@dataclass(frozen=True)
 class PontoVotacao:
     """Local de votação com votos do recorte."""
 

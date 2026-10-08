@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from api.dominio import Indicador, Nivel
 from api.erros import parametro_invalido
 from api.repositorio.base import Repositorio
-from api.repositorio.modelos import Candidatura
+from api.repositorio.modelos import Candidatura, VotosSemCoordenada
 from api.servicos.escopo import selecionar_alvo
 from api.servicos.grupos import Catalogo
 
@@ -62,6 +62,15 @@ class Mapa(BaseModel):
     unidade: str
     denominador: str | None
     n_candidaturas: int
+    votos_sem_coordenada: int | None = Field(
+        default=None,
+        description="Só no H3: votos do recorte em locais sem coordenada, que não aparecem "
+        "em nenhuma célula. null nos demais níveis.",
+    )
+    pct_votos_sem_coordenada: float | None = Field(
+        default=None,
+        description="`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%).",
+    )
     dt_geracao: str
 
     model_config = ConfigDict(
@@ -244,6 +253,11 @@ def montar_mapa(
             sq_candidato=None,
         )[1]
     detalhes = _detalhes(indicador, linhas, _nomes(repo, nivel, linhas))
+    sem_coord = (
+        repo.votos_sem_coordenada(ano, [c.sq_candidato for c in alvo], uf=uf, por_h3=True)
+        if nivel is Nivel.H3 and uf is not None
+        else None
+    )
     return Mapa(
         ano=ano,
         nivel=nivel.value,
@@ -254,6 +268,8 @@ def montar_mapa(
         unidade=_UNIDADE[indicador],
         denominador=_DENOMINADOR[indicador],
         n_candidaturas=len(alvo),
+        votos_sem_coordenada=None if sem_coord is None else sem_coord.sem_coordenada,
+        pct_votos_sem_coordenada=None if sem_coord is None else _pct(sem_coord),
         dt_geracao=repo.dt_geracao(),
     )
 
@@ -305,6 +321,11 @@ def _chave(cd_mun_ibge: int, nr_zona: int | None) -> str:
     return str(cd_mun_ibge) if nr_zona is None else f"{cd_mun_ibge}-{nr_zona}"
 
 
+def _pct(v: VotosSemCoordenada) -> float:
+    """% de votos sem coordenada; 0 se o recorte não tem voto (sem divisão por zero)."""
+    return round(100 * v.sem_coordenada / v.total, 2) if v.total else 0.0
+
+
 class Ponto(BaseModel):
     """Local de votação."""
 
@@ -321,6 +342,13 @@ class Pontos(BaseModel):
     limite: int
     offset: int
     truncado: bool = Field(description="Há mais páginas além desta.")
+    votos_sem_coordenada: int = Field(
+        description="Votos do recorte (UF inteira, não só a página) em locais sem coordenada, "
+        "que não viram ponto."
+    )
+    pct_votos_sem_coordenada: float = Field(
+        description="`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%)."
+    )
     pontos: list[Ponto]
     dt_geracao: str
 
@@ -344,12 +372,15 @@ def montar_pontos(
     total, linhas = repo.pontos(
         ano, [c.sq_candidato for c in alvo], uf=uf, limite=limite, offset=offset
     )
+    sem_coord = repo.votos_sem_coordenada(ano, [c.sq_candidato for c in alvo], uf=uf, por_h3=False)
     return Pontos(
         ano=ano,
         total=total,
         limite=limite,
         offset=offset,
         truncado=offset + len(linhas) < total,
+        votos_sem_coordenada=sem_coord.sem_coordenada,
+        pct_votos_sem_coordenada=_pct(sem_coord),
         pontos=[Ponto(lat=p.lat, lon=p.lon, votos=p.votos) for p in linhas],
         dt_geracao=repo.dt_geracao(),
     )

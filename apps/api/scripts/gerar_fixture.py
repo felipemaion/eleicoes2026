@@ -100,6 +100,8 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, SP, 2, 2001, -23.60, -46.70, "88a81000e5fffff", 5000),
             (2026, CAMP, 1, 3001, -22.90, -47.06, "88a8100e61fffff", 2000),
             (2026, SANTOS, 1, 4001, -23.96, -46.33, "88a8100b13fffff", 500),
+            # Sem coordenada (como no TSE real): fora dos pontos e do H3, mas com voto (T-B06).
+            (2026, SP, 3, 5001, None, None, None, 1000),
         ],
     ),
     "votos_local": (
@@ -111,6 +113,7 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 5, SP, 1, 1001, 100),
             (2026, 5, CAMP, 1, 3001, 40),
             (2026, 5, SANTOS, 1, 4001, 40),
+            (2026, 3, SP, 3, 5001, 120),
             (2026, 7, SP, 1, 1001, 300),
             (2026, 7, SP, 1, 1002, 200),
             (2026, 7, CAMP, 1, 3001, 200),
