@@ -1,8 +1,8 @@
 {
   "indicador": "receitas",
   "spec": "docs/metodologia/indicadores.md#receita-por-fonte",
-  "versao": 1,
-  "descricao": "Classificação: fonte FEFC/FP primeiro; senão pela origem. % público = (FEFC+FP)/total; % autofinanciamento = próprios/total. Total inclui estimáveis; total financeiro reportado à parte. Rótulo desconhecido = erro (falha alto).",
+  "versao": 2,
+  "descricao": "Classificação: fonte FEFC/FP primeiro; senão pela origem (em 2026 a origem pode nomear o fundo — repasse de outro candidato com fonte Outros Recursos). % público = (FEFC+FP)/total; % autofinanciamento = próprios/total. Total inclui estimáveis; total financeiro reportado à parte. Natureza: rótulo real do TSE ('FINANCEIRO', 'ESTIMÁVEL'). Rótulo desconhecido = erro (falha alto).",
   "tolerancia_absoluta": 1e-09,
   "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
   "casos": [
@@ -48,7 +48,7 @@
           "sq_candidato": "c1",
           "ds_fonte_receita": "OUTROS RECURSOS",
           "ds_origem_receita": "Recursos de pessoas físicas",
-          "ds_natureza_receita": "ESTIMADO",
+          "ds_natureza_receita": "ESTIMÁVEL",
           "vr_receita": 2000.0
         },
         {
@@ -80,6 +80,73 @@
         "receita_financeira": 98000.0,
         "pct_publico": 60.0,
         "pct_autofinanciamento": 5.0
+      }
+    },
+    {
+      "nome": "c2_rotulos_exclusivos_2022_e_2026",
+      "entrada": [
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Fundo Especial de Financiamento de Campanha",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 4000.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Fundo Partidário",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 1000.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Doações para Campanha",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 2000.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Comercialização de Bens com OR",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 500.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Comercialização de Bens com FEFC",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 500.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "FUNDO ESPECIAL",
+          "ds_origem_receita": "Rendimentos de aplicações financeiras",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 1000.0
+        },
+        {
+          "sq_candidato": "c2",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos próprios",
+          "ds_natureza_receita": "ESTIMÁVEL",
+          "vr_receita": 1000.0
+        }
+      ],
+      "saida": {
+        "por_categoria": {
+          "fefc": 5000.0,
+          "fundo_partidario": 1000.0,
+          "outros": 1000.0,
+          "outros_candidatos": 2000.0,
+          "recursos_proprios": 1000.0
+        },
+        "receita_total": 10000.0,
+        "receita_financeira": 9000.0,
+        "pct_publico": 60.0,
+        "pct_autofinanciamento": 10.0
       }
     },
     {

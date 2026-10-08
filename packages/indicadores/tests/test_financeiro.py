@@ -1,5 +1,8 @@
 """Bordas e erros de `indicadores.financeiro` não cobertos pelos vetores."""
 
+import json
+from pathlib import Path
+
 import polars as pl
 import pytest
 from indicadores import financeiro
@@ -142,3 +145,59 @@ def test_custo_sem_pagamento_lancado_conta_pago_como_zero() -> None:
     # Sem contas (contratada nula) continua indefinido.
     assert linhas[1]["custo_voto_pago"] is None
     assert linhas[1]["divida"] is None
+
+
+_ROTULOS_REAIS = json.loads(
+    (Path(__file__).parent / "fixtures" / "rotulos_receita_2022_2026.json").read_text("utf-8")
+)["combinacoes"]
+
+
+def _tabela_real() -> pl.DataFrame:
+    return pl.DataFrame(
+        [
+            {
+                "sq_candidato": f"{c['ano']}-{i}",
+                "ds_fonte_receita": c["ds_fonte_receita"],
+                "ds_origem_receita": c["ds_origem_receita"],
+                "ds_natureza_receita": c["ds_natureza_receita"],
+                "vr_receita": 1.0,
+                "esperada": c["categoria_esperada"],
+            }
+            for i, c in enumerate(_ROTULOS_REAIS)
+        ]
+    )
+
+
+def test_rotulos_reais_2022_2026_classificados_conforme_spec() -> None:
+    df = financeiro.classificar_receitas(_tabela_real())
+    divergentes = df.filter(pl.col("categoria") != pl.col("esperada"))
+    assert divergentes.is_empty(), divergentes
+    assert {c["ano"] for c in _ROTULOS_REAIS} == {2022, 2026}
+
+
+def test_rotulos_reais_naturezas_aceitas_no_resumo() -> None:
+    resumo = financeiro.resumo_receitas(financeiro.classificar_receitas(_tabela_real()), por=())
+    estimaveis = sum(1 for c in _ROTULOS_REAIS if c["ds_natureza_receita"] != "FINANCEIRO")
+    assert resumo["receita_total"][0] == len(_ROTULOS_REAIS)
+    assert resumo["receita_financeira"][0] == len(_ROTULOS_REAIS) - estimaveis
+
+
+@pytest.mark.parametrize(
+    ("origem", "categoria"),
+    [
+        ("Fundo Especial de Financiamento de Campanha", "fefc"),
+        ("Fundo Partidário", "fundo_partidario"),
+        ("Doações para Campanha", "outros_candidatos"),
+    ],
+)
+def test_origens_2026_de_repasse_entre_candidatos(origem: str, categoria: str) -> None:
+    df = financeiro.classificar_receitas(_receita("OUTROS RECURSOS", origem))
+    assert df["categoria"].to_list() == [categoria]
+
+
+def test_fonte_nula_falha() -> None:
+    df = _receita("x", "Recursos próprios").with_columns(
+        pl.lit(None, pl.String).alias("ds_fonte_receita")
+    )
+    with pytest.raises(ValueError, match="ds_fonte_receita desconhecida"):
+        financeiro.classificar_receitas(df)

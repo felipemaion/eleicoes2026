@@ -1,0 +1,386 @@
+{
+ "fonte": "TSE, prestacao_de_contas_eleitorais_candidatos_{2022,2026}.zip, receitas_candidatos_<UF>.csv (via Parquet do ETL, T-D03)",
+ "dt_geracao": {
+  "2022": "2026-10-04",
+  "2026": "2026-10-07"
+ },
+ "nota": "Combinações distintas reais (ano × fonte × origem × natureza), sem as linhas de R$ 0,00 com rótulo nulo; qt_lancamentos = linhas do CSV. categoria_esperada segue a spec §4.1.",
+ "combinacoes": [
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Comercialização de Bens com FEFC",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 4,
+   "categoria_esperada": "outros"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Comercialização de Bens com OR",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 138,
+   "categoria_esperada": "outros"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Doações pela Internet",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 163,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de Financiamento Coletivo",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 3916,
+   "categoria_esperada": "financiamento_coletivo"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de origens não identificadas",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 407,
+   "categoria_esperada": "outros"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 11941,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 4503,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 509,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 198,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 7648,
+   "categoria_esperada": "outros_candidatos"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 1068,
+   "categoria_esperada": "outros_candidatos"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 39116,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 32291,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 11421,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 3698,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 7694,
+   "categoria_esperada": "partido_outros_recursos"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 2444,
+   "categoria_esperada": "partido_outros_recursos"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de pessoas físicas",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 54901,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de pessoas físicas",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 470755,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos próprios",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 2133,
+   "categoria_esperada": "recursos_proprios"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos próprios",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 16448,
+   "categoria_esperada": "recursos_proprios"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Rendimentos de aplicações financeiras",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 377,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Rendimentos de aplicações financeiras",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 47,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2022,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Rendimentos de aplicações financeiras",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 145,
+   "categoria_esperada": "outros"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Doações para Campanha",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 31,
+   "categoria_esperada": "outros_candidatos"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Doações pela Internet",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 2,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Doações pela Internet",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 397,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Fundo Especial de Financiamento de Campanha",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 46,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Fundo Partidário",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 5,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de Financiamento Coletivo",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 2592,
+   "categoria_esperada": "financiamento_coletivo"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de origens não identificadas",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 125,
+   "categoria_esperada": "outros"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 5596,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 2051,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 148,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 252,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 3337,
+   "categoria_esperada": "outros_candidatos"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de outros candidatos",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 453,
+   "categoria_esperada": "outros_candidatos"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 10575,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO ESPECIAL",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 19441,
+   "categoria_esperada": "fefc"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 9808,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "FUNDO PARTIDARIO",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 4122,
+   "categoria_esperada": "fundo_partidario"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 8563,
+   "categoria_esperada": "partido_outros_recursos"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de partido político",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 2246,
+   "categoria_esperada": "partido_outros_recursos"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de pessoas físicas",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 23860,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos de pessoas físicas",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 63464,
+   "categoria_esperada": "pessoa_fisica"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos próprios",
+   "ds_natureza_receita": "ESTIMÁVEL",
+   "qt_lancamentos": 1305,
+   "categoria_esperada": "recursos_proprios"
+  },
+  {
+   "ano": 2026,
+   "ds_fonte_receita": "OUTROS RECURSOS",
+   "ds_origem_receita": "Recursos próprios",
+   "ds_natureza_receita": "FINANCEIRO",
+   "qt_lancamentos": 10514,
+   "categoria_esperada": "recursos_proprios"
+  }
+ ]
+}
