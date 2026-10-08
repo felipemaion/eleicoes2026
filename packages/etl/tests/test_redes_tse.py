@@ -59,7 +59,7 @@ def ambiente(tmp_path: Path) -> dict[str, Path]:
     ]
     rj = [
         _linha("RJ", 5, 1, "https://instagram.com/cinco"),
-        _linha("RJ", 5, 2, "https://instagram.com/cinco_reserva"),  # 2º perfil: fica o 1º
+        _linha("RJ", 5, 2, "https://instagram.com/cinco_reserva"),  # 2º perfil distinto
     ]
     pacote = raw / "tse/rede_social_candidato/rede_social_candidato_2026.zip"
     pacote.parent.mkdir(parents=True)
@@ -96,16 +96,18 @@ def test_extrai_username_so_dos_grupos(ambiente: dict[str, Path]) -> None:
     saida = ambiente["proc"] / "redes_candidatos/ano=2026/redes_candidatos.parquet"
     df = pl.read_parquet(saida).sort("sq_candidato")
     validar(df, CONTRATOS["redes_candidatos"])
-    assert df.select("sq_candidato", "rede", "username", "nr_ordem").rows() == [
-        (1, "instagram", "fulano_um", 1),
-        (2, "instagram", "dois.oficial", 2),
-        (3, "instagram", "beraldo", 2),
-        (5, "instagram", "cinco", 1),
+    assert df.select("sq_candidato", "rede", "username", "nr_ordem", "principal").rows() == [
+        (1, "instagram", "fulano_um", 1, True),
+        (2, "instagram", "dois.oficial", 2, True),
+        (3, "instagram", "beraldo", 2, True),
+        (5, "instagram", "cinco", 1, True),
+        (5, "instagram", "cinco_reserva", 2, False),  # 2º perfil: guardado, não principal
     ]
     assert df["dt_geracao"].unique().to_list() == [date(2026, 10, 8)]
     assert df.filter(pl.col("sq_candidato") == 1)["url_tse"][0].startswith("HTTPS://WWW.INSTAGRAM")
     assert stats["candidatos_no_grupo"] == 4
     assert stats["com_instagram"] == 4
+    assert stats["perfis"] == 5
     assert stats["com_mais_de_um_perfil"] == 1  # candidato 5
     assert stats["urls_instagram_rejeitadas"] == 1  # o link de post do candidato 3
 
