@@ -25,19 +25,41 @@ DOC: dict[str, Any] = {
                             "tvtn": "130",
                             "tvtl": "7",
                             "cand": [
-                                {"n": "1414", "sqcand": "1", "dvt": "Válido", "vap": "100",
-                                 "st": "Eleito por QP"},
-                                {"n": "1400", "sqcand": "2", "dvt": "Anulado sub judice",
-                                 "vap": "30", "st": "Não eleito"},
+                                {
+                                    "n": "1414",
+                                    "sqcand": "1",
+                                    "dvt": "Válido",
+                                    "vap": "100",
+                                    "st": "Eleito por QP",
+                                },
+                                {
+                                    "n": "1400",
+                                    "sqcand": "2",
+                                    "dvt": "Anulado sub judice",
+                                    "vap": "30",
+                                    "st": "Não eleito",
+                                },
                             ],
                         }
                     ]
                 },
                 {
                     "par": [
-                        {"n": "44", "sg": "UNIÃO", "tvtn": "50", "tvtl": "3",
-                         "cand": [{"n": "4433", "sqcand": "3", "dvt": "Válido", "vap": "50",
-                                   "st": "Suplente"}]}
+                        {
+                            "n": "44",
+                            "sg": "UNIÃO",
+                            "tvtn": "50",
+                            "tvtl": "3",
+                            "cand": [
+                                {
+                                    "n": "4433",
+                                    "sqcand": "3",
+                                    "dvt": "Válido",
+                                    "vap": "50",
+                                    "st": "Suplente",
+                                }
+                            ],
+                        }
                     ]
                 },
             ],
@@ -73,8 +95,14 @@ def test_divulgacao_totais_majoritario_sem_legenda_e_nulo() -> None:
 def test_divulgacao_candidatos() -> None:
     df = conferencia.divulgacao_candidatos(DOC)
     assert df.columns == [
-        "sg_uf", "cd_cargo", "sq_candidato", "nr_candidato", "nr_partido",
-        "destinacao", "situacao", "votos",
+        "sg_uf",
+        "cd_cargo",
+        "sq_candidato",
+        "nr_candidato",
+        "nr_partido",
+        "destinacao",
+        "situacao",
+        "votos",
     ]
     assert df.select("sq_candidato", "nr_partido", "destinacao", "votos").rows() == [
         (1, 14, "Válido", 100),
@@ -87,7 +115,12 @@ def test_divulgacao_partidos() -> None:
     df = conferencia.divulgacao_partidos(DOC)
     assert df.rows() == [("SP", 6, 14, "MISSÃO", 130, 7), ("SP", 6, 44, "UNIÃO", 50, 3)]
     assert df.columns == [
-        "sg_uf", "cd_cargo", "nr_partido", "sg_partido", "votos_nominais", "votos_legenda"
+        "sg_uf",
+        "cd_cargo",
+        "nr_partido",
+        "sg_partido",
+        "votos_nominais",
+        "votos_legenda",
     ]
 
 
@@ -98,8 +131,8 @@ def test_divulgacao_sem_cargo_falha() -> None:
 
 SECAO = pl.DataFrame(
     {
-        "cd_cargo": [6, 6, 6, 6, 6, 3, 3],
-        "nr_votavel": [1414, 14, 95, 96, 4433, 14, 95],
+        "cd_cargo": [6, 6, 6, 6, 6, 3, 3, 7],
+        "nr_votavel": [1414, 14, 95, 96, 4433, 14, 95, 90],
     }
 )
 
@@ -107,8 +140,16 @@ SECAO = pl.DataFrame(
 def test_classificar_votavel() -> None:
     df = conferencia.classificar_votavel(SECAO)
     # Proporcional: 2 dígitos = legenda; majoritário: 2 dígitos = candidato. 95/96 sempre.
+    # 90 é partido (PROS em 2022), não código especial.
     assert df["tipo_votavel"].to_list() == [
-        "nominal", "legenda", "branco", "nulo", "nominal", "nominal", "branco",
+        "nominal",
+        "legenda",
+        "branco",
+        "nulo",
+        "nominal",
+        "nominal",
+        "branco",
+        "legenda",
     ]
 
 
@@ -125,7 +166,13 @@ FONTE = pl.DataFrame({"sg_uf": ["SP", "BA"], "aptos": [1000, 70], "votos": [12, 
 def test_comparar() -> None:
     df = conferencia.comparar(NOSSO, FONTE, chaves=["sg_uf"])
     assert df.columns == [
-        "sg_uf", "medida", "nosso", "fonte", "diferenca", "diferenca_pct", "situacao"
+        "sg_uf",
+        "medida",
+        "nosso",
+        "fonte",
+        "diferenca",
+        "diferenca_pct",
+        "situacao",
     ]
     linhas = {(r["sg_uf"], r["medida"]): r for r in df.to_dicts()}
     assert linhas[("SP", "aptos")]["situacao"] == "confere"
