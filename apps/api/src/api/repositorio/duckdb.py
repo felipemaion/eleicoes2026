@@ -241,7 +241,10 @@ class RepositorioDuckDB:
                 "SELECT ano, sq_candidato, ds_fonte_receita, ds_origem_receita,"  # noqa: S608
                 f" {_NATUREZA_DA_BIBLIOTECA} AS ds_natureza_receita, vr_receita,"
                 f" {doador} AS sq_candidato_doador"
-                f" FROM {receitas} WHERE nr_turno = 1",
+                f" FROM {receitas} WHERE nr_turno = 1"
+                # "Sem movimento": fonte e origem nulas com valor 0 (não é receita).
+                " AND NOT (ds_fonte_receita IS NULL AND ds_origem_receita IS NULL"
+                " AND vr_receita = 0)",
             )
             self._prestacao_dados = self._prestacao_da_base(receitas)
         contratadas, pagas = (

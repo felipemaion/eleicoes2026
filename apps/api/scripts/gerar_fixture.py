@@ -258,7 +258,9 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 (a, 1, uf_de_cand[sq], "FINAL", sq, f, o, n, v,
                  5 if o == "Recursos de outros candidatos" else None, DT)
                 for a, sq, f, o, n, v in TABELAS["receitas"][1]
-            ],
+            ]
+            # Linha "sem movimento" do ETL real: fonte e origem nulas, valor 0 (~2,5 mil por ano).
+            + [(2026, 1, "SP", "FINAL", 5, None, None, "FINANCEIRO", 0.0, None, DT)],
         ),
         "despesas_contratadas_candidatos": (
             dict(
