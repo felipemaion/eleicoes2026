@@ -155,7 +155,7 @@ class RepositorioMemoria:
             )
             and _casa(c, termo)
         ]
-        achadas.sort(key=lambda c: (_rank(c, termo), -c.ano, c.nm_urna, c.sq_candidato))
+        achadas.sort(key=lambda c: (c.nivel(termo), -c.ano, c.nm_urna, c.sq_candidato))
         return len(achadas), achadas[:limite]
 
     def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
@@ -188,7 +188,14 @@ class RepositorioMemoria:
             and (publicos is None or id_publico(a.pessoa_id) in publicos)
             and (not termo or _casa(a, termo) or _casa(b, termo))
         ]
-        pares.sort(key=lambda p: (p.para.nm_urna, p.para.sq_candidato, p.de.sq_candidato))
+        pares.sort(
+            key=lambda p: (
+                min(p.de.nivel(termo), p.para.nivel(termo)) if termo else 0,
+                p.para.nm_urna,
+                p.para.sq_candidato,
+                p.de.sq_candidato,
+            )
+        )
         return len(pares), pares[:limite]
 
     def municipios(self, codigos: Sequence[int] | None = None) -> list[Municipio]:
@@ -303,10 +310,3 @@ def _casa(c: Candidatura, termo: str) -> bool:
     if termo.isdigit():
         return str(c.nr_candidato or "").startswith(termo) or c.nr_partido == int(termo)
     return any(termo in campo for campo in _campos_busca(c))
-
-
-def _rank(c: Candidatura, termo: str) -> int:
-    """0 = início de palavra (ou prefixo do número), 1 = só substring."""
-    if termo.isdigit():
-        return 0 if str(c.nr_candidato or "").startswith(termo) else 1
-    return 0 if any(f" {campo}".find(f" {termo}") >= 0 for campo in _campos_busca(c)) else 1

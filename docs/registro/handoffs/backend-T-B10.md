@@ -11,3 +11,7 @@
 
 **Verificar:** `uv run pytest apps/api -q` · `make lint` · `apps/api/tests/test_b10_pedidos_w12.py`.
 **Pendências:** nenhuma.
+
+**Varredura contra produção (antes do fix T-B11, versão antiga no ar):** 2143 pedidos; 200: 1429, 422: 342,
+**500: 2, 502: 370** (502 a partir de SENADOR/AC em diante: processo caiu/reiniciou sob a carga — compatível com o OOM
+da T-B11). Os 500 restantes: ver T-B11 (ficha de VICE-* corrigida). Repetir após o deploy da T-B11.

@@ -134,28 +134,32 @@ def _em_sqs(sqs: Sequence[int]) -> tuple[str, list[int]]:
 
 
 def _casamento(termo: str, prefixo: str) -> tuple[str, list[object], str, list[object]]:
-    """(condição, params, ordem, params da ordem) do termo sobre as colunas com `prefixo`.
+    """(condição, params, nível, params do nível) do termo sobre as colunas com `prefixo`.
 
     Termo numérico: prefixo do número de urna ou número do partido. Texto: substring em nome de
-    urna, nome civil e sigla (sem acento, minúsculas); a ordem põe antes quem casa por início de
-    palavra. O termo só entra como parâmetro, com `%`/`_`/`\\` escapados.
+    urna, nome civil e sigla (sem acento, minúsculas). O nível (0 = melhor) espelha
+    `api.texto.nivel_relevancia`. O termo só entra como parâmetro, com `%`/`_`/`\\` escapados.
     """
     if termo.isdigit():
-        casa = f"({prefixo}nr_candidato::VARCHAR LIKE ? {_ESCAPE} OR {prefixo}nr_partido = ?)"
-        rank = f"CASE WHEN {prefixo}nr_candidato::VARCHAR LIKE ? {_ESCAPE} THEN 0 ELSE 1 END"
-        return casa, [termo + "%", int(termo)], rank, [termo + "%"]
-    colunas = [
+        nr = f"{prefixo}nr_candidato::VARCHAR"
+        casa = f"({nr} LIKE ? {_ESCAPE} OR {prefixo}nr_partido = ?)"
+        nivel = f"CASE WHEN {nr} = ? THEN 0 WHEN {nr} LIKE ? {_ESCAPE} THEN 1 ELSE 2 END"
+        return casa, [termo + "%", int(termo)], nivel, [termo, termo + "%"]
+    urna, civil, sigla = (
         SQL_NORMALIZA.format(coluna=f"{prefixo}{c}") for c in ("nm_urna", "nm_civil", "sg_partido")
-    ]
+    )
+    colunas = [urna, civil, sigla]
     seguro = escapar_like(termo)
     contem = " OR ".join(f"{c} LIKE ? {_ESCAPE}" for c in colunas)
     palavra = " OR ".join(f"{c} LIKE ? {_ESCAPE} OR {c} LIKE ? {_ESCAPE}" for c in colunas)
-    return (
-        f"({contem})",
-        [f"%{seguro}%"] * len(colunas),
-        f"CASE WHEN {palavra} THEN 0 ELSE 1 END",
-        [p for _ in colunas for p in (f"{seguro}%", f"% {seguro}%")],
+    nivel = (
+        f"CASE WHEN {urna} = ? THEN 0 "
+        f"WHEN {urna} LIKE ? {_ESCAPE} OR {civil} LIKE ? {_ESCAPE} THEN 1 "
+        f"WHEN {palavra} THEN 2 ELSE 3 END"
     )
+    params_nivel: list[object] = [termo, f"{seguro}%", f"{seguro}%"]
+    params_nivel += [p for _ in colunas for p in (f"{seguro}%", f"% {seguro}%")]
+    return f"({contem})", [f"%{seguro}%"] * len(colunas), nivel, params_nivel
 
 
 class RepositorioDuckDB:
@@ -517,19 +521,23 @@ class RepositorioDuckDB:
         if publicos is not None:
             condicoes.append("a.pessoa_pub IN (SELECT unnest(?::VARCHAR[]))")
             params.append(list(publicos))
+        ordem = "b.nm_urna, b.sq_candidato, a.sq_candidato"
+        params_ordem: list[object] = []
         if termo:
-            ca, pa, _, _ = _casamento(termo, "a.")
-            cb, pb, _, _ = _casamento(termo, "b.")
+            ca, pa, na, pna = _casamento(termo, "a.")
+            cb, pb, nb, pnb = _casamento(termo, "b.")
             condicoes.append(f"({ca} OR {cb})")
             params += [*pa, *pb]
+            ordem = f"LEAST({na}, {nb}), {ordem}"
+            params_ordem = [*pna, *pnb]
         campos = [f"{lado}.{c}" for lado in "ab" for c in _CAMPOS_CANDIDATURA]
         sql = (
             f"SELECT {', '.join(campos)}, COUNT(*) OVER () FROM candidatos a "  # noqa: S608
             "JOIN candidatos b ON a.pessoa_id = b.pessoa_id WHERE "
             + " AND ".join(condicoes)
-            + " ORDER BY b.nm_urna, b.sq_candidato, a.sq_candidato LIMIT ?"
+            + f" ORDER BY {ordem} LIMIT ?"
         )
-        linhas = self._linhas(sql, [*params, limite])
+        linhas = self._linhas(sql, [*params, *params_ordem, limite])
         n = len(_CAMPOS_CANDIDATURA)
         total = int(str(linhas[0][-1])) if linhas else 0
         return total, [
