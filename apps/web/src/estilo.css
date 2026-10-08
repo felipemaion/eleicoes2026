@@ -315,3 +315,4 @@ circle.marca.com-link { cursor: pointer; }
   .cartoes-lados { grid-template-columns: 1fr; }
   .cartoes-seta { transform: rotate(90deg); justify-self: center; }
 }
+.tabela-rolagem { overflow-x: auto; max-width: 100%; }

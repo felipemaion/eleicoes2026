@@ -49,7 +49,7 @@ test("evolução: três mapas, KPIs em ‰ e avisos de rezoneamento", async ({ p
   await page.goto("/#/evolucao");
   await expect(page.locator(".mapas-3 canvas")).toHaveCount(3, { timeout: 20_000 });
   await expect(page.getByText(/mesmas quebras de cor/)).toBeVisible();
-  await page.getByText("Notas sobre os dados").click();
+  await page.locator(".notas-dados > summary").click();
   await expect(page.getByText("Zonas eleitorais mudaram.")).toBeVisible();
   await expect(page.locator("dl.kpis")).toContainText("6,1 ‰");
 });

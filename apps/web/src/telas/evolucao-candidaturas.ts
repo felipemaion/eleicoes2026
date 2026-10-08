@@ -12,7 +12,7 @@ const COLUNAS = ["Ano", "Candidato", "Partido", "UF", "Votos", "Penetração"] a
 export function tabelaCandidaturas(linhas: readonly CandidaturaFicha[]): HTMLElement | null {
   if (linhas.length === 0) return null;
   const tabela = h("table", { className: "tabela-pessoas" });
-  tabela.createCaption().textContent = T.tabelaTitulo;
+  tabela.createCaption().textContent = "Votos e penetração de cada candidatura escolhida, por ano";
   const cab = tabela.createTHead().insertRow();
   for (const c of COLUNAS) cab.append(h("th", { scope: "col", textContent: c }));
   const corpo = tabela.createTBody();
