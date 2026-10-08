@@ -303,7 +303,7 @@ describe("financiamento — receitas", () => {
     await desenhar("gastos");
     await vi.waitFor(() => { expect(el.querySelector(".grafico-receita circle.marca")).not.toBeNull(); });
     el.querySelector('.grafico-receita circle[data-id="1"]')?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 10, clientY: 10 }));
-    for (const t of ["Ana Souza", "Receita total", "Receita por voto", "Saldo (receita − despesa contratada)", "% pessoas físicas"]) expect(balao()).toContain(t);
+    for (const t of ["Ana Souza", "Receita total", "Receita por voto", "Saldo", "% pessoas físicas"]) expect(balao()).toContain(t);
     expect(document.querySelector(".tooltip-flutuante:not([hidden]) img")).not.toBeNull();
     expect(el.querySelector(".grafico-receita .referencia-rotulo")?.textContent).toMatch(/mediana.*receita por voto/i);
   });

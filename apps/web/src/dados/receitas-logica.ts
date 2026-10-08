@@ -42,7 +42,7 @@ export function pontosDeReceita(g: RespostaGastos): PontoCustoVoto[] {
         ["Receita total", formatarMoeda(c.receita_total)],
         ["Receita por voto", moeda(c.receita_por_voto, "sem votos")],
         ["Despesa contratada", formatarMoeda(c.custo.despesa_contratada)],
-        ["Saldo (receita − despesa contratada)", moeda(c.saldo_contratado, "indisponível")],
+        ["Saldo", moeda(c.saldo_contratado, "indisponível")],
         ["% recursos públicos", pct(c.pct_publico)],
         ["% autofinanciamento", pct(c.pct_autofinanciamento)],
         ["% pessoas físicas", pct(c.pct_pessoa_fisica)],

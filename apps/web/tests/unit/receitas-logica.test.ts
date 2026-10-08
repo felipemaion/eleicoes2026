@@ -33,7 +33,7 @@ describe("pontosDeReceita", () => {
     const d = Object.fromEntries(p[0]?.detalhe ?? []);
     expect(d["Receita total"]).toMatch(/210\.000/);
     expect(d["Receita por voto"]).toMatch(/11,63/);
-    expect(d["Saldo (receita − despesa contratada)"]).toMatch(/13\.000/);
+    expect(d["Saldo"]).toMatch(/13\.000/);
     expect(d["% recursos públicos"]).toMatch(/62,5/);
     expect(d["% pessoas físicas"]).toMatch(/10/);
   });
