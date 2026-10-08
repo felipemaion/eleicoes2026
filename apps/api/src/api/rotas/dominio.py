@@ -250,11 +250,22 @@ def comparativo(
         list[int] | None,
         Query(max_length=MAX_SELECAO, description="Seleção: `sq_candidato` de 2026."),
     ] = None,
+    grupo_2022: Annotated[
+        str | None,
+        Query(description="Lado 2022 = grupo (id de 2022 em /grupos). Exclusivo com `sq_2022`."),
+    ] = None,
+    grupo_2026: Annotated[
+        str | None,
+        Query(description="Lado 2026 = grupo (id de 2026 em /grupos). Exclusivo com `sq_2026`."),
+    ] = None,
 ) -> Comparativo:
     """Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.
 
-    Dois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,
-    `sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.
+    Ou `comparacao` (atalho para um par de grupos), ou um valor por lado, combináveis:
+    `grupo_2022`/`sq_2022` × `grupo_2026`/`sq_2026` (ou `pessoas`, que preenche os dois lados).
+    Lado sem grupo nem candidatos → 422 `lado_vazio`; grupo e candidatos no mesmo lado →
+    `lado_ambiguo`; grupo do ano errado → `grupo_ano_errado`; `comparacao` com lados →
+    `comparacao_e_selecao`; sem candidaturas no cargo/UF → `sem_par_comparavel`.
     """
     return comparativo_em_cache(
         repo,
@@ -267,6 +278,8 @@ def comparativo(
         pessoas=pessoas or (),
         sq_2022=sq_2022 or (),
         sq_2026=sq_2026 or (),
+        grupo_2022=grupo_2022,
+        grupo_2026=grupo_2026,
     )
 
 

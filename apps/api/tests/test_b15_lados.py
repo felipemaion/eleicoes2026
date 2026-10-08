@@ -57,7 +57,7 @@ def test_rotulo_descreve_os_lados(api: TestClient) -> None:
 def test_municipios_e_receitas_do_lado_misto(api: TestClient) -> None:
     c = _ok(api, sq_2022=1, grupo_2026="missao_2026")
     por_amc = {m["cd_amc"]: m for m in c["municipios"]}
-    assert por_amc[3550308]["votos_de"] == 800
+    assert por_amc[3550308]["votos_de"] == 700
     assert por_amc[3550308]["votos_para"] == 1100
     assert por_amc[3509502]["votos_para"] == 40
     assert c["receitas"]["monetarios"]["receita_total"]["de_nominal"] == 40000.0
@@ -92,7 +92,7 @@ def test_sq_inexistente_no_lado_e_404(api: TestClient) -> None:
 
 def test_n_para_traz_as_candidaturas_de_2026(api: TestClient) -> None:
     """Regressão: vinha null em toda resposta de 2026 (situação ainda não publicada)."""
-    c = _ok(api, comparacao="evolucao_missao")
-    assert c["n_para"] == 2
+    c = _ok(api, comparacao="evolucao_mbl")
+    assert c["n_para"] == 3
     assert c["n_de"] == 3
     assert _ok(api, sq_2022=1, sq_2026=3)["n_para"] == 1

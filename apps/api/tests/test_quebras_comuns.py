@@ -120,8 +120,8 @@ def test_comparacao_exige_grupo_de_um_dos_lados(catalogo: Catalogo) -> None:
         _mapa(_repo(), catalogo, 2026, None, comparacao="evo")
 
 
-def test_n_aptas_nulo_quando_o_tse_ainda_nao_publicou_a_situacao(catalogo: Catalogo) -> None:
-    """2026 real chega com `ds_situacao_candidatura` nulo: 0 seria dado falso; null é honesto."""
+def test_n_candidaturas_conta_as_sem_situacao_publicada(catalogo: Catalogo) -> None:
+    """2026 real chega com `ds_situacao_candidatura` nulo: contar zero seria dado falso (T-B15)."""
     repo = _repo()
     sem_situacao = Candidatura(2026, 2, "p2", "C2", "SP", DF, 14, "MISSAO", None, None)
     repo._d.candidaturas[:] = [_cand(2022, 1), sem_situacao]
@@ -134,4 +134,4 @@ def test_n_aptas_nulo_quando_o_tse_ainda_nao_publicou_a_situacao(catalogo: Catal
         mesmos_candidatos=False,
     )
     assert comp.n_de == 1
-    assert comp.n_para is None
+    assert comp.n_para == 1  # T-B15: sem situação publicada ainda conta

@@ -158,12 +158,32 @@ def _por_candidato(
                 yield "/api/mapa", alvo
                 yield "/api/mapa/pontos", alvo
             yield "/api/busca", {"q": i["nm_urna"], "ano": ano}
+            yield from _misto(grupos, ano, sq, cargo)
         busca = _descobrir(get, "/api/busca", {"q": "a", "grupo": g["id"], "limite": 100}, falhas)
         if busca is not None:
             pessoas |= {i["pessoa_id_publico"] for i in busca["itens"]}
     for p in sorted(pessoas)[:AMOSTRA_MINIMA]:
         for cargo in CARGOS:
             yield "/api/comparativo", {"cargo": cargo, "pessoas": p}
+    yield from _comparativos_mistos(grupos)
+
+
+def _misto(grupos: list[Json], ano: int, sq: int, cargo: str) -> Iterator[Pedido]:
+    """Candidato de um ano contra o primeiro grupo do outro (lado candidato × lado grupo)."""
+    outro = [g["id"] for g in grupos if g["ano"] != ano]
+    if ano == 2022 and outro:
+        yield "/api/comparativo", {"cargo": cargo, "sq_2022": sq, "grupo_2026": outro[0]}
+    elif ano == 2026 and outro:
+        yield "/api/comparativo", {"cargo": cargo, "grupo_2022": outro[0], "sq_2026": sq}
+
+
+def _comparativos_mistos(grupos: list[Json]) -> Iterator[Pedido]:
+    """T-B15: um lado grupo, o outro grupo (por lado, sem `comparacao`) nos dois sentidos."""
+    de = [g["id"] for g in grupos if g["ano"] == 2022]
+    para = [g["id"] for g in grupos if g["ano"] == 2026]
+    if de and para:
+        for cargo in CARGOS:
+            yield "/api/comparativo", {"cargo": cargo, "grupo_2022": de[0], "grupo_2026": para[0]}
 
 
 def executar(get: Get, ufs: tuple[str, ...] = UFS_PADRAO, maximo: int | None = None) -> Relatorio:
