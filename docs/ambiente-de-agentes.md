@@ -68,7 +68,7 @@ Opus 5.5 US$4/20, Sonnet 5.5 US$2/10, Haiku 4.5 US$1/5 por MTok).
 
 ## Permissões
 
-Painéis em `acceptEdits` com allowlist em `.claude/settings.json`. Negados: push, merge de PR,
+Painéis em `acceptEdits` com allowlist em `.claude/settings.json`. Push, criação e merge de PR são negados aos agentes por `--disallowedTools` no `dev-env.sh` (o settings vale também para o orquestrador). Negados a todos:
 remoção recursiva, reset destrutivo, `claude -p` e leitura de `.env`/`secrets`.
 Publicar e integrar é decisão do orquestrador.
 
