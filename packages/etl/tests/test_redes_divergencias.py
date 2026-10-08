@@ -54,6 +54,7 @@ def test_classifica_cada_caso(tmp_path: Path) -> None:
         (2, "perfil_do_site", False),
         (3, "diferente_tse", True),
         (4, "so_tse", True),
+        (8, "fora_do_site", True),
     )
     site = extrair_do_site(
         _html(
@@ -65,7 +66,7 @@ def test_classifica_cada_caso(tmp_path: Path) -> None:
             _objeto("6", None),
         )
     )
-    nomes = pl.DataFrame({"sq_candidato": [1, 2, 3, 4, 5, 6, 7]})
+    nomes = pl.DataFrame({"sq_candidato": [1, 2, 3, 4, 5, 6, 7, 8]})
     rel = comparar(tse, site, nomes.with_columns(nm_urna_candidato=pl.lit("N"), sg_uf=pl.lit("SP")))
     por_sq = {r["sq_candidato"]: r for r in rel.iter_rows(named=True)}
     assert 1 not in por_sq  # iguais não entram no relatório
@@ -73,6 +74,7 @@ def test_classifica_cada_caso(tmp_path: Path) -> None:
     assert por_sq[3]["divergencia"] == "perfis_diferentes"
     assert por_sq[4]["divergencia"] == "so_no_tse"
     assert por_sq[5]["divergencia"] == "so_no_site"
+    assert por_sq[8]["divergencia"] == "candidato_ausente_no_site"
     assert 6 not in por_sq  # nenhum dos dois tem Instagram: nada a conferir
     assert por_sq[3]["instagram_site"] == "diferente_site"
     assert por_sq[3]["instagram_tse"] == "diferente_tse"

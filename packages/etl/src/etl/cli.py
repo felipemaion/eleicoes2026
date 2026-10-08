@@ -25,6 +25,7 @@ from etl.municipios import ErroMunicipios
 from etl.pipeline_geo import construir_geo
 from etl.processar import CONTAS, FONTES, ErroProcessamento, processar_fonte
 from etl.redes.coleta import coletar
+from etl.redes.divergencias import baixar_site, comparar, extrair_do_site
 from etl.redes.execucao import carregar_env, conferir_token
 from etl.redes.meta import ClienteMeta, ErroLimite, ErroMeta
 from etl.redes.tse import ErroRedes, processar_redes_tse
@@ -86,7 +87,47 @@ def _parser() -> argparse.ArgumentParser:
     k.add_argument("--hoje", type=date.fromisoformat, default=None, help=argparse.SUPPRESS)
     k.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     k.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    d = sub.add_parser("redes-divergencias", help="TSE × candidatos.missao.org.br (só relatório)")
+    d.add_argument("--ano", type=int, default=2026)
+    d.add_argument("--html", type=Path, help="HTML já baixado (padrão: baixa do site)")
+    d.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    d.add_argument(
+        "--saida", type=Path, default=Path("data/reference/redes_divergencias_missao.csv")
+    )
     return p
+
+
+def _redes_divergencias(args: argparse.Namespace) -> int:
+    base = args.raiz_processed
+    redes = base / "redes_candidatos" / f"ano={args.ano}" / "redes_candidatos.parquet"
+    cands = sorted((base / "consulta_cand" / f"ano={args.ano}").glob("*.parquet"))
+    if not redes.exists() or not cands:
+        print(
+            "FALHA redes-divergencias: rode o ETL de consulta_cand e `etl redes-tse`",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        html = args.html.read_text(encoding="utf-8") if args.html else baixar_site()
+    except (OSError, httpx.HTTPError) as e:
+        print(f"FALHA redes-divergencias: {type(e).__name__}", file=sys.stderr)
+        return 1
+    nomes = (
+        pl.scan_parquet(cands)
+        .select("sq_candidato", "nm_urna_candidato", "sg_uf")
+        .unique("sq_candidato")
+        .collect()
+    )
+    relatorio = comparar(pl.read_parquet(redes), extrair_do_site(html), nomes)
+    args.saida.parent.mkdir(parents=True, exist_ok=True)
+    relatorio.write_csv(args.saida)
+    print(
+        json.dumps(
+            relatorio["divergencia"].value_counts().sort("divergencia").to_dicts(),
+            ensure_ascii=False,
+        )
+    )
+    return 0
 
 
 def _redes_tse(args: argparse.Namespace) -> int:
@@ -243,6 +284,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _fotos(args)
     if args.comando == "redes-tse":
         return _redes_tse(args)
+    if args.comando == "redes-divergencias":
+        return _redes_divergencias(args)
     if args.comando == "redes-coletar":
         return _redes_coletar(args)
     if args.comando == "secao":

@@ -1,5 +1,5 @@
 # Alvos do Eleicoes2026. Alvos de pacote passam a funcionar quando o pacote é criado (ver docs/plano.md).
-.PHONY: setup test lint etl publicar-dados dev openapi agentes relatorio check-tooling
+.PHONY: setup test lint etl redes publicar-dados dev openapi agentes relatorio check-tooling
 
 setup:
 	git config core.hooksPath .githooks
@@ -21,6 +21,11 @@ check-tooling:
 
 etl:
 	uv run etl baixar --ano $(ANO) && uv run etl processar --ano $(ANO) && uv run etl geo
+
+# Snapshot diário do Instagram (ADR 0008): URLs do TSE + perfis/posts novos. Retomável no mesmo dia.
+# Saída 3 = limite de chamadas atingido (progresso gravado); `scripts/redes-diario.sh` retoma sozinho.
+redes:
+	uv run etl redes-tse --baixar && uv run etl redes-coletar
 
 publicar-dados:
 	./scripts/publicar-dados.sh $(DIR)
