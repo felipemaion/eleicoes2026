@@ -73,7 +73,7 @@ describe("estados comuns", () => {
     simularApi({ "/api/candidatos": new Error("x") });
     await desenhar("visao-geral");
     await vi.waitFor(() => { expect(el.querySelector("[role=alert]")).not.toBeNull(); });
-    expect(el.querySelector("[role=alert]")?.textContent).toMatch(/500/);
+    expect(el.querySelector("[role=alert]")?.textContent).toMatch(/Não foi possível/);
     simularApi();
     el.querySelector<HTMLButtonElement>("[role=alert] button")?.click();
     await vi.waitFor(() => { expect(el.querySelector("dl.kpis")).not.toBeNull(); });
@@ -286,26 +286,31 @@ describe("mapa — corridas de requisição", () => {
   it("pontos antigos não substituem os novos (nem o ramo de densidade desligada)", async () => {
     const c = controlar("/api/mapa/pontos");
     await desenhar("mapa", estado("mapa", { uf: "SE" }));
+    // A densidade nasce desligada; o usuário liga.
+    const dens = el.querySelector<HTMLInputElement>("input[name=densidade]") as HTMLInputElement;
+    expect(dens.checked).toBe(false);
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.definirPontos).toHaveBeenCalledTimes(1); });
+    dens.checked = true;
+    dens.dispatchEvent(new Event("change"));
     await vi.waitFor(() => { expect(c.n()).toBe(1); });
     trocar("indicador", "pct_validos");
     await vi.waitFor(() => { expect(c.n()).toBe(2); });
     const m = mapaFalso.instancias[0];
     c.resolver(1, { pontos: [{ lat: 1, lon: 1, votos: 7 }], truncado: false });
-    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(1); });
+    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(2); });
     c.resolver(0, { pontos: [{ lat: 2, lon: 2, votos: 9 }], truncado: false });
     await new Promise((r) => setTimeout(r, 20));
-    expect(m?.definirPontos).toHaveBeenCalledTimes(1);
+    expect(m?.definirPontos).toHaveBeenCalledTimes(2);
     // desligar a densidade com um pedido ainda pendente: o pedido velho não pode religar os pontos
     trocar("indicador", "penetracao");
     await vi.waitFor(() => { expect(c.n()).toBe(3); });
-    const dens = el.querySelector<HTMLInputElement>("input[name=densidade]") as HTMLInputElement;
     dens.checked = false;
     dens.dispatchEvent(new Event("change"));
-    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(2); });
+    await vi.waitFor(() => { expect(m?.definirPontos).toHaveBeenCalledTimes(3); });
     c.resolver(2, { pontos: [{ lat: 3, lon: 3, votos: 1 }], truncado: false });
     await new Promise((r) => setTimeout(r, 20));
-    expect(m?.definirPontos).toHaveBeenCalledTimes(2);
-    expect((m?.definirPontos.mock.calls[1]?.[0] as { features: unknown[] }).features).toHaveLength(0);
+    expect(m?.definirPontos).toHaveBeenCalledTimes(3);
+    expect((m?.definirPontos.mock.calls[2]?.[0] as { features: unknown[] }).features).toHaveLength(0);
   });
 
   it("resumo de município antigo não sobrescreve o mais novo", async () => {

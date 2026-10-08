@@ -114,3 +114,34 @@ test("clique no município abre o painel lateral", async ({ page }) => {
   await page.mouse.up();
   await expect(page.locator(".painel-municipio h2")).toBeVisible();
 });
+
+test("pontos 503: o coroplético renderiza, a densidade fica desligada e o aviso é discreto", async ({ page }) => {
+  await simularApi(page, { "/api/mapa/pontos": { status: 503 } });
+  const erros: string[] = [];
+  page.on("pageerror", (e) => { erros.push(e.message); });
+  await page.goto("/#/mapa?uf=SE");
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".mapa-quadro canvas")).toBeVisible();
+  // Densidade nasce desligada: o mapa nem pede os pontos até o usuário ligar.
+  await expect(page.getByLabel(/Densidade de votos/)).not.toBeChecked();
+  await expect(page.locator(".estado.erro")).toHaveCount(0);
+  // Ligar a densidade com a API fora do ar: aviso amigável (sem URL crua) e checkbox desabilitado.
+  await page.getByLabel(/Densidade de votos/).check();
+  const aviso = page.locator(".aviso-pontos");
+  await expect(aviso).toContainText("indisponível");
+  await expect(aviso).not.toContainText("/api/");
+  await expect(page.getByLabel(/Densidade de votos/)).toBeDisabled();
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible();
+  expect(erros).toEqual([]);
+});
+
+test("erro de API não mostra a URL crua nem estoura a largura", async ({ page }) => {
+  await simularApi(page, { "/api/mapa": { status: 503 } });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto("/#/mapa?uf=SE");
+  const caixa = page.locator(".estado.erro").first();
+  await expect(caixa).toBeVisible();
+  await expect(caixa).not.toContainText("/api/");
+  const estoura = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(estoura).toBe(false);
+});

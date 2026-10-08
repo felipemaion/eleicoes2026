@@ -72,7 +72,7 @@ test("candidato: escolher no seletor leva ao deep-link e mostra a ficha", async 
 test("erro da API mostra alerta e 'Tentar novamente' recupera", async ({ page }) => {
   await simularApi(page, { "/api/gastos": { status: 500 } });
   await page.goto("/#/gastos");
-  await expect(page.getByRole("alert")).toContainText("500");
+  await expect(page.getByRole("alert")).toContainText("Não foi possível");
   await page.unroute("**/api/**");
   await simularApi(page);
   await page.getByRole("button", { name: "Tentar novamente" }).click();
@@ -88,4 +88,13 @@ test("sem rolagem horizontal em 360 px com dados", async ({ page }) => {
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `rota ${rota}`).toBeLessThanOrEqual(0);
   }
+});
+
+test("evolução envia `comparacao` (obrigatória na API) já na primeira chamada", async ({ page }) => {
+  const urls = await simularApi(page);
+  await page.goto("/#/evolucao?uf=SE");
+  await expect(page.getByLabel("Comparar")).toBeVisible();
+  const chamadas = urls.filter((u) => u.startsWith("/api/comparativo"));
+  expect(chamadas.length).toBeGreaterThan(0);
+  expect(chamadas.every((u) => new URL(u, "http://x").searchParams.has("comparacao"))).toBe(true);
 });

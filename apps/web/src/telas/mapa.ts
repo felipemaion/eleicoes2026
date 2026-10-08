@@ -25,7 +25,7 @@ export const tela: Tela = {
     let indicador: IndicadorApi = "penetracao";
     let candidato = "";
     let nivelAtual: Nivel = "municipio";
-    let densidade = true;
+    let densidade = false;
     let vivo = true;
     let seqAtualizar = 0;
     let seqMun = 0;
@@ -65,6 +65,8 @@ export const tela: Tela = {
     mostrarAjuda();
     const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
     const dens = h("input", { type: "checkbox", name: "densidade", checked: densidade });
+    const avisoPontos = h("p", { className: "aviso-pontos" });
+    avisoPontos.setAttribute("role", "status");
     dens.addEventListener("change", () => { densidade = dens.checked; void pontos(); });
 
     const avisos = h("div");
@@ -74,6 +76,7 @@ export const tela: Tela = {
       avisos,
       h("div", { className: "controles" }, ind.rotulo, ajudaInd, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
       status,
+      avisoPontos,
       h("div", { className: "mapa-layout" }, area, painel),
       // Avisos longos ficam abaixo do mapa: o mapa é o conteúdo principal e não deve sair da primeira tela.
       ...[avisosUi("mapa", {})].filter((x) => x !== null),
@@ -104,10 +107,19 @@ export const tela: Tela = {
     async function pontos(): Promise<void> {
       try {
         // /mapa/pontos exige UF; no Brasil inteiro a densidade fica desligada, com aviso na tela.
+        avisoPontos.textContent = "";
         await mapa.mostrarPontos(densidade && filtros.uf !== "BR" ? parametros() : null);
       } catch (e) {
-        // Cancelada = substituída por pedido mais novo; o erro "real" só vale se ainda for o atual.
-        if (vivo && !foiCancelada(e)) mostrarErro(status, e, () => { void pontos(); });
+        // Cancelada = substituída por pedido mais novo. Falha real: o coroplético segue de pé,
+        // só a densidade sai de cena, com aviso discreto (detalhe no console).
+        if (vivo && !foiCancelada(e)) {
+          console.error("Densidade de votos indisponível:", e);
+          densidade = false;
+          dens.checked = false;
+          dens.disabled = true;
+          avisoPontos.textContent = "Densidade de votos indisponível no momento. O mapa por município continua válido.";
+          void mapa.mostrarPontos(null).catch(() => { /* já está desligada */ });
+        }
       }
     }
 

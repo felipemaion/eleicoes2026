@@ -7,8 +7,9 @@ export function mostrarCarregando(destino: HTMLElement): void {
 }
 
 export function mostrarErro(destino: HTMLElement, erro: unknown, tentarDeNovo: () => void): void {
-  const msg = erro instanceof Error ? erro.message : String(erro);
-  const aviso = h("div", { className: "estado erro" }, h("p", { textContent: `Não foi possível carregar os dados. ${msg}` }));
+  // O detalhe técnico (URL, status) vai ao console para diagnóstico; o público lê só a mensagem amigável.
+  console.error("Falha ao carregar dados:", erro);
+  const aviso = h("div", { className: "estado erro" }, h("p", { textContent: "Não foi possível carregar os dados agora. Tente novamente em instantes." }));
   aviso.setAttribute("role", "alert");
   const botao = h("button", { type: "button", textContent: "Tentar novamente" });
   botao.addEventListener("click", tentarDeNovo);
