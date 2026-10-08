@@ -354,7 +354,7 @@ describe("evolução — comparador de lados (T-W20)", () => {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(ROTAS[caminho]) });
     }));
     await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.textContent).toContain("Não há dados para comparar esta combinação"); });
+    await vi.waitFor(() => { expect(el.textContent).toContain("Não há o que comparar com esta escolha"); });
     expect(el.querySelectorAll(".cartao-lado")).toHaveLength(2);
     expect(el.querySelector("[role=alert]")).toBeNull();
   });

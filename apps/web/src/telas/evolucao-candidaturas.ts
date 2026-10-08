@@ -2,7 +2,7 @@
 import type { Ficha } from "../dados/contrato";
 import { formatarNumero, formatarPermil } from "../formato";
 import { h } from "./dom";
-import { TEXTOS_COMPARADOR as T } from "./textos-comparador";
+import { TEXTOS_COMPARADOR as T } from "../textos";
 
 export type CandidaturaFicha = Ficha["candidato"];
 

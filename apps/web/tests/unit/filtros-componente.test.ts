@@ -132,3 +132,20 @@ describe("filtros", () => {
     expect(store.obter().filtros).toMatchObject({ cargo: "deputado_federal", uf: "BR", ano: 2026, grupo: "missao_2026", candidato: "" });
   });
 });
+
+describe("filtros na tela Evolução (T-W22)", () => {
+  const campoGrupo = (): HTMLElement => document.querySelector(".filtro-grupo") as HTMLElement;
+  const contagem = (): HTMLElement => document.querySelector(".filtros-contagem") as HTMLElement;
+  it("esconde o grupo comparado e a contagem (a escolha é nos cartões) e volta nas outras telas", async () => {
+    const { store } = montar();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(campoGrupo().hidden).toBe(false);
+    expect(contagem().hidden).toBe(false);
+    store.definir({}, "evolucao");
+    expect(campoGrupo().hidden).toBe(true);
+    expect(contagem().hidden).toBe(true);
+    store.definir({}, "mapa");
+    expect(campoGrupo().hidden).toBe(false);
+    expect(contagem().hidden).toBe(false);
+  });
+});

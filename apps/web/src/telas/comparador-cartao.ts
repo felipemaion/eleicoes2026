@@ -10,7 +10,7 @@ import { destacarTrecho, LIMITE_BUSCA, linhaDaSugestao, MAX_SUGESTOES, ordenarSu
 import { criarCombobox, type ItemCombobox } from "../componentes/ui/combobox";
 import { figuraCandidato } from "../componentes/ui/foto-candidato";
 import { h } from "./dom";
-import { TEXTOS_COMPARADOR as T } from "./textos-comparador";
+import { TEXTOS_COMPARADOR as T } from "../textos";
 
 export interface OpcoesCartao {
   ano: 2022 | 2026;

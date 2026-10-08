@@ -160,18 +160,38 @@ test.describe("divisória mapa × painel", () => {
     await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
     const sep = page.getByRole("separator");
     await expect(sep).toHaveAttribute("aria-orientation", "vertical");
-    const antes = await larguras(page);
-    const c = await sep.boundingBox();
-    if (!c) throw new Error("divisória sem caixa");
-    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(c.x - 120, c.y + c.height / 2, { steps: 5 });
-    await page.mouse.up();
+    // Layout estável antes de medir: a caixa da divisória e as larguras não mudam por 5 quadros seguidos
+    // (o canvas do mapa e a barra de rolagem ainda se acomodam logo após "pronto"; arrastar antes erra o alvo).
     await expect(async () => {
-      const depois = await larguras(page);
-      expect(depois.painel).toBeGreaterThan(antes.painel + 80);
-      expect(depois.canvas).toBeLessThan(antes.canvas - 80);
-    }).toPass({ timeout: 5_000 });
+      const fotos = await page.evaluate(() => new Promise<string[]>((resolver) => {
+        const lidas: string[] = [];
+        const ler = (): void => {
+          const r = document.querySelector("[role=separator]")?.getBoundingClientRect();
+          const p = document.querySelector<HTMLElement>(".painel-municipio")?.getBoundingClientRect().width;
+          const k = document.querySelector<HTMLCanvasElement>(".mapa-quadro canvas")?.clientWidth;
+          lidas.push(JSON.stringify([r?.x, r?.y, r?.width, r?.height, p, k]));
+          if (lidas.length < 5) requestAnimationFrame(ler); else resolver(lidas);
+        };
+        requestAnimationFrame(ler);
+      }));
+      expect(new Set(fotos).size).toBe(1);
+    }).toPass({ timeout: 10_000 });
+
+    // Cada tentativa mede de novo (antes e alvo) e arrasta 120 px à esquerda; as asserções são as mesmas de sempre.
+    await expect(async () => {
+      const antes = await larguras(page);
+      const c = await sep.boundingBox();
+      if (!c) throw new Error("divisória sem caixa");
+      await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(c.x - 120, c.y + c.height / 2, { steps: 5 });
+      await page.mouse.up();
+      await expect(async () => {
+        const depois = await larguras(page);
+        expect(depois.painel).toBeGreaterThan(antes.painel + 80);
+        expect(depois.canvas).toBeLessThan(antes.canvas - 80);
+      }).toPass({ timeout: 2_000 });
+    }).toPass({ timeout: 10_000 });
 
     const agora = Number(await sep.getAttribute("aria-valuenow"));
     await sep.focus();

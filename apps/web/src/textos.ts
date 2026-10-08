@@ -18,6 +18,7 @@ interface Textos {
   avisos: Record<string, AvisoTexto>;
   telas: Record<string, TelaTexto>;
   glossario: Record<string, Termo>;
+  comparador: { ui: Record<string, string>; nota_grupo: Record<string, string> };
 }
 const T = bruto as unknown as Textos;
 
@@ -88,3 +89,43 @@ export function avisosDaTela(t: TelaComTextos, c: ContextoAvisos): Aviso[] {
       return { chave, ...a, texto: preencher(a.texto, c) };
     });
 }
+
+// ---- Comparador 2022×2026 (textos.json › comparador) ----
+const U = T.comparador.ui;
+function ui(chave: string): string {
+  const t = U[chave];
+  if (t === undefined) throw new Error(`Texto do comparador ausente em textos.json: "${chave}"`);
+  return t;
+}
+const sub = (texto: string, valores: Record<string, string | number>): string =>
+  Object.entries(valores).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), texto);
+
+/** Textos da UI do comparador (pt-BR). Fonte única: `docs/metodologia/publico/textos.json`. */
+export const TEXTOS_COMPARADOR = {
+  alterar: ui("alterar"),
+  aplicar: ui("aplicar"),
+  cancelar: ui("cancelar"),
+  limpar: ui("limpar"),
+  modoRotulo: ui("modo_rotulo"),
+  modoGrupo: ui("modo_grupo"),
+  modoCandidatos: ui("modo_candidatos"),
+  grupoRotulo: ui("grupo_rotulo"),
+  buscaRotulo: ui("busca_rotulo"),
+  placeholderBusca: ui("placeholder_busca"),
+  sugestoesRotulo: ui("sugestoes_rotulo"),
+  minimo: ui("minimo"),
+  buscando: ui("buscando"),
+  buscaIndisponivel: ui("busca_indisponivel"),
+  semResultado: (busca: string): string => sub(ui("sem_resultado"), { busca }),
+  refine: (n: number, total: number): string => sub(ui("refine"), { n, total }),
+  recorte: (contexto: string): string => sub(ui("recorte"), { contexto }),
+  erro422: ui("erro_422"),
+  erroSqForaGeral: ui("erro_sq_fora_geral"),
+  erroSqLado: ui("erro_sq_lado"),
+  semDadosComparaveis: ui("sem_dados_comparaveis"),
+  seloIndicado: ui("selo_indicado"),
+  notaGrupo: T.comparador.nota_grupo as Readonly<Record<string, string>>,
+  carregandoNomes: ui("carregando_nomes"),
+  notasDados: ui("notas_dados"),
+  tabelaTitulo: ui("tabela_titulo"),
+} as const;
