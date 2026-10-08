@@ -70,3 +70,14 @@ def test_nomes_seguem_o_mapa_de_colunas_da_spec() -> None:
     assert "qt_total_votos_leg_validos" in CONTRATOS["votacao_partido_munzona"].colunas
     assert "qt_vaga" in CONTRATOS["consulta_vagas"].colunas
     assert "nr_latitude" in CONTRATOS["eleitorado_local_votacao"].colunas
+
+
+def test_contratos_de_contas_e_ipca_registrados() -> None:
+    assert {
+        "receitas_candidatos",
+        "despesas_contratadas_candidatos",
+        "despesas_pagas_candidatos",
+        "ipca",
+    } <= set(CONTRATOS)
+    assert "sq_candidato" in CONTRATOS["despesas_pagas_candidatos"].derivadas
+    assert "qt_lancamentos" in CONTRATOS["receitas_candidatos"].colunas

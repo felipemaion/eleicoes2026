@@ -7,6 +7,7 @@ temporário e lido por ``scan_csv`` (tudo como texto; a conversão de tipos é e
 
 from __future__ import annotations
 
+import re
 import zipfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -22,13 +23,22 @@ NULOS_TEXTO = ("#NULO", "#NE", "#NI")
 NULOS_INTEIROS = ("-1", "-3", "-4")
 
 
-def membros_dados(zip_path: Path) -> list[str]:
+def membros_dados(zip_path: Path, prefixo: str | None = None) -> list[str]:
     """CSVs a processar: um por UF e o ``_BR`` (presidente). ``_BRASIL`` é a união dos dois
     (conferido: 39.982 = 27.416 + 12.566 linhas em ``detalhe_votacao_munzona_2022``) e
-    duplicaria tudo se lido junto."""
+    duplicaria tudo se lido junto.
+
+    ZIPs com vários datasets (prestação de contas) usam ``prefixo``: só entram
+    ``<prefixo>_AAAA_UF.csv`` (o prefixo ``receitas_candidatos`` não pega
+    ``receitas_candidatos_doador_originario_*``)."""
+    padrao = re.compile(rf"{re.escape(prefixo)}_\d{{4}}_[A-Z]{{2}}\.csv") if prefixo else None
     with zipfile.ZipFile(zip_path) as z:
         return sorted(
-            n for n in z.namelist() if n.lower().endswith(".csv") and not n.endswith("_BRASIL.csv")
+            n
+            for n in z.namelist()
+            if n.lower().endswith(".csv")
+            and not n.endswith("_BRASIL.csv")
+            and (padrao is None or padrao.fullmatch(n))
         )
 
 
