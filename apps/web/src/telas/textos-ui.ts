@@ -1,10 +1,11 @@
 /** Textos públicos em DOM: "?" de ajuda, avisos, subtítulo e rodapé de cada tela. */
 import { avisosDaTela, indicadorDe, notaRodape, subtituloDaTela, type Contexto, type ContextoAvisos, type TelaComTextos } from "../textos";
+import { ligarPainel } from "../componentes/ui/tooltip";
 import { h, nota } from "./dom";
 
 let contador = 0;
 
-/** Botão "?" que abre um painel com o texto público do indicador (teclado: Enter/Espaço abre, Esc fecha). */
+/** Botão "?" que abre um painel com o texto público do indicador (hover/foco abrem, clique fixa, Esc fecha). */
 export function ajuda(chave: string, ctx: Contexto): HTMLElement {
   const i = indicadorDe(chave, ctx);
   const id = `ajuda-${String(++contador)}`;
@@ -21,18 +22,8 @@ export function ajuda(chave: string, ctx: Contexto): HTMLElement {
   botao.setAttribute("aria-label", `Ajuda: ${i.titulo}`);
   botao.setAttribute("aria-expanded", "false");
   botao.setAttribute("aria-controls", id);
-  const alternar = (abrir: boolean): void => {
-    painel.hidden = !abrir;
-    botao.setAttribute("aria-expanded", String(abrir));
-  };
-  botao.addEventListener("click", () => { alternar(painel.hidden !== false); });
   const raiz = h("span", { className: "ajuda" }, botao, painel);
-  // No wrapper: Esc vale com o foco no botão ou dentro do painel.
-  raiz.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || painel.hidden) return;
-    alternar(false);
-    botao.focus();
-  });
+  ligarPainel(raiz, botao, painel);
   return raiz;
 }
 

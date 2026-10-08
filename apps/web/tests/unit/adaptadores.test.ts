@@ -63,6 +63,14 @@ describe("rankingDeCandidatos", () => {
   });
 });
 
+describe("rankingDeCandidatos — detalhe do tooltip", () => {
+  it("leva partido e UF para o tooltip", () => {
+    const b = rankingDeCandidatos(C.itens)[0];
+    const chaves = (b?.detalhe ?? []).map(([k]) => k);
+    expect(chaves).toEqual(expect.arrayContaining(["Partido", "UF"]));
+  });
+});
+
 describe("gastos", () => {
   it("dispersão mantém zeros e escolhe contratado ou pago", () => {
     const zero = { ...primeiroGasto, sq_candidato: 9, nm_urna: "Zero", custo: { ...primeiroGasto.custo, votos: 0, despesa_contratada: 5 } };

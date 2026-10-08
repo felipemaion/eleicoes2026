@@ -63,11 +63,15 @@ async function desenhar(chave: Chave, e: Estado = estado(chave)): Promise<() => 
 const chamou = (trecho: string): boolean => chamadas.some((c) => c.includes(trecho));
 
 describe("estados comuns", () => {
-  it("mostra 'Carregando' (role=status) e depois o conteúdo; h1 sempre presente", async () => {
+  it("reserva o espaço (aria-busy) enquanto carrega, avisa a sobreposição e depois mostra o conteúdo; h1 sempre presente", async () => {
+    const { criarSobreposicao, definirSobreposicaoGlobal } = await import("../../src/componentes/ui/sobreposicao");
+    const so = criarSobreposicao(document.body);
+    definirSobreposicaoGlobal(so);
     await desenhar("visao-geral");
     expect(el.querySelector("h1")?.textContent).toBe("Visão geral");
-    expect(el.querySelector("[role=status]")?.textContent).toMatch(/Carregando/);
-    await vi.waitFor(() => { expect(el.querySelector("[role=status]")).toBeNull(); });
+    expect(el.querySelector("[aria-busy=true]")).not.toBeNull();
+    await vi.waitFor(() => { expect(el.querySelector("[aria-busy=true]")).toBeNull(); });
+    definirSobreposicaoGlobal(null);
   });
   it("erro da API vira alerta com 'Tentar novamente' que refaz a busca", async () => {
     simularApi({ "/api/candidatos": new Error("x") });

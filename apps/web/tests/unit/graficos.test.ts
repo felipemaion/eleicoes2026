@@ -274,3 +274,30 @@ describe("revisão T-W03", () => {
     expect(el.querySelector("g.eixo-x")?.textContent).not.toMatch(/\dk|\d\.\dk/);
   });
 });
+
+describe("ranking: nomes completos (T-W10)", () => {
+  it("quebrarLinhas divide em palavras sem perder texto", async () => {
+    const { quebrarLinhas } = await import("../../src/componentes/graficos/barras");
+    const nome = "MARIA APARECIDA DE OLIVEIRA DOS SANTOS";
+    const l = quebrarLinhas(nome, 18);
+    expect(l.length).toBeGreaterThan(1);
+    expect(l.join(" ")).toBe(nome);
+    expect(Math.max(...l.map((x) => x.length))).toBeLessThanOrEqual(18);
+    expect(quebrarLinhas("CURTO", 18)).toEqual(["CURTO"]);
+  });
+  it("palavra maior que o limite não é cortada", async () => {
+    const { quebrarLinhas } = await import("../../src/componentes/graficos/barras");
+    expect(quebrarLinhas("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 10)).toEqual(["ABCDEFGHIJKLMNOPQRSTUVWXYZ"]);
+  });
+  it("o rótulo do nome mais longo aparece inteiro no SVG e a barra mostra tooltip rico", async () => {
+    const { render } = await import("../../src/componentes/graficos/ranking");
+    const c = document.createElement("div");
+    document.body.append(c);
+    const longo = "FULANO DE TAL BEZERRA DE MENEZES FILHO";
+    render(c, [{ rotulo: longo, valor: 10, detalhe: [["Nome civil", "Fulano Bezerra"], ["Partido", "MISSAO"]] }, { rotulo: "ANA", valor: 5 }], { titulo: "t" });
+    expect((c.querySelector("svg")?.textContent ?? "").replace(/\s+/g, " ")).toContain(longo.split(" ")[0]);
+    const tspans = [...c.querySelectorAll("svg text.rotulo tspan")].map((t) => t.textContent).join(" ");
+    expect(tspans).toContain("MENEZES FILHO");
+    expect(c.querySelector(".marca")?.getAttribute("data-tooltip")).toContain("Partido");
+  });
+});

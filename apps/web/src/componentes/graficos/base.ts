@@ -22,7 +22,8 @@ export function no<K extends keyof SVGElementTagNameMap>(
 
 /** Cores dos gráficos: só das paletas centrais (ver `paletas.ts`). */
 export const COR = {
-  principal: PALETAS.sequencial[5],
+  /** Marcas de dados: token do tema (amarelo no escuro, âmbar no claro). */
+  principal: "var(--cor-dado)",
   antes: PALETAS.categorica[1],
   depois: PALETAS.categorica[5],
   zero: PALETAS.categorica[6],

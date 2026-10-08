@@ -28,13 +28,14 @@ export const tela: Tela = {
         ([r]) => (r.itens.length === 0 ? "Nenhum candidato encontrado para estes filtros." : null),
         ([r, g], destino) => {
           const kpis = h("div");
-          const ranking = h("div");
+          const ranking = h("div", { className: "ranking" });
           const ctx = { dt_geracao: g.dt_geracao, mes_base_ipca: g.base_ipca ?? undefined, contas_parciais: g.contas_parciais };
           const kpiHandle = renderKpi(kpis, kpisDoGrupo(r, g), { ajuda: (k) => ajuda(k, ctx) });
           const rk = renderRanking(ranking, rankingDeCandidatos(r.itens), { titulo: "Votos por candidato", formato: formatarNumero, colunaValor: "Votos" });
           destino.append(...[avisosUi("visao-geral", ctx)].filter((x) => x !== null), kpis, h("h2", { textContent: "Ranking de candidatos" }), ranking, rodapeUi("visao-geral", ctx));
           return () => { kpiHandle.destruir(); rk.destruir(); };
         },
+        "Carregando indicadores e ranking…",
       );
     };
     iniciar();
