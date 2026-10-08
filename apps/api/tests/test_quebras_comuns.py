@@ -8,7 +8,7 @@ from api.repositorio.memoria import DadosMemoria, EleitoradoMemoria, Repositorio
 from api.repositorio.modelos import Candidatura, Municipio
 from api.servicos.comparativo import montar_comparativo
 from api.servicos.grupos import Catalogo, carregar_catalogo
-from api.servicos.mapa import montar_mapa
+from api.servicos.mapa import Mapa, montar_mapa
 
 DF = "DEPUTADO FEDERAL"
 MUNICIPIOS = [3500000 + i * 100 for i in range(1, 13)]  # 12 municípios, todos SP
@@ -44,7 +44,13 @@ def catalogo(tmp_path: Path) -> Catalogo:
     return carregar_catalogo(arq, tmp_path)
 
 
-def _mapa(repo, catalogo, ano, grupo, **extra):  # type: ignore[no-untyped-def]
+def _mapa(
+    repo: RepositorioMemoria,
+    catalogo: Catalogo,
+    ano: int,
+    grupo: str | None,
+    comparacao: str | None = None,
+) -> Mapa:
     return montar_mapa(
         repo,
         catalogo,
@@ -55,7 +61,7 @@ def _mapa(repo, catalogo, ano, grupo, **extra):  # type: ignore[no-untyped-def]
         indicador=Indicador.PENETRACAO,
         grupo_id=grupo,
         sq_candidato=None,
-        **extra,
+        comparacao=comparacao,
     )
 
 

@@ -334,6 +334,24 @@
               "$ref": "#/components/schemas/Indicador",
               "default": "penetracao"
             }
+          },
+          {
+            "name": "comparacao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id em `comparacoes`: a escala usa quebras comuns aos dois anos (exige `grupo` = um dos lados).",
+              "title": "Comparacao"
+            },
+            "description": "Id em `comparacoes`: a escala usa quebras comuns aos dois anos (exige `grupo` = um dos lados)."
           }
         ],
         "responses": {
@@ -874,6 +892,10 @@
           "kpis": {
             "$ref": "#/components/schemas/KpisComparativo"
           },
+          "escala_sugerida": {
+            "$ref": "#/components/schemas/EscalaSugerida",
+            "description": "Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas)."
+          },
           "municipios": {
             "items": {
               "$ref": "#/components/schemas/EvolucaoMunicipio"
@@ -898,6 +920,7 @@
           "n_de",
           "n_para",
           "kpis",
+          "escala_sugerida",
           "municipios",
           "dt_geracao"
         ],
@@ -1019,6 +1042,14 @@
             ],
             "title": "Aviso",
             "description": "Por que `quebras` é null, se for."
+          },
+          "anos": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Anos",
+            "description": "Anos cujos valores entraram nas quebras (2022+2026 numa comparação)."
           }
         },
         "type": "object",

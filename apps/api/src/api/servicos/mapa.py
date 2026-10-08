@@ -1,15 +1,15 @@
 """Casos de uso /mapa e /mapa/pontos: valores por território para o coroplético e a densidade."""
 
-import statistics
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import polars as pl
-from indicadores import desempenho
+from indicadores import desempenho, espacial
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Indicador, Nivel
 from api.erros import parametro_invalido
 from api.repositorio.base import Repositorio
+from api.repositorio.modelos import Candidatura
 from api.servicos.escopo import selecionar_alvo
 from api.servicos.grupos import Catalogo
 
@@ -39,6 +39,10 @@ class EscalaSugerida(BaseModel):
         description="Cortes internos da legenda; null quando não há como calcular (ver `aviso`)."
     )
     aviso: str | None = Field(default=None, description="Por que `quebras` é null, se for.")
+    anos: list[int] = Field(
+        default_factory=list,
+        description="Anos cujos valores entraram nas quebras (2022+2026 numa comparação).",
+    )
 
 
 class Mapa(BaseModel):
@@ -81,25 +85,108 @@ class Mapa(BaseModel):
     )
 
 
-def quebras_da_escala(valores: Sequence[float]) -> list[float] | None:
-    """Cortes da legenda sequencial a partir dos valores.
+Linha = tuple[str, int, int, int | None]  # (chave, votos, aptos, válidos)
+_CLASSES = 5  # quintis; quebras_comuns reduz se os dados empatarem
 
-    TODO(T-A06): a spec §8.2 pede quebras **comuns a 2022+2026**, sem células `n_baixo`;
-    quando `indicadores.espacial.quebras_comuns` existir, é ela que entra aqui (ponto único de
-    uso). Até lá: quintis dos valores desta resposta. Menos de 2 valores → `None` (o chamador
-    explica em `aviso`), nunca lista vazia silenciosa.
+
+def quebras_da_escala(
+    linhas_por_ano: Mapping[int, Sequence[Linha]], indicador: Indicador
+) -> tuple[list[float] | None, str | None]:
+    """Cortes da legenda comuns a todos os anos (spec §8.2), sem unidades de n baixo (§1.4).
+
+    Delega a `indicadores.espacial.quebras_comuns`. Dados insuficientes (< 2k valores ou sem
+    variação) viram `(None, aviso)`: o chamador explica ao usuário, nunca devolve lista inventada.
     """
-    if len(valores) < 2:
-        return None
-    return [round(q, 2) for q in statistics.quantiles(valores, n=5, method="inclusive")]
+    tabelas = {ano: _tabela_escala(linhas, indicador) for ano, linhas in linhas_por_ano.items()}
+    try:
+        return espacial.quebras_comuns(tabelas, k=_CLASSES), None
+    except ValueError as erro:
+        return None, f"sem base para quebras comuns: {erro}"
 
 
-def _escala(indicador: Indicador, valores: Sequence[float]) -> EscalaSugerida:
+def _tabela_escala(linhas: Sequence[Linha], indicador: Indicador) -> pl.DataFrame:
+    """`valor` (taxa do indicador) e `n_baixo` por território, pela biblioteca de indicadores."""
+    quadro = _quadro(linhas)
+    calculado = desempenho.penetracao(desempenho.pct_validos(quadro))
+    total_aptos = int(quadro["aptos"].sum())
+    # Taxa de referência = penetração do recorte inteiro (proporção), base do esperado (§1.4).
+    taxa_ref = int(quadro["votos"].sum()) / total_aptos if total_aptos else None
+    calculado = calculado.with_columns(pl.lit(taxa_ref, dtype=pl.Float64).alias("taxa_referencia"))
+    coluna = {Indicador.PENETRACAO: "penetracao", Indicador.PCT_VALIDOS: "pct_validos"}[indicador]
+    return espacial.n_baixo(calculado).select(pl.col(coluna).alias("valor"), "n_baixo")
+
+
+def escala_comum(
+    linhas_por_ano: Mapping[int, Sequence[Linha]], indicador: Indicador
+) -> EscalaSugerida:
+    """Escala do indicador para os anos dados; absolutos viram símbolo proporcional."""
     if indicador is Indicador.VOTOS:
-        return EscalaSugerida(tipo="simbolo_proporcional", paleta="um_matiz", quebras=[])
-    quebras = quebras_da_escala(valores)
-    aviso = None if quebras is not None else "menos de 2 valores: sem base para quebras"
-    return EscalaSugerida(tipo="sequencial", paleta="viridis", quebras=quebras, aviso=aviso)
+        return EscalaSugerida(
+            tipo="simbolo_proporcional",
+            paleta="um_matiz",
+            quebras=[],
+            anos=sorted(linhas_por_ano),
+        )
+    quebras, aviso = quebras_da_escala(linhas_por_ano, indicador)
+    return EscalaSugerida(
+        tipo="sequencial",
+        paleta="viridis",
+        quebras=quebras,
+        aviso=aviso,
+        anos=sorted(linhas_por_ano),
+    )
+
+
+def _outro_lado(catalogo: Catalogo, comparacao_id: str, grupo_id: str | None) -> tuple[str, int]:
+    """Grupo e ano do outro lado da comparação (`de` ↔ `para`)."""
+    comp = catalogo.comparacao(comparacao_id)
+    if grupo_id not in (comp.de, comp.para):
+        raise parametro_invalido(
+            "comparacao_sem_grupo",
+            f"com 'comparacao', 'grupo' deve ser '{comp.de}' ou '{comp.para}'",
+        )
+    outro = comp.para if grupo_id == comp.de else comp.de
+    return outro, catalogo.grupo(outro).ano
+
+
+def _coletar(
+    repo: Repositorio,
+    catalogo: Catalogo,
+    *,
+    ano: int,
+    cargo: str,
+    uf: str | None,
+    nivel: Nivel,
+    grupo_id: str | None,
+    sq_candidato: int | None,
+) -> tuple[list[Candidatura], list[Linha]]:
+    """Candidaturas do recorte e linhas (chave, votos, aptos, válidos) por território."""
+    alvo = selecionar_alvo(
+        repo, catalogo, ano=ano, cargo=cargo, uf=uf, grupo_id=grupo_id, sq_candidato=sq_candidato
+    )
+    sqs = [c.sq_candidato for c in alvo]
+    if nivel is Nivel.H3:
+        assert uf is not None  # noqa: S101 - exigido por quem chama
+        return alvo, [(c.h3, c.votos, c.aptos, None) for c in repo.votos_h3(ano, sqs, uf=uf)]
+    por_zona = nivel is Nivel.ZONA
+    votos = {
+        (v.cd_mun_ibge, v.nr_zona): v.votos
+        for v in repo.votos_territorio(ano, sqs, por_zona=por_zona, uf=uf)
+    }
+    base = repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
+    vistos = {(b.cd_mun_ibge, b.nr_zona) for b in base}
+    linhas = [
+        (
+            _chave(b.cd_mun_ibge, b.nr_zona),
+            votos.get((b.cd_mun_ibge, b.nr_zona), 0),
+            b.aptos,
+            b.validos,
+        )
+        for b in base
+    ]
+    # Voto sem base eleitoral: aparece como "sem dado" (aptos 0 → null), não some.
+    linhas += [(_chave(m, z), n, 0, 0) for (m, z), n in votos.items() if (m, z) not in vistos]
+    return alvo, linhas
 
 
 def montar_mapa(
@@ -113,50 +200,52 @@ def montar_mapa(
     indicador: Indicador,
     grupo_id: str | None,
     sq_candidato: int | None,
+    comparacao: str | None = None,
 ) -> Mapa:
-    """Indicador por território; com aptos e sem voto = 0, sem aptos = null (nunca inf)."""
+    """Indicador por território; com aptos e sem voto = 0, sem aptos = null (nunca inf).
+
+    Com `comparacao`, a escala usa quebras comuns ao ano pedido e ao do outro lado dela.
+    """
     if nivel is not Nivel.MUNICIPIO and uf is None:
         raise parametro_invalido("uf_obrigatoria", f"nivel={nivel.value} exige 'uf'")
     if nivel is Nivel.H3 and indicador is Indicador.PCT_VALIDOS:
         raise parametro_invalido(
             "indicador_indisponivel", "pct_validos não existe no H3; use penetracao ou votos"
         )
-    alvo = selecionar_alvo(
-        repo, catalogo, ano=ano, cargo=cargo, uf=uf, grupo_id=grupo_id, sq_candidato=sq_candidato
+    if comparacao is not None and sq_candidato is not None:
+        raise parametro_invalido("comparacao_com_candidato", "'comparacao' vale só para 'grupo'")
+    outro = _outro_lado(catalogo, comparacao, grupo_id) if comparacao else None
+    alvo, linhas = _coletar(
+        repo,
+        catalogo,
+        ano=ano,
+        cargo=cargo,
+        uf=uf,
+        nivel=nivel,
+        grupo_id=grupo_id,
+        sq_candidato=sq_candidato,
     )
-    sqs = [c.sq_candidato for c in alvo]
-    linhas: list[tuple[str, int, int, int | None]] = []  # (chave, votos, aptos, válidos)
-    if nivel is Nivel.H3:
-        assert uf is not None  # noqa: S101 - exigido acima
-        linhas = [(c.h3, c.votos, c.aptos, None) for c in repo.votos_h3(ano, sqs, uf=uf)]
-    else:
-        por_zona = nivel is Nivel.ZONA
-        votos = {
-            (v.cd_mun_ibge, v.nr_zona): v.votos
-            for v in repo.votos_territorio(ano, sqs, por_zona=por_zona, uf=uf)
-        }
-        base = repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
-        vistos = {(b.cd_mun_ibge, b.nr_zona) for b in base}
-        linhas = [
-            (
-                _chave(b.cd_mun_ibge, b.nr_zona),
-                votos.get((b.cd_mun_ibge, b.nr_zona), 0),
-                b.aptos,
-                b.validos,
-            )
-            for b in base
-        ]
-        # Voto sem base eleitoral: aparece como "sem dado" (aptos 0 → null), não some.
-        linhas += [(_chave(m, z), n, 0, 0) for (m, z), n in votos.items() if (m, z) not in vistos]
+    por_ano = {ano: linhas}
+    if outro is not None:
+        grupo_outro, ano_outro = outro
+        por_ano[ano_outro] = _coletar(
+            repo,
+            catalogo,
+            ano=ano_outro,
+            cargo=cargo,
+            uf=uf,
+            nivel=nivel,
+            grupo_id=grupo_outro,
+            sq_candidato=None,
+        )[1]
     detalhes = _detalhes(indicador, linhas)
-    valores = {k: d.taxa for k, d in detalhes.items()}
     return Mapa(
         ano=ano,
         nivel=nivel.value,
         indicador=indicador.value,
-        valores=valores,
+        valores={k: d.taxa for k, d in detalhes.items()},
         detalhes=detalhes,
-        escala_sugerida=_escala(indicador, [v for v in valores.values() if v is not None]),
+        escala_sugerida=escala_comum(por_ano, indicador),
         unidade=_UNIDADE[indicador],
         denominador=_DENOMINADOR[indicador],
         n_candidaturas=len(alvo),
@@ -164,16 +253,17 @@ def montar_mapa(
     )
 
 
-def _detalhes(
-    indicador: Indicador, linhas: list[tuple[str, int, int, int | None]]
-) -> dict[str, Detalhe]:
-    """Taxas de todos os territórios de uma vez, pela biblioteca de indicadores."""
-    quadro = pl.DataFrame(
-        linhas,
+def _quadro(linhas: Sequence[Linha]) -> pl.DataFrame:
+    return pl.DataFrame(
+        list(linhas),
         schema={"chave": pl.String, "votos": pl.Int64, "aptos": pl.Int64, "validos": pl.Int64},
         orient="row",
     )
-    calculado = desempenho.penetracao(desempenho.pct_validos(quadro))
+
+
+def _detalhes(indicador: Indicador, linhas: Sequence[Linha]) -> dict[str, Detalhe]:
+    """Taxas de todos os territórios de uma vez, pela biblioteca de indicadores."""
+    calculado = desempenho.penetracao(desempenho.pct_validos(_quadro(linhas)))
     coluna = {
         Indicador.PENETRACAO: "penetracao",
         Indicador.PCT_VALIDOS: "pct_validos",

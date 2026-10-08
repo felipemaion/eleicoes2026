@@ -84,12 +84,19 @@ def mapa(
     grupo: GrupoOpcional = None,
     sq_candidato: SqOpcional = None,
     indicador: Indicador = Indicador.PENETRACAO,
+    comparacao: Annotated[
+        str | None,
+        Query(
+            description="Id em `comparacoes`: a escala usa quebras comuns aos dois anos "
+            "(exige `grupo` = um dos lados)."
+        ),
+    ] = None,
 ) -> Mapa:
     """`valores` por território (município, `município-zona` ou célula H3) + escala sugerida."""
     uf_v = uf.value if uf else None
     return cache.obter(
         repo.dt_geracao(),
-        ("mapa", ano, cargo, uf_v, nivel, indicador, grupo, sq_candidato),
+        ("mapa", ano, cargo, uf_v, nivel, indicador, grupo, sq_candidato, comparacao),
         lambda: montar_mapa(
             repo,
             catalogo,
@@ -100,6 +107,7 @@ def mapa(
             indicador=indicador,
             grupo_id=grupo,
             sq_candidato=sq_candidato,
+            comparacao=comparacao,
         ),
     )
 

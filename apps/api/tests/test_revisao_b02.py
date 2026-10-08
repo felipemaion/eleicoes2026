@@ -7,14 +7,12 @@ import duckdb
 import pytest
 from api.cache_servico import CacheLRU
 from api.config import Settings
-from api.dominio import Indicador
 from api.main import criar_app
 from api.repositorio.base import DadosIndisponiveis
 from api.repositorio.duckdb import RepositorioDuckDB
 from api.repositorio.memoria import DadosMemoria, RepositorioMemoria
 from api.repositorio.modelos import Candidatura, DespesaBruta, VariacaoIpca
 from api.servicos.contas import contas_de
-from api.servicos.mapa import EscalaSugerida, _escala, quebras_da_escala
 from fastapi.testclient import TestClient
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -139,19 +137,3 @@ def test_mes_base_ipca_cai_para_o_ultimo_disponivel_e_e_declarado() -> None:
 def test_mes_base_ipca_usa_o_alvo_quando_publicado() -> None:
     contas = contas_de(_repo_ipca("2026-09"), 2022, [_cand(2022, 9)])
     assert contas.base_ipca == "2026-09"
-
-
-# ---------------------------------------------------------------- B2: quebras
-def test_menos_de_dois_valores_nao_devolve_lista_vazia_silenciosa() -> None:
-    assert quebras_da_escala([5.0]) is None
-    escala = _escala(Indicador.PENETRACAO, [5.0])
-    assert isinstance(escala, EscalaSugerida)
-    assert escala.quebras is None
-    assert escala.aviso
-    assert _escala(Indicador.PENETRACAO, [1.0, 2.0, 3.0]).aviso is None
-
-
-def test_quebras_vem_de_indicadores_quebras_comuns() -> None:
-    from indicadores import espacial
-
-    assert hasattr(espacial, "quebras_comuns")

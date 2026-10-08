@@ -6,11 +6,12 @@ import polars as pl
 from indicadores import evolucao, grupos
 from pydantic import BaseModel, ConfigDict, Field
 
-from api.dominio import Cargo
+from api.dominio import Cargo, Indicador
 from api.erros import parametro_invalido
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
 from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
+from api.servicos.mapa import EscalaSugerida, Linha, escala_comum
 
 
 class GrupoRef(BaseModel):
@@ -63,6 +64,9 @@ class Comparativo(BaseModel):
     n_de: int = Field(description="Candidaturas do lado 'de' (após o recorte).")
     n_para: int
     kpis: KpisComparativo
+    escala_sugerida: EscalaSugerida = Field(
+        description="Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas)."
+    )
     municipios: list[EvolucaoMunicipio]
     dt_geracao: str
 
@@ -119,6 +123,13 @@ def _quadro(
         schema=_ESQUEMA,
         orient="row",
     )
+
+
+def _linhas_municipais(quadro: pl.DataFrame) -> list[Linha]:
+    """Mesmas linhas que /mapa (nível município) monta, para a escala ser idêntica."""
+    return [
+        (str(r["cd_mun_ibge"]), r["votos"], r["aptos"], r["validos"]) for r in quadro.to_dicts()
+    ]
 
 
 def _pessoas(candidaturas: Sequence[Candidatura], votos: dict[int, int]) -> pl.DataFrame:
@@ -207,6 +218,13 @@ def montar_comparativo(
             ganho_absoluto=kpis.get("ganho_absoluto"),
             votos_de=kpis.get("votos_2022"),
             votos_para=kpis.get("votos_2026"),
+        ),
+        escala_sugerida=escala_comum(
+            {
+                de.ano: _linhas_municipais(q_de),
+                para.ano: _linhas_municipais(q_para),
+            },
+            Indicador.PENETRACAO,
         ),
         municipios=[
             EvolucaoMunicipio(

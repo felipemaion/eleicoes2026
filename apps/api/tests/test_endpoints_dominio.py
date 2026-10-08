@@ -169,8 +169,10 @@ def test_mapa_municipio_penetracao_do_grupo(api: TestClient) -> None:
     assert isinstance(escala, dict)
     assert escala["tipo"] == "sequencial"
     assert escala["paleta"] == "viridis"
-    assert len(escala["quebras"]) == 4
-    assert escala["quebras"] == sorted(escala["quebras"])
+    # 3 municípios na fixture: menos que 2k valores → sem quebras, com aviso explícito.
+    assert escala["quebras"] is None
+    assert "quebras comuns" in escala["aviso"]
+    assert escala["anos"] == [2026]
 
 
 def test_mapa_candidato_inclui_municipio_sem_voto_com_zero(api: TestClient) -> None:
