@@ -5,7 +5,7 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from indicadores import financeiro
+from indicadores import financeiro, grupos
 
 
 def _receita(fonte: str, origem: str, natureza: str = "Financeiro") -> pl.DataFrame:
@@ -201,3 +201,105 @@ def test_fonte_nula_falha() -> None:
     )
     with pytest.raises(ValueError, match="ds_fonte_receita desconhecida"):
         financeiro.classificar_receitas(df)
+
+
+# --- T-A08: indicadores de receita (spec §4.4–4.10) ---
+
+
+def test_despesa_com_transferencias_para_o_saldo() -> None:
+    df = pl.DataFrame(
+        {
+            "sq_candidato": [1, 1],
+            "ds_origem_despesa": [
+                "Publicidade",
+                "Doações financeiras a outros candidatos/partidos",
+            ],
+            "vr_despesa_contratada": [100.0, 50.0],
+        }
+    )
+    res = financeiro.despesa_campanha(df, "vr_despesa_contratada", incluir_transferencias=True)
+    assert res.to_dicts() == [{"sq_candidato": 1, "despesa": 150.0}]
+
+
+def test_resumo_por_candidato_traz_composicao_e_concentracao() -> None:
+    df = financeiro.classificar_receitas(
+        pl.DataFrame(
+            {
+                "sq_candidato": [1, 1, 2],
+                "ds_fonte_receita": ["FUNDO ESPECIAL", "OUTROS RECURSOS", "OUTROS RECURSOS"],
+                "ds_origem_receita": [
+                    "Recursos de outros candidatos",
+                    "Recursos de pessoas físicas",
+                    "Recursos próprios",
+                ],
+                "ds_natureza_receita": ["FINANCEIRO", "ESTIMÁVEL", "FINANCEIRO"],
+                "vr_receita": [30.0, 10.0, 5.0],
+            }
+        )
+    )
+    linhas = financeiro.resumo_receitas(df).to_dicts()
+    assert linhas[0]["receita_repasses_candidatos"] == 30.0
+    assert linhas[0]["receita_sem_repasses"] == 10.0
+    assert linhas[0]["pct_estimavel"] == 25.0
+    assert linhas[0]["hhi_fontes"] == 0.75**2 + 0.25**2
+    assert linhas[1]["n_efetivo_fontes"] == 1.0
+
+
+def test_receitas_grupo_aceita_doador_inteiro_nulo() -> None:
+    """Como a API entrega hoje: coluna presente, toda nula → repasse vira "doador desconhecido"."""
+    df = financeiro.classificar_receitas(
+        pl.DataFrame(
+            {
+                "sq_candidato": [1, 2],
+                "ds_fonte_receita": ["FUNDO ESPECIAL", "OUTROS RECURSOS"],
+                "ds_origem_receita": ["Recursos de outros candidatos", "Recursos próprios"],
+                "ds_natureza_receita": ["FINANCEIRO", "FINANCEIRO"],
+                "vr_receita": [30.0, 5.0],
+                "sq_candidato_doador": [None, None],
+            },
+            schema_overrides={"sq_candidato_doador": pl.Int64},
+        )
+    )
+    linha = grupos.receitas_grupo(df, [1, 2]).row(0, named=True)
+    assert linha["receita_total"] == 35.0
+    assert linha["receita_repasses_internos"] == 0.0
+    assert linha["receita_repasses_doador_desconhecido"] == 30.0
+
+
+def test_receita_por_mil_aptos_coluna_ausente_falha() -> None:
+    with pytest.raises(ValueError, match="colunas ausentes"):
+        financeiro.receita_por_mil_aptos(pl.DataFrame({"receita_total": [1.0]}))
+
+
+def test_receita_por_voto_agregado_sem_elegiveis_e_nulo() -> None:
+    df = pl.DataFrame(
+        {"receita_total": [None, 10.0], "votos": [5, 0]},
+        schema={"receita_total": pl.Float64, "votos": pl.Int64},
+    )
+    linha = financeiro.receita_por_voto_agregado(df).row(0, named=True)
+    assert linha["receita_por_voto"] is None
+    assert linha["mediana_receita_por_voto"] is None
+    assert linha["candidatos_sem_voto_excluidos"] == 1
+    assert linha["candidatos_sem_contas_excluidos"] == 1
+
+
+def test_comparar_receitas_coluna_em_duas_listas_falha() -> None:
+    serie = financeiro.serie_ipca({"2022-10": 1.0})
+    df = pl.DataFrame({"x_2022": [1.0], "x_2026": [2.0]})
+    with pytest.raises(ValueError, match="monetária e percentual"):
+        financeiro.comparar_receitas(df, ["x"], ["x"], serie, "2022-09", "2022-10")
+
+
+def test_comparar_receitas_nao_altera_entrada_nem_corrige_percentual() -> None:
+    serie = financeiro.serie_ipca({"2022-10": 10.0})
+    df = pl.DataFrame(
+        {"r_2022": [100.0], "r_2026": [110.0], "pct_x_2022": [5.0], "pct_x_2026": [7.0]}
+    )
+    res = financeiro.comparar_receitas(df, ["r"], ["pct_x"], serie, "2022-09", "2022-10")
+    linha = res.row(0, named=True)
+    assert abs(linha["r_2022"] - 110.0) < 1e-9
+    assert abs(linha["delta_r"]) < 1e-9
+    assert linha["pct_x_2022"] == 5.0
+    assert linha["delta_pct_x"] == 2.0
+    assert "var_pct_pct_x" not in res.columns
+    assert df["r_2022"].item() == 100.0

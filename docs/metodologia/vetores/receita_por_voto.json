@@ -1,0 +1,126 @@
+{
+  "indicador": "receita_por_voto",
+  "spec": "docs/metodologia/indicadores.md#receita-por-voto",
+  "versao": 1,
+  "descricao": "receita_por_voto = receita_total / votos (votos = 0 → null); agregado do grupo = Σreceita/Σvotos sobre candidatos com contas e votos > 0, com mediana por candidato; receita_por_mil_aptos = 1000 × receita_total / aptos da circunscrição (aptos = 0 → null).",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "candidatos_e_agregado",
+      "entrada": {
+        "candidatos": [
+          {
+            "sq_candidato": "c1",
+            "receita_total": 120000.0,
+            "votos": 1000
+          },
+          {
+            "sq_candidato": "c2",
+            "receita_total": 6000.0,
+            "votos": 40
+          },
+          {
+            "sq_candidato": "c3",
+            "receita_total": 2000.0,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "receita_total": null,
+            "votos": 300
+          },
+          {
+            "sq_candidato": "c5",
+            "receita_total": 0.0,
+            "votos": 50
+          }
+        ]
+      },
+      "saida": {
+        "candidatos": [
+          {
+            "sq_candidato": "c1",
+            "receita_total": 120000.0,
+            "votos": 1000,
+            "receita_por_voto": 120.0
+          },
+          {
+            "sq_candidato": "c2",
+            "receita_total": 6000.0,
+            "votos": 40,
+            "receita_por_voto": 150.0
+          },
+          {
+            "sq_candidato": "c3",
+            "receita_total": 2000.0,
+            "votos": 0,
+            "receita_por_voto": null
+          },
+          {
+            "sq_candidato": "c4",
+            "receita_total": null,
+            "votos": 300,
+            "receita_por_voto": null
+          },
+          {
+            "sq_candidato": "c5",
+            "receita_total": 0.0,
+            "votos": 50,
+            "receita_por_voto": 0.0
+          }
+        ],
+        "grupo": {
+          "receita_por_voto": 115.59633027522936,
+          "mediana_receita_por_voto": 120.0,
+          "candidatos_sem_voto_excluidos": 1,
+          "candidatos_sem_contas_excluidos": 1
+        }
+      }
+    },
+    {
+      "nome": "por_mil_aptos",
+      "entrada": {
+        "ufs": [
+          {
+            "sg_uf": "SP",
+            "receita_total": 3400000.0,
+            "aptos": 34000000
+          },
+          {
+            "sg_uf": "RR",
+            "receita_total": 50000.0,
+            "aptos": 400000
+          },
+          {
+            "sg_uf": "XX",
+            "receita_total": 10.0,
+            "aptos": 0
+          }
+        ]
+      },
+      "saida": {
+        "ufs": [
+          {
+            "sg_uf": "SP",
+            "receita_total": 3400000.0,
+            "aptos": 34000000,
+            "receita_por_mil_aptos": 100.0
+          },
+          {
+            "sg_uf": "RR",
+            "receita_total": 50000.0,
+            "aptos": 400000,
+            "receita_por_mil_aptos": 125.0
+          },
+          {
+            "sg_uf": "XX",
+            "receita_total": 10.0,
+            "aptos": 0,
+            "receita_por_mil_aptos": null
+          }
+        ]
+      }
+    }
+  ]
+}

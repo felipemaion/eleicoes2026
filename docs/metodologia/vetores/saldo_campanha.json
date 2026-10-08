@@ -1,0 +1,85 @@
+{
+  "indicador": "saldo_campanha",
+  "spec": "docs/metodologia/indicadores.md#saldo-campanha",
+  "versao": 1,
+  "descricao": "saldo_contratado = receita_total − despesa_contratada; saldo_financeiro = receita_financeira − despesa_paga; pct_receita_gasta = 100 × despesa_contratada / receita_total. Despesas INCLUEM repasses a outros candidatos/partidos (uso do recurso). despesa_paga nula com contratada não nula = 0; sem contas = null.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "saldos",
+      "entrada": [
+        {
+          "sq_candidato": "c1",
+          "receita_total": 100000.0,
+          "receita_financeira": 95000.0,
+          "despesa_contratada": 90000.0,
+          "despesa_paga": 80000.0
+        },
+        {
+          "sq_candidato": "c2",
+          "receita_total": 5000.0,
+          "receita_financeira": 5000.0,
+          "despesa_contratada": 7000.0,
+          "despesa_paga": null
+        },
+        {
+          "sq_candidato": "c3",
+          "receita_total": 0.0,
+          "receita_financeira": 0.0,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0
+        },
+        {
+          "sq_candidato": "c4",
+          "receita_total": 1000.0,
+          "receita_financeira": 1000.0,
+          "despesa_contratada": null,
+          "despesa_paga": null
+        }
+      ],
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "receita_total": 100000.0,
+          "receita_financeira": 95000.0,
+          "despesa_contratada": 90000.0,
+          "despesa_paga": 80000.0,
+          "saldo_contratado": 10000.0,
+          "saldo_financeiro": 15000.0,
+          "pct_receita_gasta": 90.0
+        },
+        {
+          "sq_candidato": "c2",
+          "receita_total": 5000.0,
+          "receita_financeira": 5000.0,
+          "despesa_contratada": 7000.0,
+          "despesa_paga": 0.0,
+          "saldo_contratado": -2000.0,
+          "saldo_financeiro": 5000.0,
+          "pct_receita_gasta": 140.0
+        },
+        {
+          "sq_candidato": "c3",
+          "receita_total": 0.0,
+          "receita_financeira": 0.0,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0,
+          "saldo_contratado": -300.0,
+          "saldo_financeiro": -300.0,
+          "pct_receita_gasta": null
+        },
+        {
+          "sq_candidato": "c4",
+          "receita_total": 1000.0,
+          "receita_financeira": 1000.0,
+          "despesa_contratada": null,
+          "despesa_paga": null,
+          "saldo_contratado": null,
+          "saldo_financeiro": null,
+          "pct_receita_gasta": null
+        }
+      ]
+    }
+  ]
+}

@@ -13,7 +13,7 @@ from typing import Any
 
 import polars as pl
 import pytest
-from indicadores import desempenho, espacial, evolucao, financeiro
+from indicadores import desempenho, espacial, evolucao, financeiro, grupos
 
 RAIZ = Path(__file__).resolve().parents[3]
 VETORES = RAIZ / "docs" / "metodologia" / "vetores"
@@ -137,6 +137,56 @@ def _receitas(entrada: list[dict[str, Any]]) -> dict[str, Any]:
     return linha
 
 
+def _receitas_grupo(entrada: dict[str, Any]) -> dict[str, Any]:
+    esquema = dict(_ESQUEMA_RECEITAS)
+    if any("sq_candidato_doador" in r for r in entrada["receitas"]):
+        esquema["sq_candidato_doador"] = pl.String
+    df = financeiro.classificar_receitas(pl.DataFrame(entrada["receitas"], schema=esquema))
+    linha = grupos.receitas_grupo(df, entrada["membros"]).row(0, named=True)
+    linha["por_categoria"] = {
+        c: linha[f"receita_{c}"] for c in financeiro.CATEGORIAS_RECEITA if linha[f"receita_{c}"]
+    }
+    return linha
+
+
+def _receita_por_voto(entrada: dict[str, Any]) -> dict[str, Any]:
+    if "ufs" in entrada:
+        return {"ufs": _linhas(financeiro.receita_por_mil_aptos(pl.DataFrame(entrada["ufs"])))}
+    df = pl.DataFrame(entrada["candidatos"], schema_overrides={"receita_total": pl.Float64})
+    return {
+        "candidatos": _linhas(financeiro.receita_por_voto(df)),
+        "grupo": _linhas(financeiro.receita_por_voto_agregado(df))[0],
+    }
+
+
+def _saldo(entrada: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    df = pl.DataFrame(
+        entrada, schema_overrides={c: pl.Float64 for c in entrada[0] if c != "sq_candidato"}
+    )
+    return _linhas(financeiro.saldo_campanha(df))
+
+
+def _distribuicao(entrada: list[dict[str, Any]]) -> dict[str, Any]:
+    df = pl.DataFrame(entrada, schema_overrides={"receita_total": pl.Float64})
+    return _linhas(financeiro.distribuicao_receita(df))[0]
+
+
+def _comparacao(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    linhas = entrada["linhas"]
+    colunas = {c for r in linhas for c in r if c != "grupo"}
+    df = pl.DataFrame(linhas, schema_overrides={c: pl.Float64 for c in colunas})
+    return _linhas(
+        financeiro.comparar_receitas(
+            df,
+            entrada["monetarias"],
+            entrada["percentuais"],
+            financeiro.serie_ipca(entrada["ipca_variacao_mensal"]),
+            entrada["mes_origem"],
+            entrada["mes_base"],
+        )
+    )
+
+
 def _custo(entrada: Any) -> dict[str, Any]:
     if isinstance(entrada, dict):
         despesa = financeiro.despesa_campanha(
@@ -231,6 +281,11 @@ ADAPTADORES: dict[str, Adaptador] = {
     "agregacao_h3": _h3,
     "receitas": _receitas,
     "custo_por_voto": _custo,
+    "receitas_grupo": _receitas_grupo,
+    "receita_por_voto": _receita_por_voto,
+    "saldo_campanha": _saldo,
+    "distribuicao_receita": _distribuicao,
+    "comparacao_receitas": _comparacao,
     "deflacao_ipca": _ipca,
     "evolucao": _evolucao,
     "sobreposicao_redutos": _redutos,

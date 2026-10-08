@@ -1,0 +1,68 @@
+{
+  "indicador": "distribuicao_receita",
+  "spec": "docs/metodologia/indicadores.md#distribuicao-receita",
+  "versao": 1,
+  "descricao": "Distribuição da receita por candidato do grupo: média, mediana, p25/p75 (interpolação linear) e máximo sobre os candidatos COM contas (null = sem prestação, não é zero; 0 entra). n_candidatos conta todos.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "cauda_pesada_com_sem_contas",
+      "entrada": [
+        {
+          "sq_candidato": "c0",
+          "receita_total": 1000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "receita_total": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "receita_total": 250000.0
+        },
+        {
+          "sq_candidato": "c3",
+          "receita_total": null
+        },
+        {
+          "sq_candidato": "c4",
+          "receita_total": 4000.0
+        },
+        {
+          "sq_candidato": "c5",
+          "receita_total": 15000.0
+        }
+      ],
+      "saida": {
+        "n_candidatos": 6,
+        "n_com_contas": 5,
+        "soma": 270000.0,
+        "media": 54000.0,
+        "mediana": 4000.0,
+        "p25": 1000.0,
+        "p75": 15000.0,
+        "maximo": 250000.0
+      }
+    },
+    {
+      "nome": "ninguem_com_contas",
+      "entrada": [
+        {
+          "sq_candidato": "c1",
+          "receita_total": null
+        }
+      ],
+      "saida": {
+        "n_candidatos": 1,
+        "n_com_contas": 0,
+        "soma": null,
+        "media": null,
+        "mediana": null,
+        "p25": null,
+        "p75": null,
+        "maximo": null
+      }
+    }
+  ]
+}
