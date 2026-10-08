@@ -1,5 +1,6 @@
 """Indicadores espaciais (spec §3): LQ, HHI/N efetivo, dominância de Ames, índice G,
-tipologia de Ames, n baixo, suavização bayesiana empírica, Moran/LISA e agregação H3.
+tipologia de Ames, n baixo, suavização bayesiana empírica, Moran/LISA, agregação H3 e
+quebras comuns das escalas sequenciais (spec §8.3).
 
 Notação (uma entidade *c*, um cargo, uma UF): `v_ci` votos de *c* na unidade *i*;
 `V_c = Σ_i v_ci`; `v_i` válidos do cargo em *i*; `V = Σ_i v_i`; `s_i = v_ci / V_c`;
@@ -7,8 +8,9 @@ Notação (uma entidade *c*, um cargo, uma UF): `v_ci` votos de *c* na unidade *
 """
 
 import random
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 
 import polars as pl
 
@@ -376,3 +378,89 @@ def cobertura_h3(
         .drop("_sem")
         .sort([*por, "cd_mun_ibge"])
     )
+
+
+ALGARISMOS_QUEBRAS = 2
+"""Algarismos significativos iniciais dos limiares das escalas sequenciais (spec §8.3)."""
+
+ALGARISMOS_QUEBRAS_MAX = 6
+"""Teto de precisão ao desfazer limiares fundidos pelo arredondamento (spec §8.3)."""
+
+
+def _arredondar_significativos(valor: float, algarismos: int) -> float:
+    """Arredonda a `algarismos` significativos, meio para cima, em aritmética decimal.
+
+    Decimal (e não `round`) porque `round` arredonda o meio para o par e opera na
+    representação binária — 0,45 poderia virar 0,4.
+    """
+    if valor == 0:
+        return 0.0
+    decimal = Decimal(repr(valor))
+    passo = Decimal(1).scaleb(decimal.adjusted() - algarismos + 1)
+    return float(decimal.quantize(passo, rounding=ROUND_HALF_UP))
+
+
+def quebras_comuns(
+    valores_por_ano: Mapping[int, pl.DataFrame],
+    k: int = 5,
+    excluir_n_baixo: bool = True,
+    coluna: str = "valor",
+) -> list[float]:
+    """Limiares comuns a todos os anos para escalas sequenciais (spec §8.2–8.3).
+
+    Quantis `j/k` (interpolação linear, Hyndman–Fan tipo 7) do conjunto pooled dos anos — sem
+    `null` e, por padrão, sem as unidades `n_baixo` —, arredondados a 2 algarismos
+    significativos (mais, se o arredondamento fundir quantis distintos), sem repetidos e dentro
+    de `(min, max]`. Classes `[b_j, b_{j+1})`, como `d3.scaleThreshold`.
+
+    Args:
+        valores_por_ano: `{ano: tabela}` com `coluna` (taxa) e, se `excluir_n_baixo`, `n_baixo`.
+        k: número de classes desejado; empates nos dados podem reduzir.
+        excluir_n_baixo: tira do cálculo as estimativas instáveis (spec §1.4).
+        coluna: nome da coluna com a taxa.
+
+    Returns:
+        Lista estritamente crescente de até `k − 1` limiares.
+
+    Raises:
+        ValueError: `k < 2`, nenhum ano, coluna ausente, `n_baixo` nulo, valor não finito,
+            menos de `2k` valores ou nenhum limiar restante (sem variação).
+    """
+    if k < 2:
+        raise ValueError(f"quebras_comuns: k deve ser ≥ 2 (recebido {k})")
+    if not valores_por_ano:
+        raise ValueError("quebras_comuns: nenhum ano recebido")
+    exigidas = [coluna, "n_baixo"] if excluir_n_baixo else [coluna]
+    partes: list[pl.Series] = []
+    for ano, tabela in valores_por_ano.items():
+        exigir_colunas(tabela, exigidas, f"quebras_comuns ({ano})")
+        valores = tabela[coluna].cast(pl.Float64)
+        if excluir_n_baixo:
+            if tabela["n_baixo"].null_count():
+                raise ValueError(f"quebras_comuns ({ano}): n_baixo nulo")
+            valores = valores.filter(~tabela["n_baixo"])
+        valores = valores.drop_nulls()
+        if not valores.is_finite().all():
+            raise ValueError(f"quebras_comuns ({ano}): valor não finito (indefinido deve ser null)")
+        partes.append(valores)
+    conjunto = pl.concat(partes).sort()
+    if conjunto.len() < 2 * k:
+        raise ValueError(
+            f"quebras_comuns: poucos valores para {k} classes ({conjunto.len()} < {2 * k})"
+        )
+    brutos: list[float] = []
+    for j in range(1, k):
+        quantil = conjunto.quantile(j / k, interpolation="linear")
+        if quantil is None:  # pragma: no cover - conjunto não vazio sempre tem quantil
+            raise ValueError("quebras_comuns: quantil indefinido")
+        brutos.append(quantil)
+    distintos = len(set(brutos))
+    for algarismos in range(ALGARISMOS_QUEBRAS, ALGARISMOS_QUEBRAS_MAX + 1):
+        arredondados = [_arredondar_significativos(b, algarismos) for b in brutos]
+        if len(set(arredondados)) == distintos:
+            break
+    minimo, maximo = float(conjunto[0]), float(conjunto[-1])
+    limiares = sorted({b for b in arredondados if minimo < b <= maximo})
+    if not limiares:
+        raise ValueError("quebras_comuns: sem variação — nenhum limiar entre o mínimo e o máximo")
+    return limiares

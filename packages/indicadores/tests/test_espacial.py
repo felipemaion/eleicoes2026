@@ -116,7 +116,7 @@ def test_h3_marca_n_baixo_pela_taxa_da_uf() -> None:
     assert df["n_baixo"].to_list() == [True, False]
 
 
-def _anos(**valores: list[float | None]) -> dict[int, pl.DataFrame]:
+def _anos(**valores: list[float]) -> dict[int, pl.DataFrame]:
     return {
         int(ano.removeprefix("a")): pl.DataFrame(
             {"valor": v, "n_baixo": [False] * len(v)},
