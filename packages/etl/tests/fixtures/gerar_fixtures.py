@@ -183,6 +183,15 @@ def main() -> None:
         it = _linhas(zin, f"{k}_{ANO}.csv")
         cab = next(it)
         _escrever(zout, f"{k}_{ANO}.csv", cab, [x for x in it if _manter(cab, x, None)])
+    # votação por seção: um CSV por UF, recortado nos mesmos municípios
+    k = "votacao_secao"
+    with (
+        zipfile.ZipFile(BRUTO / f"{k}/{k}_{ANO}_{UF}.zip") as zin,
+        zipfile.ZipFile(SAIDA / f"{k}_{ANO}_{UF}.zip", "w", zipfile.ZIP_DEFLATED) as zout,
+    ):
+        it = _linhas(zin, nome(k, UF))
+        cab = next(it)
+        _escrever(zout, nome(k, UF), cab, [x for x in it if _manter(cab, x, None)])
     # crosswalk: só AC
     k = "municipio_tse_ibge"
     with (

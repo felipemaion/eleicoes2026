@@ -7,9 +7,11 @@ temporário e lido por ``scan_csv`` (tudo como texto; a conversão de tipos é e
 
 from __future__ import annotations
 
+import itertools
 import re
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 import polars as pl
@@ -49,6 +51,62 @@ def transcodificar(zip_path: Path, membro: str, destino: Path) -> Path:
         while pedaco := src.read(CHUNK):
             dst.write(pedaco.decode("latin-1").encode("utf-8"))  # Latin-1 é 1 byte/char: sem corte
     return destino
+
+
+BLOCO_BYTES = 256 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class Bloco:
+    """Pedaço de um CSV grande, em UTF-8 e com cabeçalho; ``linhas`` conta só as de dados."""
+
+    caminho: Path
+    linhas: int
+
+
+def blocos_utf8(
+    zip_path: Path, membro: str, tmp: Path, bloco_bytes: int = BLOCO_BYTES
+) -> Iterator[Bloco]:
+    """Lê o membro do ZIP em blocos de ~``bloco_bytes`` sem materializar o CSV inteiro.
+
+    O ``votacao_secao`` de SP passa de 10 GB descompactado; o disco do ETL não comporta uma
+    cópia UTF-8 dessa. Cada bloco termina em quebra de linha, repete o cabeçalho e é apagado
+    quando o consumidor pede o próximo. ``Bloco.linhas`` vem da contagem de ``\\n`` no fluxo,
+    independente do parser, para o total de controle de linhas. Arquivo só com cabeçalho
+    não rende bloco algum.
+    """
+    tmp.mkdir(parents=True, exist_ok=True)
+    stem = Path(membro).stem
+    with zipfile.ZipFile(zip_path) as z, z.open(membro) as src:
+        cab = src.readline().decode("latin-1").encode("utf-8")
+        pendente = b""
+        for i in itertools.count():
+            caminho = tmp / f"{stem}.{i:05d}.csv"
+            linhas = escritos = 0
+            try:
+                with caminho.open("wb") as f:
+                    f.write(cab)
+                    while escritos < bloco_bytes:
+                        pedaco = src.read(min(CHUNK, bloco_bytes))
+                        dados = pendente + pedaco
+                        if pedaco:  # só escreve linhas completas; o resto vai para o próximo
+                            corte = dados.rfind(b"\n") + 1
+                            dados, pendente = dados[:corte], dados[corte:]
+                        else:
+                            pendente = b""
+                            if dados and not dados.endswith(b"\n"):
+                                dados += b"\n"
+                        f.write(dados.decode("latin-1").encode("utf-8"))
+                        escritos += len(dados)
+                        linhas += dados.count(b"\n")
+                        if not pedaco:
+                            break
+                if linhas:
+                    yield Bloco(caminho, linhas)
+            finally:
+                caminho.unlink(missing_ok=True)
+            if not pedaco:
+                return
 
 
 def _expr(origem: str, tipo: pl.DataType | type[pl.DataType]) -> pl.Expr:

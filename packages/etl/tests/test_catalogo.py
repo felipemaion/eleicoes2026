@@ -19,7 +19,20 @@ def test_votacao_secao_uma_uf() -> None:
 
 
 def test_votacao_secao_todas_as_ufs() -> None:
-    assert len(alvos(2022, ["votacao_secao"])) == len(UFS)
+    assert len(alvos(2026, ["votacao_secao"])) == len(UFS)
+    assert "BR" in UFS  # presidente: arquivo próprio, não vem nos arquivos por UF
+
+
+def test_votacao_secao_2022_nao_tem_zz() -> None:
+    """O TSE não publica `votacao_secao_2022_ZZ.zip` (404): exterior vem no arquivo BR."""
+    ufs_2022 = {
+        a.destino.split("_")[-1].removesuffix(".zip") for a in alvos(2022, ["votacao_secao"])
+    }
+    assert "ZZ" not in ufs_2022
+    assert ufs_2022 == set(UFS) - {"ZZ"}
+    [a] = alvos(2026, ["votacao_secao"], uf="ZZ")
+    assert a.url.endswith("votacao_secao_2026_ZZ.zip")
+    assert alvos(2022, ["votacao_secao"], uf="ZZ") == []
 
 
 def test_fontes_sem_ano() -> None:

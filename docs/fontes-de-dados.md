@@ -179,3 +179,37 @@ repressão e combate à violência política*.
 em dez/1979). Fator entre meses = `indice[base]/indice[origem]` (= Π(1+v/100), vetor `deflacao_ipca`). Mês
 faltante/repetido na série **falha** o processamento. Última observação baixada em 2026-10-07: **2026-08**
 (set/2026 sai ≈ 09/10/2026; a emenda do ADR 0007 manda usar o último mês disponível como base).
+
+## Votação por seção → local → H3 (T-D05)
+`uv run etl secao --ano 2022|2026 [--uf AC ...] [--baixar] [--descartar-zip]` →
+`data/processed/{votos_local,totais_local}/ano=<ano>/<UF>.parquet` e
+`data/processed/locais_h3/ano=<ano>/locais_h3.parquet`. Contratos em `contratos/tse.py`
+(`votos_local`, `totais_local`, `locais_h3`; `votacao_secao` é só o esquema de leitura).
+
+- **Arquivos**: `votacao_secao_{ANO}_{UF}.zip` ×27 + `_BR` (presidente, cargo 1; cada linha traz a UF real,
+  exterior = `SG_UF` ZZ). 2022 **não tem** `_ZZ` (404; o exterior vem em `_BR`); `votacao_secao_2026_ZZ.zip`
+  existe mas só tem o cabeçalho (sem linhas) enquanto não houver votação no exterior — tratado como vazio.
+  Tamanhos: SP 2022 = 901 MB zip (≈ 10 GB de CSV), BR 2022 = 271 MB, BR 2026 = 162 MB (1 GB de CSV).
+- **Leitura em blocos** (`tse_csv.blocos_utf8`, 256 MB): nunca há cópia UTF-8 do CSV inteiro (o disco local
+  tem ~6 GB livres). `--descartar-zip` apaga cada ZIP depois de validado (sha256 segue no manifesto) e
+  `--baixar` baixa UF a UF.
+- **Colunas** (26): `DT_GERACAO … SG_UF, SG_UE, CD_MUNICIPIO, NR_ZONA, NR_SECAO, CD_CARGO, NR_VOTAVEL, NM_VOTAVEL,
+  QT_VOTOS, NR_LOCAL_VOTACAO, SQ_CANDIDATO, NM_LOCAL_VOTACAO, DS_LOCAL_VOTACAO_ENDERECO`. **Sem coordenada**:
+  lat/lon vêm do `eleitorado_local_votacao` (mesma chave município TSE × zona × local).
+- **`SQ_CANDIDATO`**: `> 0` = voto no candidato; `-3` = voto de legenda (`NR_VOTAVEL` = nº do partido);
+  `-1` = branco (`NR_VOTAVEL` 95) ou nulo (96). Os cargos de uma seção somam o mesmo comparecimento.
+- **Só 1º turno** em `votos_local`/`totais_local`/`locais_h3` (a API não filtra turno nessas tabelas;
+  o contrato trava `nr_turno = 1`). 2º turno 2022 (presidente/governador) é ignorado e contado em
+  `linhas_turno2_ignoradas`.
+- **`votos_local` = votos nominais (`qt_votos_nominais`)**, não os "válidos" do munzona: o arquivo por seção não
+  separa anulados sub judice (`qt_votos_nominais_validos` do munzona é menor para esses candidatos).
+- **Total de controle (por UF, antes de publicar)**: (1) linhas lidas = `\n` do fluxo, bloco a bloco;
+  (2) Σ `qt_votos` do texto cru (1º turno) = nominais + legenda + brancos + nulos; (3) Σ `votos_local` =
+  `totais_local.votos_nominais`; (4) **para todo candidato que está no `votacao_candidato_munzona`,
+  Σ locais = `qt_votos_nominais` do munzona** (diverge → erro). O arquivo por seção também traz candidaturas
+  que **não** estão no munzona (candidatura anulada/indeferida, votos descartados): contadas em
+  `candidatos_fora_do_munzona`/`votos_fora_do_munzona` e mantidas em `votos_local`.
+- **`locais_h3`**: um registro por local do 1º turno **com coordenada válida** (`h3` = res 8 canônica, `h3_r7`,
+  `h3_r6` por `cell_to_parent`; `aptos` = `qt_eleitor_secao` do local). Local sem coordenada (inclui exterior) fica
+  **fora** (nunca no centróide, ADR 0007). `h3` é o nome que a API lê; o brief chamava de `h3_r8`.
+- Nomes alinhados ao backend: `nr_local` (não `nr_local_votacao`) e `ano` pela partição hive `ano=AAAA/`.
