@@ -58,7 +58,7 @@ describe("kpisDoGrupo", () => {
     expect(k[0]?.unidade).not.toMatch(/parcial|de 900/);
   });
   it("KPI nulo some (custo por voto, % público)", () => {
-    const k = kpisDoGrupo(C, { ...G, agregado: { ...G.agregado, custo_voto_contratado: null }, receitas: { ...G.receitas, pct_publico: null } });
+    const k = kpisDoGrupo(C, { ...G, agregado: { ...G.agregado, custo_voto_contratado: null }, receitas: { ...(G.receitas as NonNullable<typeof G.receitas>), pct_publico: null } });
     expect(k.map((x) => x.rotulo)).toEqual(["Votação nominal do grupo", "Candidaturas", "Eleitos"]);
   });
 });
@@ -86,7 +86,7 @@ describe("gastos", () => {
     expect(dispersaoCustoVoto(G, "pago")[0]?.custo).toBe(180000);
   });
   it("receita empilhada: uma barra do grupo com as categorias da API", () => {
-    expect(receitaEmpilhada(G)).toEqual([{ rotulo: "Total do grupo", valores: G.receitas.por_categoria }]);
+    expect(receitaEmpilhada(G)).toEqual([{ rotulo: "Total do grupo", valores: G.receitas?.por_categoria }]);
   });
 });
 
@@ -145,5 +145,13 @@ describe("filtrosDoCandidato", () => {
   it("presidente (UF BR) vira Brasil; cargo fora da lista de filtros não altera o cargo", () => {
     expect(filtrosDoCandidato({ ano: 2026, cargo: "PRESIDENTE", sg_uf: "BR" })).toMatchObject({ cargo: "presidente", uf: "BR" });
     expect(filtrosDoCandidato({ ano: 2026, cargo: "DEPUTADO DISTRITAL", sg_uf: "DF" })).not.toHaveProperty("cargo");
+  });
+});
+
+describe("receitas ausentes (contas não publicadas)", () => {
+  it("receitaEmpilhada devolve vazio quando `receitas` é null; KPI de % público some", () => {
+    const sem = { ...G, receitas: null };
+    expect(receitaEmpilhada(sem)).toEqual([]);
+    expect(kpisDoGrupo(C, sem).map((x) => x.rotulo)).not.toContain("% recursos públicos");
   });
 });

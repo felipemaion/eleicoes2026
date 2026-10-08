@@ -23,7 +23,20 @@
     "receita_total": 290000,
     "receita_financeira": 290000,
     "pct_publico": 86.2,
-    "pct_autofinanciamento": 6.9
+    "pct_autofinanciamento": 6.9,
+    "receita_estimavel": 15000,
+    "receita_repasses_candidatos": 30000,
+    "receita_sem_repasses": 260000,
+    "receita_repasses_internos": 0,
+    "receita_repasses_doador_desconhecido": 10000,
+    "faixa_receita": {
+      "minima": 280000,
+      "maxima": 290000
+    },
+    "pct_pessoa_fisica": 6.9,
+    "pct_estimavel": 5.2,
+    "hhi_fontes": 0.55,
+    "n_efetivo_fontes": 1.8
   },
   "por_candidato": [
     {
@@ -54,7 +67,16 @@
         "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1",
         "verificado": true,
         "nota": null
-      }
+      },
+      "pct_pessoa_fisica": 10.0,
+      "n_efetivo_fontes": 1.9,
+      "receita_repasses_candidatos": 0,
+      "receita_sem_repasses": 210000,
+      "receita_por_voto": 11.63,
+      "receita_por_mil_aptos": 900.0,
+      "saldo_contratado": -13000,
+      "saldo_financeiro": 30000,
+      "pct_receita_gasta": 106.2
     },
     {
       "sq_candidato": 2,
@@ -84,7 +106,16 @@
         "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/2",
         "verificado": true,
         "nota": null
-      }
+      },
+      "pct_pessoa_fisica": null,
+      "n_efetivo_fontes": 1.2,
+      "receita_repasses_candidatos": 20000,
+      "receita_sem_repasses": 60000,
+      "receita_por_voto": 6.67,
+      "receita_por_mil_aptos": 300.0,
+      "saldo_contratado": -10000,
+      "saldo_financeiro": 0,
+      "pct_receita_gasta": 112.5
     },
     {
       "sq_candidato": 3,
@@ -114,7 +145,16 @@
         "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/3",
         "verificado": true,
         "nota": null
-      }
+      },
+      "pct_pessoa_fisica": 0.0,
+      "n_efetivo_fontes": 1.0,
+      "receita_repasses_candidatos": 10000,
+      "receita_sem_repasses": 20000,
+      "receita_por_voto": 9.51,
+      "receita_por_mil_aptos": 150.0,
+      "saldo_contratado": -30000,
+      "saldo_financeiro": -15000,
+      "pct_receita_gasta": 200.0
     }
   ],
   "contas_parciais": true,
@@ -128,5 +168,28 @@
       "coluna_regra": "VR_DESPESA_CONTRATADA ÷ votos nominais",
       "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#prestacao_contas"
     }
-  ]
+  ],
+  "receita_por_voto": {
+    "receita_por_voto": 8.74,
+    "mediana_receita_por_voto": 7.9,
+    "candidatos_sem_voto_excluidos": 0,
+    "candidatos_sem_contas_excluidos": 0
+  },
+  "distribuicao_receita": {
+    "n_candidatos": 3,
+    "n_com_contas": 3,
+    "soma": 290000,
+    "media": 96666.67,
+    "mediana": 80000,
+    "p25": 55000,
+    "p75": 145000,
+    "maximo": 210000
+  },
+  "saldo": {
+    "saldo_contratado": -53000,
+    "saldo_financeiro": 15000,
+    "pct_receita_gasta": 118.3
+  },
+  "receita_por_mil_aptos": 412.5,
+  "aptos": 703000
 }

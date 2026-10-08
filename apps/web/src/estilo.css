@@ -316,3 +316,7 @@ circle.marca.com-link { cursor: pointer; }
   .cartoes-seta { transform: rotate(90deg); justify-self: center; }
 }
 .tabela-rolagem { overflow-x: auto; max-width: 100%; }
+.tabela-comparativo-receitas { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.tabela-comparativo-receitas caption { text-align: left; color: var(--cor-texto-suave); padding-block: var(--esp-2); }
+.tabela-comparativo-receitas :is(th, td) { padding: var(--esp-2) var(--esp-3); border-bottom: 1px solid var(--cor-borda); text-align: right; white-space: nowrap; }
+.tabela-comparativo-receitas :is(th[scope=row], thead th:first-child) { text-align: left; white-space: normal; }

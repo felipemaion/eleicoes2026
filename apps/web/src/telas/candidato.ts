@@ -30,8 +30,10 @@ function secaoGastos(f: Ficha, ctx: Parameters<typeof ajuda>[1]): HTMLElement {
     { rotulo: "Pago", valor: g.despesa_paga, formato: "moeda", unidade: "despesa de campanha efetivamente paga" },
     { rotulo: "Dívida", valor: g.divida, formato: "moeda", unidade: "contratado − pago" },
     { rotulo: "Repasses a terceiros", valor: g.repasses_contratados, formato: "moeda", unidade: `contratados (pagos: ${formatarMoeda(g.repasses_pagos)})` },
-    { rotulo: "Receita total", valor: g.receita_total, formato: "moeda", unidade: "todas as fontes" },
   ];
+  if (g.receita_total !== null) kpis.push({ rotulo: "Receita total", ajuda: "receitas", valor: g.receita_total, formato: "moeda", unidade: "todas as fontes" });
+  if (g.receita_por_voto !== null) kpis.push({ rotulo: "Receita por voto", ajuda: "receita_por_voto", valor: g.receita_por_voto, formato: "moeda", unidade: "R$ de receita ÷ votos" });
+  if (g.saldo_contratado !== null) kpis.push({ rotulo: "Saldo da campanha", ajuda: "saldo_campanha", valor: g.saldo_contratado, formato: "moeda", unidade: "receita − despesa contratada" });
   const sem = (rotulo: string, v: number | null, unidade: string): void => { if (v !== null) kpis.push({ rotulo, ajuda: "custo_por_voto", valor: v, formato: "moeda", unidade }); };
   sem("Custo por voto contratado, sem repasses", g.custo_voto_contratado, "R$ contratados ÷ votos, sem repasses");
   sem("Custo por voto contratado, com repasses", g.custo_voto_contratado_com_repasses, "R$ contratados + repasses ÷ votos");

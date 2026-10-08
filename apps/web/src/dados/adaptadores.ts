@@ -47,7 +47,8 @@ export function kpisDoGrupo(l: RespostaCandidatos, g: RespostaGastos): Kpi[] {
     lista.push({ rotulo: "Eleitos", valor: l.itens.filter((c) => c.resultado !== null && EH_ELEITO.test(c.resultado)).length, formato: "inteiro", unidade: `de ${nf(l.total)} candidaturas` });
   }
   if (g.agregado.custo_voto_contratado !== null) lista.push({ rotulo: "Custo por voto contratado", ajuda: "custo_por_voto", valor: g.agregado.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos nominais" });
-  if (g.receitas.pct_publico !== null) lista.push({ rotulo: "% recursos públicos", ajuda: "pct_publico", valor: g.receitas.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
+  const pctPublico = g.receitas?.pct_publico ?? null;
+  if (pctPublico !== null) lista.push({ rotulo: "% recursos públicos", ajuda: "pct_publico", valor: pctPublico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
   return lista;
 }
 
@@ -70,9 +71,9 @@ export function dispersaoCustoVoto(g: RespostaGastos, base: "contratado" | "pago
   }));
 }
 
-/** Uma barra empilhada com o grupo inteiro: a API entrega receita por categoria já somada. */
+/** Uma barra empilhada com o grupo inteiro: a API entrega receita por categoria já somada. Sem contas (`receitas` null) não há barra. */
 export function receitaEmpilhada(g: RespostaGastos): ReceitaPorFonte[] {
-  return [{ rotulo: "Total do grupo", valores: g.receitas.por_categoria }];
+  return g.receitas === null ? [] : [{ rotulo: "Total do grupo", valores: g.receitas.por_categoria }];
 }
 
 export interface MapaPronto {

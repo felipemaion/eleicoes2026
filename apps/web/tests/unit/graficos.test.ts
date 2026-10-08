@@ -161,6 +161,13 @@ describe("dispersão custo × votos (log)", () => {
     expect(el.querySelector("g.eixo-y")).not.toBeNull();
     expect(tabela(el).querySelectorAll("tbody tr")).toHaveLength(5);
   });
+  it("`grandeza` troca o vocabulário do eixo, do aviso de zero e da tabela (receita × votos)", () => {
+    dispersao.render(el, pontos, { titulo: "Receita × votos", grandeza: "receita de campanha" });
+    expect(el.querySelector("svg")?.getAttribute("aria-label")).toContain("receita de campanha (eixo horizontal)");
+    expect(el.textContent).toContain("Receita de campanha (R$, escala log)");
+    expect(el.querySelector('circle.marca[data-id="3"]')?.getAttribute("aria-label")).toContain("receita zero");
+    expect(tabela(el).querySelector("th:nth-child(2)")?.textContent).toBe("Receita");
+  });
   it("pontos zero ficam fora da faixa log (na calha)", () => {
     dispersao.render(el, pontos, { titulo: "t" });
     const cx = (id: string): number => Number(el.querySelector(`circle[data-id="${id}"]`)?.getAttribute("cx"));

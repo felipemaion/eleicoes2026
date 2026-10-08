@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => { await simularApi(page); });
 
 test("gastos: hover e foco no círculo mostram o tooltip com os dados do candidato", async ({ page }) => {
   await page.goto("/#/gastos");
-  const ponto = page.locator('circle.marca[data-id="1"]');
+  const ponto = page.locator('.grafico-despesa circle.marca[data-id="1"]');
   await expect(ponto).toBeVisible();
   await ponto.hover();
   const balao = page.locator(".tooltip-flutuante:not([hidden])");
@@ -34,7 +34,7 @@ test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página d
   });
   await page.goto("/#/gastos");
   const balao = page.locator(".tooltip-flutuante:not([hidden])");
-  const ana = page.locator('circle.marca[data-id="1"]');
+  const ana = page.locator('.grafico-despesa circle.marca[data-id="1"]');
   await ana.hover();
   await expect(balao.locator("img")).toHaveAttribute("alt", "Foto de Ana Souza");
   await expect(balao.locator("img")).toHaveAttribute("loading", "eager");
@@ -47,7 +47,7 @@ test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página d
   expect(abertos[0]).toEqual(["https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1", "_blank", "noopener,noreferrer"]);
   // candidatura sem foto na API (sq 3): placeholder com iniciais, mesmo tamanho
   await page.mouse.move(2, 2);
-  const sem = page.locator('circle.marca[data-id="3"]');
+  const sem = page.locator('.grafico-despesa circle.marca[data-id="3"]');
   if (await sem.count()) {
     await sem.hover();
     await expect(balao.locator(".foto-candidato.sem-foto")).toBeVisible();
@@ -107,10 +107,10 @@ test("gastos (T-W21): resposta antiga em cache não esconde foto e link — a AP
 
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {
   await page.goto("/#/gastos");
-  await expect(page.locator("line.referencia")).toHaveCount(1);
-  await page.getByLabel("Realçar candidato no gráfico").fill("bruno");
-  await expect(page.locator('circle.marca[data-id="2"]')).toHaveClass(/destaque/);
-  await expect(page.locator('circle.marca[data-id="1"]')).toHaveClass(/atenuado/);
+  await expect(page.locator("line.referencia")).toHaveCount(2);
+  await page.getByLabel("Realçar candidato nos gráficos").fill("bruno");
+  await expect(page.locator('.grafico-despesa circle.marca[data-id="2"]')).toHaveClass(/destaque/);
+  await expect(page.locator('.grafico-despesa circle.marca[data-id="1"]')).toHaveClass(/atenuado/);
   await expect(page.locator(".busca-gastos-estado")).toContainText("1 candidato");
   await page.screenshot({ path: `${CAPTURAS}/T-W12-gastos-busca.png` });
   await page.locator("rect.marca").first().hover();
@@ -155,4 +155,28 @@ test("evolução: balão de ajuda de um KPI quebra linha e fica dentro da caixa 
   expect(m.sw).toBeLessThanOrEqual(m.cw);
   expect(m.esq).toBeGreaterThanOrEqual(0);
   expect(m.dir).toBeLessThanOrEqual(m.vw);
+});
+
+test("financiamento (T-W16): receita × votos com hover, saldo, clique no TSE e comparação 2022→2026 corrigida", async ({ page }) => {
+  await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
+  await page.addInitScript(() => {
+    (window as unknown as { __abertos: unknown[][] }).__abertos = [];
+    window.open = ((...a: unknown[]) => { (window as unknown as { __abertos: unknown[][] }).__abertos.push(a); return null; });
+  });
+  await page.goto("/#/gastos");
+  await expect(page.getByRole("heading", { level: 1, name: "Financiamento" })).toBeVisible();
+  const kpis = page.locator("dl.kpis").first();
+  for (const t of ["Receita total do grupo", "Receita por voto", "% recursos públicos", "% autofinanciamento", "% pessoas físicas", "Saldo da campanha"]) await expect(kpis).toContainText(t);
+  const ana = page.locator('.grafico-receita circle.marca[data-id="1"]');
+  await ana.hover();
+  const balao = page.locator(".tooltip-flutuante:not([hidden])");
+  for (const t of ["Receita total", "Receita por voto", "Saldo (receita − despesa contratada)", "% pessoas físicas"]) await expect(balao).toContainText(t);
+  await expect(balao.locator("img")).toHaveAttribute("alt", "Foto de Ana Souza");
+  await ana.click();
+  const abertos = await page.evaluate(() => (window as unknown as { __abertos: unknown[][] }).__abertos);
+  expect(abertos[0]?.[0]).toBe("https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1");
+  const tabela = page.locator("table.tabela-comparativo-receitas");
+  await expect(tabela).toContainText("set/2026");
+  await expect(tabela).toContainText("+11,5%");
+  await page.screenshot({ path: `${CAPTURAS}/T-W16-financiamento.png`, fullPage: true });
 });

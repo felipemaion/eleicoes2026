@@ -3,7 +3,7 @@ import { simularApi } from "./api";
 
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
-const TELAS = ["Visão geral", "Mapa", "Gastos", "Evolução 2022×2026", "Candidato"];
+const TELAS = ["Visão geral", "Mapa", "Financiamento", "Evolução 2022×2026", "Candidato"];
 
 test("navega entre as 5 telas por mouse e teclado", async ({ page }) => {
   await page.goto("/");
@@ -14,10 +14,10 @@ test("navega entre as 5 telas por mouse e teclado", async ({ page }) => {
   await expect(page).toHaveURL(/#\/mapa/);
   await expect(page.getByRole("heading", { level: 1, name: "Mapa" })).toBeVisible();
 
-  await nav.getByRole("link", { name: "Gastos" }).focus();
+  await nav.getByRole("link", { name: "Financiamento" }).focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#\/gastos/);
-  await expect(page.getByRole("heading", { level: 1, name: "Gastos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Financiamento" })).toBeVisible();
 });
 
 test("filtro de UF vai para a URL e rodapé mostra fonte", async ({ page }) => {
@@ -44,5 +44,5 @@ test("skip link foca o conteúdo sem resetar tela nem filtros", async ({ page })
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#\/gastos\?uf=SP&ano=2022/);
   await expect(page.locator("#principal")).toBeFocused();
-  await expect(page.getByRole("heading", { level: 1, name: "Gastos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Financiamento" })).toBeVisible();
 });

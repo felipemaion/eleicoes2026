@@ -140,7 +140,12 @@
       "Fundo Partidário": 40000,
       "Autofinanciamento": 20000
     },
-    "explicacao_repasses": "Repasses são dinheiro transferido a outros candidatos ou ao partido; entram à parte para não contar duas vezes."
+    "explicacao_repasses": "Repasses são dinheiro transferido a outros candidatos ou ao partido; entram à parte para não contar duas vezes.",
+    "receita_por_voto": 11.63,
+    "receita_por_mil_aptos": 900.0,
+    "saldo_contratado": -13000,
+    "saldo_financeiro": 30000,
+    "pct_receita_gasta": 106.2
   },
   "receitas": {
     "por_categoria": {
@@ -151,7 +156,17 @@
     "receita_total": 210000,
     "receita_financeira": 210000,
     "pct_publico": 90.5,
-    "pct_autofinanciamento": 9.5
+    "pct_autofinanciamento": 9.5,
+    "receita_estimavel": 0,
+    "receita_repasses_candidatos": 0,
+    "receita_sem_repasses": 210000,
+    "receita_repasses_internos": null,
+    "receita_repasses_doador_desconhecido": null,
+    "faixa_receita": null,
+    "pct_pessoa_fisica": 0.0,
+    "pct_estimavel": 0.0,
+    "hhi_fontes": 0.5,
+    "n_efetivo_fontes": 2.0
   },
   "contas_parciais": true,
   "base_ipca": "2026-09",

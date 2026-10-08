@@ -51,7 +51,7 @@ test("tabela alternativa lista os valores do mapa", async ({ page }) => {
 test("sair da tela do mapa libera o WebGL (sem canvas órfão)", async ({ page }) => {
   await page.goto("/#/mapa?uf=SE");
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("navigation", { name: "Telas" }).getByRole("link", { name: "Gastos" }).click();
+  await page.getByRole("navigation", { name: "Telas" }).getByRole("link", { name: "Financiamento" }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
 });
 
@@ -62,7 +62,7 @@ test("criar e destruir o mapa 20× não esgota contextos WebGL", async ({ page }
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
   const nav = page.getByRole("navigation", { name: "Telas" });
   for (let i = 0; i < 20; i++) {
-    await nav.getByRole("link", { name: "Gastos" }).click();
+    await nav.getByRole("link", { name: "Financiamento" }).click();
     await expect(page.locator("canvas")).toHaveCount(0);
     await nav.getByRole("link", { name: "Mapa" }).click();
     await expect(page.locator(".mapa-quadro canvas")).toHaveCount(1);
