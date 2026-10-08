@@ -1,0 +1,322 @@
+{
+  "indicador": "pct_validos",
+  "spec": "docs/metodologia/indicadores.md#pct-validos",
+  "versao": 1,
+  "descricao": "Votos do candidato/grupo ÷ QT_TOTAL_VOTOS_VALIDOS do cargo no recorte × 100.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "u1_c1",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "votos": 700
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000002,
+            "votos": 300
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000001,
+          "votos": 700,
+          "pct_validos": 10.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000002,
+          "votos": 300,
+          "pct_validos": 20.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000003,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "pct_validos": null
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 1000,
+          "pct_validos": 11.2359550562
+        }
+      ]
+    },
+    {
+      "nome": "u1_c2",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000003,
+            "votos": 40
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000001,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000002,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000003,
+          "votos": 40,
+          "pct_validos": 10.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "pct_validos": null
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 40,
+          "pct_validos": 0.4494382022
+        }
+      ]
+    },
+    {
+      "nome": "u1_c4",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000001,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000002,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000003,
+          "votos": 0,
+          "pct_validos": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "pct_validos": null
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 0,
+          "pct_validos": 0.0
+        }
+      ]
+    },
+    {
+      "nome": "senado_duas_vagas_denominador_e_total_de_votos_validos",
+      "nota": "Com 2 vagas cada eleitor dá 2 votos; QT_TOTAL_VOTOS_VALIDOS já soma os dois. Soma das % dos candidatos = 100.",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 1000,
+            "comparecimento": 800,
+            "validos": 1400
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "s1",
+            "cd_mun_ibge": 1000001,
+            "votos": 700
+          },
+          {
+            "sq_candidato": "s2",
+            "cd_mun_ibge": 1000001,
+            "votos": 420
+          },
+          {
+            "sq_candidato": "s3",
+            "cd_mun_ibge": 1000001,
+            "votos": 280
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "s1",
+          "cd_mun_ibge": 1000001,
+          "votos": 700,
+          "pct_validos": 50.0,
+          "penetracao": 700.0
+        },
+        {
+          "sq_candidato": "s2",
+          "cd_mun_ibge": 1000001,
+          "votos": 420,
+          "pct_validos": 30.0,
+          "penetracao": 420.0
+        },
+        {
+          "sq_candidato": "s3",
+          "cd_mun_ibge": 1000001,
+          "votos": 280,
+          "pct_validos": 20.0,
+          "penetracao": 280.0
+        }
+      ]
+    }
+  ]
+}

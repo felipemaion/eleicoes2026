@@ -1,0 +1,52 @@
+{
+  "indicador": "votos_legenda",
+  "spec": "docs/metodologia/indicadores.md#votos-de-legenda",
+  "versao": 1,
+  "descricao": "Legenda total = legenda pura + nominais convertidos; série do partido, nunca repartida entre candidatos. Votação do partido = nominais válidos dos seus candidatos + legenda total. Quociente eleitoral (CE art. 106) e votação em múltiplos do QE.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "partido_14_uf_xx",
+      "entrada": {
+        "votacao_partido": [
+          {
+            "nr_partido": 14,
+            "qt_votos_legenda_validos": 450,
+            "qt_votos_nom_convr_leg_validos": 50
+          }
+        ],
+        "nominais_validos_candidatos_partido": 1040,
+        "qt_total_votos_validos_uf": 8900,
+        "vagas": 3
+      },
+      "saida": {
+        "votos_legenda_total": 500,
+        "votacao_partido": 1540,
+        "quociente_eleitoral": 2967,
+        "votacao_em_qe": 0.5190428042,
+        "quociente_partidario": 0
+      }
+    },
+    {
+      "nome": "qe_fracao_igual_a_meio_desprezada",
+      "entrada": {
+        "qt_total_votos_validos_uf": 7,
+        "vagas": 2
+      },
+      "saida": {
+        "quociente_eleitoral": 3
+      }
+    },
+    {
+      "nome": "qe_fracao_acima_de_meio_sobe",
+      "entrada": {
+        "qt_total_votos_validos_uf": 8,
+        "vagas": 3
+      },
+      "saida": {
+        "quociente_eleitoral": 3
+      }
+    }
+  ]
+}

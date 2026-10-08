@@ -1,0 +1,94 @@
+{
+  "indicador": "custo_por_voto",
+  "spec": "docs/metodologia/indicadores.md#custo-por-voto",
+  "versao": 1,
+  "descricao": "Custo/voto = despesa (contratada ou paga, sem transferências a outros candidatos/partidos) ÷ votos nominais válidos. Dívida = contratada − paga. Agregado do grupo = Σdespesa/Σvotos sobre candidatos com contas e votos>0.",
+  "tolerancia_absoluta": 1e-06,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "candidatos_e_agregado",
+      "entrada": [
+        {
+          "sq_candidato": "c1",
+          "despesa_contratada": 100000.0,
+          "despesa_paga": 80000.0,
+          "votos": 1000
+        },
+        {
+          "sq_candidato": "c2",
+          "despesa_contratada": 5000.0,
+          "despesa_paga": 5000.0,
+          "votos": 40
+        },
+        {
+          "sq_candidato": "c4",
+          "despesa_contratada": 3000.0,
+          "despesa_paga": 0.0,
+          "votos": 0
+        },
+        {
+          "sq_candidato": "c7",
+          "despesa_contratada": 0.0,
+          "despesa_paga": 0.0,
+          "votos": 250
+        }
+      ],
+      "saida": {
+        "candidatos": [
+          {
+            "sq_candidato": "c1",
+            "custo_voto_contratado": 100.0,
+            "custo_voto_pago": 80.0,
+            "divida": 20000.0
+          },
+          {
+            "sq_candidato": "c2",
+            "custo_voto_contratado": 125.0,
+            "custo_voto_pago": 125.0,
+            "divida": 0.0
+          },
+          {
+            "sq_candidato": "c4",
+            "custo_voto_contratado": null,
+            "custo_voto_pago": null,
+            "divida": 3000.0
+          },
+          {
+            "sq_candidato": "c7",
+            "custo_voto_contratado": 0.0,
+            "custo_voto_pago": 0.0,
+            "divida": 0.0
+          }
+        ],
+        "grupo": {
+          "custo_voto_contratado": 81.3953488372,
+          "custo_voto_pago": 65.8914728682,
+          "candidatos_sem_voto_excluidos": 1
+        }
+      }
+    },
+    {
+      "nome": "exclui_transferencias",
+      "entrada": {
+        "despesas_contratadas": [
+          {
+            "sq_candidato": "c1",
+            "ds_origem_despesa": "Publicidade por materiais impressos",
+            "vr_despesa_contratada": 900.0
+          },
+          {
+            "sq_candidato": "c1",
+            "ds_origem_despesa": "Doações financeiras a outros candidatos/partidos",
+            "vr_despesa_contratada": 400.0
+          }
+        ],
+        "votos": 100
+      },
+      "saida": {
+        "despesa_contratada": 900.0,
+        "custo_voto_contratado": 9.0
+      }
+    }
+  ]
+}

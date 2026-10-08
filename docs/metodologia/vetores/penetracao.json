@@ -1,0 +1,268 @@
+{
+  "indicador": "penetracao",
+  "spec": "docs/metodologia/indicadores.md#penetracao",
+  "versao": 1,
+  "descricao": "Votos ÷ aptos × 1000 (‰ do eleitorado apto). Métrica-âncora 2022×2026.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "u1_c1",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000001,
+            "votos": 700
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000002,
+            "votos": 300
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000001,
+          "votos": 700,
+          "penetracao": 70.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000002,
+          "votos": 300,
+          "penetracao": 150.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000003,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "penetracao": null
+        },
+        {
+          "sq_candidato": "c1",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 1000,
+          "penetracao": 80.0
+        }
+      ]
+    },
+    {
+      "nome": "u1_c2",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000003,
+            "votos": 40
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000001,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000002,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000003,
+          "votos": 40,
+          "penetracao": 80.0
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "penetracao": null
+        },
+        {
+          "sq_candidato": "c2",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 40,
+          "penetracao": 3.2
+        }
+      ]
+    },
+    {
+      "nome": "u1_c4",
+      "entrada": {
+        "municipios": [
+          {
+            "cd_mun_ibge": 1000001,
+            "aptos": 10000,
+            "comparecimento": 8000,
+            "validos": 7000
+          },
+          {
+            "cd_mun_ibge": 1000002,
+            "aptos": 2000,
+            "comparecimento": 1600,
+            "validos": 1500
+          },
+          {
+            "cd_mun_ibge": 1000003,
+            "aptos": 500,
+            "comparecimento": 420,
+            "validos": 400
+          },
+          {
+            "cd_mun_ibge": 1000004,
+            "aptos": 0,
+            "comparecimento": 0,
+            "validos": 0
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000002,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c4",
+            "cd_mun_ibge": 1000004,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000001,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000002,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000003,
+          "votos": 0,
+          "penetracao": 0.0
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": 1000004,
+          "votos": 0,
+          "penetracao": null
+        },
+        {
+          "sq_candidato": "c4",
+          "cd_mun_ibge": null,
+          "recorte": "UF",
+          "votos": 0,
+          "penetracao": 0.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "indicador": "receitas",
+  "spec": "docs/metodologia/indicadores.md#receita-por-fonte",
+  "versao": 1,
+  "descricao": "Classificação: fonte FEFC/FP primeiro; senão pela origem. % público = (FEFC+FP)/total; % autofinanciamento = próprios/total. Total inclui estimáveis; total financeiro reportado à parte. Rótulo desconhecido = erro (falha alto).",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "c1_todas_as_categorias",
+      "entrada": [
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "FUNDO ESPECIAL",
+          "ds_origem_receita": "Recursos de partido político",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 50000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "FUNDO PARTIDARIO",
+          "ds_origem_receita": "Recursos de partido político",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 10000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos de pessoas físicas",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 15000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos próprios",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 5000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos de Financiamento Coletivo",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 8000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos de pessoas físicas",
+          "ds_natureza_receita": "ESTIMADO",
+          "vr_receita": 2000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Recursos de outros candidatos",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 7000.0
+        },
+        {
+          "sq_candidato": "c1",
+          "ds_fonte_receita": "OUTROS RECURSOS",
+          "ds_origem_receita": "Rendimentos de aplicações financeiras",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 3000.0
+        }
+      ],
+      "saida": {
+        "por_categoria": {
+          "fefc": 50000.0,
+          "financiamento_coletivo": 8000.0,
+          "fundo_partidario": 10000.0,
+          "outros": 3000.0,
+          "outros_candidatos": 7000.0,
+          "pessoa_fisica": 17000.0,
+          "recursos_proprios": 5000.0
+        },
+        "receita_total": 100000.0,
+        "receita_financeira": 98000.0,
+        "pct_publico": 60.0,
+        "pct_autofinanciamento": 5.0
+      }
+    },
+    {
+      "nome": "sem_receita",
+      "entrada": [],
+      "saida": {
+        "por_categoria": {},
+        "receita_total": 0.0,
+        "receita_financeira": 0.0,
+        "pct_publico": null,
+        "pct_autofinanciamento": null
+      }
+    },
+    {
+      "nome": "rotulo_desconhecido_falha",
+      "entrada": [
+        {
+          "sq_candidato": "c9",
+          "ds_fonte_receita": "FUNDO NOVO",
+          "ds_origem_receita": "Recursos de pessoas físicas",
+          "ds_natureza_receita": "FINANCEIRO",
+          "vr_receita": 1.0
+        }
+      ],
+      "erro": "ValueError: ds_fonte_receita desconhecida"
+    }
+  ]
+}

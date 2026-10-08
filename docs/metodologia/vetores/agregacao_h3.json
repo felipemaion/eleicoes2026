@@ -1,0 +1,102 @@
+{
+  "indicador": "agregacao_h3",
+  "spec": "docs/metodologia/indicadores.md#agregacao-h3",
+  "versao": 1,
+  "descricao": "Seções→local (ano, cd_mun, zona, nr_local); local→célula H3 res 8 pelas coordenadas do próprio ano; resoluções menores por agregação de contagens (cell_to_parent), taxa recalculada. Local sem coordenada válida fica fora do H3 e entra em pct_votos_sem_coordenada do município.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido (denominador zero/ausente); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "cinco_locais_um_sem_coordenada",
+      "entrada": [
+        {
+          "cd_mun_ibge": 1000001,
+          "nr_zona": 1,
+          "nr_local": 1001,
+          "h3_r8": "88a8100001fffff",
+          "h3_r7": "87a810000ffffff",
+          "aptos": 800,
+          "votos": 60
+        },
+        {
+          "cd_mun_ibge": 1000001,
+          "nr_zona": 1,
+          "nr_local": 1002,
+          "h3_r8": "88a8100001fffff",
+          "h3_r7": "87a810000ffffff",
+          "aptos": 600,
+          "votos": 40
+        },
+        {
+          "cd_mun_ibge": 1000001,
+          "nr_zona": 2,
+          "nr_local": 1010,
+          "h3_r8": "88a8100003fffff",
+          "h3_r7": "87a810000ffffff",
+          "aptos": 1000,
+          "votos": 30
+        },
+        {
+          "cd_mun_ibge": 1000001,
+          "nr_zona": 2,
+          "nr_local": 1011,
+          "h3_r8": "88a8100005fffff",
+          "h3_r7": "87a810005ffffff",
+          "aptos": 500,
+          "votos": 20
+        },
+        {
+          "cd_mun_ibge": 1000001,
+          "nr_zona": 2,
+          "nr_local": 1012,
+          "h3_r8": null,
+          "h3_r7": null,
+          "aptos": 400,
+          "votos": 50
+        }
+      ],
+      "saida": {
+        "r8": [
+          {
+            "h3": "88a8100001fffff",
+            "aptos": 1400,
+            "votos": 100,
+            "penetracao": 71.4285714286
+          },
+          {
+            "h3": "88a8100003fffff",
+            "aptos": 1000,
+            "votos": 30,
+            "penetracao": 30.0
+          },
+          {
+            "h3": "88a8100005fffff",
+            "aptos": 500,
+            "votos": 20,
+            "penetracao": 40.0
+          }
+        ],
+        "r7": [
+          {
+            "h3": "87a810000ffffff",
+            "aptos": 2400,
+            "votos": 130,
+            "penetracao": 54.1666666667
+          },
+          {
+            "h3": "87a810005ffffff",
+            "aptos": 500,
+            "votos": 20,
+            "penetracao": 40.0
+          }
+        ],
+        "municipio": {
+          "cd_mun_ibge": 1000001,
+          "votos": 200,
+          "pct_votos_sem_coordenada": 25.0,
+          "alerta_cobertura_h3": true
+        }
+      }
+    }
+  ]
+}
