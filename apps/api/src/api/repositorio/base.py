@@ -181,6 +181,10 @@ class Repositorio(Protocol):
         """Série mensal de variação do IPCA."""
         ...
 
+    def fotos(self) -> frozenset[tuple[int, int]]:
+        """Pares (ano, sq_candidato) com foto no manifesto de fotos (T-D07); vazio se não há."""
+        ...
+
     def ping(self) -> None:
         """Levanta DadosIndisponiveis se os dados não respondem."""
         ...

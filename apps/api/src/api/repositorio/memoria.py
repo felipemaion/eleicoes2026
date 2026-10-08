@@ -71,6 +71,7 @@ class RepositorioMemoria:
         cargos: list[str],
         dados: DadosMemoria | None = None,
         prestacao: dict[int, str] | None = None,
+        fotos: frozenset[tuple[int, int]] = frozenset(),
     ) -> None:
         self._dt = dt_geracao
         self._anos = anos
@@ -78,6 +79,11 @@ class RepositorioMemoria:
         self._cargos = cargos
         self._d = dados or DadosMemoria()
         self._prestacao = prestacao or {}
+        self._fotos = fotos
+
+    def fotos(self) -> frozenset[tuple[int, int]]:
+        """Fotos informadas na construção."""
+        return self._fotos
 
     def dt_geracao(self) -> str:
         """DT_GERACAO fixa."""

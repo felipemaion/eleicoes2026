@@ -6,6 +6,7 @@ from pathlib import Path
 
 import duckdb
 
+from api.fotos import ler_manifesto
 from api.pessoa import SQL_ID_PUBLICO
 from api.repositorio.base import DadosIndisponiveis, MemoriaInsuficiente
 from api.repositorio.modelos import (
@@ -179,6 +180,7 @@ class RepositorioDuckDB:
         try:
             self._prestacao = self._ler_prestacao(dir_dados / "manifesto.json")
             self._prestacao_dados: dict[int, str] = {}
+            self._fotos = ler_manifesto(dir_dados)
             # Somente leitura na prática: banco em memória + views sobre Parquet (nunca escrito);
             # lock_configuration impede que consultas mudem threads/limites depois.
             self._con = duckdb.connect(":memory:")
@@ -388,6 +390,10 @@ class RepositorioDuckDB:
             self._coluna("SELECT 1 FROM candidatos LIMIT 1")
         except duckdb.Error as erro:
             raise DadosIndisponiveis("consulta de ping falhou") from erro
+
+    def fotos(self) -> frozenset[tuple[int, int]]:
+        """Fotos do manifesto lido na abertura (`fotos/manifesto.json`)."""
+        return self._fotos
 
     def dt_geracao(self) -> str:
         """DT_GERACAO do manifesto."""

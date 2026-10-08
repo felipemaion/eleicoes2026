@@ -51,8 +51,8 @@ def test_ficha_links_oficiais_2026_dep_federal(api: TestClient) -> None:
     lista = por_tipo["divulgacand_lista"]
     assert lista["url"].startswith("https://divulgacandcontas.tse.jus.br/divulga/#/candidato/")
     assert lista["url"].endswith("/20322002026")
-    assert por_tipo["divulgacand_candidato"]["url"].endswith("/20322002026/SP/3")
-    assert por_tipo["divulgacand_candidato"]["verificado"] is False
+    assert por_tipo["divulgacand_candidato"]["url"].endswith("/SP/SP/20322002026/3/2026/SP")
+    assert por_tipo["divulgacand_candidato"]["verificado"] is True
     assert por_tipo["dados_abertos_contas"]["url"] == (
         "https://cdn.tse.jus.br/estatistica/sead/odsele/prestacao_contas/"
         "prestacao_de_contas_eleitorais_candidatos_2026.zip"
@@ -68,7 +68,7 @@ def test_links_presidente_usam_br_e_cd_eleicao_federal() -> None:
     votos = next(x for x in sp if x.tipo == "votos_oficiais")
     assert votos.url.endswith("#/eleicao/6257/uf/br/cargo/1/vis/nominal/resultados")
     cand = next(x for x in sp if x.tipo == "divulgacand_candidato")
-    assert cand.url.endswith("/20322002026/BR/11")
+    assert cand.url.endswith("/BR/BR/20322002026/11/2026/BR")
 
 
 def test_links_governador_2026_usa_eleicao_estadual() -> None:
@@ -81,7 +81,7 @@ def test_links_2022_sem_resultados_ao_vivo_e_com_nota() -> None:
     ls = links.links_da_candidatura(ano=2022, sq_candidato=1, uf="SP", cargo="DEPUTADO FEDERAL")
     assert not [x for x in ls if x.tipo == "votos_oficiais" and x.verificado]
     cand = next(x for x in ls if x.tipo == "divulgacand_candidato")
-    assert "/2022/2040602022/SP/1" in cand.url
+    assert "/SP/SP/2040602022/1/2022/SP" in cand.url
     assert any(x.tipo == "dados_abertos_contas" and "_2022.zip" in x.url for x in ls)
 
 

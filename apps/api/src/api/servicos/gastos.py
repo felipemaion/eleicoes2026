@@ -3,13 +3,14 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.fontes import Fonte, fontes
+from api.fotos import ComFotoELink, foto_e_link
 from api.repositorio.base import Repositorio
 from api.servicos.candidatos import Partido
 from api.servicos.contas import ResumoCustoCandidato, ResumoCustoGrupo, ResumoReceitasOut, contas_de
 from api.servicos.grupos import Catalogo, candidaturas_do_grupo
 
 
-class GastoCandidato(BaseModel):
+class GastoCandidato(ComFotoELink):
     """Contas de um candidato do grupo."""
 
     sq_candidato: int
@@ -82,6 +83,7 @@ def montar_gastos(
 ) -> Gastos:
     """Finanças do grupo no recorte; 2022 sai deflacionado (mês-base explícito)."""
     grupo = catalogo.grupo(grupo_id)
+    fotos = repo.fotos()
     contas = contas_de(repo, grupo.ano, candidaturas_do_grupo(repo, grupo, uf=uf, cargo=cargo))
     return Gastos(
         grupo=grupo.id,
@@ -102,6 +104,12 @@ def montar_gastos(
                 pct_publico=c.pct_publico,
                 pct_autofinanciamento=c.pct_autofinanciamento,
                 custo=c.custo,
+                **foto_e_link(
+                    fotos,
+                    ano=grupo.ano,
+                    sq_candidato=c.candidatura.sq_candidato,
+                    uf=c.candidatura.sg_uf,
+                ),
             )
             for c in contas.por_candidato
         ],

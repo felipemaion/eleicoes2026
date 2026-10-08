@@ -68,6 +68,23 @@ def _votos_oficiais(ano: int, uf: str, cargo: Cargo | None) -> Link | None:
     )
 
 
+def link_tse_candidato(*, ano: int, sq_candidato: int, uf: str) -> Link:
+    """Página humana do candidato no DivulgaCandContas (`uf = BR` para presidente).
+
+    Rota `#/candidato/:regiao/:uf/:eleicaoID/:candidatoID/:ano/:sgUe` lida no bundle do app do
+    TSE e aberta no navegador em 2026-10-08 (Renan 2026, Kim 2022/2026, dep. estaduais 2022/2026).
+    O padrão antigo `/candidato/<ano>/<eleição>/<uf>/<sq>` não existe: dá "erro ao carregar".
+    """
+    eleicao = ELEICAO_DIVULGA[ano]
+    return Link(
+        tipo="divulgacand_candidato",
+        rotulo="Perfil, bens e prestação de contas (DivulgaCandContas)",
+        url=f"{DIVULGA}/#/candidato/{uf}/{uf}/{eleicao}/{sq_candidato}/{ano}/{uf}",
+        verificado=True,
+        nota=None,
+    )
+
+
 def _divulgacand(ano: int, sq_candidato: int, uf: str) -> list[Link]:
     eleicao = ELEICAO_DIVULGA[ano]
     return [
@@ -81,15 +98,7 @@ def _divulgacand(ano: int, sq_candidato: int, uf: str) -> list[Link]:
             else "Lista de candidaturas da UF (escolha o cargo e abra o candidato); "
             "padrão conferido só para BR.",
         ),
-        Link(
-            tipo="divulgacand_candidato",
-            rotulo="Perfil, bens e prestação de contas (DivulgaCandContas)",
-            url=f"{DIVULGA}/#/candidato/{ano}/{eleicao}/{uf}/{sq_candidato}",
-            verificado=False,
-            nota="Padrão público do DivulgaCandContas; no teste automatizado a página não "
-            "carregou (a SPA do TSE respondeu erro), então confira abrindo o link. "
-            "Alternativa: o link de candidaturas.",
-        ),
+        link_tse_candidato(ano=ano, sq_candidato=sq_candidato, uf=uf),
         Link(
             tipo="divulgacand_ficha_json",
             rotulo="Ficha oficial em JSON (DivulgaCandContas)",
