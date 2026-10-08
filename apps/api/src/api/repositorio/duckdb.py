@@ -7,7 +7,7 @@ from pathlib import Path
 import duckdb
 
 from api.pessoa import SQL_ID_PUBLICO
-from api.repositorio.base import DadosIndisponiveis
+from api.repositorio.base import DadosIndisponiveis, MemoriaInsuficiente
 from api.repositorio.modelos import (
     BaseEleitoral,
     Candidatura,
@@ -119,6 +119,18 @@ _COLUNAS_CANDIDATURA = ", ".join(_CAMPOS_CANDIDATURA)
 _ESCAPE = "ESCAPE '\\'"  # o LIKE do DuckDB não tem escape padrão
 # `sq IN (SELECT unnest(?))`: a lista vai como parâmetro (nunca interpolada no SQL).
 _SQS = "sq_candidato IN (SELECT unnest(?::BIGINT[]))"
+
+
+def _em_sqs(sqs: Sequence[int]) -> tuple[str, list[int]]:
+    """(`sq_candidato IN (?, …)`, valores): lista de placeholders, não subconsulta.
+
+    Com `IN (SELECT unnest(?))` o DuckDB faz semi-join e agrega a base inteira antes de filtrar
+    (votos_munzona: ~1 GB de pico e 0,4 s para 1 candidato); com `IN (?, ?)` o filtro desce ao
+    scan do Parquet (~60 MB e 0,01 s). Só os valores vão como parâmetro; o SQL tem `?` fixos.
+    """
+    ids = [int(s) for s in sqs]
+    marcas = ", ".join("?" for _ in ids) or "NULL"  # IN () é inválido; NULL não casa nada
+    return f"sq_candidato IN ({marcas})", ids
 
 
 def _casamento(termo: str, prefixo: str) -> tuple[str, list[object], str, list[object]]:
@@ -334,6 +346,15 @@ class RepositorioDuckDB:
             raise DadosIndisponiveis("nenhum dataset traz dt_geracao")
         return str(max(datas).isoformat())
 
+    def configuracao(self) -> dict[str, str]:
+        """Limites efetivos da conexão (o que o DuckDB aplica, não o que se pediu)."""
+        chaves = ("memory_limit", "temp_directory", "threads", "max_temp_directory_size")
+        efetivo: dict[str, str] = {}
+        for chave in chaves:
+            linha = self._con.execute(f"SELECT current_setting('{chave}')").fetchone()
+            efetivo[chave] = str(linha[0]) if linha else ""
+        return efetivo
+
     def threads(self) -> int:
         """Threads efetivas da conexão."""
         linha = self._con.execute("SELECT current_setting('threads')").fetchone()
@@ -349,6 +370,8 @@ class RepositorioDuckDB:
             return cursor.execute(sql, list(params)).fetchall()
         except duckdb.CatalogException as erro:
             raise DadosIndisponiveis("tabela do contrato ausente") from erro
+        except duckdb.OutOfMemoryException as erro:
+            raise MemoriaInsuficiente(str(erro)) from erro
         finally:
             cursor.close()
 
@@ -552,7 +575,8 @@ class RepositorioDuckDB:
         """Σ votos por município ou município×zona."""
         zona = "v.nr_zona" if por_zona else "NULL"
         agrupa = "v.cd_mun_ibge, v.nr_zona" if por_zona else "v.cd_mun_ibge"
-        params: list[object] = [ano, list(sqs)]
+        em, ids = _em_sqs(sqs)
+        params: list[object] = [ano, *ids]
         filtro_uf = ""
         if uf is not None:
             filtro_uf = " AND v.sg_uf = ?"  # UF do local de votação (vale também para presidente)
@@ -562,16 +586,17 @@ class RepositorioDuckDB:
             params.append(cd_mun_ibge)
         sql = (
             f"SELECT v.cd_mun_ibge, {zona}, SUM(v.votos)::BIGINT FROM votos_munzona v "  # noqa: S608
-            f"WHERE v.ano = ? AND v.{_SQS}{filtro_uf} GROUP BY {agrupa} ORDER BY {agrupa}"
+            f"WHERE v.ano = ? AND v.{em}{filtro_uf} GROUP BY {agrupa} ORDER BY {agrupa}"
         )
         return [VotosTerritorio(*linha) for linha in self._linhas(sql, params)]  # type: ignore[arg-type]
 
     def votos_totais(self, ano: int, sqs: Sequence[int]) -> dict[int, int]:
         """Votos totais por candidato."""
+        em, ids = _em_sqs(sqs)
         linhas = self._linhas(
-            f"SELECT sq_candidato, SUM(votos)::BIGINT FROM votos_munzona WHERE ano = ? AND {_SQS} "  # noqa: S608
+            f"SELECT sq_candidato, SUM(votos)::BIGINT FROM votos_munzona WHERE ano = ? AND {em} "  # noqa: S608
             "GROUP BY sq_candidato",
-            [ano, list(sqs)],
+            [ano, *ids],
         )
         return {int(str(s)): int(str(v)) for s, v in linhas}
 
@@ -606,11 +631,12 @@ class RepositorioDuckDB:
         """Votos e aptos por célula H3; aptos contam todos os locais da célula."""
         if not self._tem_h3:
             raise DadosIndisponiveis("locais_h3 ausente")
+        em, ids = _em_sqs(sqs)
         linhas = self._linhas(
-            """
+            f"""
             WITH votos AS (
               SELECT cd_mun_ibge, nr_zona, nr_local, SUM(votos) AS votos
-              FROM votos_local WHERE ano = ? AND sq_candidato IN (SELECT unnest(?::BIGINT[]))
+              FROM votos_local WHERE ano = ? AND {em}
               GROUP BY ALL
             )
             SELECT l.h3, COALESCE(SUM(v.votos), 0)::BIGINT, SUM(l.aptos)::BIGINT
@@ -619,8 +645,8 @@ class RepositorioDuckDB:
                               AND v.nr_local = l.nr_local
             WHERE l.ano = ? AND l.sg_uf = ? AND l.h3 IS NOT NULL
             GROUP BY l.h3 ORDER BY l.h3
-            """,
-            [ano, list(sqs), ano, uf],
+            """,  # noqa: S608 - só fragmentos fixos
+            [ano, *ids, ano, uf],
         )
         return [CelulaH3(*linha) for linha in linhas]  # type: ignore[arg-type]
 
@@ -636,17 +662,18 @@ class RepositorioDuckDB:
     ) -> tuple[int, list[PontoVotacao]]:
         """Locais com voto, ordenados por votos desc (desempate estável por coordenada)."""
         filtro_uf = " AND l.sg_uf = ?" if uf is not None else ""
+        em, ids = _em_sqs(sqs)
         base = f"""
             FROM (
               SELECT cd_mun_ibge, nr_zona, nr_local, SUM(votos) AS votos
-              FROM votos_local WHERE ano = ? AND sq_candidato IN (SELECT unnest(?::BIGINT[]))
+              FROM votos_local WHERE ano = ? AND {em}
               GROUP BY ALL
             ) v
             JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge
                                   AND l.nr_zona = v.nr_zona AND l.nr_local = v.nr_local
             WHERE v.votos > 0 AND l.lat IS NOT NULL AND l.lon IS NOT NULL{filtro_uf}
         """  # noqa: S608 - só fragmentos fixos
-        params: list[object] = [ano, list(sqs), ano]
+        params: list[object] = [ano, *ids, ano]
         if uf is not None:
             params.append(uf)
         if grade_graus is None:
@@ -684,7 +711,8 @@ class RepositorioDuckDB:
         if por_h3 and not self._tem_h3:
             raise DadosIndisponiveis("locais_h3 ausente")
         filtro_uf = "WHERE l.sg_uf = ?" if uf is not None else ""
-        params: list[object] = [ano, list(sqs), ano]
+        em, ids = _em_sqs(sqs)
+        params: list[object] = [ano, *ids, ano]
         if uf is not None:
             params.append(uf)
         linha = self._linhas(
@@ -693,7 +721,7 @@ class RepositorioDuckDB:
                    COALESCE(SUM(v.votos), 0)::BIGINT
             FROM (
               SELECT cd_mun_ibge, nr_zona, nr_local, SUM(votos) AS votos
-              FROM votos_local WHERE ano = ? AND sq_candidato IN (SELECT unnest(?::BIGINT[]))
+              FROM votos_local WHERE ano = ? AND {em}
               GROUP BY ALL
             ) v
             JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge

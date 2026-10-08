@@ -41,7 +41,8 @@ class Link(BaseModel):
     nota: str | None = Field(description="Obrigatória quando `verificado = false`.")
 
 
-def _votos_oficiais(ano: int, uf: str, cargo: Cargo) -> Link:
+def _votos_oficiais(ano: int, uf: str, cargo: Cargo | None) -> Link | None:
+    """Link da votação; `None` quando o cargo (vice, suplente) não tem página própria no TSE."""
     if ano != 2026:
         return Link(
             tipo="votos_oficiais",
@@ -51,6 +52,8 @@ def _votos_oficiais(ano: int, uf: str, cargo: Cargo) -> Link:
             nota="O app de resultados do TSE só traz a eleição corrente; para 2022 use o "
             "arquivo de dados abertos de votação (link abaixo) ou esta página de estatísticas.",
         )
+    if cargo is None:
+        return None
     federal = cargo in _CARGOS_FEDERAIS
     cd = ELEICAO_RESULTADOS_2026["federal" if federal else "estadual"]
     return Link(
@@ -103,8 +106,13 @@ def _divulgacand(ano: int, sq_candidato: int, uf: str) -> list[Link]:
 
 def links_da_candidatura(*, ano: int, sq_candidato: int, uf: str, cargo: str) -> list[Link]:
     """Links oficiais de uma candidatura (`uf = BR` para presidente)."""
+    try:
+        cargo_titular: Cargo | None = Cargo(cargo.upper())
+    except ValueError:  # vice e suplentes não são cargos de /mapa nem têm página própria
+        cargo_titular = None
+    votos = _votos_oficiais(ano, uf, cargo_titular)
     return [
-        _votos_oficiais(ano, uf, Cargo(cargo.upper())),
+        *([votos] if votos else []),
         *_divulgacand(ano, sq_candidato, uf),
         Link(
             tipo="dados_abertos_votos",

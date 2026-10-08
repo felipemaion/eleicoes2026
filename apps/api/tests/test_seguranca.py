@@ -39,7 +39,7 @@ def test_limites_ficam_travados_depois_da_abertura(tmp_path: Path) -> None:
 
 # --------------------------------------------------------------- semáforo
 def test_semaforo_devolve_503_quando_excede_os_calculos_simultaneos() -> None:
-    cache = CacheLRU(simultaneos=1)
+    cache = CacheLRU(simultaneos=1, espera_s=0.05)
     dentro, soltar = threading.Event(), threading.Event()
 
     def lento() -> int:

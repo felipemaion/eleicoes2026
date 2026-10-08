@@ -35,8 +35,10 @@ class Settings(BaseSettings):
     duck_memory_limit: str = "1200MB"
     duck_max_temp_directory_size: str = "400MB"
     duck_temp_directory: Path = Path("/tmp/duck")  # noqa: S108 - tmpfs do contêiner
-    # Cálculos pesados simultâneos; o excedente recebe 503 + Retry-After.
+    # Cálculos pesados simultâneos; o excedente espera `espera_vaga_s` e depois recebe 503.
     calculos_simultaneos: int = 4
+    # Espera máxima por uma vaga antes do 503 (rajada de telas do frontend vira fila, não erro).
+    espera_vaga_s: float = 10.0
     # Aquecimento do cache em segundo plano após abrir os dados (cache frio custa 2–3 s).
     aquecer: bool = True
     # Teto de consultas pré-calculadas: metade do LRU, para não expulsar o que já está quente.

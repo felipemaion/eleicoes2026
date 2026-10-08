@@ -96,3 +96,25 @@ def _get_falso(modulo: object) -> object:
 
 
 pytestmark = pytest.mark.filterwarnings("ignore")
+
+
+def test_descoberta_que_falha_e_registrada_sem_abortar() -> None:
+    spec = importlib.util.spec_from_file_location(
+        "varredura", Path(__file__).parents[1] / "scripts" / "varredura.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    modulo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+
+    def get(caminho: str, params: dict[str, object]) -> tuple[int, object, float]:
+        if caminho == "/api/grupos":
+            return 200, {"grupos": [{"id": "g", "ano": 2026}], "comparacoes": []}, 0.0
+        if caminho in ("/api/candidatos", "/api/busca") and "limite" in params:
+            return 502, None, 0.0
+        return 200, {"itens": []}, 0.0
+
+    rel = modulo.executar(get, ufs=("SP",))
+    assert not rel.ok
+    assert {(c, s) for (c, _), s in rel.descoberta} >= {("/api/candidatos", 502)}
+    assert rel.total > 0

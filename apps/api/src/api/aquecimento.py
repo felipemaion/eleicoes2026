@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 CARGOS_DEPUTADO = (Cargo.DEPUTADO_FEDERAL, Cargo.DEPUTADO_ESTADUAL, Cargo.DEPUTADO_DISTRITAL)
 LIMITE_PADRAO, OFFSET_PADRAO = 200, 0  # os defaults que o frontend usa em /candidatos
-TENTATIVAS_OCUPADO, ESPERA_OCUPADO_S = 20, 0.5
+TENTATIVAS_OCUPADO, ESPERA_OCUPADO_S = 120, 0.5  # cede por até 1 min aos usuários
 
 Consulta = Callable[[], object]
 
@@ -64,7 +64,8 @@ class Aquecimento(threading.Thread):
         """Roda a consulta; se o servidor estiver ocupado (503), espera a vez dos usuários."""
         for tentativa in range(TENTATIVAS_OCUPADO):
             try:
-                consulta()
+                with self._cache.baixa_prioridade():
+                    consulta()
                 return
             except ErroDominio as erro:
                 if erro.status != 503 or tentativa == TENTATIVAS_OCUPADO - 1:
