@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Indicador, Nivel
 from api.erros import parametro_invalido
+from api.fontes import Fonte, fonte
 from api.repositorio.base import Repositorio
 from api.repositorio.modelos import Candidatura, VotosSemCoordenada
 from api.servicos.escopo import selecionar_alvo
@@ -77,6 +78,7 @@ class Mapa(BaseModel):
         "candidato, mas não têm polígono e ficam fora de `valores`.",
     )
     dt_geracao: str
+    fontes: list[Fonte] = Field(description="Procedência dos números (arquivo, regra, spec).")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -98,6 +100,7 @@ class Mapa(BaseModel):
                     "denominador": "aptos",
                     "n_candidaturas": 2,
                     "dt_geracao": "2026-10-06",
+                    "fontes": [],
                 }
             ]
         }
@@ -279,7 +282,18 @@ def montar_mapa(
         pct_votos_sem_coordenada=None if sem_coord is None else _pct(sem_coord),
         votos_fora_do_mapa=fora_do_mapa,
         dt_geracao=repo.dt_geracao(),
+        fontes=_fontes_do_mapa(ano, nivel, uf, repo.dt_geracao()),
     )
+
+
+def _fontes_do_mapa(ano: int, nivel: Nivel, uf: str | None, dt_geracao: str) -> list[Fonte]:
+    """Procedência do mapa: H3 vem da votação por seção; os demais, da por município/zona."""
+    votos = (
+        fonte("votacao_secao", ano=ano, dt_geracao=dt_geracao, uf=uf)
+        if nivel is Nivel.H3
+        else fonte("votacao_candidato_munzona", ano=ano, dt_geracao=dt_geracao)
+    )
+    return [votos, fonte("detalhe_votacao_munzona", ano=ano, dt_geracao=dt_geracao)]
 
 
 def _quadro(linhas: Sequence[Linha]) -> pl.DataFrame:

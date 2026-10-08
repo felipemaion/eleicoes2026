@@ -70,6 +70,8 @@ class ContasCand:
     candidatura: Candidatura
     custo: ResumoCustoCandidato
     receita_total: float
+    repasses_contratados: float
+    repasses_pagos: float
 
 
 @dataclass(frozen=True)
@@ -97,6 +99,27 @@ _ESQUEMA_RECEITA = {
     "vr_receita": pl.Float64,
     "sq_candidato_doador": pl.Int64,
 }
+
+
+_COLUNAS_DESPESA = ("despesa_contratada", "despesa_paga", "repasse_contratado", "repasse_pago")
+
+
+def _repasses(despesas: pl.DataFrame, coluna_valor: str, nome: str) -> pl.DataFrame:
+    """Σ dos repasses a outros candidatos/partidos por candidato — o que o custo por voto exclui.
+
+    Mesmos rótulos que `financeiro.despesa_campanha` descarta (spec §4.2), para que
+    `despesa própria + repasses = despesa total` feche exatamente.
+    """
+    rotulos = [
+        r
+        for r in despesas["ds_origem_despesa"].unique().to_list()
+        if financeiro.normalizar_rotulo(r) in financeiro.ORIGENS_DESPESA_TRANSFERENCIA
+    ]
+    return (
+        despesas.filter(pl.col("ds_origem_despesa").is_in(rotulos))
+        .group_by("sq_candidato")
+        .agg(pl.col(coluna_valor).sum().alias(nome))
+    )
 
 
 def _correcao(repo: Repositorio, ano: int) -> tuple[pl.DataFrame, str, str] | None:
@@ -160,6 +183,8 @@ def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) 
     paga = financeiro.despesa_campanha(despesas, "vr_despesa_paga").rename(
         {"despesa": "despesa_paga"}
     )
+    repasse_contratado = _repasses(despesas, "vr_despesa_contratada", "repasse_contratado")
+    repasse_pago = _repasses(despesas, "vr_despesa_paga", "repasse_pago")
     tem_contas = pl.col("sq_candidato").is_in(list(com_contas))
     # Quem tem lançamentos mas só repasses fica com despesa 0; quem não tem contas fica null
     # (a lib exclui "sem contas" do agregado).
@@ -170,12 +195,14 @@ def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) 
         )
         .join(contratada, on="sq_candidato", how="left")
         .join(paga, on="sq_candidato", how="left")
+        .join(repasse_contratado, on="sq_candidato", how="left")
+        .join(repasse_pago, on="sq_candidato", how="left")
         .with_columns(
             pl.when(tem_contas).then(pl.col(c).fill_null(0.0)).otherwise(None).alias(c)
-            for c in ("despesa_contratada", "despesa_paga")
+            for c in _COLUNAS_DESPESA
         )
     )
-    base = _corrigir(base, ["despesa_contratada", "despesa_paga"], correcao)
+    base = _corrigir(base, list(_COLUNAS_DESPESA), correcao)
     por_cand = financeiro.custo_por_voto(base).filter(pl.col("despesa_contratada").is_not_null())
 
     classificadas = financeiro.classificar_receitas(receitas)
@@ -206,6 +233,8 @@ def contas_de(repo: Repositorio, ano: int, candidaturas: Sequence[Candidatura]) 
                     custo_voto_pago=linha["custo_voto_pago"],
                 ),
                 receita_total=totais_cand.get(linha["sq_candidato"], 0.0),
+                repasses_contratados=linha["repasse_contratado"],
+                repasses_pagos=linha["repasse_pago"],
             )
             for linha in por_cand.to_dicts()
         ],

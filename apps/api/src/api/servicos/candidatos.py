@@ -8,9 +8,12 @@ from indicadores.grupos import agregar_grupo
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.erros import nao_encontrado
+from api.fontes import Fonte, fontes
+from api.links import Link, links_da_candidatura
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
 from api.servicos.contas import (
+    ContasCand,
     ResumoCustoCandidato,
     ResumoReceitasOut,
     contas_de,
@@ -86,6 +89,7 @@ class ListaCandidatos(BaseModel):
         description="Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam "
         "cargos) ou sem candidaturas."
     )
+    fontes: list[Fonte] = Field(description="Procedência dos números (arquivo, regra, spec).")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -118,6 +122,17 @@ class ListaCandidatos(BaseModel):
                         "pct_validos": 8.06,
                         "penetracao": 57.14,
                     },
+                    "fontes": [
+                        {
+                            "dataset": "votacao_candidato_munzona",
+                            "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/"
+                            "votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+                            "dt_geracao": "2026-10-06",
+                            "coluna_regra": "QT_VOTOS_NOMINAIS_VALIDOS com destinação 'Válido'.",
+                            "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/"
+                            "main/docs/metodologia/indicadores.md#21-votos-nominais",
+                        }
+                    ],
                 }
             ]
         }
@@ -233,6 +248,11 @@ def listar_candidatos(
         offset=offset,
         itens=itens[offset : offset + limite],
         kpis=kpis_do_grupo(repo, grupo, candidaturas, cargo=cargo, uf=uf) if cargo else None,
+        fontes=fontes(
+            ["votacao_candidato_munzona", "detalhe_votacao_munzona"],
+            ano=grupo.ano,
+            dt_geracao=repo.dt_geracao(),
+        ),
     )
 
 
@@ -256,6 +276,57 @@ class VotosMunicipio(BaseModel):
     penetracao: float | None = Field(description="‰ dos aptos do município no cargo.")
 
 
+class GastosCandidato(ResumoCustoCandidato):
+    """Finanças da campanha: despesa, repasses, receita e custo por voto com e sem repasses."""
+
+    repasses_contratados: float = Field(
+        description="R$ contratados como doação a outros candidatos/partidos (fora do custo)."
+    )
+    repasses_pagos: float = Field(description="R$ pagos nesses repasses.")
+    despesa_total_contratada: float = Field(
+        description="Despesa própria + repasses (contratada): tudo que a campanha comprometeu."
+    )
+    despesa_total_paga: float = Field(description="Despesa própria + repasses (paga).")
+    custo_voto_contratado_com_repasses: float | None = Field(
+        description="despesa total contratada ÷ votos. Maior ou igual ao custo sem repasses: a "
+        "diferença é o dinheiro repassado a terceiros. null se votos = 0."
+    )
+    custo_voto_pago_com_repasses: float | None
+    receita_total: float = Field(description="Σ das receitas da campanha (todas as fontes).")
+    receita_por_fonte: dict[str, float] = Field(
+        description="Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…"
+    )
+    explicacao_repasses: str = Field(
+        description="Por que há dois custos por voto e qual a diferença entre eles."
+    )
+
+
+EXPLICACAO_REPASSES = (
+    "O custo por voto principal exclui repasses (doações financeiras a outros candidatos ou "
+    "partidos), porque esse dinheiro não comprou voto para este candidato (spec §4.2). A versão "
+    "com repasses divide a despesa total — própria + repasses — pelos mesmos votos."
+)
+
+
+def _gastos_da_ficha(cc: ContasCand, receitas: ResumoReceitasOut) -> GastosCandidato:
+    """Monta as finanças da ficha; só soma e divide valores já calculados pela lib."""
+    c = cc.custo
+    total_c = c.despesa_contratada + cc.repasses_contratados
+    total_p = c.despesa_paga + cc.repasses_pagos
+    return GastosCandidato(
+        **c.model_dump(),
+        repasses_contratados=cc.repasses_contratados,
+        repasses_pagos=cc.repasses_pagos,
+        despesa_total_contratada=total_c,
+        despesa_total_paga=total_p,
+        custo_voto_contratado_com_repasses=total_c / c.votos if c.votos else None,
+        custo_voto_pago_com_repasses=total_p / c.votos if c.votos else None,
+        receita_total=receitas.receita_total,
+        receita_por_fonte=receitas.por_categoria,
+        explicacao_repasses=EXPLICACAO_REPASSES,
+    )
+
+
 class FichaCandidato(BaseModel):
     """Ficha completa: votação, geografia e finanças."""
 
@@ -263,11 +334,16 @@ class FichaCandidato(BaseModel):
     votos_total: int
     votos_por_uf: list[VotosUF]
     votos_por_municipio: list[VotosMunicipio] = Field(description="Top N por votos.")
-    gastos: ResumoCustoCandidato | None = Field(description="null se não há prestação de contas.")
+    gastos: GastosCandidato | None = Field(description="null se não há prestação de contas.")
     receitas: ResumoReceitasOut | None
     contas_parciais: bool = Field(description="Prestação de contas ainda parcial (2026).")
     base_ipca: str | None = Field(description="Mês-base da correção do IPCA (valores de 2022).")
     dt_geracao: str
+    links: list[Link] = Field(
+        description="Links oficiais do TSE (votos, perfil, contas, dados abertos); cada um diz "
+        "se foi `verificado` e, se não, o que conferir."
+    )
+    fontes: list[Fonte] = Field(description="Procedência dos números da ficha.")
 
 
 def montar_ficha(
@@ -315,9 +391,21 @@ def montar_ficha(
         votos_total=votos_total,
         votos_por_uf=[VotosUF(uf=u, votos=n) for u, n in sorted(por_uf.items())],
         votos_por_municipio=linhas[:top],
-        gastos=contas.por_candidato[0].custo if contas.por_candidato else None,
+        gastos=_gastos_da_ficha(contas.por_candidato[0], contas.receitas)
+        if contas.por_candidato
+        else None,
         receitas=contas.receitas if contas.por_candidato else None,
         contas_parciais=contas.parcial,
         base_ipca=contas.base_ipca,
         dt_geracao=repo.dt_geracao(),
+        links=links_da_candidatura(
+            ano=ano, sq_candidato=sq_candidato, uf=c.sg_uf, cargo=c.ds_cargo
+        ),
+        fontes=fontes(
+            ["consulta_cand", "votacao_candidato_munzona", "detalhe_votacao_munzona"]
+            + (["prestacao_contas"] if contas.por_candidato else [])
+            + (["ipca"] if contas.base_ipca else []),
+            ano=ano,
+            dt_geracao=repo.dt_geracao(),
+        ),
     )
