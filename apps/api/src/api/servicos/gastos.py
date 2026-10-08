@@ -27,7 +27,9 @@ class GastoCandidato(ComFotoELink):
     cargo: str
     partido: Partido
     resultado: str | None = Field(description="`ds_sit_tot_turno`; null até a apuração.")
-    receita_total: float
+    receita_total: float | None = Field(
+        description="Receita **bruta** do candidato; null se não há linha de receita (≠ zero)."
+    )
     pct_publico: float | None = Field(
         description="FEFC + Fundo Partidário, % da receita do candidato."
     )
@@ -36,15 +38,21 @@ class GastoCandidato(ComFotoELink):
         description="Pessoa física + financiamento coletivo, %."
     )
     n_efetivo_fontes: float | None = Field(description="1 / HHI das categorias de receita (§4.5).")
-    receita_repasses_candidatos: float = Field(description="Recebido de outros candidatos (§4.6).")
-    receita_sem_repasses: float
-    receita_por_voto: float | None = Field(description="R$/voto = receita ÷ votos (§4.7).")
-    receita_por_mil_aptos: float | None = Field(description="R$ por mil aptos da circunscrição.")
-    saldo_contratado: float | None = Field(
-        description="receita − despesa contratada, com repasses (§4.8)."
+    receita_repasses_candidatos: float | None = Field(
+        description="Recebido de outros candidatos (§4.6)."
     )
-    saldo_financeiro: float | None
-    pct_receita_gasta: float | None
+    receita_sem_repasses: float | None
+    receita_por_voto: float | None = Field(
+        description="R$/voto = receita **bruta** ÷ votos (§4.7); null com 0 votos."
+    )
+    receita_por_mil_aptos: float | None = Field(
+        description="R$ de receita **bruta** por mil aptos da circunscrição."
+    )
+    saldo_contratado: float | None = Field(
+        description="receita **bruta** − despesa contratada, com repasses (§4.8)."
+    )
+    saldo_financeiro: float | None = Field(description="receita financeira bruta − despesa paga.")
+    pct_receita_gasta: float | None = Field(description="100 × despesa contratada ÷ receita bruta.")
     custo: ResumoCustoCandidato
 
 
@@ -56,12 +64,15 @@ class Gastos(BaseModel):
     cargo: str | None
     uf: str | None
     agregado: ResumoCustoGrupo
-    receitas: ResumoReceitasOut
+    receitas: ResumoReceitasOut | None = Field(
+        description="Receita **líquida** de repasses internos; null se ninguém tem receita."
+    )
     receita_por_voto: ReceitaPorVotoGrupo
     distribuicao_receita: DistribuicaoReceita
     saldo: SaldoGrupo
     receita_por_mil_aptos: float | None = Field(
-        description="1000 × receita do grupo ÷ aptos da circunscrição, contados uma vez (§4.7); "
+        description="1000 × receita **líquida** do grupo ÷ eleitorado de todas as circunscrições "
+        "do grupo no cargo, contado uma vez (§4.7), inclusive as sem contas; "
         "null com mais de um cargo."
     )
     aptos: int | None = Field(description="Eleitorado usado em `receita_por_mil_aptos`.")
@@ -156,8 +167,8 @@ def montar_gastos(
                 pct_autofinanciamento=c.pct_autofinanciamento,
                 pct_pessoa_fisica=c.resumo.get("pct_pessoa_fisica"),
                 n_efetivo_fontes=c.resumo.get("n_efetivo_fontes"),
-                receita_repasses_candidatos=c.resumo.get("receita_repasses_candidatos") or 0.0,
-                receita_sem_repasses=c.resumo.get("receita_sem_repasses") or 0.0,
+                receita_repasses_candidatos=c.resumo.get("receita_repasses_candidatos"),
+                receita_sem_repasses=c.resumo.get("receita_sem_repasses"),
                 receita_por_voto=c.receita_por_voto,
                 receita_por_mil_aptos=c.receita_por_mil_aptos,
                 saldo_contratado=c.saldo_contratado,

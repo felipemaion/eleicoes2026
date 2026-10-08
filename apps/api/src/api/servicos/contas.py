@@ -45,11 +45,19 @@ class ResumoReceitasOut(BaseModel):
     """Receita por categoria (§4.1), composição (§4.5) e repasses entre candidatos (§4.6)."""
 
     por_categoria: dict[str, float]
-    receita_total: float = Field(description="Σ das receitas; no grupo, sem repasses internos.")
-    receita_financeira: float
-    receita_estimavel: float = Field(description="Bens e serviços doados, não passam pela conta.")
-    receita_repasses_candidatos: float = Field(description="Σ recebido de outros candidatos.")
-    receita_sem_repasses: float = Field(description="receita_total − repasses de candidatos.")
+    receita_total: float | None = Field(
+        description="Σ das receitas. No grupo é **líquida** de repasses internos (§4.6)."
+    )
+    receita_financeira: float | None
+    receita_estimavel: float | None = Field(
+        description="Bens e serviços doados, não passam pela conta."
+    )
+    receita_repasses_candidatos: float | None = Field(
+        description="Σ recebido de outros candidatos."
+    )
+    receita_sem_repasses: float | None = Field(
+        description="receita_total − repasses de candidatos."
+    )
     receita_repasses_internos: float | None = Field(
         description="Só no grupo: repasses entre membros, descontados do total (§4.6)."
     )
@@ -68,7 +76,7 @@ class ResumoReceitasOut(BaseModel):
 
 
 class ReceitaPorVotoGrupo(BaseModel):
-    """Receita por voto do grupo: Σ receita ÷ Σ votos, sobre candidatos com contas e voto (§4.7)."""
+    """Receita por voto do grupo: Σ receita **líquida** ÷ Σ votos, só com receita e voto (§4.7)."""
 
     receita_por_voto: float | None
     mediana_receita_por_voto: float | None
@@ -77,7 +85,7 @@ class ReceitaPorVotoGrupo(BaseModel):
 
 
 class DistribuicaoReceita(BaseModel):
-    """Receita por candidato do grupo: cauda pesada, então média e mediana juntas (§4.9)."""
+    """Receita **líquida** por candidato com receita; cauda pesada, então média e mediana (§4.9)."""
 
     n_candidatos: int
     n_com_contas: int
@@ -90,7 +98,10 @@ class DistribuicaoReceita(BaseModel):
 
 
 class SaldoGrupo(BaseModel):
-    """Saldo (§4.8). Receita bruta e despesa com repasses: repasses internos se anulam."""
+    """Saldo (§4.8) dos candidatos com receita: receita **bruta** menos despesa com repasses.
+
+    Bruta porque o repasse interno é receita de um e despesa de outro: os dois se anulam.
+    """
 
     saldo_contratado: float | None = Field(description="receita − despesa contratada.")
     saldo_financeiro: float | None = Field(description="receita financeira − despesa paga.")
@@ -123,7 +134,7 @@ class ContasCand:
 
     candidatura: Candidatura
     custo: ResumoCustoCandidato
-    receita_total: float
+    receita_total: float | None  # None = sem nenhuma linha de receita (≠ receita zero)
     repasses_contratados: float
     repasses_pagos: float
     resumo: dict[str, float | None]  # `resumo_receitas` do candidato (bruto, §4.1/§4.5/§4.6)
@@ -150,7 +161,7 @@ class ContasAgregadas:
 
     por_candidato: list[ContasCand]
     agregado: ResumoCustoGrupo
-    receitas: ResumoReceitasOut
+    receitas: ResumoReceitasOut | None  # None = ninguém com linha de receita
     receita_por_voto: ReceitaPorVotoGrupo
     distribuicao: DistribuicaoReceita
     saldo: SaldoGrupo
@@ -272,6 +283,7 @@ def contas_de(
         orient="row",
     )  # fmt: skip
     receitas = _corrigir(receitas, ["vr_receita"], correcao)
+    com_receita = set(receitas["sq_candidato"])  # sem linha de receita ≠ receita zero
     com_contas = set(despesas["sq_candidato"]) | set(receitas["sq_candidato"])
 
     contratada = financeiro.despesa_campanha(despesas, "vr_despesa_contratada").rename(
@@ -315,7 +327,7 @@ def contas_de(
         linha["sq_candidato"]: linha
         for linha in financeiro.resumo_receitas(classificadas).to_dicts()
     }
-    resumo_rec = grupos.receitas_grupo(classificadas, sqs).to_dicts()[0]
+    resumo_rec = grupos.receitas_grupo(classificadas, sqs).to_dicts()[0] if com_receita else None
     agg = financeiro.custo_por_voto_agregado(base).to_dicts()[0]
     soma = financeiro.custo_por_voto(
         por_cand.select(
@@ -328,14 +340,18 @@ def contas_de(
     bases = BasesPorEscopo(repo)
     aptos_de = {sq: bases.de(c)[0] for sq, c in por_sq.items() if sq in com_contas}
 
+    def da_receita(sq: int, campo: str) -> float | None:
+        """Campo do `resumo_receitas` do candidato; `None` se ele não tem linha de receita."""
+        return resumo_cand[sq][campo] if sq in resumo_cand else None
+
     # Por candidato: receita bruta (o que ele recebeu), com despesa que inclui repasses (§4.8).
     cand = pl.DataFrame(
         [
             (
                 linha["sq_candidato"],
                 linha["votos"],
-                resumo_cand.get(linha["sq_candidato"], {}).get("receita_total", 0.0),
-                resumo_cand.get(linha["sq_candidato"], {}).get("receita_financeira", 0.0),
+                da_receita(linha["sq_candidato"], "receita_total"),
+                da_receita(linha["sq_candidato"], "receita_financeira"),
                 aptos_de[linha["sq_candidato"]],
                 linha["despesa_total_contratada"],
                 linha["despesa_total_paga"],
@@ -374,8 +390,8 @@ def contas_de(
             (
                 sq,
                 votos.get(sq, 0),
-                resumo_cand.get(sq, {}).get("receita_total", 0.0) - internos.get(sq, 0.0)
-                if sq in com_contas
+                resumo_cand[sq]["receita_total"] - internos.get(sq, 0.0)
+                if sq in resumo_cand
                 else None,
             )
             for sq in sqs
@@ -385,24 +401,22 @@ def contas_de(
     )
     por_voto_grupo = financeiro.receita_por_voto_agregado(liquida).to_dicts()[0]
     dist = financeiro.distribuicao_receita(liquida).to_dicts()[0]
-    cargos = {c.ds_cargo for c in candidaturas if c.sq_candidato in com_contas}
+    # Denominador: eleitorado de TODAS as circunscrições do grupo no cargo, não só das que já
+    # entregaram contas — com 2026 parcial, contar só estas inflaria o indicador.
+    cargos = {c.ds_cargo for c in candidaturas}
     aptos_grupo: int | None = None
     mil_aptos: float | None = None
-    if len(cargos) == 1:
-        circunscricoes = {
-            (c.ds_cargo, c.sg_uf): bases.de(c)[0]
-            for c in candidaturas
-            if c.sq_candidato in com_contas
-        }
-        aptos_grupo = sum(circunscricoes.values())
+    if len(cargos) == 1 and resumo_rec is not None:
+        aptos_grupo = sum({(c.ds_cargo, c.sg_uf): bases.de(c)[0] for c in candidaturas}.values())
         mil_aptos = financeiro.receita_por_mil_aptos(
             pl.DataFrame({"receita_total": [resumo_rec["receita_total"]], "aptos": [aptos_grupo]})
         )["receita_por_mil_aptos"].item()
     saldo_grupo = SaldoGrupo(saldo_contratado=None, saldo_financeiro=None, pct_receita_gasta=None)
-    if cand.height:
+    com_receita_df = cand.filter(pl.col("receita_total").is_not_null())
+    if com_receita_df.height:
         saldo_grupo = SaldoGrupo(
             **financeiro.saldo_campanha(
-                cand.select(
+                com_receita_df.select(
                     pl.col("receita_total").sum(),
                     pl.col("receita_financeira").sum(),
                     pl.col("despesa_contratada").sum(),
@@ -412,7 +426,6 @@ def contas_de(
             .select("saldo_contratado", "saldo_financeiro", "pct_receita_gasta")
             .to_dicts()[0]
         )
-    desconhecido = resumo_rec["receita_repasses_doador_desconhecido"] or 0.0
     return ContasAgregadas(
         por_candidato=[
             ContasCand(
@@ -425,7 +438,7 @@ def contas_de(
                     custo_voto_contratado=linha["custo_voto_contratado"],
                     custo_voto_pago=linha["custo_voto_pago"],
                 ),
-                receita_total=resumo_cand.get(linha["sq_candidato"], {}).get("receita_total", 0.0),
+                receita_total=da_receita(linha["sq_candidato"], "receita_total"),
                 resumo=resumo_cand.get(linha["sq_candidato"], {}),
                 receita_por_voto=metricas[linha["sq_candidato"]]["receita_por_voto"],
                 receita_por_mil_aptos=metricas[linha["sq_candidato"]]["receita_por_mil_aptos"],
@@ -447,7 +460,7 @@ def contas_de(
             mediana_custo_voto_contratado=agg["mediana_custo_voto_contratado"],
             candidatos_sem_voto_excluidos=agg["candidatos_sem_voto_excluidos"],
         ),
-        receitas=_receitas_out(resumo_rec, desconhecido),
+        receitas=_receitas_out(resumo_rec) if resumo_rec is not None else None,
         receita_por_voto=ReceitaPorVotoGrupo(**por_voto_grupo),
         distribuicao=DistribuicaoReceita(**dist),
         saldo=saldo_grupo,
@@ -458,30 +471,22 @@ def contas_de(
     )
 
 
-def receitas_out(linha: dict[str, float | None]) -> ResumoReceitasOut:
-    """`ResumoReceitasOut` de uma linha de `resumo_receitas` (candidato, sem campos do grupo)."""
-    return _receitas_out(linha, None)
-
-
-def _receitas_out(linha: dict[str, float | None], desconhecido: float | None) -> ResumoReceitasOut:
-    """Converte a linha da lib; `desconhecido` não nulo marca o resumo como de grupo."""
+def _receitas_out(linha: dict[str, float | None]) -> ResumoReceitasOut:
+    """Converte a linha da lib sem trocar nulo por zero; só o grupo traz repasses internos."""
     grupo = "receita_repasses_internos" in linha
-    total = linha["receita_total"] or 0.0
+    total = linha["receita_total"]
+    desconhecido = linha.get("receita_repasses_doador_desconhecido") if grupo else None
     return ResumoReceitasOut(
-        por_categoria={
-            c: linha[f"receita_{c}"] or 0.0
-            for c in financeiro.CATEGORIAS_RECEITA
-            if linha[f"receita_{c}"]
-        },
+        por_categoria={c: v for c in financeiro.CATEGORIAS_RECEITA if (v := linha[f"receita_{c}"])},
         receita_total=total,
-        receita_financeira=linha["receita_financeira"] or 0.0,
-        receita_estimavel=linha["receita_estimavel"] or 0.0,
-        receita_repasses_candidatos=linha["receita_repasses_candidatos"] or 0.0,
-        receita_sem_repasses=linha["receita_sem_repasses"] or 0.0,
+        receita_financeira=linha["receita_financeira"],
+        receita_estimavel=linha["receita_estimavel"],
+        receita_repasses_candidatos=linha["receita_repasses_candidatos"],
+        receita_sem_repasses=linha["receita_sem_repasses"],
         receita_repasses_internos=linha.get("receita_repasses_internos") if grupo else None,
-        receita_repasses_doador_desconhecido=desconhecido if grupo else None,
-        faixa_receita=FaixaReceita(minima=total - (desconhecido or 0.0), maxima=total)
-        if grupo
+        receita_repasses_doador_desconhecido=desconhecido,
+        faixa_receita=FaixaReceita(minima=total - desconhecido, maxima=total)
+        if total is not None and desconhecido is not None
         else None,
         pct_publico=linha["pct_publico"],
         pct_autofinanciamento=linha["pct_autofinanciamento"],

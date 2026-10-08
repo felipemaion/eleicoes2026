@@ -26,7 +26,24 @@ Sem fórmula local: tudo vem de `indicadores.financeiro` / `grupos`. Contrato mu
   `null`. Aptos contados uma vez por circunscrição (`BasesPorEscopo`; `BR` = Brasil).
 - Receita não vai ao mapa (não é espacial).
 
+## Revisão do orquestrador (aplicada)
+- **Sem receita ≠ zero:** candidato com despesa e sem linha de receita tem `receita_total`, `receita_por_voto`,
+  saldo e `pct_receita_gasta` **null**; fica fora de média/mediana/saldo do grupo (contado como excluído).
+  Ninguém com receita → `receitas` null (grupo, ficha). **Contrato:** `receita_total`, `receitas` e campos de
+  composição passaram a aceitar null.
+- **Sem `or 0.0`:** nulo da lib continua nulo; `faixa_receita` só existe com total e "doador desconhecido" conhecidos.
+  Teste do repasse sem `sq_candidato_doador` (faixa 6–10).
+- **`receita_por_mil_aptos` do grupo:** denominador = eleitorado de **todas** as circunscrições do grupo no
+  cargo (inclusive sem contas); a receita (numerador) segue parcial, então o indicador fica baixo — nunca
+  inflado — enquanto 2026 é parcial (selo `contas_parciais`). Mais de um cargo → null.
+- `assert` do comparativo virou `DadosIndisponiveis`. Teste de invariante `Σ distribuicao == receitas.receita_total`.
+- Descriptions e OpenAPI regenerados; `apps/api/tests/test_b14_revisao.py` (votos 0, sem receita, comparativo
+  nulo por par ≠ 2022→2026 e por lado sem contas, 2022 com dois cargos). O delta do comparativo já é por um
+  cargo (parâmetro `cargo`), então "múltiplos cargos" só afeta o `/gastos`.
+
 ## Pendências
+- Categorias ausentes em 2026 parcial viram −100% em `var_pct` do comparativo; por ora vale o selo
+  `contas_parciais_para`.
 - **dados:** `sq_candidato_doador` já chega do repositório; conferir em produção que o Parquet o preserva
   (senão todo repasse cai em "doador desconhecido", visível na faixa).
 - **frontend:** consumir os campos novos (textos em `textos.json`); regenerar tipos do OpenAPI.

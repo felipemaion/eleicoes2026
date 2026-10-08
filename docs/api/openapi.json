@@ -1786,7 +1786,7 @@
           "maximo"
         ],
         "title": "DistribuicaoReceita",
-        "description": "Receita por candidato do grupo: cauda pesada, então média e mediana juntas (§4.9)."
+        "description": "Receita **líquida** por candidato com receita; cauda pesada, então média e mediana (§4.9)."
       },
       "EscalaSugerida": {
         "properties": {
@@ -2178,8 +2178,16 @@
             "description": "`ds_sit_tot_turno`; null até a apuração."
           },
           "receita_total": {
-            "type": "number",
-            "title": "Receita Total"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Total",
+            "description": "Receita **bruta** do candidato; null se não há linha de receita (≠ zero)."
           },
           "pct_publico": {
             "anyOf": [
@@ -2229,12 +2237,26 @@
             "description": "1 / HHI das categorias de receita (§4.5)."
           },
           "receita_repasses_candidatos": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Repasses Candidatos",
             "description": "Recebido de outros candidatos (§4.6)."
           },
           "receita_sem_repasses": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Sem Repasses"
           },
           "receita_por_voto": {
@@ -2247,7 +2269,7 @@
               }
             ],
             "title": "Receita Por Voto",
-            "description": "R$/voto = receita ÷ votos (§4.7)."
+            "description": "R$/voto = receita **bruta** ÷ votos (§4.7); null com 0 votos."
           },
           "receita_por_mil_aptos": {
             "anyOf": [
@@ -2259,7 +2281,7 @@
               }
             ],
             "title": "Receita Por Mil Aptos",
-            "description": "R$ por mil aptos da circunscrição."
+            "description": "R$ de receita **bruta** por mil aptos da circunscrição."
           },
           "saldo_contratado": {
             "anyOf": [
@@ -2271,7 +2293,7 @@
               }
             ],
             "title": "Saldo Contratado",
-            "description": "receita − despesa contratada, com repasses (§4.8)."
+            "description": "receita **bruta** − despesa contratada, com repasses (§4.8)."
           },
           "saldo_financeiro": {
             "anyOf": [
@@ -2282,7 +2304,8 @@
                 "type": "null"
               }
             ],
-            "title": "Saldo Financeiro"
+            "title": "Saldo Financeiro",
+            "description": "receita financeira bruta − despesa paga."
           },
           "pct_receita_gasta": {
             "anyOf": [
@@ -2293,7 +2316,8 @@
                 "type": "null"
               }
             ],
-            "title": "Pct Receita Gasta"
+            "title": "Pct Receita Gasta",
+            "description": "100 × despesa contratada ÷ receita bruta."
           },
           "custo": {
             "$ref": "#/components/schemas/ResumoCustoCandidato"
@@ -2362,7 +2386,15 @@
             "$ref": "#/components/schemas/ResumoCustoGrupo"
           },
           "receitas": {
-            "$ref": "#/components/schemas/ResumoReceitasOut"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumoReceitasOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Receita **líquida** de repasses internos; null se ninguém tem receita."
           },
           "receita_por_voto": {
             "$ref": "#/components/schemas/ReceitaPorVotoGrupo"
@@ -2383,7 +2415,7 @@
               }
             ],
             "title": "Receita Por Mil Aptos",
-            "description": "1000 × receita do grupo ÷ aptos da circunscrição, contados uma vez (§4.7); null com mais de um cargo."
+            "description": "1000 × receita **líquida** do grupo ÷ eleitorado de todas as circunscrições do grupo no cargo, contado uma vez (§4.7), inclusive as sem contas; null com mais de um cargo."
           },
           "aptos": {
             "anyOf": [
@@ -2595,15 +2627,29 @@
             "title": "Custo Voto Pago Com Repasses"
           },
           "receita_total": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Total",
-            "description": "Σ das receitas da campanha (todas as fontes)."
+            "description": "Σ das receitas **brutas** do candidato (inclui o que recebeu de outros candidatos); null se não há nenhuma linha de receita (≠ receita zero)."
           },
           "receita_por_fonte": {
-            "additionalProperties": {
-              "type": "number"
-            },
-            "type": "object",
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Por Fonte",
             "description": "Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…"
           },
@@ -2617,7 +2663,7 @@
               }
             ],
             "title": "Receita Por Voto",
-            "description": "R$/voto = receita ÷ votos (§4.7)."
+            "description": "R$/voto = receita bruta ÷ votos (§4.7)."
           },
           "receita_por_mil_aptos": {
             "anyOf": [
@@ -2629,7 +2675,7 @@
               }
             ],
             "title": "Receita Por Mil Aptos",
-            "description": "R$ por mil aptos da circunscrição."
+            "description": "R$ de receita bruta por mil aptos da circunscrição."
           },
           "saldo_contratado": {
             "anyOf": [
@@ -2641,7 +2687,7 @@
               }
             ],
             "title": "Saldo Contratado",
-            "description": "receita − despesa contratada, com repasses (§4.8)."
+            "description": "receita bruta − despesa contratada, com repasses (§4.8)."
           },
           "saldo_financeiro": {
             "anyOf": [
@@ -2653,7 +2699,7 @@
               }
             ],
             "title": "Saldo Financeiro",
-            "description": "receita financeira − despesa paga."
+            "description": "receita financeira bruta − despesa paga, com repasses."
           },
           "pct_receita_gasta": {
             "anyOf": [
@@ -2665,7 +2711,7 @@
               }
             ],
             "title": "Pct Receita Gasta",
-            "description": "100 × despesa contratada ÷ receita."
+            "description": "100 × despesa contratada (com repasses) ÷ receita bruta."
           },
           "explicacao_repasses": {
             "type": "string",
@@ -3665,7 +3711,7 @@
           "candidatos_sem_contas_excluidos"
         ],
         "title": "ReceitaPorVotoGrupo",
-        "description": "Receita por voto do grupo: Σ receita ÷ Σ votos, sobre candidatos com contas e voto (§4.7)."
+        "description": "Receita por voto do grupo: Σ receita **líquida** ÷ Σ votos, só com receita e voto (§4.7)."
       },
       "ResultadoBusca": {
         "properties": {
@@ -4046,26 +4092,61 @@
             "title": "Por Categoria"
           },
           "receita_total": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Total",
-            "description": "Σ das receitas; no grupo, sem repasses internos."
+            "description": "Σ das receitas. No grupo é **líquida** de repasses internos (§4.6)."
           },
           "receita_financeira": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Financeira"
           },
           "receita_estimavel": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Estimavel",
             "description": "Bens e serviços doados, não passam pela conta."
           },
           "receita_repasses_candidatos": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Repasses Candidatos",
             "description": "Σ recebido de outros candidatos."
           },
           "receita_sem_repasses": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Receita Sem Repasses",
             "description": "receita_total − repasses de candidatos."
           },
@@ -4242,7 +4323,7 @@
           "pct_receita_gasta"
         ],
         "title": "SaldoGrupo",
-        "description": "Saldo (§4.8). Receita bruta e despesa com repasses: repasses internos se anulam."
+        "description": "Saldo (§4.8) dos candidatos com receita: receita **bruta** menos despesa com repasses.\n\nBruta porque o repasse interno é receita de um e despesa de outro: os dois se anulam."
       },
       "Saude": {
         "properties": {

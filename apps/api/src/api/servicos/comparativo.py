@@ -249,6 +249,8 @@ _PERCENTUAIS = ("pct_publico", "pct_autofinanciamento", "pct_pessoa_fisica", "pc
 def _indicadores_do_lado(contas: ContasAgregadas) -> dict[str, float | None]:
     """Indicadores de receita de um lado, nominais, com os nomes que a lib compara."""
     rec = contas.receitas
+    if rec is None:
+        raise DadosIndisponiveis("lado da comparação sem receitas")
     return {
         "receita_total": rec.receita_total,
         **{f"receita_{c}": rec.por_categoria.get(c, 0.0) for c in financeiro.CATEGORIAS_RECEITA},
@@ -272,10 +274,11 @@ def _comparar_receitas(
         return None  # só 2022→2026 tem correção definida (ADR 0007)
     lado_de = contas_de(repo, de.ano, c_de, nominal=True)
     lado_para = contas_de(repo, para.ano, c_para)
-    if not lado_de.por_candidato or not lado_para.por_candidato:
+    if lado_de.receitas is None or lado_para.receitas is None:
         return None
     correcao = correcao_do_ano(repo, de.ano)
-    assert correcao is not None  # noqa: S101 - de.ano < ANO_NOMINAL garante a série
+    if correcao is None:
+        raise DadosIndisponiveis(f"sem correção pelo IPCA para {de.ano}")
     serie, origem, base = correcao
     v_de, v_para = _indicadores_do_lado(lado_de), _indicadores_do_lado(lado_para)
     monetarios = [*(c for c in v_de if c not in _PERCENTUAIS)]

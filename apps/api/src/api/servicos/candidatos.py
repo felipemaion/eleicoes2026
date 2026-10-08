@@ -310,17 +310,26 @@ class GastosCandidato(ResumoCustoCandidato):
         "diferença é o dinheiro repassado a terceiros. null se votos = 0."
     )
     custo_voto_pago_com_repasses: float | None
-    receita_total: float = Field(description="Σ das receitas da campanha (todas as fontes).")
-    receita_por_fonte: dict[str, float] = Field(
+    receita_total: float | None = Field(
+        description="Σ das receitas **brutas** do candidato (inclui o que recebeu de outros "
+        "candidatos); null se não há nenhuma linha de receita (≠ receita zero)."
+    )
+    receita_por_fonte: dict[str, float] | None = Field(
         description="Receita por categoria (§4.1): fefc, fundo_partidario, recursos_proprios…"
     )
-    receita_por_voto: float | None = Field(description="R$/voto = receita ÷ votos (§4.7).")
-    receita_por_mil_aptos: float | None = Field(description="R$ por mil aptos da circunscrição.")
-    saldo_contratado: float | None = Field(
-        description="receita − despesa contratada, com repasses (§4.8)."
+    receita_por_voto: float | None = Field(description="R$/voto = receita bruta ÷ votos (§4.7).")
+    receita_por_mil_aptos: float | None = Field(
+        description="R$ de receita bruta por mil aptos da circunscrição."
     )
-    saldo_financeiro: float | None = Field(description="receita financeira − despesa paga.")
-    pct_receita_gasta: float | None = Field(description="100 × despesa contratada ÷ receita.")
+    saldo_contratado: float | None = Field(
+        description="receita bruta − despesa contratada, com repasses (§4.8)."
+    )
+    saldo_financeiro: float | None = Field(
+        description="receita financeira bruta − despesa paga, com repasses."
+    )
+    pct_receita_gasta: float | None = Field(
+        description="100 × despesa contratada (com repasses) ÷ receita bruta."
+    )
     explicacao_repasses: str = Field(
         description="Por que há dois custos por voto e qual a diferença entre eles."
     )
@@ -333,7 +342,7 @@ EXPLICACAO_REPASSES = (
 )
 
 
-def _gastos_da_ficha(cc: ContasCand, receitas: ResumoReceitasOut) -> GastosCandidato:
+def _gastos_da_ficha(cc: ContasCand, receitas: ResumoReceitasOut | None) -> GastosCandidato:
     """Monta as finanças da ficha; só soma e divide valores já calculados pela lib."""
     c = cc.custo
     total_c = c.despesa_contratada + cc.repasses_contratados
@@ -346,8 +355,8 @@ def _gastos_da_ficha(cc: ContasCand, receitas: ResumoReceitasOut) -> GastosCandi
         despesa_total_paga=total_p,
         custo_voto_contratado_com_repasses=total_c / c.votos if c.votos else None,
         custo_voto_pago_com_repasses=total_p / c.votos if c.votos else None,
-        receita_total=receitas.receita_total,
-        receita_por_fonte=receitas.por_categoria,
+        receita_total=cc.receita_total,
+        receita_por_fonte=receitas.por_categoria if receitas else None,
         receita_por_voto=cc.receita_por_voto,
         receita_por_mil_aptos=cc.receita_por_mil_aptos,
         saldo_contratado=cc.saldo_contratado,

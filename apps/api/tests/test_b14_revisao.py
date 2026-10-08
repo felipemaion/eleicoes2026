@@ -1,7 +1,7 @@
-"""T-B14, revisão: sem receita ≠ zero, nulo continua nulo, denominador de aptos e comparativo nulo."""
+"""T-B14, revisão: sem receita ≠ zero, nulos, denominador de aptos e comparativo nulo."""
 
 import pytest
-from indicadores import financeiro
+from api.dominio import Cargo
 from api.repositorio.memoria import (
     DadosMemoria,
     EleitoradoMemoria,
@@ -12,7 +12,7 @@ from api.repositorio.modelos import Candidatura, DespesaBruta, Municipio, Receit
 from api.servicos.comparativo import montar_comparativo
 from api.servicos.contas import _receitas_out, contas_de
 from api.servicos.grupos import Catalogo, Comparacao, DefinicaoGrupo
-from api.dominio import Cargo
+from indicadores import financeiro
 
 DF = "DEPUTADO FEDERAL"
 DE = "DEPUTADO ESTADUAL"
@@ -41,14 +41,14 @@ def _repo(
             _cand(2026, 5, "RJ"),
             _cand(2022, 9),
             _cand(2022, 10, cargo=DE),
-        ],  # fmt: skip
+        ],
         municipios=[Municipio(10, 10, "A", "SP", 0.0), Municipio(20, 20, "B", "RJ", 0.0)],
         votos=[
             VotoMemoria(2026, 1, 10, 1, 60),
             VotoMemoria(2026, 2, 10, 2, 40),
             VotoMemoria(2026, 4, 10, 4, 10),
             VotoMemoria(2026, 5, 20, 1, 5),
-        ],  # fmt: skip
+        ],
         eleitorado=[
             EleitoradoMemoria(2026, "SP", DF, 10, 1, 800, 600),
             EleitoradoMemoria(2026, "RJ", DF, 20, 1, 200, 150),
@@ -134,7 +134,7 @@ def test_nulo_da_lib_continua_nulo_na_saida() -> None:
         "pct_estimavel": None, "hhi_fontes": None, "n_efetivo_fontes": None,
         **{f"receita_{c}": None for c in financeiro.CATEGORIAS_RECEITA},
     }  # fmt: skip
-    out = _receitas_out(linha, None)
+    out = _receitas_out(linha)
     assert out.receita_total is None
     assert out.receita_estimavel is None
     assert out.receita_repasses_candidatos is None
