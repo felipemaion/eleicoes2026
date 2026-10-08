@@ -5,7 +5,6 @@ import time
 
 import polars as pl
 import pytest
-
 from indicadores import desempenho, espacial
 
 N_MUNICIPIOS = 645
@@ -14,7 +13,7 @@ N_CANDIDATOS = 1_500
 
 @pytest.mark.lento
 def test_cargo_uf_grande_em_menos_de_dois_segundos() -> None:
-    rng = random.Random(20261004)
+    rng = random.Random(20261004)  # noqa: S311 - dados sintéticos reprodutíveis
     aptos = [rng.randint(1_000, 500_000) for _ in range(N_MUNICIPIOS)]
     municipios = pl.DataFrame(
         {

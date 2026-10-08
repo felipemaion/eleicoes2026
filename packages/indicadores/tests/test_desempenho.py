@@ -2,7 +2,6 @@
 
 import polars as pl
 import pytest
-
 from indicadores import desempenho
 
 MUNICIPIOS = pl.DataFrame({"cd_mun_ibge": [1, 2], "aptos": [1000, 0], "validos": [800, 0]})

@@ -2,7 +2,6 @@
 
 import polars as pl
 import pytest
-
 from indicadores import financeiro
 
 
@@ -65,7 +64,10 @@ def test_despesa_paga_por_prestador() -> None:
     df = pl.DataFrame(
         {
             "sq_prestador_contas": [7, 7],
-            "ds_origem_despesa": ["Publicidade", "Doações financeiras a outros candidatos/partidos"],
+            "ds_origem_despesa": [
+                "Publicidade",
+                "Doações financeiras a outros candidatos/partidos",
+            ],
             "vr_pagto_despesa": [100.0, 50.0],
         }
     )

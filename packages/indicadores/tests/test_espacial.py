@@ -2,7 +2,6 @@
 
 import polars as pl
 import pytest
-
 from indicadores import espacial
 
 

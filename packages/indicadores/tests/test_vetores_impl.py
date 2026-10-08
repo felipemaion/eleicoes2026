@@ -13,7 +13,6 @@ from typing import Any
 
 import polars as pl
 import pytest
-
 from indicadores import desempenho, espacial, evolucao, financeiro
 
 RAIZ = Path(__file__).resolve().parents[3]
@@ -95,7 +94,9 @@ def _eb(entrada: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _moran(entrada: dict[str, Any]) -> dict[str, Any]:
-    valores = pl.DataFrame({"id": list(range(len(entrada["valores"]))), "valor": entrada["valores"]})
+    valores = pl.DataFrame(
+        {"id": list(range(len(entrada["valores"]))), "valor": entrada["valores"]}
+    )
     arestas = [(int(i), j) for i, viz in entrada["vizinhos"].items() for j in viz]
     vizinhanca = pl.DataFrame(arestas, schema=["id", "vizinho"], orient="row")
     res = espacial.moran_lisa(valores, vizinhanca, permutacoes=0)

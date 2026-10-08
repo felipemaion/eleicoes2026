@@ -2,7 +2,6 @@
 
 import polars as pl
 import pytest
-
 from indicadores import desempenho, evolucao, financeiro, grupos
 
 AMC = pl.DataFrame({"cd_mun_ibge": [1, 2], "amc": [1, 2]})
