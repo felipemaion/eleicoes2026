@@ -1,4 +1,5 @@
-"""ETag e Cache-Control derivados do DT_GERACAO dos dados; 304 com If-None-Match.
+"""ETag e Cache-Control derivados da versão dos dados (DT_GERACAO e coleta de redes); 304 com
+If-None-Match.
 
 O ETag é fraco (`W/`) porque o gzip reescreve os bytes.
 Depende de (dt_geracao, versão do código, URL):
@@ -46,7 +47,7 @@ def instalar_cache(app: FastAPI, max_age: int, versao: str) -> None:
             or repo is None
         ):
             return await call_next(request)
-        etag = _etag(repo.dt_geracao(), versao, request)
+        etag = _etag(repo.versao_dados(), versao, request)
         if _casa(request.headers.get("if-none-match"), etag):
             return Response(status_code=304, headers={"ETag": etag, "Cache-Control": controle})
         resposta = await call_next(request)

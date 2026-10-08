@@ -17,7 +17,11 @@ from api.repositorio.modelos import (
     Municipio,
     ParDePessoa,
     PontoVotacao,
+    PostRede,
     ReceitaBruta,
+    RedeDeclarada,
+    RedesMeta,
+    SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
@@ -45,6 +49,10 @@ PROVISORIOS = (
     "votos_local",
     "ipca",
 )
+# Redes sociais (contratos em `packages/contratos/redes.py`): `redes_candidatos` é hive por ano;
+# `redes_perfis` e `redes_posts` ficam em `<dir>/redes/` (um arquivo cada, sem partição).
+REDES = ("redes_candidatos", "redes_perfis", "redes_posts")
+_SUBPASTA = {"redes_perfis": "redes", "redes_posts": "redes"}
 # Colunas que a API lê de cada fonte: validadas na abertura (falha clara, sem `SELECT *`).
 COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "consulta_cand": (
@@ -81,6 +89,18 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
         "vr_pagto_despesa", "dt_geracao",
     ),
     "ipca": ("mes", "variacao"),
+    "redes_candidatos": (
+        "ano_eleicao", "sq_candidato", "rede", "username", "url_tse", "nr_ordem", "principal",
+        "dt_geracao",
+    ),
+    "redes_perfis": (
+        "sq_candidato", "ano_eleicao", "rede", "username", "status", "followers_count",
+        "follows_count", "media_count", "coletado_em",
+    ),
+    "redes_posts": (
+        "username", "media_id", "timestamp", "media_type", "like_count", "comments_count",
+        "coletado_em",
+    ),
 }  # fmt: skip
 # `ano` vem da partição hive (`ano=AAAA/`): é ele que o DuckDB poda, sem abrir os outros anos.
 # `ds_cargo` vem em caixa de título do TSE ("Deputado Federal"); `upper` casa com o enum `Cargo`.
@@ -110,6 +130,27 @@ _VIEWS = {
     "municipios_base": (
         "municipio_tse_ibge",
         "SELECT DISTINCT cd_mun_ibge, nm_municipio_ibge AS nome, sg_uf AS uf FROM {fonte}",
+    ),
+}
+# `coletado_em`/`timestamp` chegam como TIMESTAMPTZ (UTC); o Python recebe datas sem fuso (= UTC),
+# o que dispensa `pytz` e é o que `indicadores.redes` aceita.
+_UTC = "CAST(timezone('UTC', {}) AS TIMESTAMP)"
+_VIEWS_REDES = {
+    "redes_declaradas": (
+        "redes_candidatos",
+        "SELECT ano_eleicao AS ano, sq_candidato, username, url_tse, nr_ordem, principal,"
+        " dt_geracao FROM {fonte} WHERE rede = 'instagram'",
+    ),
+    "redes_snapshots": (
+        "redes_perfis",
+        "SELECT ano_eleicao AS ano, sq_candidato, username, status, followers_count,"  # noqa: S608
+        f" follows_count, media_count, {_UTC.format('coletado_em')} AS coletado_em"
+        " FROM {fonte} WHERE rede = 'instagram'",
+    ),
+    "redes_publicacoes": (
+        "redes_posts",
+        f"SELECT username, media_id, {_UTC.format('"timestamp"')} AS publicado_em, media_type,"  # noqa: S608
+        f" like_count, comments_count, {_UTC.format('coletado_em')} AS coletado_em FROM {{fonte}}",
     ),
 }
 _CAMPOS_CANDIDATURA = (
@@ -190,7 +231,7 @@ class RepositorioDuckDB:
             self._con.execute("SET memory_limit = ?", [memory_limit])
             self._con.execute("SET max_temp_directory_size = ?", [max_temp_directory_size])
             self._con.execute("SET temp_directory = ?", [str(temp_directory)])
-            fontes = {n: self._fonte(dir_dados, n) for n in (*CONTRATADOS, *PROVISORIOS)}
+            fontes = {n: self._fonte(dir_dados, n) for n in (*CONTRATADOS, *PROVISORIOS, *REDES)}
             self._validar_colunas(fontes)
             for nome, (dataset, sql) in _VIEWS.items():
                 if fontes.get(dataset):
@@ -203,6 +244,7 @@ class RepositorioDuckDB:
             self._municipios: list[Municipio] | None = None
             self._tem_h3 = bool(fontes["locais_h3"])
             self._criar_views_compostas(fontes)
+            self._redes = self._criar_views_redes(fontes)
             self._criar_views_prestacao(fontes)
             self._dt = self._dt_geracao_dos_dados(fontes)
             self._con.execute("SET lock_configuration = true")
@@ -240,7 +282,7 @@ class RepositorioDuckDB:
         if any((dir_dados / nome).glob("*.parquet")):  # ex.: ipca/ipca.parquet
             pasta = str(dir_dados / nome / "*.parquet").replace("'", "''")
             return f"read_parquet('{pasta}')"
-        flat = dir_dados / f"{nome}.parquet"
+        flat = dir_dados / _SUBPASTA.get(nome, "") / f"{nome}.parquet"
         if flat.is_file():
             return f"read_parquet('{str(flat).replace(chr(39), chr(39) * 2)}')"
         return None
@@ -281,6 +323,24 @@ class RepositorioDuckDB:
                 f"{juncao} WHERE l.nr_turno = 1"
             )
             self._view("locais_votacao", select)
+
+    def _criar_views_redes(self, fontes: dict[str, str | None]) -> RedesMeta | None:
+        """Views de redes, se os três datasets existem e há ao menos uma coleta; senão `None`.
+
+        Dado de redes é opcional na abertura (a API sobe sem ele), mas `/api/redes*` falha alto
+        quando falta — nunca devolve lista vazia como se fosse resultado.
+        """
+        if not all(fontes[n] for n in REDES):
+            return None
+        for nome, (dataset, sql) in _VIEWS_REDES.items():
+            self._view(nome, sql.format(fonte=fontes[dataset]))
+        linha = self._con.execute(
+            "SELECT (SELECT max(coletado_em) FROM redes_snapshots),"
+            " (SELECT max(dt_geracao) FROM redes_declaradas)"
+        ).fetchone()
+        if linha is None or linha[0] is None or linha[1] is None:
+            return None
+        return RedesMeta(coletado_em=linha[0], dt_geracao_tse=str(linha[1]))
 
     def _criar_views_prestacao(self, fontes: dict[str, str | None]) -> None:
         """`receitas` e `despesas` a partir dos datasets de prestação de contas do ETL."""
@@ -398,6 +458,69 @@ class RepositorioDuckDB:
     def dt_geracao(self) -> str:
         """DT_GERACAO do manifesto."""
         return self._dt
+
+    def versao_dados(self) -> str:
+        """`dt_geracao` + última coleta de redes (quando há): muda a cada coleta diária."""
+        if self._redes is None:
+            return self._dt
+        return f"{self._dt}|{self._redes.coletado_em.isoformat()}"
+
+    def redes_meta(self) -> RedesMeta | None:
+        """Coleta mais recente e DT_GERACAO do cadastro de redes; `None` se não publicado."""
+        return self._redes
+
+    def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
+        """Perfis declarados ao TSE, na ordem de declaração."""
+        if self._redes is None:
+            return []
+        em, ids = _em_sqs(sqs)
+        linhas = self._linhas(
+            "SELECT sq_candidato, username, url_tse, nr_ordem, principal FROM redes_declaradas"  # noqa: S608
+            f" WHERE ano = ? AND {em} ORDER BY sq_candidato, nr_ordem, username",
+            [ano, *ids],
+        )
+        return [RedeDeclarada(*linha) for linha in linhas]  # type: ignore[arg-type]
+
+    def redes_perfis(
+        self,
+        ano: int,
+        *,
+        sqs: Sequence[int] | None = None,
+        usernames: Sequence[str] | None = None,
+    ) -> list[SnapshotPerfil]:
+        """Snapshots de perfis (a série inteira), mais antigos primeiro."""
+        if self._redes is None:
+            return []
+        condicoes: list[str] = ["ano = ?"]
+        params: list[object] = [ano]
+        if sqs is not None:
+            em, ids = _em_sqs(sqs)
+            condicoes.append(em)
+            params += ids
+        if usernames is not None:
+            condicoes.append(f"username IN ({', '.join('?' for _ in usernames) or 'NULL'})")
+            params += list(usernames)
+        linhas = self._linhas(
+            "SELECT sq_candidato, username, status, followers_count, follows_count, media_count,"  # noqa: S608 - só fragmentos fixos
+            " coletado_em FROM redes_snapshots WHERE "
+            + " AND ".join(condicoes)
+            + " ORDER BY username, sq_candidato, coletado_em",
+            params,
+        )
+        return [SnapshotPerfil(*linha) for linha in linhas]  # type: ignore[arg-type]
+
+    def redes_posts(self, usernames: Sequence[str]) -> list[PostRede]:
+        """Posts dos perfis; vazio sem perfis (não varre o arquivo)."""
+        if self._redes is None or not usernames:
+            return []
+        marcas = ", ".join("?" for _ in usernames)
+        linhas = self._linhas(
+            "SELECT username, media_id, publicado_em, media_type, like_count, comments_count,"  # noqa: S608 - só `?` interpolados
+            f" coletado_em FROM redes_publicacoes WHERE username IN ({marcas})"
+            " ORDER BY username, publicado_em, media_id",
+            list(usernames),
+        )
+        return [PostRede(*linha) for linha in linhas]  # type: ignore[arg-type]
 
     def tp_prestacao_contas(self, ano: int) -> str:
         """Situação da prestação de contas no ano (manifesto)."""

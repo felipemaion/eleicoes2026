@@ -67,7 +67,8 @@ def test_candidato_com_dois_perfis_mostra_ambos_e_analisa_o_maior(api: TestClien
     assert perfis["ana_alves"]["n_midias"] == 125
     assert perfis["ana_alves"]["coletado_em"].startswith("2026-10-08T12:00:00")
     assert c3["seguidores"] == 10500
-    assert c3["tem_dados"] is True and c3["status"] == "ok"
+    assert c3["tem_dados"] is True
+    assert c3["status"] == "ok"
 
 
 def test_razoes_seguidores_votos(api: TestClient) -> None:
@@ -81,12 +82,14 @@ def test_perfil_indisponivel_nao_e_zero(api: TestClient) -> None:
     c5 = _por_sq(_redes(api))[5]
     assert c5["status"] == "nao_encontrado"
     assert c5["tem_dados"] is False
-    assert c5["seguidores"] is None and c5["votos_por_mil_seguidores"] is None
+    assert c5["seguidores"] is None
+    assert c5["votos_por_mil_seguidores"] is None
     assert c5["janelas"] == []
     assert c5["voto_esperado"] is None
     perfil = c5["perfis"][0]
     assert perfil["status"] == "nao_encontrado"
-    assert perfil["seguidores"] is None and perfil["seguindo"] is None
+    assert perfil["seguidores"] is None
+    assert perfil["seguindo"] is None
     assert perfil["analisado"] is False
 
 
@@ -135,11 +138,19 @@ def test_exclusoes_por_motivo(api: TestClient) -> None:
     assert por_sq[4]["perfis"][0]["seguidores"] is None
 
 
+def test_aviso_de_contas_sem_numeros_so_quando_ha_indisponivel(api: TestClient) -> None:
+    assert _redes(api)["avisos"] == ["redes_contas_sem_dados"]  # sq 5
+    sem = api.get("/api/redes", params={"grupo": "novo_2026", "cargo": "PRESIDENTE"}).json()
+    assert sem["avisos"] == []
+
+
 def test_candidato_sem_instagram_declarado(api: TestClient) -> None:
     corpo = api.get("/api/redes", params={"grupo": "novo_2026"}).json()
     assert corpo["excluidos"]["sem_instagram"] == 1
     c = corpo["candidatos"][0]
-    assert c["status"] == "sem_rede" and c["perfis"] == [] and c["tem_dados"] is False
+    assert c["status"] == "sem_rede"
+    assert c["perfis"] == []
+    assert c["tem_dados"] is False
 
 
 def test_agregado_do_grupo(api: TestClient) -> None:
@@ -201,13 +212,17 @@ def test_correlacoes_com_poucos_candidatos_nao_inventam_rho(api: TestClient) -> 
     r = api.get("/api/redes/correlacoes", params={**PARAMS, "grupo": "mbl_2026"})
     assert r.status_code == 200, r.text
     (recorte,) = r.json()["recortes"]
-    assert recorte["cargo"] == DF and recorte["n_candidatos"] == 3
+    assert recorte["cargo"] == DF
+    assert recorte["n_candidatos"] == 3
     pares = {p["id"]: p for p in recorte["pares"]}
     assert list(pares) == ["seguidores_votos", "engajamento_votos", "ritmo_votos"]
     sv = pares["seguidores_votos"]
     assert (sv["n"], sv["n_excluidos"]) == (2, 1)  # sq 3 e 7; sq 5 sem dados
-    assert sv["rho"] is None and sv["ic_inf"] is None and sv["ic_sup"] is None
-    assert sv["n_minimo"] == 10 and sv["nivel_ic"] == 0.95
+    assert sv["rho"] is None
+    assert sv["ic_inf"] is None
+    assert sv["ic_sup"] is None
+    assert sv["n_minimo"] == 10
+    assert sv["nivel_ic"] == 0.95
     assert recorte["ajuste"] is None
 
 
@@ -237,7 +252,8 @@ def test_correlacoes_por_uf(api: TestClient) -> None:
 def test_correlacoes_trazem_fontes_e_aviso_de_causalidade(api: TestClient) -> None:
     corpo = api.get("/api/redes/correlacoes", params=PARAMS).json()
     assert {f["dataset"] for f in corpo["fontes"]} >= {"redes_perfis", "rede_social_candidato"}
-    assert "causalidade" in corpo["aviso"].lower()
+    # ids de `docs/metodologia/publico/textos.json` (avisos): o texto fica num só lugar
+    assert corpo["avisos"] == ["redes_nao_causalidade"]
 
 
 # --- série de seguidores -----------------------------------------------------------------------
@@ -249,11 +265,13 @@ def test_serie_por_candidato_com_dois_snapshots(api: TestClient) -> None:
     alves = {s["username"]: s for s in r.json()["series"]}["ana_alves"]
     assert [p["seguidores"] for p in alves["pontos"]] == [10000, 10500]
     primeiro, segundo = alves["pontos"]
-    assert primeiro["delta_abs"] is None and primeiro["dias"] is None
+    assert primeiro["delta_abs"] is None
+    assert primeiro["dias"] is None
     assert segundo["delta_abs"] == 500
     assert segundo["delta_pct"] == pytest.approx(5.0)
     assert segundo["dias"] == pytest.approx(26 / 24)
-    assert alves["resumo"]["n_snapshots"] == 2 and alves["resumo"]["delta_abs"] == 500
+    assert alves["resumo"]["n_snapshots"] == 2
+    assert alves["resumo"]["delta_abs"] == 500
 
 
 def test_serie_com_um_snapshot_nao_tem_variacao(api: TestClient) -> None:
@@ -261,14 +279,16 @@ def test_serie_com_um_snapshot_nao_tem_variacao(api: TestClient) -> None:
     campanha = {s["username"]: s for s in series}["ana_campanha"]
     assert len(campanha["pontos"]) == 1
     assert campanha["resumo"]["n_snapshots"] == 1
-    assert campanha["resumo"]["delta_abs"] is None and campanha["resumo"]["delta_pct"] is None
+    assert campanha["resumo"]["delta_abs"] is None
+    assert campanha["resumo"]["delta_pct"] is None
 
 
 def test_serie_por_username(api: TestClient) -> None:
     corpo = api.get("/api/redes/serie", params={"username": "daniel_dias"}).json()
     assert [s["username"] for s in corpo["series"]] == ["daniel_dias"]
     assert corpo["series"][0]["link"] == "https://www.instagram.com/daniel_dias/"
-    assert "08/10/2026" in corpo["aviso"]  # a série só existe a partir da primeira coleta
+    assert corpo["primeira_coleta"].startswith("2026-10-08")  # a série começa na 1ª coleta
+    assert corpo["avisos"] == ["redes_seguidores_sem_historico"]
 
 
 @pytest.mark.parametrize(
@@ -299,7 +319,8 @@ def test_ficha_traz_bloco_redes(api: TestClient) -> None:
     redes = api.get("/api/candidatos/2026/3").json()["redes"]
     assert {p["username"] for p in redes["perfis"]} == {"ana_alves", "ana_campanha"}
     alves = next(p for p in redes["perfis"] if p["username"] == "ana_alves")
-    assert alves["seguidores"] == 10500 and alves["analisado"] is True
+    assert alves["seguidores"] == 10500
+    assert alves["analisado"] is True
     assert redes["coletado_em"].startswith("2026-10-08")
     assert {f["dataset"] for f in redes["fontes"]} == {"redes_perfis", "rede_social_candidato"}
 
@@ -339,12 +360,14 @@ def test_sem_dado_de_redes_o_erro_e_claro(api_sem_redes: TestClient, caminho: st
 
 def test_serie_sem_dado_de_redes(api_sem_redes: TestClient) -> None:
     r = api_sem_redes.get("/api/redes/serie", params={"sq": 3})
-    assert r.status_code == 503 and r.json()["detail"]["codigo"] == "redes_indisponiveis"
+    assert r.status_code == 503
+    assert r.json()["detail"]["codigo"] == "redes_indisponiveis"
 
 
 def test_ficha_continua_funcionando_sem_redes(api_sem_redes: TestClient) -> None:
     r = api_sem_redes.get("/api/candidatos/2026/3")
-    assert r.status_code == 200 and r.json()["redes"] is None
+    assert r.status_code == 200
+    assert r.json()["redes"] is None
 
 
 def test_versao_dos_dados_acompanha_a_coleta_de_redes(
@@ -352,7 +375,8 @@ def test_versao_dos_dados_acompanha_a_coleta_de_redes(
 ) -> None:
     com = api.app.state.repositorio.versao_dados()  # type: ignore[attr-defined]
     sem = api_sem_redes.app.state.repositorio.versao_dados()  # type: ignore[attr-defined]
-    assert com.startswith(sem) and "2026-10-08T12:00:00" in com
+    assert com.startswith(sem)
+    assert "2026-10-08T12:00:00" in com
     assert sem == api_sem_redes.app.state.repositorio.dt_geracao()  # type: ignore[attr-defined]
 
 

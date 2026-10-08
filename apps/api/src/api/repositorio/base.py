@@ -11,7 +11,11 @@ from api.repositorio.modelos import (
     Municipio,
     ParDePessoa,
     PontoVotacao,
+    PostRede,
     ReceitaBruta,
+    RedeDeclarada,
+    RedesMeta,
+    SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
@@ -35,6 +39,13 @@ class Repositorio(Protocol):
 
     def dt_geracao(self) -> str:
         """DT_GERACAO dos dados (ISO 8601), vinda do manifesto."""
+        ...
+
+    def versao_dados(self) -> str:
+        """Identifica o conjunto publicado: `dt_geracao` e, havendo redes, a última coleta.
+
+        É o que invalida ETag e cache: as redes são coletadas todo dia, sem mudar o DT_GERACAO.
+        """
         ...
 
     def tp_prestacao_contas(self, ano: int) -> str:
@@ -183,6 +194,28 @@ class Repositorio(Protocol):
 
     def fotos(self) -> frozenset[tuple[int, int]]:
         """Pares (ano, sq_candidato) com foto no manifesto de fotos (T-D07); vazio se não há."""
+        ...
+
+    def redes_meta(self) -> RedesMeta | None:
+        """Procedência das redes; `None` = dado de redes não publicado (ou nenhuma coleta)."""
+        ...
+
+    def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
+        """Perfis declarados ao TSE pelas candidaturas, por (sq, ordem de declaração)."""
+        ...
+
+    def redes_perfis(
+        self,
+        ano: int,
+        *,
+        sqs: Sequence[int] | None = None,
+        usernames: Sequence[str] | None = None,
+    ) -> list[SnapshotPerfil]:
+        """Todos os snapshots (série), por (username, sq, coleta); filtros por sq ou username."""
+        ...
+
+    def redes_posts(self, usernames: Sequence[str]) -> list[PostRede]:
+        """Posts dos perfis (última leitura de cada um)."""
         ...
 
     def ping(self) -> None:

@@ -6,12 +6,18 @@ apontam para as seções de `docs/metodologia/indicadores.md` no GitHub.
 """
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 
 CDN_TSE = "https://cdn.tse.jus.br/estatistica/sead/odsele"
 BCB_IPCA = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json"
 REPO = "https://github.com/felipemaion/eleicoes2026/blob/main"
+META_BUSINESS_DISCOVERY = (
+    "https://developers.facebook.com/docs/instagram-platform/"
+    "instagram-api-with-facebook-login/business-discovery"
+)
 UF_GENERICA = "{UF}"  # arquivos por UF sem UF definida: o leitor troca pela sigla
 METODOLOGIA = f"{REPO}/docs/metodologia/indicadores.md"
 
@@ -69,6 +75,19 @@ _CATALOGO: dict[str, _Entrada] = {
         "entre membros (§4.6) e o saldo usa a despesa com repasses (§4.8).",
         "#42-custo-por-voto-contratado-e-pago-e-dívida",
     ),
+    "rede_social_candidato": _Entrada(
+        f"{CDN_TSE}/consulta_cand/rede_social_candidato_{{ano}}.zip",
+        "DS_URL declarada pelo candidato (texto livre) normalizada para o username do Instagram; "
+        "NR_ORDEM_REDE_SOCIAL = ordem de declaração. Só perfis que apontam para uma conta.",
+        "#redes-decisoes",
+    ),
+    "redes_perfis": _Entrada(
+        META_BUSINESS_DISCOVERY,
+        "followers_count, follows_count, media_count e posts (curtidas, comentários, tipo) lidos "
+        "pela API oficial da Meta (Business Discovery); um snapshot por coleta, sem histórico "
+        "anterior. Perfil pessoal ou inexistente não tem métricas (campos nulos, nunca zero).",
+        "#redes-decisoes",
+    ),
     "ipca": _Entrada(
         BCB_IPCA,
         "Variação mensal do IPCA (SGS 433) para deflacionar valores de 2022 ao mês-base.",
@@ -97,3 +116,30 @@ def url_dados_abertos(dataset: str, ano: int) -> str:
 def fontes(datasets: list[str], *, ano: int, dt_geracao: str) -> list[Fonte]:
     """Blocos de procedência de vários datasets, na ordem pedida."""
     return [fonte(d, ano=ano, dt_geracao=dt_geracao) for d in datasets]
+
+
+class FonteRede(Fonte):
+    """Fonte com o texto de procedência pronto para a tela."""
+
+    rotulo: str = Field(description="Frase de procedência exibida ao leitor.")
+
+
+def _dia_brasilia(instante: datetime) -> str:
+    """DD/MM/AAAA no fuso de Brasília; datas sem fuso vêm em UTC."""
+    utc = instante if instante.tzinfo else instante.replace(tzinfo=UTC)
+    return utc.astimezone(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y")
+
+
+def fontes_redes(*, ano: int, dt_geracao_tse: str, coletado_em: datetime) -> list[FonteRede]:
+    """Procedência das redes: métricas (Meta, com a data da coleta) e perfis (TSE)."""
+    ig = fonte("redes_perfis", ano=ano, dt_geracao=coletado_em.isoformat())
+    tse = fonte("rede_social_candidato", ano=ano, dt_geracao=dt_geracao_tse)
+    return [
+        FonteRede(
+            **ig.model_dump(),
+            rotulo=f"Instagram — API oficial da Meta, coletado em {_dia_brasilia(coletado_em)}",
+        ),
+        FonteRede(
+            **tse.model_dump(), rotulo="Perfis declarados pelos candidatos ao TSE (cadastro)"
+        ),
+    ]
