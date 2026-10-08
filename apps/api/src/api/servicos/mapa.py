@@ -71,6 +71,11 @@ class Mapa(BaseModel):
         default=None,
         description="`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%).",
     )
+    votos_fora_do_mapa: int = Field(
+        default=0,
+        description="Votos do recorte sem município IBGE (exterior, `ZZ`): contam no total do "
+        "candidato, mas não têm polígono e ficam fora de `valores`.",
+    )
     dt_geracao: str
 
     model_config = ConfigDict(
@@ -99,6 +104,7 @@ class Mapa(BaseModel):
     )
 
 
+GRADE_NACIONAL_GRAUS = 0.1  # ≈ 11 km na latitude: ordem de milhares de células para o país
 Linha = tuple[str, int, int, int | None]  # (chave, votos, aptos, válidos)
 _CLASSES = 5  # quintis; quebras_comuns reduz se os dados empatarem
 
@@ -173,34 +179,35 @@ def _coletar(
     nivel: Nivel,
     grupo_id: str | None,
     sq_candidato: int | None,
-) -> tuple[list[Candidatura], list[Linha]]:
-    """Candidaturas do recorte e linhas (chave, votos, aptos, válidos) por território."""
+) -> tuple[list[Candidatura], list[Linha], int]:
+    """Candidaturas, linhas (chave, votos, aptos, válidos) por território e votos sem município."""
     alvo = selecionar_alvo(
         repo, catalogo, ano=ano, cargo=cargo, uf=uf, grupo_id=grupo_id, sq_candidato=sq_candidato
     )
     sqs = [c.sq_candidato for c in alvo]
     if nivel is Nivel.H3:
         assert uf is not None  # noqa: S101 - exigido por quem chama
-        return alvo, [(c.h3, c.votos, c.aptos, None) for c in repo.votos_h3(ano, sqs, uf=uf)]
+        return alvo, [(c.h3, c.votos, c.aptos, None) for c in repo.votos_h3(ano, sqs, uf=uf)], 0
     por_zona = nivel is Nivel.ZONA
-    votos = {
-        (v.cd_mun_ibge, v.nr_zona): v.votos
-        for v in repo.votos_territorio(ano, sqs, por_zona=por_zona, uf=uf)
-    }
-    base = repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
-    vistos = {(b.cd_mun_ibge, b.nr_zona) for b in base}
+    votos: dict[tuple[int, int | None], int] = {}
+    fora_do_mapa = 0
+    for v in repo.votos_territorio(ano, sqs, por_zona=por_zona, uf=uf):
+        if v.cd_mun_ibge is None:  # exterior: sem município IBGE, logo sem polígono
+            fora_do_mapa += v.votos
+        else:
+            votos[(v.cd_mun_ibge, v.nr_zona)] = v.votos
+    base = [
+        (b.cd_mun_ibge, b.nr_zona, b.aptos, b.validos)
+        for b in repo.base_eleitoral(ano, cargo, por_zona=por_zona, uf=uf)
+        if b.cd_mun_ibge is not None
+    ]
+    vistos = {(m, z) for m, z, _, _ in base}
     linhas: list[Linha] = [
-        (
-            _chave(b.cd_mun_ibge, b.nr_zona),
-            votos.get((b.cd_mun_ibge, b.nr_zona), 0),
-            b.aptos,
-            b.validos,
-        )
-        for b in base
+        (_chave(m, z), votos.get((m, z), 0), aptos, validos) for m, z, aptos, validos in base
     ]
     # Voto sem base eleitoral: aparece como "sem dado" (aptos 0 → null), não some.
     linhas += [(_chave(m, z), n, 0, 0) for (m, z), n in votos.items() if (m, z) not in vistos]
-    return alvo, linhas
+    return alvo, linhas, fora_do_mapa
 
 
 def montar_mapa(
@@ -229,7 +236,7 @@ def montar_mapa(
     if comparacao is not None and sq_candidato is not None:
         raise parametro_invalido("comparacao_com_candidato", "'comparacao' vale só para 'grupo'")
     outro = _outro_lado(catalogo, comparacao, grupo_id) if comparacao else None
-    alvo, linhas = _coletar(
+    alvo, linhas, fora_do_mapa = _coletar(
         repo,
         catalogo,
         ano=ano,
@@ -270,6 +277,7 @@ def montar_mapa(
         n_candidaturas=len(alvo),
         votos_sem_coordenada=None if sem_coord is None else sem_coord.sem_coordenada,
         pct_votos_sem_coordenada=None if sem_coord is None else _pct(sem_coord),
+        votos_fora_do_mapa=fora_do_mapa,
         dt_geracao=repo.dt_geracao(),
     )
 
@@ -338,7 +346,11 @@ class Pontos(BaseModel):
     """Corpo de GET /mapa/pontos (densidade de votos por local)."""
 
     ano: int
-    total: int = Field(description="Locais com voto no recorte.")
+    total: int = Field(description="Pontos no recorte (locais com voto ou, na grade, células).")
+    grade_graus: float | None = Field(
+        description="Sem `uf` (Brasil): tamanho em graus da célula lat/lon em que os locais são "
+        "somados (cada ponto é o centroide ponderado por votos). null = um ponto por local."
+    )
     limite: int
     offset: int
     truncado: bool = Field(description="Há mais páginas além desta.")
@@ -359,23 +371,29 @@ def montar_pontos(
     *,
     ano: int,
     cargo: str,
-    uf: str,
+    uf: str | None,
     grupo_id: str | None,
     sq_candidato: int | None,
     limite: int,
     offset: int,
 ) -> Pontos:
-    """Locais de votação com voto, mais votados primeiro, paginados."""
+    """Locais de votação com voto, mais votados primeiro, paginados.
+
+    Sem `uf` (Brasil, p.ex. presidente) os ~150 mil locais viriam todos de uma vez: soma-se em
+    células de `GRADE_NACIONAL_GRAUS`, um volume que o mapa renderiza.
+    """
     alvo = selecionar_alvo(
         repo, catalogo, ano=ano, cargo=cargo, uf=uf, grupo_id=grupo_id, sq_candidato=sq_candidato
     )
+    grade = GRADE_NACIONAL_GRAUS if uf is None else None
     total, linhas = repo.pontos(
-        ano, [c.sq_candidato for c in alvo], uf=uf, limite=limite, offset=offset
+        ano, [c.sq_candidato for c in alvo], uf=uf, limite=limite, offset=offset, grade_graus=grade
     )
     sem_coord = repo.votos_sem_coordenada(ano, [c.sq_candidato for c in alvo], uf=uf, por_h3=False)
     return Pontos(
         ano=ano,
         total=total,
+        grade_graus=grade,
         limite=limite,
         offset=offset,
         truncado=offset + len(linhas) < total,

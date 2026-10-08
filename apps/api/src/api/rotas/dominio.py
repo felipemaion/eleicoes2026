@@ -3,9 +3,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
+from pydantic import StringConstraints
 
 from api.deps import CacheDep, CatalogoDep, RepositorioDep
 from api.dominio import UF, Ano, Cargo, Indicador, Nivel
+from api.servicos.busca import ListaPessoas, ResultadoBusca, buscar, listar_pessoas
 from api.servicos.candidatos import FichaCandidato, ListaCandidatos, montar_ficha
 from api.servicos.comparativo import Comparativo
 from api.servicos.consultas import candidatos_em_cache, comparativo_em_cache, gastos_em_cache
@@ -19,6 +21,8 @@ router = APIRouter()
 GrupoQ = Annotated[str, Query(description="Id do grupo em config/grupos.yaml (ex.: missao_2026).")]
 GrupoOpcional = Annotated[str | None, Query(description="Id do grupo; exclusivo com sq_candidato.")]
 SqOpcional = Annotated[int | None, Query(description="SQ_CANDIDATO; exclusivo com grupo.")]
+IdPublico = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{12}$")]
+MAX_SELECAO = 50  # candidaturas/pessoas por seleção: limita o custo da consulta
 
 
 @router.get(
@@ -130,22 +134,26 @@ def pontos(
     cache: CacheDep,
     ano: Ano,
     cargo: Cargo,
-    uf: UF,
+    uf: Annotated[
+        UF | None,
+        Query(description="Sem UF (Brasil, ex.: presidente): locais somados em células de 0,1°."),
+    ] = None,
     grupo: GrupoOpcional = None,
     sq_candidato: SqOpcional = None,
     limite: Annotated[int, Query(ge=1, le=50000)] = 5000,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> Pontos:
-    """`{lat, lon, votos}` por local, mais votados primeiro; paginado por UF."""
+    """`{lat, lon, votos}` por local, mais votados primeiro; paginado."""
+    uf_v = uf.value if uf else None
     return cache.obter(
         repo.dt_geracao(),
-        ("pontos", ano, cargo, uf, grupo, sq_candidato, limite, offset),
+        ("pontos", ano, cargo, uf_v, grupo, sq_candidato, limite, offset),
         lambda: montar_pontos(
             repo,
             catalogo,
             ano=ano.value,
             cargo=cargo.value,
-            uf=uf.value,
+            uf=uf_v,
             grupo_id=grupo,
             sq_candidato=sq_candidato,
             limite=limite,
@@ -181,14 +189,36 @@ def comparativo(
     repo: RepositorioDep,
     catalogo: CatalogoDep,
     cache: CacheDep,
-    comparacao: Annotated[str, Query(description="Id em `comparacoes` (ex.: evolucao_mbl).")],
     cargo: Cargo,
+    comparacao: Annotated[
+        str | None, Query(description="Id em `comparacoes` (ex.: evolucao_mbl).")
+    ] = None,
     uf: UF | None = None,
     mesmos_candidatos: Annotated[
         bool, Query(description="Só pessoas que concorreram nos dois anos (pessoa_id).")
     ] = False,
+    pessoas: Annotated[
+        list[IdPublico] | None,
+        Query(
+            max_length=MAX_SELECAO,
+            description="Seleção do usuário: `pessoa_id_publico` (de /busca ou /evolucao/pessoas); "
+            "compara as candidaturas delas em 2022 e 2026. Exclusivo com `comparacao`.",
+        ),
+    ] = None,
+    sq_2022: Annotated[
+        list[int] | None,
+        Query(max_length=MAX_SELECAO, description="Seleção: `sq_candidato` de 2022."),
+    ] = None,
+    sq_2026: Annotated[
+        list[int] | None,
+        Query(max_length=MAX_SELECAO, description="Seleção: `sq_candidato` de 2026."),
+    ] = None,
 ) -> Comparativo:
-    """Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte."""
+    """Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.
+
+    Dois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,
+    `sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.
+    """
     return comparativo_em_cache(
         repo,
         catalogo,
@@ -197,6 +227,83 @@ def comparativo(
         cargo=cargo,
         uf=uf.value if uf else None,
         mesmos_candidatos=mesmos_candidatos,
+        pessoas=pessoas or (),
+        sq_2022=sq_2022 or (),
+        sq_2026=sq_2026 or (),
+    )
+
+
+@router.get(
+    "/busca",
+    response_model=ResultadoBusca,
+    tags=["busca"],
+    summary="Busca de candidaturas",
+)
+def busca(
+    repo: RepositorioDep,
+    catalogo: CatalogoDep,
+    cache: CacheDep,
+    q: Annotated[
+        str,
+        Query(
+            min_length=1,
+            max_length=80,
+            description="Nome de urna ou civil (sem acento, qualquer caixa; início de palavra "
+            "antes de trecho), número de urna (prefixo), número ou sigla do partido.",
+        ),
+    ],
+    ano: Ano | None = None,
+    cargo: Cargo | None = None,
+    uf: UF | None = None,
+    grupo: GrupoOpcional = None,
+    limite: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> ResultadoBusca:
+    """Candidaturas com ano, cargo, UF, partido, votos, resultado e `abrangencia` do mapa."""
+    return cache.obter(
+        repo.dt_geracao(),
+        ("busca", q, ano, cargo, uf, grupo, limite),
+        lambda: buscar(
+            repo,
+            catalogo,
+            q=q,
+            ano=ano.value if ano else None,
+            cargo=cargo.value if cargo else None,
+            uf=uf.value if uf else None,
+            grupo_id=grupo,
+            limite=limite,
+        ),
+    )
+
+
+@router.get(
+    "/evolucao/pessoas",
+    response_model=ListaPessoas,
+    tags=["comparativo"],
+    summary="Pessoas em 2022 e 2026",
+)
+def evolucao_pessoas(
+    repo: RepositorioDep,
+    catalogo: CatalogoDep,
+    cache: CacheDep,
+    q: Annotated[
+        str | None, Query(max_length=80, description="Nome (urna ou civil), como em /busca.")
+    ] = None,
+    uf: UF | None = None,
+    cargo: Annotated[Cargo | None, Query(description="Exige este cargo nos dois anos.")] = None,
+    limite: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> ListaPessoas:
+    """Quem concorreu nos dois anos, com o resumo de cada ano; alimenta `/comparativo?pessoas=`."""
+    return cache.obter(
+        repo.dt_geracao(),
+        ("evolucao_pessoas", q, uf, cargo, limite),
+        lambda: listar_pessoas(
+            repo,
+            catalogo,
+            q=q,
+            uf=uf.value if uf else None,
+            cargo=cargo.value if cargo else None,
+            limite=limite,
+        ),
     )
 
 

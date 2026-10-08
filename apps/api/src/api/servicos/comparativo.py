@@ -7,7 +7,7 @@ from indicadores import evolucao, grupos
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Cargo, Indicador
-from api.erros import parametro_invalido
+from api.erros import nao_encontrado, parametro_invalido
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
 from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
@@ -109,6 +109,10 @@ def _lado(
     return candidaturas_do_grupo(repo, grupo, uf=uf, cargo=cargo)
 
 
+ANO_DE, ANO_PARA = 2022, 2026  # anos da seleção do usuário (`pessoas`, `sq_2022`, `sq_2026`)
+ID_SELECAO = "selecao"
+
+
 _ESQUEMA = {"cd_mun_ibge": pl.Int64, "aptos": pl.Int64, "validos": pl.Int64, "votos": pl.Int64}
 
 
@@ -116,11 +120,17 @@ def _quadro(
     repo: Repositorio, ano: int, cargo: str, uf: str | None, sqs: Sequence[int]
 ) -> pl.DataFrame:
     """`cd_mun_ibge, aptos, validos, votos` de todos os municípios do recorte (zero explícito)."""
-    votos = {v.cd_mun_ibge: v.votos for v in repo.votos_territorio(ano, sqs, por_zona=False, uf=uf)}
+    # Exterior (sem município IBGE) não tem AMC: fica fora da evolução municipal.
+    votos = {
+        v.cd_mun_ibge: v.votos
+        for v in repo.votos_territorio(ano, sqs, por_zona=False, uf=uf)
+        if v.cd_mun_ibge is not None
+    }
     return pl.DataFrame(
         [
             (b.cd_mun_ibge, b.aptos, b.validos, votos.get(b.cd_mun_ibge, 0))
             for b in repo.base_eleitoral(ano, cargo, por_zona=False, uf=uf)
+            if b.cd_mun_ibge is not None
         ],
         schema=_ESQUEMA,
         orient="row",
@@ -154,24 +164,92 @@ def _n_aptas(candidaturas: Sequence[Candidatura]) -> int | None:
     return int(grupos.n_candidatos(quadro, [c.sq_candidato for c in candidaturas]).item())
 
 
+def _selecao(
+    repo: Repositorio,
+    cargo: Cargo,
+    uf: str | None,
+    *,
+    pessoas: Sequence[str],
+    sq_de: Sequence[int],
+    sq_para: Sequence[int],
+) -> tuple[list[Candidatura], list[Candidatura]]:
+    """Candidaturas escolhidas pelo usuário, por pessoa (nos dois anos) e/ou por `sq_candidato`.
+
+    `pessoas` só vale para quem concorreu ao cargo nos dois anos; `sq_*` é escolha explícita.
+    """
+    de = {c.sq_candidato: c for c in repo.candidaturas_de_pessoas(ANO_DE, pessoas)}
+    para = {c.sq_candidato: c for c in repo.candidaturas_de_pessoas(ANO_PARA, pessoas)}
+
+    def no_recorte(c: Candidatura) -> bool:
+        return c.ds_cargo == cargo.value and (uf is None or c.sg_uf in (uf, "BR"))
+
+    de = {sq: c for sq, c in de.items() if no_recorte(c)}
+    para = {sq: c for sq, c in para.items() if no_recorte(c)}
+    if pessoas:  # pessoa que não está nos dois lados não forma par
+        comuns = {c.pessoa_id for c in de.values()} & {c.pessoa_id for c in para.values()}
+        de = {sq: c for sq, c in de.items() if c.pessoa_id in comuns}
+        para = {sq: c for sq, c in para.items() if c.pessoa_id in comuns}
+    for ano, sqs, destino in ((ANO_DE, sq_de, de), (ANO_PARA, sq_para, para)):
+        for sq in sqs:
+            c = repo.candidatura(ano, sq)
+            if c is None:
+                raise nao_encontrado("candidato_nao_encontrado", f"candidato {ano}/{sq}")
+            if no_recorte(c):
+                destino[sq] = c
+    return list(de.values()), list(para.values())
+
+
 def montar_comparativo(
     repo: Repositorio,
     catalogo: Catalogo,
     *,
-    comparacao_id: str,
+    comparacao_id: str | None,
     cargo: Cargo,
     uf: str | None,
     mesmos_candidatos: bool,
+    pessoas: Sequence[str] = (),
+    sq_2022: Sequence[int] = (),
+    sq_2026: Sequence[int] = (),
 ) -> Comparativo:
-    """Evolução do grupo `de` para `para`; opcionalmente só as mesmas pessoas (`pessoa_id`)."""
+    """Evolução do grupo `de` para `para`, ou de uma seleção do usuário (pessoas/sqs).
+
+    Com `comparacao_id`, opcionalmente só as mesmas pessoas (`pessoa_id`). Sem par comparável
+    (um lado sem candidaturas no cargo/UF) → 422, nunca um comparativo vazio ou erro interno.
+    """
+    escolheu = bool(pessoas or sq_2022 or sq_2026)
+    if comparacao_id is not None and escolheu:
+        raise parametro_invalido(
+            "comparacao_e_selecao", "use 'comparacao' ou 'pessoas'/'sq_2022'/'sq_2026', não ambos"
+        )
+    if comparacao_id is None and not escolheu:
+        raise parametro_invalido(
+            "comparativo_sem_alvo", "informe 'comparacao' ou 'pessoas'/'sq_2022'/'sq_2026'"
+        )
     if cargo is Cargo.SENADOR:
         # 2022 elegeu 1 vaga (1 voto) e 2026 elege 2 (2 votos): taxas incomparáveis (§1.8).
         raise parametro_invalido(
             "cargo_sem_evolucao", "Senado não entra em evolução 2022→2026 (1 voto × 2 votos)"
         )
-    comp = catalogo.comparacao(comparacao_id)
-    de, para = catalogo.grupo(comp.de), catalogo.grupo(comp.para)
-    c_de, c_para = _lado(repo, de, cargo.value, uf), _lado(repo, para, cargo.value, uf)
+    if comparacao_id is None:
+        c_de, c_para = _selecao(repo, cargo, uf, pessoas=pessoas, sq_de=sq_2022, sq_para=sq_2026)
+        id_comp, rotulo = ID_SELECAO, "Seleção do usuário"
+        de = GrupoRef(id=ID_SELECAO, rotulo="Seleção 2022", ano=ANO_DE)
+        para = GrupoRef(id=ID_SELECAO, rotulo="Seleção 2026", ano=ANO_PARA)
+        mesmos_candidatos = False  # a escolha já é do usuário
+    else:
+        comp = catalogo.comparacao(comparacao_id)
+        g_de, g_para = catalogo.grupo(comp.de), catalogo.grupo(comp.para)
+        c_de, c_para = _lado(repo, g_de, cargo.value, uf), _lado(repo, g_para, cargo.value, uf)
+        id_comp, rotulo = comp.id, comp.rotulo
+        de = GrupoRef(id=g_de.id, rotulo=g_de.rotulo, ano=g_de.ano)
+        para = GrupoRef(id=g_para.id, rotulo=g_para.rotulo, ano=g_para.ano)
+    if not c_de or not c_para:
+        lado = de.rotulo if not c_de else para.rotulo
+        raise parametro_invalido(
+            "sem_par_comparavel",
+            f"'{lado}' não tem candidaturas a {cargo.value}"
+            f"{' em ' + uf if uf else ''}: não há o que comparar",
+        )
     if mesmos_candidatos:
         v_de = repo.votos_totais(de.ano, [c.sq_candidato for c in c_de])
         v_para = repo.votos_totais(para.ano, [c.sq_candidato for c in c_para])
@@ -205,10 +283,10 @@ def montar_comparativo(
         raise DadosIndisponiveis("AMC sem município de referência")
     kpis = total.to_dicts()[0] if total.height else {}
     return Comparativo(
-        comparacao=comp.id,
-        rotulo=comp.rotulo,
-        de=GrupoRef(id=de.id, rotulo=de.rotulo, ano=de.ano),
-        para=GrupoRef(id=para.id, rotulo=para.rotulo, ano=para.ano),
+        comparacao=id_comp,
+        rotulo=rotulo,
+        de=de,
+        para=para,
         cargo=cargo.value,
         uf=uf,
         mesmos_candidatos=mesmos_candidatos,

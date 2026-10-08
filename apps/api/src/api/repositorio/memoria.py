@@ -3,18 +3,21 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from api.pessoa import id_publico
 from api.repositorio.modelos import (
     BaseEleitoral,
     Candidatura,
     CelulaH3,
     DespesaBruta,
     Municipio,
+    ParDePessoa,
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
 )
+from api.texto import normalizar
 
 
 @dataclass(frozen=True)
@@ -127,6 +130,65 @@ class RepositorioMemoria:
             None,
         )
 
+    def buscar_candidaturas(
+        self,
+        *,
+        termo: str,
+        ano: int | None = None,
+        cargo: str | None = None,
+        uf: str | None = None,
+        partido: int | None = None,
+        sqs: Sequence[int] | None = None,
+        limite: int,
+    ) -> tuple[int, list[Candidatura]]:
+        """Mesma semântica do SQL: número ou nomes/sigla sem acento; início de palavra primeiro."""
+        achadas = [
+            c
+            for c in self._d.candidaturas
+            if (ano is None or c.ano == ano)
+            and (cargo is None or c.ds_cargo == cargo)
+            and (uf is None or c.sg_uf in ((uf, "BR") if cargo == "PRESIDENTE" else (uf,)))
+            and (
+                (partido is None and sqs is None)
+                or (partido is not None and c.nr_partido == partido)
+                or (sqs is not None and c.sq_candidato in sqs)
+            )
+            and _casa(c, termo)
+        ]
+        achadas.sort(key=lambda c: (_rank(c, termo), -c.ano, c.nm_urna, c.sq_candidato))
+        return len(achadas), achadas[:limite]
+
+    def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
+        """Candidaturas do ano cujo `id_publico(pessoa_id)` está em `publicos`."""
+        achadas = [
+            c for c in self._d.candidaturas if c.ano == ano and id_publico(c.pessoa_id) in publicos
+        ]
+        return sorted(achadas, key=lambda c: (c.sg_uf, c.ds_cargo, c.nm_urna, c.sq_candidato))
+
+    def pares_de_pessoas(
+        self,
+        ano_de: int,
+        ano_para: int,
+        *,
+        termo: str | None = None,
+        uf: str | None = None,
+        cargo: str | None = None,
+        limite: int,
+    ) -> tuple[int, list[ParDePessoa]]:
+        """Junta por `pessoa_id` as candidaturas dos dois anos."""
+        pares = [
+            ParDePessoa(a, b)
+            for a in self._d.candidaturas
+            if a.ano == ano_de
+            for b in self._d.candidaturas
+            if b.ano == ano_para and b.pessoa_id == a.pessoa_id
+            if (cargo is None or (a.ds_cargo == cargo and b.ds_cargo == cargo))
+            and (uf is None or uf in (a.sg_uf, b.sg_uf))
+            and (not termo or _casa(a, termo) or _casa(b, termo))
+        ]
+        pares.sort(key=lambda p: (p.para.nm_urna, p.para.sq_candidato, p.de.sq_candidato))
+        return len(pares), pares[:limite]
+
     def municipios(self, codigos: Sequence[int] | None = None) -> list[Municipio]:
         """Municípios pedidos."""
         todos = sorted(self._d.municipios, key=lambda m: m.cd_mun_ibge)
@@ -193,15 +255,16 @@ class RepositorioMemoria:
         ano: int,
         sqs: Sequence[int],
         *,
-        uf: str,
+        uf: str | None,
         limite: int,
         offset: int,
+        grade_graus: float | None = None,
     ) -> tuple[int, list[PontoVotacao]]:
         """Não modelado em memória."""
         raise NotImplementedError("pontos só no DuckDB")
 
     def votos_sem_coordenada(
-        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+        self, ano: int, sqs: Sequence[int], *, uf: str | None, por_h3: bool
     ) -> VotosSemCoordenada:
         """Não modelado em memória."""
         raise NotImplementedError("coordenadas só no DuckDB")
@@ -228,3 +291,20 @@ class RepositorioMemoria:
 def _ordem(item: tuple[tuple[int, int | None], object]) -> tuple[int, int]:
     (municipio, zona), _ = item
     return (municipio, zona if zona is not None else 0)
+
+
+def _campos_busca(c: Candidatura) -> list[str]:
+    return [normalizar(t) for t in (c.nm_urna, c.nm_civil or "", c.sg_partido)]
+
+
+def _casa(c: Candidatura, termo: str) -> bool:
+    if termo.isdigit():
+        return str(c.nr_candidato or "").startswith(termo) or c.nr_partido == int(termo)
+    return any(termo in campo for campo in _campos_busca(c))
+
+
+def _rank(c: Candidatura, termo: str) -> int:
+    """0 = início de palavra (ou prefixo do número), 1 = só substring."""
+    if termo.isdigit():
+        return 0 if str(c.nr_candidato or "").startswith(termo) else 1
+    return 0 if any(f" {campo}".find(f" {termo}") >= 0 for campo in _campos_busca(c)) else 1

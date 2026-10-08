@@ -384,7 +384,7 @@
           "mapa"
         ],
         "summary": "Locais de votação (densidade)",
-        "description": "`{lat, lon, votos}` por local, mais votados primeiro; paginado por UF.",
+        "description": "`{lat, lon, votos}` por local, mais votados primeiro; paginado.",
         "operationId": "pontos_api_mapa_pontos_get",
         "parameters": [
           {
@@ -406,10 +406,20 @@
           {
             "name": "uf",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/UF"
-            }
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sem UF (Brasil, ex.: presidente): locais somados em células de 0,1°.",
+              "title": "Uf"
+            },
+            "description": "Sem UF (Brasil, ex.: presidente): locais somados em células de 0,1°."
           },
           {
             "name": "grupo",
@@ -578,20 +588,9 @@
           "comparativo"
         ],
         "summary": "Evolução 2022→2026",
-        "description": "Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.",
+        "description": "Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.\n\nDois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,\n`sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.",
         "operationId": "comparativo_api_comparativo_get",
         "parameters": [
-          {
-            "name": "comparacao",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Id em `comparacoes` (ex.: evolucao_mbl).",
-              "title": "Comparacao"
-            },
-            "description": "Id em `comparacoes` (ex.: evolucao_mbl)."
-          },
           {
             "name": "cargo",
             "in": "query",
@@ -599,6 +598,24 @@
             "schema": {
               "$ref": "#/components/schemas/Cargo"
             }
+          },
+          {
+            "name": "comparacao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id em `comparacoes` (ex.: evolucao_mbl).",
+              "title": "Comparacao"
+            },
+            "description": "Id em `comparacoes` (ex.: evolucao_mbl)."
           },
           {
             "name": "uf",
@@ -627,6 +644,73 @@
               "title": "Mesmos Candidatos"
             },
             "description": "Só pessoas que concorreram nos dois anos (pessoa_id)."
+          },
+          {
+            "name": "pessoas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{12}$"
+                  },
+                  "maxItems": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Seleção do usuário: `pessoa_id_publico` (de /busca ou /evolucao/pessoas); compara as candidaturas delas em 2022 e 2026. Exclusivo com `comparacao`.",
+              "title": "Pessoas"
+            },
+            "description": "Seleção do usuário: `pessoa_id_publico` (de /busca ou /evolucao/pessoas); compara as candidaturas delas em 2022 e 2026. Exclusivo com `comparacao`."
+          },
+          {
+            "name": "sq_2022",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Seleção: `sq_candidato` de 2022.",
+              "title": "Sq 2022"
+            },
+            "description": "Seleção: `sq_candidato` de 2022."
+          },
+          {
+            "name": "sq_2026",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Seleção: `sq_candidato` de 2026.",
+              "title": "Sq 2026"
+            },
+            "description": "Seleção: `sq_candidato` de 2026."
           }
         ],
         "responses": {
@@ -636,6 +720,230 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Comparativo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/busca": {
+      "get": {
+        "tags": [
+          "busca"
+        ],
+        "summary": "Busca de candidaturas",
+        "description": "Candidaturas com ano, cargo, UF, partido, votos, resultado e `abrangencia` do mapa.",
+        "operationId": "busca_api_busca_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "description": "Nome de urna ou civil (sem acento, qualquer caixa; início de palavra antes de trecho), número de urna (prefixo), número ou sigla do partido.",
+              "title": "Q"
+            },
+            "description": "Nome de urna ou civil (sem acento, qualquer caixa; início de palavra antes de trecho), número de urna (prefixo), número ou sigla do partido."
+          },
+          {
+            "name": "ano",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Ano"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ano"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id do grupo; exclusivo com sq_candidato.",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo; exclusivo com sq_candidato."
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoBusca"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evolucao/pessoas": {
+      "get": {
+        "tags": [
+          "comparativo"
+        ],
+        "summary": "Pessoas em 2022 e 2026",
+        "description": "Quem concorreu nos dois anos, com o resumo de cada ano; alimenta `/comparativo?pessoas=`.",
+        "operationId": "evolucao_pessoas_api_evolucao_pessoas_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nome (urna ou civil), como em /busca.",
+              "title": "Q"
+            },
+            "description": "Nome (urna ou civil), como em /busca."
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exige este cargo nos dois anos.",
+              "title": "Cargo"
+            },
+            "description": "Exige este cargo nos dois anos."
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaPessoas"
                 }
               }
             }
@@ -705,6 +1013,38 @@
   },
   "components": {
     "schemas": {
+      "Abrangencia": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "pais",
+              "uf"
+            ],
+            "title": "Tipo",
+            "description": "`pais` (presidente) ou `uf`."
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf",
+            "description": "Sigla da UF; null quando `tipo = pais`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "uf"
+        ],
+        "title": "Abrangencia",
+        "description": "Região em que o candidato disputa: o front enquadra o mapa por ela."
+      },
       "Ano": {
         "type": "integer",
         "enum": [
@@ -796,6 +1136,9 @@
             "type": "boolean",
             "title": "Indicado",
             "description": "Candidatura indicada pelo grupo (`origem=indicado` na lista de referência); false para candidatos próprios ou fora da lista."
+          },
+          "abrangencia": {
+            "$ref": "#/components/schemas/Abrangencia"
           }
         },
         "type": "object",
@@ -811,10 +1154,111 @@
           "votos",
           "pct_validos",
           "penetracao",
-          "indicado"
+          "indicado",
+          "abrangencia"
         ],
         "title": "CandidatoResumo",
         "description": "Candidato com votos e taxas na sua circunscrição (cargo × UF)."
+      },
+      "CandidaturaBusca": {
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome",
+            "description": "Nome civil, como no registro de candidatura do TSE."
+          },
+          "numero": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numero",
+            "description": "Número de urna."
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "uf": {
+            "type": "string",
+            "title": "Uf",
+            "description": "UF da candidatura; `BR` para presidente."
+          },
+          "partido": {
+            "$ref": "#/components/schemas/Partido"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos",
+            "description": "Votos nominais válidos (spec §2.1); 0 sem apuração."
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado",
+            "description": "`ds_sit_tot_turno`; null se sem apuração."
+          },
+          "indicado": {
+            "type": "boolean",
+            "title": "Indicado",
+            "description": "Candidatura indicada pelo grupo (lista de referência)."
+          },
+          "pessoa_id_publico": {
+            "type": "string",
+            "title": "Pessoa Id Publico",
+            "description": "Hash curto e não reversível da pessoa, só para ligar anos. Não é o `pessoa_id` interno nem identifica ninguém fora desta API."
+          },
+          "abrangencia": {
+            "$ref": "#/components/schemas/Abrangencia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ano",
+          "sq_candidato",
+          "nm_urna",
+          "nome",
+          "numero",
+          "cargo",
+          "uf",
+          "partido",
+          "votos",
+          "resultado",
+          "indicado",
+          "pessoa_id_publico",
+          "abrangencia"
+        ],
+        "title": "CandidaturaBusca",
+        "description": "Candidatura achada: o bastante para listar, escolher e enquadrar o mapa."
       },
       "Cargo": {
         "type": "string",
@@ -1807,6 +2251,10 @@
           {
             "itens": [
               {
+                "abrangencia": {
+                  "tipo": "uf",
+                  "uf": "SP"
+                },
                 "ano": 2026,
                 "cargo": "DEPUTADO FEDERAL",
                 "indicado": false,
@@ -1836,6 +2284,38 @@
             "total": 1
           }
         ]
+      },
+      "ListaPessoas": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limite": {
+            "type": "integer",
+            "title": "Limite"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/PessoaEvolucao"
+            },
+            "type": "array",
+            "title": "Itens"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "limite",
+          "itens",
+          "dt_geracao"
+        ],
+        "title": "ListaPessoas",
+        "description": "Corpo de GET /evolucao/pessoas."
       },
       "Mapa": {
         "properties": {
@@ -1917,6 +2397,12 @@
             ],
             "title": "Pct Votos Sem Coordenada",
             "description": "`votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%)."
+          },
+          "votos_fora_do_mapa": {
+            "type": "integer",
+            "title": "Votos Fora Do Mapa",
+            "description": "Votos do recorte sem município IBGE (exterior, `ZZ`): contam no total do candidato, mas não têm polígono e ficam fora de `valores`.",
+            "default": 0
           },
           "dt_geracao": {
             "type": "string",
@@ -2047,6 +2533,48 @@
         "title": "Partido",
         "description": "Partido da candidatura."
       },
+      "PessoaEvolucao": {
+        "properties": {
+          "pessoa_id_publico": {
+            "type": "string",
+            "title": "Pessoa Id Publico"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome",
+            "description": "Nome de urna em 2026."
+          },
+          "mesmo_cargo": {
+            "type": "boolean",
+            "title": "Mesmo Cargo",
+            "description": "Concorreu ao mesmo cargo nos dois anos."
+          },
+          "comparavel": {
+            "type": "boolean",
+            "title": "Comparavel",
+            "description": "Entra em /comparativo: mesmo cargo e não Senado (1 voto × 2 votos, §1.8)."
+          },
+          "de": {
+            "$ref": "#/components/schemas/CandidaturaBusca",
+            "description": "Candidatura de 2022."
+          },
+          "para": {
+            "$ref": "#/components/schemas/CandidaturaBusca",
+            "description": "Candidatura de 2026."
+          }
+        },
+        "type": "object",
+        "required": [
+          "pessoa_id_publico",
+          "nome",
+          "mesmo_cargo",
+          "comparavel",
+          "de",
+          "para"
+        ],
+        "title": "PessoaEvolucao",
+        "description": "Uma pessoa com candidatura em 2022 e em 2026, resumida nos dois anos."
+      },
       "Ponto": {
         "properties": {
           "lat": {
@@ -2080,7 +2608,19 @@
           "total": {
             "type": "integer",
             "title": "Total",
-            "description": "Locais com voto no recorte."
+            "description": "Pontos no recorte (locais com voto ou, na grade, células)."
+          },
+          "grade_graus": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Graus",
+            "description": "Sem `uf` (Brasil): tamanho em graus da célula lat/lon em que os locais são somados (cada ponto é o centroide ponderado por votos). null = um ponto por local."
           },
           "limite": {
             "type": "integer",
@@ -2121,6 +2661,7 @@
         "required": [
           "ano",
           "total",
+          "grade_graus",
           "limite",
           "offset",
           "truncado",
@@ -2131,6 +2672,69 @@
         ],
         "title": "Pontos",
         "description": "Corpo de GET /mapa/pontos (densidade de votos por local)."
+      },
+      "ResultadoBusca": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Candidaturas que casam (além da página devolvida)."
+          },
+          "limite": {
+            "type": "integer",
+            "title": "Limite"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/CandidaturaBusca"
+            },
+            "type": "array",
+            "title": "Itens"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "limite",
+          "itens",
+          "dt_geracao"
+        ],
+        "title": "ResultadoBusca",
+        "description": "Corpo de GET /busca.",
+        "examples": [
+          {
+            "dt_geracao": "2026-10-06",
+            "itens": [
+              {
+                "abrangencia": {
+                  "tipo": "uf",
+                  "uf": "SP"
+                },
+                "ano": 2026,
+                "cargo": "DEPUTADO FEDERAL",
+                "indicado": false,
+                "nm_urna": "A",
+                "nome": "ANA ALVES DA SILVA",
+                "numero": 1415,
+                "partido": {
+                  "numero": 14,
+                  "sigla": "MISSÃO"
+                },
+                "pessoa_id_publico": "3f2a9c1d7b40",
+                "resultado": "SUPLENTE",
+                "sq_candidato": 3,
+                "uf": "SP",
+                "votos": 1000
+              }
+            ],
+            "limite": 20,
+            "total": 1
+          }
+        ]
       },
       "ResumoCargo": {
         "properties": {

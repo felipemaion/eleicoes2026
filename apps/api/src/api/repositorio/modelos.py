@@ -17,6 +17,8 @@ class Candidatura:
     sg_partido: str
     ds_situacao_candidatura: str | None  # 2026 chega nulo do TSE até a publicação
     ds_sit_tot_turno: str | None
+    nr_candidato: int | None = None  # número de urna (busca)
+    nm_civil: str | None = None  # nome civil (busca); nunca documento
 
 
 @dataclass(frozen=True)
@@ -32,18 +34,24 @@ class Municipio:
 
 @dataclass(frozen=True)
 class VotosTerritorio:
-    """Votos de um conjunto de candidatos num território (`nr_zona` None = município)."""
+    """Votos de um conjunto de candidatos num território (`nr_zona` None = município).
 
-    cd_mun_ibge: int
+    `cd_mun_ibge` None = voto sem município (exterior): conta no total, não tem polígono.
+    """
+
+    cd_mun_ibge: int | None
     nr_zona: int | None
     votos: int
 
 
 @dataclass(frozen=True)
 class BaseEleitoral:
-    """Aptos e votos válidos de um cargo num território (`nr_zona` None = município)."""
+    """Aptos e votos válidos de um cargo num território (`nr_zona` None = município).
 
-    cd_mun_ibge: int
+    `cd_mun_ibge` None = exterior (sem município IBGE).
+    """
+
+    cd_mun_ibge: int | None
     nr_zona: int | None
     aptos: int
     validos: int
@@ -103,3 +111,11 @@ class VariacaoIpca:
 
     mes: str
     variacao: float
+
+
+@dataclass(frozen=True)
+class ParDePessoa:
+    """Candidaturas da mesma pessoa no ano `de` e no ano `para`."""
+
+    de: Candidatura
+    para: Candidatura
