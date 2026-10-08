@@ -117,48 +117,6 @@ test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana",
   await expect(page.locator(".tooltip-flutuante:not([hidden])")).toContainText("R$");
 });
 
-test("evolução: escolher candidatos, comparar, ver a tabela ordenável; o hash guarda a seleção", async ({ page }) => {
-  await page.goto("/#/evolucao");
-  const itens = page.locator(".pessoa-item");
-  await expect(itens).toHaveCount(3);
-  await expect(page.locator(".pessoa-item input").nth(2)).toBeDisabled();
-  await page.screenshot({ path: `${CAPTURAS}/T-W12-evolucao-selecao.png`, fullPage: true });
-  await itens.nth(0).getByRole("checkbox").check();
-  await itens.nth(1).getByRole("checkbox").check();
-  await expect(page.locator(".selecao-contagem")).toContainText("2 selecionados");
-  await page.getByRole("button", { name: "Comparar selecionados" }).click();
-  await expect(page).toHaveURL(/pessoas=aaaaaaaaaaaa%2Cbbbbbbbbbbbb/);
-  await expect(page.locator("table.tabela-pessoas tbody tr")).toHaveCount(2);
-  await expect(page.getByRole("heading", { name: "Comparando 2 candidatos" })).toBeVisible();
-  await page.getByRole("button", { name: "Votos 2026" }).click();
-  await expect(page.locator("table.tabela-pessoas thead th[aria-sort=descending]")).toContainText("Votos 2026");
-  await expect(page.locator("table.tabela-pessoas tbody tr").first()).toContainText("ANA SOUZA");
-  await page.getByRole("button", { name: "Votos 2026" }).click();
-  await expect(page.locator("table.tabela-pessoas tbody tr").first()).toContainText("BRUNO LIMA");
-  await page.screenshot({ path: `${CAPTURAS}/T-W12-evolucao-tabela.png`, fullPage: true });
-  // Recarregar preserva a escolha (deep-link).
-  await page.reload();
-  await expect(page.locator("table.tabela-pessoas tbody tr")).toHaveCount(2);
-  await expect(page.locator(".pessoa-item input:checked")).toHaveCount(2);
-  await page.getByRole("button", { name: "Grupo inteiro" }).click();
-  await expect(page).not.toHaveURL(/pessoas=/);
-});
-
-test("evolução: 'Só indicados' escolhe e aplica de uma vez", async ({ page }) => {
-  await page.goto("/#/evolucao");
-  await expect(page.locator(".pessoa-item")).toHaveCount(3);
-  await page.getByRole("button", { name: "Só indicados" }).click();
-  await expect(page).toHaveURL(/pessoas=bbbbbbbbbbbb/);
-  await expect(page.locator("table.tabela-pessoas tbody tr")).toHaveCount(1);
-});
-
-test("evolução: seleção sem par comparável explica o que fazer, sem alerta técnico", async ({ page }) => {
-  await page.route("**/api/comparativo?**", (r) => r.fulfill({ status: 422, contentType: "application/json", body: "{}" }));
-  await page.goto("/#/evolucao?pessoas=aaaaaaaaaaaa");
-  await expect(page.locator(".estado.vazio")).toContainText("Nenhum dos candidatos escolhidos");
-  await expect(page.getByRole("alert")).toHaveCount(0);
-});
-
 test("ficha: gastos completos, links oficiais e 'fonte' acessível por teclado", async ({ page }) => {
   await page.goto("/#/candidato?cand=2026:1");
   const gastos = page.locator(".ficha-gastos");

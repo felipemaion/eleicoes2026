@@ -307,77 +307,56 @@ describe("evolução 2022×2026", () => {
   });
 });
 
-describe("evolução — escolha de candidatos", () => {
-  const A = "aaaaaaaaaaaa";
-  const B = "bbbbbbbbbbbb";
+describe("evolução — comparador de lados (T-W20)", () => {
   const urlComparativo = (): string => chamadas.filter((c) => c.startsWith("/api/comparativo?")).at(-1) ?? "";
-  it("lista as pessoas (cargo/UF da barra de filtros) com busca, e o grupo inteiro é o padrão", async () => {
+  it("frase-resumo no topo, dois cartões 2022 → 2026 e nenhuma lista longa de candidatos", async () => {
     await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
-    expect(chamadas.find((c) => c.startsWith("/api/evolucao/pessoas?"))).toContain("cargo=DEPUTADO+FEDERAL");
+    await vi.waitFor(() => { expect(el.querySelector(".frase-resumo")).not.toBeNull(); });
+    expect(el.querySelector(".frase-resumo")?.textContent).toMatch(/Comparando MBL 2022 \(2022\) com Partido Missão 2026 \(2026\) · Deputado federal · Brasil/);
+    expect([...el.querySelectorAll(".cartao-lado h2")].map((x) => x.textContent)).toEqual(["2022", "2026"]);
+    expect(el.querySelector(".lista-pessoas, .pessoa-item")).toBeNull();
+    expect(chamadas.some((c) => c.startsWith("/api/evolucao/pessoas"))).toBe(false);
     expect(urlComparativo()).toContain("comparacao=");
-    expect(urlComparativo()).not.toContain("pessoas=");
-    expect(el.querySelector(".pessoa-item")?.textContent).toMatch(/ANA SOUZA.*2022.*NOVO.*2026.*MISSÃO/s);
   });
-  it("marcar pessoas só monta o rascunho (sem refazer mapas); 'Comparar selecionados' grava no hash", async () => {
+  it("com a contagem da API na frase e KPIs rotulados 2022 e 2026", async () => {
+    await desenhar("evolucao");
+    await vi.waitFor(() => { expect(el.querySelector("dl.kpis")).not.toBeNull(); });
+    expect(el.querySelector(".frase-contagem")?.textContent).toContain("3 candidaturas → 3 candidaturas");
+    const kpis = el.querySelector("dl.kpis")?.textContent ?? "";
+    expect(kpis).toContain("Penetração em 2022");
+    expect(kpis).toContain("Penetração em 2026");
+    expect(el.querySelector("details.notas-dados summary")?.textContent).toBe("Notas sobre os dados");
+  });
+  it("Aplicar grava o lado na URL (nomes curtos) e 'Limpar' volta ao padrão", async () => {
     window.location.hash = "";
     await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item input[type=checkbox]")).toHaveLength(3); });
-    const caixas = el.querySelectorAll<HTMLInputElement>(".pessoa-item input[type=checkbox]");
-    caixas[0]?.click();
-    expect(window.location.hash).not.toContain("pessoas=");
-    expect(el.querySelector(".selecao-contagem")?.textContent).toContain("1 selecionado");
-    (el.querySelector("button[data-acao=comparar]") as HTMLButtonElement).click();
-    expect(decodeURIComponent(window.location.hash)).toContain(`pessoas=${A}`);
+    await vi.waitFor(() => { expect(el.querySelectorAll(".cartao-lado")).toHaveLength(2); });
+    (el.querySelectorAll("button[data-acao=alterar]")[1] as HTMLButtonElement).click();
+    const sel = el.querySelectorAll<HTMLSelectElement>("select[name=grupo]")[1] as HTMLSelectElement;
+    sel.value = "mbl_2026";
+    sel.dispatchEvent(new Event("change"));
+    (el.querySelectorAll("button[data-acao=aplicar]")[1] as HTMLButtonElement).click();
+    expect(decodeURIComponent(window.location.hash)).toContain("para=g:mbl_2026");
   });
-  it("com seleção no hash, o comparativo recebe pessoas repetido e a tabela traz 2022 × 2026", async () => {
-    await desenhar("evolucao", estado("evolucao", { pessoas: `${A},${B}` }));
-    await vi.waitFor(() => { expect(el.querySelectorAll("table.tabela-pessoas tbody tr")).toHaveLength(2); });
-    expect(urlComparativo()).toContain(`pessoas=${A}&pessoas=${B}`);
+  it("lado de candidatos com o outro em grupo (misto) vai por lado ao /comparativo; nomes vêm da ficha", async () => {
+    await desenhar("evolucao", estado("evolucao", { de: "c:1", para: "g:missao_2026" }));
+    await vi.waitFor(() => { expect(el.querySelector("dl.kpis")).not.toBeNull(); });
+    expect(urlComparativo()).toContain("sq_2022=1");
+    expect(urlComparativo()).toContain("grupo_2026=missao_2026");
     expect(urlComparativo()).not.toContain("comparacao=");
-    const linha = el.querySelector("table.tabela-pessoas tbody tr")?.textContent ?? "";
-    for (const t of ["ANA SOUZA", "9.000", "18.049", "NOVO", "MISSÃO"]) expect(linha).toContain(t);
-    expect([...el.querySelectorAll<HTMLInputElement>(".pessoa-item input:checked")]).toHaveLength(2);
+    expect(chamadas).toContain("/api/candidatos/2022/1");
   });
-  it("a tabela ordena ao clicar no cabeçalho e informa aria-sort", async () => {
-    await desenhar("evolucao", estado("evolucao", { pessoas: `${A},${B}` }));
-    await vi.waitFor(() => { expect(el.querySelectorAll("table.tabela-pessoas tbody tr")).toHaveLength(2); });
-    const nomes = (): string[] => [...el.querySelectorAll("table.tabela-pessoas tbody tr th")].map((t) => t.textContent);
-    const botao = [...el.querySelectorAll<HTMLButtonElement>("table.tabela-pessoas thead button")].find((b) => b.textContent.includes("Votos 2026")) as HTMLButtonElement;
-    botao.click();
-    const primeiro = nomes();
-    el.querySelector<HTMLButtonElement>('table.tabela-pessoas thead button[data-coluna="votos_para"]')?.click();
-    expect(nomes()).not.toEqual(primeiro);
-    expect(el.querySelector('table.tabela-pessoas thead th[aria-sort]')).not.toBeNull();
-  });
-  it("atalhos: 'Só indicados' marca os indicados e 'Grupo inteiro' limpa a seleção", async () => {
-    window.location.hash = "";
+  it("422 do /comparativo vira mensagem curta, sem quebrar a tela; os cartões continuam", async () => {
+    vi.stubGlobal("fetch", vi.fn((url: string) => {
+      chamadas.push(url);
+      const caminho = url.split("?")[0] ?? url;
+      if (caminho === "/api/comparativo") return Promise.resolve({ ok: false, status: 422, json: () => Promise.resolve({}) });
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(ROTAS[caminho]) });
+    }));
     await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
-    (el.querySelector("button[data-atalho=indicados]") as HTMLButtonElement).click();
-    expect(decodeURIComponent(window.location.hash)).toContain(`pessoas=${B}`);
-    (el.querySelector("button[data-atalho=grupo]") as HTMLButtonElement).click();
-    expect(window.location.hash).not.toContain("pessoas=");
-  });
-  it("a busca por nome consulta a API com q (debounce) sem refazer o comparativo", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
-    const antes = chamadas.filter((c) => c.startsWith("/api/comparativo?")).length;
-    const q = el.querySelector<HTMLInputElement>("input[name=busca-pessoas]") as HTMLInputElement;
-    q.value = "bruno";
-    q.dispatchEvent(new Event("input"));
-    await vi.advanceTimersByTimeAsync(400);
-    await vi.waitFor(() => { expect(chamadas.some((c) => c.startsWith("/api/evolucao/pessoas?") && c.includes("q=bruno"))).toBe(true); });
-    expect(chamadas.filter((c) => c.startsWith("/api/comparativo?")).length).toBe(antes);
-    vi.useRealTimers();
-  });
-  it("pessoa que não entra no comparativo (outro cargo/Senado) vem desabilitada e explicada", async () => {
-    await desenhar("evolucao");
-    await vi.waitFor(() => { expect(el.querySelectorAll(".pessoa-item")).toHaveLength(3); });
-    const carla = [...el.querySelectorAll<HTMLElement>(".pessoa-item")].find((x) => x.textContent.includes("CARLA")) as HTMLElement;
-    expect(carla.querySelector<HTMLInputElement>("input")?.disabled).toBe(true);
-    expect(carla.textContent).toMatch(/não concorreu ao mesmo cargo|fora do comparativo/i);
+    await vi.waitFor(() => { expect(el.textContent).toContain("Não há dados para comparar esta combinação"); });
+    expect(el.querySelectorAll(".cartao-lado")).toHaveLength(2);
+    expect(el.querySelector("[role=alert]")).toBeNull();
   });
 });
 

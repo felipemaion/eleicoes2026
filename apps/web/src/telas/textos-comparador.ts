@@ -1,0 +1,31 @@
+/** Textos da UI do comparador 2022×2026 (pt-BR), num só lugar. */
+export const TEXTOS_COMPARADOR = {
+  alterar: "Alterar",
+  aplicar: "Aplicar",
+  cancelar: "Cancelar",
+  limpar: "Limpar (voltar ao padrão)",
+  modoRotulo: "O que comparar neste lado",
+  modoGrupo: "Grupo",
+  modoCandidatos: "Candidatos",
+  grupoRotulo: "Grupo",
+  buscaRotulo: "Buscar candidato (nome, número ou partido)",
+  placeholderBusca: "Digite ao menos 2 letras",
+  sugestoesRotulo: "Candidaturas encontradas",
+  minimo: "Digite pelo menos 2 caracteres.",
+  buscando: "Buscando…",
+  buscaIndisponivel: "Busca indisponível no momento. Tente de novo em instantes.",
+  semResultado: (q: string): string => `Nenhum candidato encontrado para “${q}” neste cargo e UF. Tente só o sobrenome ou o número de urna.`,
+  refine: (n: number, total: number): string => `${String(n)} de ${String(total)} resultados — refine a busca.`,
+  erro422: "Não há dados para comparar esta combinação. Confira se cada lado tem candidaturas neste cargo e UF (barra de filtros).",
+  erroSqForaGeral: "Não foi possível comparar: alguma candidatura escolhida não está neste cargo e UF. Veja a mensagem no cartão do lado.",
+  erroSqLado: "Alguma candidatura escolhida aqui não concorreu a este cargo nesta UF. Remova-a em “Alterar” ou mude cargo e UF na barra de filtros.",
+  seloIndicado: "indicado MBL",
+  /** Explicação dos grupos que misturam critérios; a lista de referência é data/reference/mbl_2022.csv (origem=indicado). */
+  notaGrupo: {
+    mbl_2022_indicados: "Indicados são as candidaturas de 2022 que o MBL indicou em outros partidos: Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo (lista de referência do projeto).",
+    mbl_2022: "Grupo MBL 2022: os indicados (Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo) mais os candidatos do Partido Missão em 2026 que também disputaram 2022.",
+  } as Readonly<Record<string, string>>,
+  carregandoNomes: "Carregando…",
+  notasDados: "Notas sobre os dados",
+  tabelaTitulo: "Candidaturas escolhidas",
+} as const;

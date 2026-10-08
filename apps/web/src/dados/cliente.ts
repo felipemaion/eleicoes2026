@@ -14,6 +14,20 @@ export function foiCancelada(e: unknown): boolean {
   return e instanceof DOMException && e.name === "AbortError";
 }
 
+/** Falha HTTP da API; `codigo` é o motivo do 422 (ex.: `sq_fora_do_recorte`) quando o corpo o traz. */
+export class ErroApi extends Error {
+  constructor(mensagem: string, readonly status: number, readonly codigo: string | null) { super(mensagem); }
+}
+
+/** O corpo do 422 pode trazer o código em `detail.codigo`, `detail.code`, `codigo` ou `detail` (texto). */
+export function codigoDoErro(corpo: unknown): string | null {
+  if (!ehObjeto(corpo)) return null;
+  const d = corpo["detail"];
+  const candidatos = [ehObjeto(d) ? d["codigo"] : undefined, ehObjeto(d) ? d["code"] : undefined, corpo["codigo"], d];
+  const achado = candidatos.find((x): x is string => typeof x === "string" && /^[a-z0-9_]{3,64}$/.test(x));
+  return achado ?? null;
+}
+
 /** Valor em lista (ex.: `pessoas`) vira o parâmetro repetido, como o FastAPI espera. */
 export type Params = Readonly<Record<string, string | readonly string[] | undefined>>;
 
@@ -66,7 +80,11 @@ export function criarCliente(base = "/api"): ClienteApi {
    
   async function obter<T>(caminho: string, valido: (x: unknown) => x is T, sinal?: AbortSignal): Promise<T> {
     const r = await fetch(`${base}${caminho}`, sinal ? { signal: sinal } : undefined);
-    if (!r.ok) throw new Error(`GET ${base}${caminho} falhou: ${String(r.status)}`);
+    if (!r.ok) {
+      let corpo: unknown = null;
+      try { corpo = await r.json(); } catch { /* corpo ausente ou não-JSON: sem código */ }
+      throw new ErroApi(`GET ${base}${caminho} falhou: ${String(r.status)}`, r.status, codigoDoErro(corpo));
+    }
     const corpo: unknown = await r.json();
     if (!valido(corpo)) throw new Error(`GET ${base}${caminho.split("?")[0] ?? caminho}: resposta inesperada`);
     return corpo;

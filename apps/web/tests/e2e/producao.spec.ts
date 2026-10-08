@@ -176,17 +176,19 @@ for (const vp of VIEWPORTS) {
       await expect(page.locator("[data-mapa-pronto='sim'][data-abrangencia='pais']")).toBeVisible({ timeout: 90_000 });
     });
 
-    test("item10 evolução: buscar e escolher candidatos", async ({ page }) => {
+    test("item10 evolução: comparador com busca de candidato", async ({ page }) => {
       await page.goto("/#/evolucao");
       await pronto(page);
       await foto(page, "item10-evolucao");
-      await page.locator("input[name=busca-pessoas]").fill("guto");
-      const caixa = page.locator(".pessoa-item input[type=checkbox]:not([disabled])").first();
-      await expect(caixa).toBeVisible({ timeout: 15_000 });
-      await caixa.check();
+      await page.getByRole("button", { name: "Alterar" }).first().click();
+      await page.getByLabel("Candidatos").first().check();
+      await page.getByLabel(/Buscar candidato/).first().fill("guto");
+      const opcao = page.locator("[role=option]").first();
+      await expect(opcao).toBeVisible({ timeout: 15_000 });
       await foto(page, "item10-evolucao-busca");
-      await page.getByRole("button", { name: /Comparar selecionados/ }).click();
-      await expect(page).toHaveURL(/pessoas=/);
+      await opcao.click();
+      await page.getByRole("button", { name: "Aplicar" }).first().click();
+      await expect(page).toHaveURL(/de=c/);
       await pronto(page);
       await expect(page.getByRole("alert")).toHaveCount(0);
       await foto(page, "item10-evolucao-escolhido");

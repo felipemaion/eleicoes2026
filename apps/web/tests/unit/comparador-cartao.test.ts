@@ -16,12 +16,14 @@ function montar(lado: Lado, extra: Partial<OpcoesCartao> = {}, itens = candidatu
   const buscar = vi.fn(() => Promise.resolve({ total: itens.length, limite: 40, itens, dt_geracao: "2026-10-07" }));
   const aplicar = vi.fn();
   const fim = criarCartao(document.getElementById("x") as HTMLElement, {
-    ano: 2022, cliente: { busca: buscar } as unknown as ClienteApi, grupos: GRUPOS, lado, nome: "MBL 2022", nomes: new Map(),
+    ano: 2022, cliente: { busca: buscar } as unknown as ClienteApi, grupos: GRUPOS, lado, nome: "MBL 2022", nomes: new Map(), indicados: new Set<string>(),
     cargo: "DEPUTADO ESTADUAL", uf: "SP", aplicar, ...extra,
   });
   return { buscar, aplicar, fim };
 }
-const q = <T extends HTMLElement>(s: string): T => document.querySelector<T>(s) as T;
+// O tipo do elemento é só para quem chama; não há outro uso para o parâmetro.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+const q = <E extends HTMLElement = HTMLElement>(s: string): E => document.querySelector(s) as E;
 const digitar = async (v: string): Promise<void> => {
   const input = q<HTMLInputElement>("input[role=combobox]");
   input.value = v;
@@ -46,6 +48,7 @@ describe("cartão de um lado", () => {
     const sel = q<HTMLSelectElement>("select[name=grupo]");
     expect([...sel.options].map((o) => o.value)).toEqual(["mbl_2022", "mbl_2022_indicados"]);
     sel.value = "mbl_2022_indicados";
+    sel.dispatchEvent(new Event("change"));
     q<HTMLButtonElement>("button[data-acao=aplicar]").click();
     expect(aplicar).toHaveBeenCalledWith({ tipo: "grupo", id: "mbl_2022_indicados" });
   });
@@ -78,6 +81,19 @@ describe("cartão de um lado", () => {
     q<HTMLButtonElement>("button[aria-label='Remover GUTO 0']").click();
     expect(document.querySelectorAll(".chip-candidato")).toHaveLength(0);
     expect(q<HTMLButtonElement>("button[data-acao=aplicar]").disabled).toBe(true);
+  });
+
+  it("indicados: selo nas sugestões e nos chips; o grupo de indicados é explicado com os quatro nomes", async () => {
+    const itens = candidaturas(3).map((c, i) => ({ ...c, indicado: i === 0 }));
+    montar({ tipo: "grupo", id: "mbl_2022_indicados" }, {}, itens);
+    q<HTMLButtonElement>("button[data-acao=alterar]").click();
+    expect(q(".cartao-painel .nota").textContent).toMatch(/Kim Kataguiri.*Guto Zacarias.*Renato Battista.*Cristiano Beraldo/);
+    q<HTMLInputElement>("input[value=candidatos]").click();
+    await digitar("guto");
+    const ops = [...document.querySelectorAll("[role=option]")];
+    expect(ops.filter((o) => o.querySelector(".selo"))).toHaveLength(1);
+    (ops.find((o) => o.querySelector(".selo")) as HTMLElement).dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+    expect(q(".chip-candidato .selo").textContent).toBe("indicado MBL");
   });
 
   it("Cancelar descarta o rascunho e fecha; erro do lado aparece no cartão", () => {
