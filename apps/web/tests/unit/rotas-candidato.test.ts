@@ -17,17 +17,15 @@ describe("deep-link do candidato (#/candidato?cand=ano:sq)", () => {
   });
 });
 
-describe("deep-link da seleção da Evolução (#/evolucao?pessoas=a,b)", () => {
-  const A = "aaaaaaaaaaaa";
-  const B = "bbbbbbbbbbbb";
-  it("lê e grava a lista de pessoas", () => {
-    expect(lerHash(`#/evolucao?pessoas=${A},${B}`)?.filtros.pessoas).toBe(`${A},${B}`);
-    expect(lerHash(`#/evolucao?pessoas=${A}%2C${B}`)?.filtros.pessoas).toBe(`${A},${B}`);
-    expect(decodeURIComponent(formatarHash("evolucao", { ...FILTROS_PADRAO, pessoas: `${A},${B}` }))).toBe(`#/evolucao?pessoas=${A},${B}`);
+describe("deep-link dos lados da Evolução (#/evolucao?de=c:1,2&para=g:missao_2026)", () => {
+  it("lê e grava cada lado; vírgula pode vir codificada", () => {
+    expect(lerHash("#/evolucao?de=c:1,2&para=g:missao_2026")?.filtros).toMatchObject({ de: "c:1,2", para: "g:missao_2026" });
+    expect(lerHash("#/evolucao?de=c%3A1%2C2")?.filtros.de).toBe("c:1,2");
+    expect(decodeURIComponent(formatarHash("evolucao", { ...FILTROS_PADRAO, de: "c:1,2", para: "g:missao_2026" }))).toBe("#/evolucao?de=c:1,2&para=g:missao_2026");
   });
-  it("sem seleção, não polui a URL; lixo é descartado", () => {
-    expect(lerHash("#/evolucao")?.filtros.pessoas).toBe("");
+  it("sem escolha, não polui a URL; lixo é descartado", () => {
+    expect(lerHash("#/evolucao")?.filtros).toMatchObject({ de: "", para: "" });
     expect(formatarHash("evolucao", FILTROS_PADRAO)).toBe("#/evolucao");
-    expect(lerHash(`#/evolucao?pessoas=${A},../x,<b>`)?.filtros.pessoas).toBe(A);
+    expect(lerHash("#/evolucao?de=c:1,../x,<b>,2&para=g:<x>")?.filtros).toMatchObject({ de: "c:1,2", para: "" });
   });
 });
