@@ -36,10 +36,12 @@ describe("contagem ao vivo", () => {
 });
 
 describe("grupo com descrição curta", () => {
-  it("descreve os grupos conhecidos e não quebra com desconhecido", () => {
-    expect(resumoDeGrupo("missao_2026")).toMatch(/Missão/);
-    expect(resumoDeGrupo("mbl_2022")).toMatch(/2022/);
-    expect(resumoDeGrupo("outro")).toBe("");
+  it("monta a descrição a partir do que a API informa (sem lista fixa)", () => {
+    expect(resumoDeGrupo({ rotulo: "MBL 2026 (Missão + aliados em outros partidos)", ano: 2026, n_candidaturas: 4 }))
+      .toBe("MBL 2026 (Missão + aliados em outros partidos) — eleição de 2026, 4 candidaturas.");
+    expect(resumoDeGrupo({ rotulo: "X", ano: 2022, n_candidaturas: 1 })).toBe("X — eleição de 2022, 1 candidatura.");
+    expect(resumoDeGrupo({ rotulo: "X", ano: 2022 })).toBe("X — eleição de 2022.");
+    expect(resumoDeGrupo(undefined)).toBe("");
   });
 });
 

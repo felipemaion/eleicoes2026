@@ -5,10 +5,10 @@
 import { criarCliente, foiCancelada, type ClienteApi } from "../../dados/cliente";
 import { cargoDaApi, paramsDeFiltros } from "../../dados/adaptadores";
 import { cargoNacional, contagemTexto, opcoesDeUf, resumoDeGrupo, rotuloDaUf, ROTULO_CARGO } from "../../filtros-logica";
-import { ANOS, CARGOS, FILTROS_PADRAO, GRUPOS, type Filtros, type Store, type Uf } from "../../store";
+import { ANOS, CARGOS, FILTROS_PADRAO, type Filtros, type Store, type Uf } from "../../store";
+import type { Grupo } from "../../dados/contrato";
 import { criarCombobox } from "../ui/combobox";
 
-const ROTULO_GRUPO: Readonly<Record<string, string>> = { missao_2026: "Missão 2026", mbl_2022: "MBL 2022" };
 let seq = 0;
 
 function criar<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...filhos: (Node | string)[]): HTMLElementTagNameMap[K] {
@@ -67,8 +67,16 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
 
   const idGrupo = `f-grupo-${String(++seq)}`;
   const selGrupo = criar("select", { id: idGrupo, name: "grupo" });
-  for (const g of GRUPOS) selGrupo.add(new Option(ROTULO_GRUPO[g] ?? g, g));
-  selGrupo.addEventListener("change", () => { const g = GRUPOS.find((x) => x === selGrupo.value); if (g) store.definir({ grupo: g }); });
+  // Opções vêm de /api/grupos (DRY com config/grupos.yaml); até responder, só o grupo atual.
+  let gruposApi: readonly Grupo[] = [];
+  selGrupo.addEventListener("change", () => { if (selGrupo.value) store.definir({ grupo: selGrupo.value }); });
+  const desenharGrupos = (atual: string): void => {
+    const opcoes = gruposApi.map((g) => new Option(g.rotulo, g.id));
+    // Grupo vindo da URL e desconhecido da API continua visível em vez de sumir em silêncio.
+    if (!gruposApi.some((g) => g.id === atual)) opcoes.unshift(new Option(atual, atual));
+    selGrupo.replaceChildren(...opcoes);
+    selGrupo.value = atual;
+  };
   const descGrupo = criar("small", { className: "filtro-grupo-desc filtro-dica" });
   const campoGrupo = criar("div", { className: "filtro-grupo" }, criar("label", { htmlFor: idGrupo, textContent: "Grupo comparado" }), selGrupo, descGrupo);
 
@@ -128,14 +136,19 @@ export function render(container: HTMLElement, store: Store, cliente: ClienteApi
     const travada = cargoNacional(filtros.cargo);
     inputUf.disabled = travada;
     dicaUf.textContent = travada ? "Presidente é eleição nacional: o recorte é o Brasil inteiro." : "";
-    selGrupo.value = filtros.grupo;
-    descGrupo.textContent = resumoDeGrupo(filtros.grupo);
+    if (selGrupo.value !== filtros.grupo || selGrupo.options.length === 0) desenharGrupos(filtros.grupo);
+    descGrupo.textContent = resumoDeGrupo(gruposApi.find((g) => g.id === filtros.grupo));
     limpar.hidden = igualAoPadrao(filtros);
     contar(filtros);
     carregarUfs(filtros);
   };
   sincronizar();
+  const ctrlGrupos = new AbortController();
+  cliente.grupos(ctrlGrupos.signal).then(
+    (r) => { gruposApi = r.grupos; desenharGrupos(store.obter().filtros.grupo); sincronizar(); },
+    (e: unknown) => { if (!foiCancelada(e)) console.error("Grupos indisponíveis:", e); },
+  );
   const cancelar = store.assinar(sincronizar);
   container.replaceChildren(form);
-  return () => { cancelar(); clearTimeout(timer); ctrl?.abort(); ctrlUfs?.abort(); cbUf.destruir(); container.replaceChildren(); };
+  return () => { cancelar(); clearTimeout(timer); ctrl?.abort(); ctrlUfs?.abort(); ctrlGrupos.abort(); cbUf.destruir(); container.replaceChildren(); };
 }

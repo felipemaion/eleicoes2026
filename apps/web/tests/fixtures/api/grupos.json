@@ -2,15 +2,27 @@
  "grupos": [
   {
    "id": "missao_2026",
-   "rotulo": "Missão 2026",
+   "rotulo": "Partido Missão 2026",
    "ano": 2026,
    "n_candidaturas": 3
+  },
+  {
+   "id": "mbl_2026",
+   "rotulo": "MBL 2026 (Missão + aliados em outros partidos)",
+   "ano": 2026,
+   "n_candidaturas": 4
   },
   {
    "id": "mbl_2022",
    "rotulo": "MBL 2022",
    "ano": 2022,
    "n_candidaturas": 3
+  },
+  {
+   "id": "mbl_2022_indicados",
+   "rotulo": "MBL 2022 — indicados",
+   "ano": 2022,
+   "n_candidaturas": 1
   }
  ],
  "comparacoes": [

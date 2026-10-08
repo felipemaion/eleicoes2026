@@ -24,12 +24,13 @@ export function contagemTexto(n: number): string {
   return `${new Intl.NumberFormat("pt-BR").format(n)} ${n === 1 ? "candidatura" : "candidaturas"}`;
 }
 
-const GRUPOS_RESUMO: Readonly<Record<string, string>> = {
-  missao_2026: "Candidaturas do Partido Missão (nº 14) em 2026.",
-  mbl_2022: "Candidatos ligados ao MBL em 2022, em outros partidos.",
-};
-
-export const resumoDeGrupo = (id: string): string => GRUPOS_RESUMO[id] ?? "";
+/** Descrição curta montada só com o que a API informa: grupo novo no YAML aparece sem mudar código. */
+export function resumoDeGrupo(g: { rotulo: string; ano: number; n_candidaturas?: number | null } | undefined): string {
+  if (!g) return "";
+  const n = g.n_candidaturas;
+  const cand = typeof n === "number" ? `, ${new Intl.NumberFormat("pt-BR").format(n)} ${n === 1 ? "candidatura" : "candidaturas"}` : "";
+  return `${g.rotulo} — eleição de ${String(g.ano)}${cand}.`;
+}
 
 const NOME_UF: Readonly<Record<string, string>> = {
   AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás",

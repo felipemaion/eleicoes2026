@@ -117,3 +117,26 @@ for (const [rotulo, sq, nome, cargo, uf] of CASOS) {
     await expect(page.getByRole("alert")).toHaveCount(0);
   });
 }
+
+test("grupos: o seletor lista todos os grupos da API e trocar de grupo recarrega KPIs e mapa", async ({ page }) => {
+  const urls = await simularApi(page);
+  await page.goto("/#/visao-geral");
+  const filtros = page.getByRole("form", { name: "Filtros" });
+  const seletor = filtros.getByLabel("Grupo comparado");
+  await expect(seletor.locator("option")).toHaveText(["Partido Missão 2026", "MBL 2026 (Missão + aliados em outros partidos)", "MBL 2022", "MBL 2022 — indicados"]);
+  await seletor.selectOption("mbl_2026");
+  await expect(page).toHaveURL(/grupo=mbl_2026/);
+  await expect(filtros.locator(".filtro-grupo-desc")).toContainText("aliados");
+  await expect.poll(() => urls.some((u) => u.startsWith("/api/candidatos?") && u.includes("grupo=mbl_2026"))).toBe(true);
+  await page.goto("/#/mapa?grupo=mbl_2026");
+  await expect.poll(() => urls.some((u) => u.startsWith("/api/mapa?") && u.includes("grupo=mbl_2026"))).toBe(true);
+});
+
+test("grupos: a Evolução oferece MBL 2022 → MBL 2026 e abre nela quando o grupo é mbl_2026", async ({ page }) => {
+  const urls = await simularApi(page);
+  await page.goto("/#/evolucao?grupo=mbl_2026");
+  const comparar = page.getByLabel("Comparar");
+  await expect(comparar.locator("option")).toContainText(["MBL 2022 → Missão 2026", "MBL 2022 → MBL 2026"]);
+  await expect(comparar).toHaveValue("mbl2022_mbl2026");
+  await expect.poll(() => urls.some((u) => u.startsWith("/api/comparativo?") && u.includes("comparacao=mbl2022_mbl2026"))).toBe(true);
+});
