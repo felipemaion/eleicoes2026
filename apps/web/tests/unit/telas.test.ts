@@ -11,7 +11,7 @@ import { FILTROS_PADRAO, type Estado, type Tela as Chave } from "../../src/store
 
 type OpcoesFalsas = { aoSelecionar?: (id: string, nivel: string) => void; formatarTaxa?: (v: number) => string; ano?: number };
 const mapaFalso = vi.hoisted(() => {
-  const instancias: { definirValores: ReturnType<typeof vi.fn>; destruir: ReturnType<typeof vi.fn>; definirPontos: ReturnType<typeof vi.fn>; definirNivel: ReturnType<typeof vi.fn> }[] = [];
+  const instancias: { definirValores: ReturnType<typeof vi.fn>; destruir: ReturnType<typeof vi.fn>; definirPontos: ReturnType<typeof vi.fn>; definirNivel: ReturnType<typeof vi.fn>; definirAbrangencia: ReturnType<typeof vi.fn> }[] = [];
   const opcoes: OpcoesFalsas[] = [];
   return { instancias, opcoes, geometria: "pmtiles", niveis: ["municipio", "zona"] as string[] };
 });
@@ -20,7 +20,7 @@ vi.mock("../../src/telas/mapa-embutido", () => ({
   geometria: vi.fn(() => Promise.resolve(mapaFalso.geometria)),
   niveisDisponiveis: vi.fn(() => Promise.resolve(mapaFalso.niveis)),
   montarMapa: vi.fn((_area: unknown, _rotulo: string, opcoes: OpcoesFalsas = {}) => {
-    const m = { definirValores: vi.fn(), definirPontos: vi.fn(), definirNivel: vi.fn(), destruir: vi.fn(), pronto: Promise.resolve(), estatisticas: () => ({ fontesCarregadas: 1, atualizacoesDeValores: 0 }) };
+    const m = { definirValores: vi.fn(), definirPontos: vi.fn(), definirNivel: vi.fn(), definirAbrangencia: vi.fn(), destruir: vi.fn(), pronto: Promise.resolve(), estatisticas: () => ({ fontesCarregadas: 1, atualizacoesDeValores: 0 }) };
     mapaFalso.instancias.push(m);
     mapaFalso.opcoes.push(opcoes);
     return Promise.resolve(m);
@@ -135,11 +135,34 @@ describe("mapa", () => {
     expect(mapaFalso.instancias).toHaveLength(1);
     expect(chamou("indicador=pct_validos")).toBe(true);
   });
-  it("mapa e comparativo mandam cargo obrigatório; 'todos' vira deputado federal, com aviso", async () => {
+  it("mapa manda o cargo do filtro (padrão: deputado federal), sem aviso de cargo faltando", async () => {
     await desenhar("mapa");
     await vi.waitFor(() => { expect(chamou("/api/mapa?")).toBe(true); });
     expect(chamadas.find((c) => c.startsWith("/api/mapa?"))).toContain("cargo=DEPUTADO+FEDERAL");
-    expect(el.textContent).toMatch(/exige um cargo/);
+    expect(el.textContent).not.toMatch(/exige um cargo/);
+  });
+  it("candidato fixado: ano, cargo e UF vêm da ficha (não dos filtros), sem grupo, e o mapa enquadra a UF", async () => {
+    await desenhar("mapa", estado("mapa", { uf: "SP", cargo: "presidente", candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.definirAbrangencia).toHaveBeenCalled(); });
+    const url = chamadas.find((c) => c.startsWith("/api/mapa?")) ?? "";
+    expect(url).toContain("sq_candidato=1");
+    expect(url).toContain("cargo=DEPUTADO+FEDERAL");
+    expect(url).toContain("uf=SE");
+    expect(url).not.toContain("grupo=");
+    expect(mapaFalso.instancias[0]?.definirAbrangencia).toHaveBeenCalledWith("28", expect.any(Array));
+    expect(el.querySelector(".mapa-foco")?.textContent).toMatch(/Mostrando só onde disputou: Sergipe/);
+  });
+  it("presidente: mapa nacional sem UF, sem esmaecer, com os votos do exterior à parte", async () => {
+    const pres = { ...ficha, candidato: { ...ficha.candidato, cargo: "PRESIDENTE", sg_uf: "BR", abrangencia: { tipo: "pais", uf: null } } };
+    simularApi({ "/api/candidatos/2026/1": pres, "/api/mapa": { ...mapa, votos_fora_do_mapa: 8580 } });
+    await desenhar("mapa", estado("mapa", { cargo: "presidente", candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.definirAbrangencia).toHaveBeenCalledWith(null, null); });
+    const url = chamadas.find((c) => c.startsWith("/api/mapa?")) ?? "";
+    expect(url).toContain("cargo=PRESIDENTE");
+    expect(url).not.toContain("uf=");
+    await vi.waitFor(() => { expect(el.textContent).toContain("Votos no exterior: 8.580 (fora do mapa)."); });
+    expect(el.querySelector(".mapa-foco")?.textContent).toMatch(/Brasil inteiro/);
+    expect(el.querySelector('[role="alert"]')).toBeNull();
   });
   it("formata a taxa pela unidade da API (‰), não como fração", async () => {
     await desenhar("mapa");
@@ -228,7 +251,7 @@ describe("evolução 2022×2026", () => {
     expect(el.querySelector("dl.kpis")?.textContent).toMatch(/6,1 ‰/);
     expect(el.querySelector("svg.grafico")).toBeNull();
   });
-  it("cargo 'todos' vai como DEPUTADO FEDERAL (o endpoint exige cargo)", async () => {
+  it("o comparativo manda sempre o cargo (padrão: DEPUTADO FEDERAL)", async () => {
     await desenhar("evolucao");
     await vi.waitFor(() => { expect(chamou("/api/comparativo?")).toBe(true); });
     expect(chamadas.find((c) => c.startsWith("/api/comparativo?"))).toContain("cargo=DEPUTADO+FEDERAL");
@@ -248,6 +271,19 @@ describe("candidato", () => {
     expect(el.querySelector(".ficha")?.textContent).toContain("Ana Souza");
     expect(el.querySelectorAll("svg.grafico").length).toBeGreaterThanOrEqual(2);
     expect(chamou("sq_candidato=1")).toBe(true);
+  });
+  it("presidente (Renan Santos): ficha e mapa nacional carregam mesmo com filtros de outra UF e fora da lista do recorte", async () => {
+    const pres = { ...ficha, candidato: { ...ficha.candidato, nm_urna: "RENAN SANTOS", cargo: "PRESIDENTE", sg_uf: "BR", abrangencia: { tipo: "pais", uf: null } } };
+    simularApi({ "/api/candidatos/2026/1": pres, "/api/candidatos": { ...candidatos, total: 0, itens: [] }, "/api/mapa": { ...mapa, votos_fora_do_mapa: 8580 } });
+    await desenhar("candidato", estado("candidato", { uf: "SP", candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelector(".ficha")).not.toBeNull(); });
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect([...el.querySelectorAll<HTMLOptionElement>("select[name=candidato] option")].map((o) => o.text)).toContain("RENAN SANTOS");
+    await vi.waitFor(() => { expect(mapaFalso.instancias[0]?.definirAbrangencia).toHaveBeenCalledWith(null, null); });
+    const url = chamadas.find((c) => c.startsWith("/api/mapa?")) ?? "";
+    expect(url).toContain("cargo=PRESIDENTE");
+    expect(url).not.toContain("uf=");
+    await vi.waitFor(() => { expect(el.textContent).toContain("Votos no exterior: 8.580"); });
   });
 });
 

@@ -4,7 +4,7 @@
  * malformado falha alto em vez de virar gráfico errado.
  */
 import type {
-  Ficha, Meta, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos,
+  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
@@ -20,6 +20,7 @@ export interface ClienteApi {
   grupos(sinal?: AbortSignal): Promise<RespostaGrupos>;
   candidatos(p: Params, sinal?: AbortSignal): Promise<RespostaCandidatos>;
   ficha(ano: number, sq: string | number, sinal?: AbortSignal): Promise<Ficha>;
+  busca(p: Params, sinal?: AbortSignal): Promise<RespostaBusca>;
   mapa(p: Params, sinal?: AbortSignal): Promise<RespostaMapa>;
   pontos(p: Params, sinal?: AbortSignal): Promise<RespostaPontos>;
   gastos(p: Params, sinal?: AbortSignal): Promise<RespostaGastos>;
@@ -65,6 +66,7 @@ export function criarCliente(base = "/api"): ClienteApi {
     grupos: (sinal) => obter("/grupos", comChaves<RespostaGrupos>("grupos"), sinal),
     candidatos: (p, sinal) => obter(`/candidatos${query(p)}`, comChaves<RespostaCandidatos>("itens", "total"), sinal),
     ficha: (ano, sq, sinal) => obter(`/candidatos/${String(ano)}/${encodeURIComponent(sq)}`, comChaves<Ficha>("candidato", "votos_por_municipio", "votos_por_uf", "votos_total"), sinal),
+    busca: (p, sinal) => obter(`/busca${query(p)}`, comChaves<RespostaBusca>("itens", "total"), sinal),
     mapa: (p, sinal) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade"), sinal),
     pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
     gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),

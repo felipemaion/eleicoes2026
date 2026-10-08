@@ -5,27 +5,28 @@ import {
 } from "../../src/dados/adaptadores";
 import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
 import { FILTROS_PADRAO } from "../../src/store";
+import { fichaTipada, listaTipada } from "../fixtures/api/tipado";
 import candidatos from "../fixtures/api/candidatos.json";
 import comparativo from "../fixtures/api/comparativo.json";
 import ficha from "../fixtures/api/ficha.json";
 import gastos from "../fixtures/api/gastos.json";
 import mapa from "../fixtures/api/mapa.json";
 
-const C: RespostaCandidatos = candidatos;
+const C: RespostaCandidatos = listaTipada(candidatos);
 const G: RespostaGastos = gastos;
 const M: RespostaMapa = mapa;
 const CMP: RespostaComparativo = comparativo;
-const F: Ficha = ficha;
+const F: Ficha = fichaTipada(ficha);
 const primeiro = C.itens[0] ?? (() => { throw new Error("fixture sem candidatos"); })();
 const primeiroGasto = G.por_candidato[0] ?? (() => { throw new Error("fixture sem gastos"); })();
 
 describe("parâmetros da API", () => {
-  it("omite BR e 'todos' (padrões da API) e traduz o cargo para o enum do OpenAPI", () => {
-    expect(paramsDeFiltros(FILTROS_PADRAO)).toEqual({ ano: "2026", grupo: "missao_2026" });
+  it("omite BR (padrão da API) e traduz o cargo para o enum do OpenAPI", () => {
+    expect(paramsDeFiltros(FILTROS_PADRAO)).toEqual({ ano: "2026", grupo: "missao_2026", cargo: "DEPUTADO FEDERAL" });
     expect(paramsDeFiltros({ ...FILTROS_PADRAO, uf: "SE", cargo: "deputado_federal" })).toMatchObject({ uf: "SE", cargo: "DEPUTADO FEDERAL" });
     expect(cargoDaApi("presidente")).toBe("PRESIDENTE");
   });
-  it("mapa e comparativo exigem cargo: 'todos' vira deputado federal", () => {
+  it("mapa e comparativo exigem cargo, sempre presente nos filtros", () => {
     expect(paramsComCargo(FILTROS_PADRAO)["cargo"]).toBe("DEPUTADO FEDERAL");
     expect(paramsComCargo({ ...FILTROS_PADRAO, cargo: "senador" })["cargo"]).toBe("SENADOR");
   });
@@ -48,8 +49,13 @@ describe("kpisDoGrupo", () => {
     expect(kpisDoGrupo(l, G).map((x) => x.rotulo)).not.toContain("Eleitos");
   });
   it("lista truncada (total > itens) é rotulada como soma parcial", () => {
-    const k = kpisDoGrupo({ ...C, total: 900 }, G);
+    const k = kpisDoGrupo({ ...C, total: 900, kpis: null }, G);
     expect(k[0]?.unidade).toMatch(/3 de 900/);
+  });
+  it("com `kpis` do grupo na resposta, a votação é a exata do recorte (não a soma dos itens) e não é parcial", () => {
+    const k = kpisDoGrupo({ ...C, total: 900, kpis: { votos: 1_150_983, aptos: 1, validos: 1, pct_validos: 1, penetracao: 1 } }, G);
+    expect(k[0]).toMatchObject({ valor: 1_150_983 });
+    expect(k[0]?.unidade).not.toMatch(/parcial|de 900/);
   });
   it("KPI nulo some (custo por voto, % público)", () => {
     const k = kpisDoGrupo(C, { ...G, agregado: { ...G.agregado, custo_voto_contratado: null }, receitas: { ...G.receitas, pct_publico: null } });

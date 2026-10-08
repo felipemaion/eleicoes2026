@@ -22,7 +22,8 @@ test("navega entre as 5 telas por mouse e teclado", async ({ page }) => {
 
 test("filtro de UF vai para a URL e rodapé mostra fonte", async ({ page }) => {
   await page.goto("/#/mapa");
-  await page.locator("select[name=uf]").selectOption("SP");
+  await page.getByLabel("Estado (UF)").fill("são pau");
+  await page.getByRole("option", { name: "São Paulo (SP)" }).click();
   await expect(page).toHaveURL(/uf=SP/);
   await expect(page.getByRole("contentinfo")).toContainText("TSE");
   await expect(page.getByRole("contentinfo")).toContainText("dt_geracao");

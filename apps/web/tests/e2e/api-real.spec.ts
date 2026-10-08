@@ -25,3 +25,32 @@ test("API real: mapa de Sergipe colore e o painel do município responde", async
   await expect(page.locator(".painel-municipio h2")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
+
+// Candidatos reais de cada abrangência: presidente (país), deputado federal, senador e deputado estadual.
+const REAIS: [string, string, string][] = [
+  ["Renan Santos (presidente)", "280002540694", "pais"],
+  ["Kim Kataguiri", "250002546642", "SP"],
+  ["senador (Capitão Contar)", "120002535769", "MS"],
+  ["deputado estadual", "170002549820", "PE"],
+];
+for (const [rotulo, sq, abrangencia] of REAIS) {
+  test(`API real: ficha e mapa focado carregam sem erro — ${rotulo}`, async ({ page }) => {
+    await page.goto(`/#/candidato?cand=2026%3A${sq}`);
+    await expect(page.locator(".ficha h2")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(`[data-mapa-pronto='sim'][data-abrangencia='${abrangencia}']`)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page.goto(`/#/mapa?cand=2026%3A${sq}`);
+    await expect(page.locator(`[data-mapa-pronto='sim'][data-abrangencia='${abrangencia}']`)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
+}
+
+test("API real: a busca acha 'renan santos' e abre a ficha", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("/");
+  await page.getByRole("combobox", { name: "Buscar candidato" }).fill("renan santos");
+  await expect(page.getByRole("listbox", { name: "Candidaturas encontradas" }).getByRole("option").first()).toContainText("Presidente");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".ficha h2")).toContainText("RENAN SANTOS", { timeout: 30_000 });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
