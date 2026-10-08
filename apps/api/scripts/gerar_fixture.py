@@ -25,7 +25,7 @@ import duckdb
 
 DESTINO = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 # Caixa do ETL real (T-B03): "Deputado Federal"; a API normaliza para o enum em maiúsculas.
-DF, DE = "Deputado Federal", "Deputado Estadual"
+DF, DE, PR = "Deputado Federal", "Deputado Estadual", "Presidente"
 SP, CAMP, SANTOS, RIO = 3550308, 3509502, 3548500, 3304557
 
 TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
@@ -44,7 +44,7 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 6, "pF", "F", "SP", DF, 15, "MDB", "APTO", "ELEITO POR MÉDIA"),
             (2026, 7, "pD", "D", "SP", DF, 11, "PP", "APTO", "ELEITO POR QP"),
             # Presidente: o TSE grava a candidatura com sg_uf = BR (arquivo BR.parquet).
-            (2026, 11, "pP", "P", "BR", "Presidente", 30, "NOVO", "APTO", "2º TURNO"),
+            (2026, 11, "pP", "P", "BR", PR, 30, "NOVO", "APTO", "2º TURNO"),
         ],
     ),
     "municipios": (
@@ -69,6 +69,13 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2022, "SP", DF, SANTOS, 1, 500, 400),
             (2026, "RJ", DE, RIO, 1, 8000, 5600),
             (2022, "RJ", DE, RIO, 1, 8000, 5800),
+            # Presidente (Brasil): base por UF e o exterior (ZZ), que não tem município IBGE.
+            (2026, "SP", PR, SP, 1, 10000, 7000),
+            (2026, "SP", PR, SP, 2, 5000, 3500),
+            (2026, "SP", PR, CAMP, 1, 2000, 1500),
+            (2026, "SP", PR, SANTOS, 1, 500, 400),
+            (2026, "RJ", PR, RIO, 1, 8000, 5600),
+            (2026, "ZZ", PR, None, 1, 300, 250),
         ],
     ),
     "votos_munzona": (
@@ -82,6 +89,10 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 7, SP, 1, 500),
             (2026, 7, CAMP, 1, 200),
             (2026, 6, SP, 1, 2000),
+            # Presidente sq 11: votos no exterior chegam sem município IBGE (T-B07).
+            (2026, 11, SP, 1, 3000),
+            (2026, 11, CAMP, 1, 500),
+            (2026, 11, None, 1, 200),
             (2026, 4, RIO, 1, 400),
             (2022, 1, SP, 1, 500),
             (2022, 1, SP, 2, 200),
@@ -117,6 +128,9 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 7, SP, 1, 1001, 300),
             (2026, 7, SP, 1, 1002, 200),
             (2026, 7, CAMP, 1, 3001, 200),
+            (2026, 11, SP, 1, 1001, 2000),
+            (2026, 11, SP, 1, 1002, 1000),
+            (2026, 11, CAMP, 1, 3001, 500),
         ],
     ),
     "receitas": (
@@ -174,19 +188,31 @@ CD_ELEICAO = {2022: 546, 2026: 6259}
 TXT, INT, DBL, DAT = "VARCHAR", "BIGINT", "DOUBLE", "DATE"
 
 
-def _tse(mun: int) -> int:
-    """Código TSE fictício do município (a API só usa o IBGE)."""
-    return mun // 10
+def _tse(mun: int | None) -> int:
+    """Código TSE fictício do município (a API só usa o IBGE); exterior (`None`) = 0."""
+    return 0 if mun is None else mun // 10
+
+
+# Nome civil e número de urna por candidato (consulta_cand real traz os dois; busca, T-B07).
+NOME_CIVIL = {
+    1: "ANA ALVES DA SILVA", 2: "CARLOS CÉSAR RAMOS", 3: "ANA ALVES DA SILVA",
+    4: "CARLOS CÉSAR RAMOS", 5: "BRUNO BARBOSA LIMA", 6: "FÁBIO FERREIRA", 7: "DANIEL DIAS",
+    8: "EDUARDO ESTÊVÃO", 9: "DANIEL DIAS", 10: "GUSTAVO GOMES", 11: "PAULO PEREIRA",
+}  # fmt: skip
+NUMERO = {1: 1414, 2: 33123, 3: 1415, 4: 14001, 5: 14002, 6: 1500, 7: 1100, 8: 4400,
+          9: 4401, 10: 1416, 11: 30}  # fmt: skip
 
 
 def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
     """Expande o mundo simplificado nos datasets com contrato (nomes reais do TSE)."""
     cand = {c[1]: c for c in TABELAS["candidatos"][1] if c[0] in (2022, 2026)}
-    uf_de = {m[0]: m[3] for m in TABELAS["municipios"][1]}
+    uf_de: dict[int | None, str] = {m[0]: m[3] for m in TABELAS["municipios"][1]}
+    uf_de[None] = "ZZ"  # exterior
     nome_de = {m[0]: m[2] for m in TABELAS["municipios"][1]}
     uf_de_cand = {c[1]: c[4] for c in TABELAS["candidatos"][1]}
     cands = [
-        (a, 1, CD_ELEICAO[a], uf, cargo, sq, nm, parte, sg, sit, res, pessoa, DT)
+        (a, 1, CD_ELEICAO[a], uf, cargo, sq, NUMERO[sq], NOME_CIVIL[sq], nm, parte, sg, sit, res,
+         pessoa, DT)
         for (a, sq, pessoa, nm, uf, cargo, parte, sg, sit, res) in TABELAS["candidatos"][1]
     ]
     votos = []
@@ -210,13 +236,15 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
     muns = [
         (35 if uf == "SP" else 33, uf, _tse(m), nome_de[m], m, nome_de[m], DT)
         for m, uf in uf_de.items()
+        if m is not None
     ]
     return {
         "consulta_cand": (
             dict(
                 ano_eleicao=INT, nr_turno=INT, cd_eleicao=INT, sg_uf=TXT, ds_cargo=TXT,
-                sq_candidato=INT, nm_urna_candidato=TXT, nr_partido=INT, sg_partido=TXT,
-                ds_situacao_candidatura=TXT, ds_sit_tot_turno=TXT, pessoa_id=TXT, dt_geracao=DAT,
+                sq_candidato=INT, nr_candidato=INT, nm_candidato=TXT, nm_urna_candidato=TXT,
+                nr_partido=INT, sg_partido=TXT, ds_situacao_candidatura=TXT,
+                ds_sit_tot_turno=TXT, pessoa_id=TXT, dt_geracao=DAT,
             ),
             cands,
         ),

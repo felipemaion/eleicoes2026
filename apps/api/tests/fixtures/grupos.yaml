@@ -4,6 +4,10 @@ grupos:
     rotulo: "Partido Missão 2026"
     ano: 2026
     criterio: {partido: 14}
+  novo_2026:
+    rotulo: "Partido Novo 2026"
+    ano: 2026
+    criterio: {partido: 30}
   mbl_2026:
     rotulo: "MBL 2026"
     ano: 2026
