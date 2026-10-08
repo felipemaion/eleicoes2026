@@ -49,10 +49,1302 @@
           }
         }
       }
+    },
+    "/api/grupos": {
+      "get": {
+        "tags": [
+          "grupos"
+        ],
+        "summary": "Grupos e comparações",
+        "description": "Grupos configurados (com nº de candidaturas nos dados) e comparações entre eles.",
+        "operationId": "grupos_api_grupos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GruposResposta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/candidatos": {
+      "get": {
+        "tags": [
+          "candidatos"
+        ],
+        "summary": "Candidatos de um grupo",
+        "description": "Votos, % dos válidos, penetração, resultado e partido, ordenados por votos.",
+        "operationId": "candidatos_api_candidatos_get",
+        "parameters": [
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Id do grupo em config/grupos.yaml (ex.: missao_2026).",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo em config/grupos.yaml (ex.: missao_2026)."
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limite"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaCandidatos"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/candidatos/{ano}/{sq_candidato}": {
+      "get": {
+        "tags": [
+          "candidatos"
+        ],
+        "summary": "Ficha do candidato",
+        "description": "Votos por UF e município (top N), gastos, receitas por fonte e custo por voto.",
+        "operationId": "ficha_api_candidatos__ano___sq_candidato__get",
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Ano"
+            }
+          },
+          {
+            "name": "sq_candidato",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sq Candidato"
+            }
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Municípios no ranking.",
+              "default": 10,
+              "title": "Top"
+            },
+            "description": "Municípios no ranking."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaCandidato"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Candidato inexistente."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mapa": {
+      "get": {
+        "tags": [
+          "mapa"
+        ],
+        "summary": "Indicador por território",
+        "description": "`valores` por território (município, `município-zona` ou célula H3) + escala sugerida.",
+        "operationId": "mapa_api_mapa_get",
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Ano"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Cargo"
+            }
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "nivel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Nivel",
+              "default": "municipio"
+            }
+          },
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id do grupo; exclusivo com sq_candidato.",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo; exclusivo com sq_candidato."
+          },
+          {
+            "name": "sq_candidato",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "SQ_CANDIDATO; exclusivo com grupo.",
+              "title": "Sq Candidato"
+            },
+            "description": "SQ_CANDIDATO; exclusivo com grupo."
+          },
+          {
+            "name": "indicador",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Indicador",
+              "default": "penetracao"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mapa"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mapa/pontos": {
+      "get": {
+        "tags": [
+          "mapa"
+        ],
+        "summary": "Locais de votação (densidade)",
+        "description": "`{lat, lon, votos}` por local, mais votados primeiro; paginado por UF.",
+        "operationId": "pontos_api_mapa_pontos_get",
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Ano"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Cargo"
+            }
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UF"
+            }
+          },
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id do grupo; exclusivo com sq_candidato.",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo; exclusivo com sq_candidato."
+          },
+          {
+            "name": "sq_candidato",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "SQ_CANDIDATO; exclusivo com grupo.",
+              "title": "Sq Candidato"
+            },
+            "description": "SQ_CANDIDATO; exclusivo com grupo."
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50000,
+              "minimum": 1,
+              "default": 5000,
+              "title": "Limite"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pontos"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gastos": {
+      "get": {
+        "tags": [
+          "gastos"
+        ],
+        "summary": "Gastos e receitas do grupo",
+        "description": "Custo por voto (contratado/pago), receita por fonte, % público e % autofinanciamento.",
+        "operationId": "gastos_api_gastos_get",
+        "parameters": [
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Id do grupo em config/grupos.yaml (ex.: missao_2026).",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo em config/grupos.yaml (ex.: missao_2026)."
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gastos"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comparativo": {
+      "get": {
+        "tags": [
+          "comparativo"
+        ],
+        "summary": "Evolução 2022→2026",
+        "description": "Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.",
+        "operationId": "comparativo_api_comparativo_get",
+        "parameters": [
+          {
+            "name": "comparacao",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Id em `comparacoes` (ex.: evolucao_mbl).",
+              "title": "Comparacao"
+            },
+            "description": "Id em `comparacoes` (ex.: evolucao_mbl)."
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Cargo"
+            }
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            }
+          },
+          {
+            "name": "mesmos_candidatos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Só pessoas que concorreram nos dois anos (pessoa_id).",
+              "default": false,
+              "title": "Mesmos Candidatos"
+            },
+            "description": "Só pessoas que concorreram nos dois anos (pessoa_id)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comparativo"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/municipios/{cd_mun_ibge}": {
+      "get": {
+        "tags": [
+          "municipios"
+        ],
+        "summary": "Resumo do município",
+        "description": "Desempenho de cada grupo no município, por cargo.",
+        "operationId": "municipio_api_municipios__cd_mun_ibge__get",
+        "parameters": [
+          {
+            "name": "cd_mun_ibge",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{7}$",
+              "description": "Código IBGE de 7 dígitos.",
+              "title": "Cd Mun Ibge"
+            },
+            "description": "Código IBGE de 7 dígitos."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoMunicipio"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Município inexistente."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Ano": {
+        "type": "integer",
+        "enum": [
+          2022,
+          2026
+        ],
+        "title": "Ano",
+        "description": "Anos de eleição geral suportados."
+      },
+      "CandidatoResumo": {
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "sg_uf": {
+            "type": "string",
+            "title": "Sg Uf"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "partido": {
+            "$ref": "#/components/schemas/Partido"
+          },
+          "situacao": {
+            "type": "string",
+            "title": "Situacao",
+            "description": "`ds_situacao_candidatura` (APTO, INDEFERIDO…)."
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado",
+            "description": "`ds_sit_tot_turno` (ELEITO, SUPLENTE…); null se sem apuração."
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos",
+            "description": "Votos nominais válidos (spec §2.1)."
+          },
+          "pct_validos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Validos",
+            "description": "% dos válidos do cargo na UF (§2.2)."
+          },
+          "penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao",
+            "description": "‰ dos aptos do cargo na UF (§2.3)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "ano",
+          "sq_candidato",
+          "nm_urna",
+          "sg_uf",
+          "cargo",
+          "partido",
+          "situacao",
+          "resultado",
+          "votos",
+          "pct_validos",
+          "penetracao"
+        ],
+        "title": "CandidatoResumo",
+        "description": "Candidato com votos e taxas na sua circunscrição (cargo × UF)."
+      },
+      "Cargo": {
+        "type": "string",
+        "enum": [
+          "PRESIDENTE",
+          "GOVERNADOR",
+          "SENADOR",
+          "DEPUTADO FEDERAL",
+          "DEPUTADO ESTADUAL",
+          "DEPUTADO DISTRITAL"
+        ],
+        "title": "Cargo",
+        "description": "`ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza)."
+      },
+      "ComparacaoResumo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "de": {
+            "type": "string",
+            "title": "De"
+          },
+          "para": {
+            "type": "string",
+            "title": "Para"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "de",
+          "para"
+        ],
+        "title": "ComparacaoResumo",
+        "description": "Comparação configurada entre dois grupos."
+      },
+      "Comparativo": {
+        "properties": {
+          "comparacao": {
+            "type": "string",
+            "title": "Comparacao"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "de": {
+            "$ref": "#/components/schemas/GrupoRef"
+          },
+          "para": {
+            "$ref": "#/components/schemas/GrupoRef"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf"
+          },
+          "mesmos_candidatos": {
+            "type": "boolean",
+            "title": "Mesmos Candidatos"
+          },
+          "n_de": {
+            "type": "integer",
+            "title": "N De",
+            "description": "Candidaturas do lado 'de' (após o recorte)."
+          },
+          "n_para": {
+            "type": "integer",
+            "title": "N Para"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/KpisComparativo"
+          },
+          "municipios": {
+            "items": {
+              "$ref": "#/components/schemas/EvolucaoMunicipio"
+            },
+            "type": "array",
+            "title": "Municipios"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "comparacao",
+          "rotulo",
+          "de",
+          "para",
+          "cargo",
+          "uf",
+          "mesmos_candidatos",
+          "n_de",
+          "n_para",
+          "kpis",
+          "municipios",
+          "dt_geracao"
+        ],
+        "title": "Comparativo",
+        "description": "Corpo de GET /comparativo.",
+        "examples": [
+          {
+            "cargo": "DEPUTADO FEDERAL",
+            "comparacao": "evolucao_mbl",
+            "de": {
+              "ano": 2022,
+              "id": "mbl_2022",
+              "rotulo": "MBL 2022"
+            },
+            "dt_geracao": "2026-10-06",
+            "kpis": {
+              "delta_penetracao": 37.1,
+              "ganho_absoluto": 720,
+              "penetracao_de": 70.3,
+              "penetracao_para": 107.4,
+              "retencao": 1.62,
+              "swing_pp": 5.9,
+              "votos_de": 1160,
+              "votos_para": 1880
+            },
+            "mesmos_candidatos": false,
+            "municipios": [],
+            "n_de": 3,
+            "n_para": 3,
+            "para": {
+              "ano": 2026,
+              "id": "mbl_2026",
+              "rotulo": "MBL 2026"
+            },
+            "rotulo": "MBL 2022 → MBL 2026",
+            "uf": "SP"
+          }
+        ]
+      },
+      "Detalhe": {
+        "properties": {
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "aptos": {
+            "type": "integer",
+            "title": "Aptos"
+          },
+          "validos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validos",
+            "description": "null no H3: não há 'válidos' por célula (§2.2)."
+          },
+          "taxa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxa",
+            "description": "Valor do indicador; null = sem dado (denominador 0)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "votos",
+          "aptos",
+          "validos",
+          "taxa"
+        ],
+        "title": "Detalhe",
+        "description": "Numerador e denominadores de um território."
+      },
+      "EscalaSugerida": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "title": "Tipo",
+            "description": "`sequencial` (taxas) ou `simbolo_proporcional` (absolutos)."
+          },
+          "paleta": {
+            "type": "string",
+            "title": "Paleta"
+          },
+          "quebras": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Quebras",
+            "description": "Cortes internos (quintis dos valores desta resposta)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "paleta",
+          "quebras"
+        ],
+        "title": "EscalaSugerida",
+        "description": "Sugestão de classes para a legenda (spec §8.2); o front decide a cor final."
+      },
+      "EvolucaoMunicipio": {
+        "properties": {
+          "cd_amc": {
+            "type": "integer",
+            "title": "Cd Amc"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "uf": {
+            "type": "string",
+            "title": "Uf"
+          },
+          "penetracao_de": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao De"
+          },
+          "penetracao_para": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao Para"
+          },
+          "delta_penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Penetracao",
+            "description": "‰ — métrica-âncora."
+          },
+          "swing_pp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swing Pp",
+            "description": "p.p. de votos válidos."
+          },
+          "retencao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retencao",
+            "description": "votos_para / votos_de; null se votos_de = 0."
+          },
+          "ganho_absoluto": {
+            "type": "integer",
+            "title": "Ganho Absoluto"
+          },
+          "votos_de": {
+            "type": "integer",
+            "title": "Votos De"
+          },
+          "votos_para": {
+            "type": "integer",
+            "title": "Votos Para"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cd_amc",
+          "nome",
+          "uf",
+          "penetracao_de",
+          "penetracao_para",
+          "delta_penetracao",
+          "swing_pp",
+          "retencao",
+          "ganho_absoluto",
+          "votos_de",
+          "votos_para"
+        ],
+        "title": "EvolucaoMunicipio",
+        "description": "Evolução numa AMC (município IBGE com desmembramentos agregados, §5.1)."
+      },
+      "FichaCandidato": {
+        "properties": {
+          "candidato": {
+            "$ref": "#/components/schemas/CandidatoResumo"
+          },
+          "votos_total": {
+            "type": "integer",
+            "title": "Votos Total"
+          },
+          "votos_por_uf": {
+            "items": {
+              "$ref": "#/components/schemas/VotosUF"
+            },
+            "type": "array",
+            "title": "Votos Por Uf"
+          },
+          "votos_por_municipio": {
+            "items": {
+              "$ref": "#/components/schemas/VotosMunicipio"
+            },
+            "type": "array",
+            "title": "Votos Por Municipio",
+            "description": "Top N por votos."
+          },
+          "gastos": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumoCustoCandidato"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null se não há prestação de contas."
+          },
+          "receitas": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumoReceitasOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contas_parciais": {
+            "type": "boolean",
+            "title": "Contas Parciais",
+            "description": "Prestação de contas ainda parcial (2026)."
+          },
+          "base_ipca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Ipca",
+            "description": "Mês-base da correção do IPCA (valores de 2022)."
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidato",
+          "votos_total",
+          "votos_por_uf",
+          "votos_por_municipio",
+          "gastos",
+          "receitas",
+          "contas_parciais",
+          "base_ipca",
+          "dt_geracao"
+        ],
+        "title": "FichaCandidato",
+        "description": "Ficha completa: votação, geografia e finanças."
+      },
+      "GastoCandidato": {
+        "properties": {
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "sg_uf": {
+            "type": "string",
+            "title": "Sg Uf"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "receita_total": {
+            "type": "number",
+            "title": "Receita Total"
+          },
+          "custo": {
+            "$ref": "#/components/schemas/ResumoCustoCandidato"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sq_candidato",
+          "nm_urna",
+          "sg_uf",
+          "cargo",
+          "receita_total",
+          "custo"
+        ],
+        "title": "GastoCandidato",
+        "description": "Contas de um candidato do grupo."
+      },
+      "Gastos": {
+        "properties": {
+          "grupo": {
+            "type": "string",
+            "title": "Grupo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf"
+          },
+          "agregado": {
+            "$ref": "#/components/schemas/ResumoCustoGrupo"
+          },
+          "receitas": {
+            "$ref": "#/components/schemas/ResumoReceitasOut"
+          },
+          "por_candidato": {
+            "items": {
+              "$ref": "#/components/schemas/GastoCandidato"
+            },
+            "type": "array",
+            "title": "Por Candidato"
+          },
+          "contas_parciais": {
+            "type": "boolean",
+            "title": "Contas Parciais"
+          },
+          "base_ipca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Ipca"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grupo",
+          "ano",
+          "cargo",
+          "uf",
+          "agregado",
+          "receitas",
+          "por_candidato",
+          "contas_parciais",
+          "base_ipca",
+          "dt_geracao"
+        ],
+        "title": "Gastos",
+        "description": "Corpo de GET /gastos.",
+        "examples": [
+          {
+            "agregado": {
+              "candidatos_sem_voto_excluidos": 0,
+              "custo_voto_contratado": 88.98,
+              "custo_voto_pago": 72.03,
+              "despesa_contratada": 105000.0,
+              "despesa_paga": 85000.0,
+              "divida": 20000.0,
+              "mediana_custo_voto_contratado": 63.89,
+              "votos": 1180
+            },
+            "ano": 2026,
+            "cargo": "DEPUTADO FEDERAL",
+            "contas_parciais": true,
+            "dt_geracao": "2026-10-06",
+            "grupo": "missao_2026",
+            "por_candidato": [],
+            "receitas": {
+              "pct_autofinanciamento": 8.0,
+              "pct_publico": 64.0,
+              "por_categoria": {
+                "fefc": 70000.0,
+                "fundo_partidario": 10000.0
+              },
+              "receita_financeira": 123000.0,
+              "receita_total": 125000.0
+            },
+            "uf": "SP"
+          }
+        ]
+      },
       "Grupo": {
         "properties": {
           "id": {
@@ -76,6 +1368,380 @@
         ],
         "title": "Grupo",
         "description": "Grupo comparável definido em config/grupos.yaml."
+      },
+      "GrupoRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "ano"
+        ],
+        "title": "GrupoRef",
+        "description": "Grupo de um dos lados da comparação."
+      },
+      "GrupoResumo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "n_candidaturas": {
+            "type": "integer",
+            "title": "N Candidaturas",
+            "description": "Candidaturas do grupo presentes nos dados."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "ano",
+          "n_candidaturas"
+        ],
+        "title": "GrupoResumo",
+        "description": "Item de GET /grupos."
+      },
+      "GruposResposta": {
+        "properties": {
+          "grupos": {
+            "items": {
+              "$ref": "#/components/schemas/GrupoResumo"
+            },
+            "type": "array",
+            "title": "Grupos"
+          },
+          "comparacoes": {
+            "items": {
+              "$ref": "#/components/schemas/ComparacaoResumo"
+            },
+            "type": "array",
+            "title": "Comparacoes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grupos",
+          "comparacoes"
+        ],
+        "title": "GruposResposta",
+        "description": "Corpo de GET /grupos.",
+        "examples": [
+          {
+            "comparacoes": [
+              {
+                "de": "mbl_2022",
+                "id": "evolucao_mbl",
+                "para": "mbl_2026",
+                "rotulo": "MBL 2022 → MBL 2026"
+              }
+            ],
+            "grupos": [
+              {
+                "ano": 2026,
+                "id": "missao_2026",
+                "n_candidaturas": 3,
+                "rotulo": "Partido Missão 2026"
+              }
+            ]
+          }
+        ]
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Indicador": {
+        "type": "string",
+        "enum": [
+          "penetracao",
+          "pct_validos",
+          "votos"
+        ],
+        "title": "Indicador",
+        "description": "Indicadores mapeáveis (spec §2): taxas em coroplético, absoluto em símbolo."
+      },
+      "KpisComparativo": {
+        "properties": {
+          "penetracao_de": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao De"
+          },
+          "penetracao_para": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao Para"
+          },
+          "delta_penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Penetracao"
+          },
+          "swing_pp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swing Pp"
+          },
+          "retencao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retencao"
+          },
+          "ganho_absoluto": {
+            "type": "integer",
+            "title": "Ganho Absoluto"
+          },
+          "votos_de": {
+            "type": "integer",
+            "title": "Votos De"
+          },
+          "votos_para": {
+            "type": "integer",
+            "title": "Votos Para"
+          }
+        },
+        "type": "object",
+        "required": [
+          "penetracao_de",
+          "penetracao_para",
+          "delta_penetracao",
+          "swing_pp",
+          "retencao",
+          "ganho_absoluto",
+          "votos_de",
+          "votos_para"
+        ],
+        "title": "KpisComparativo",
+        "description": "Os mesmos indicadores sobre o recorte inteiro (Σ votos / Σ base, não média de AMCs)."
+      },
+      "ListaCandidatos": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limite": {
+            "type": "integer",
+            "title": "Limite"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/CandidatoResumo"
+            },
+            "type": "array",
+            "title": "Itens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "limite",
+          "offset",
+          "itens"
+        ],
+        "title": "ListaCandidatos",
+        "description": "Página de candidatos.",
+        "examples": [
+          {
+            "itens": [
+              {
+                "ano": 2026,
+                "cargo": "DEPUTADO FEDERAL",
+                "nm_urna": "A",
+                "partido": {
+                  "numero": 14,
+                  "sigla": "MISSÃO"
+                },
+                "pct_validos": 8.06,
+                "penetracao": 57.14,
+                "resultado": "SUPLENTE",
+                "sg_uf": "SP",
+                "situacao": "APTO",
+                "sq_candidato": 3,
+                "votos": 1000
+              }
+            ],
+            "limite": 200,
+            "offset": 0,
+            "total": 1
+          }
+        ]
+      },
+      "Mapa": {
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "nivel": {
+            "type": "string",
+            "title": "Nivel"
+          },
+          "indicador": {
+            "type": "string",
+            "title": "Indicador"
+          },
+          "valores": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Valores"
+          },
+          "detalhes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Detalhe"
+            },
+            "type": "object",
+            "title": "Detalhes"
+          },
+          "escala_sugerida": {
+            "$ref": "#/components/schemas/EscalaSugerida"
+          },
+          "unidade": {
+            "type": "string",
+            "title": "Unidade"
+          },
+          "denominador": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Denominador"
+          },
+          "n_candidaturas": {
+            "type": "integer",
+            "title": "N Candidaturas"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ano",
+          "nivel",
+          "indicador",
+          "valores",
+          "detalhes",
+          "escala_sugerida",
+          "unidade",
+          "denominador",
+          "n_candidaturas",
+          "dt_geracao"
+        ],
+        "title": "Mapa",
+        "description": "Corpo de GET /mapa. Chaves: IBGE (município), `IBGE-zona`, ou índice H3.",
+        "examples": [
+          {
+            "ano": 2026,
+            "denominador": "aptos",
+            "detalhes": {
+              "3550308": {
+                "aptos": 15000,
+                "taxa": 73.33,
+                "validos": 10500,
+                "votos": 1100
+              }
+            },
+            "dt_geracao": "2026-10-06",
+            "escala_sugerida": {
+              "paleta": "viridis",
+              "quebras": [
+                20.0,
+                40.0,
+                60.0,
+                70.0
+              ],
+              "tipo": "sequencial"
+            },
+            "indicador": "penetracao",
+            "n_candidaturas": 2,
+            "nivel": "municipio",
+            "unidade": "‰",
+            "valores": {
+              "3509502": 20.0,
+              "3550308": 73.33
+            }
+          }
+        ]
       },
       "Meta": {
         "properties": {
@@ -123,6 +1789,458 @@
         "title": "Meta",
         "description": "Dimensões disponíveis para filtros."
       },
+      "Nivel": {
+        "type": "string",
+        "enum": [
+          "municipio",
+          "zona",
+          "h3"
+        ],
+        "title": "Nivel",
+        "description": "Recorte espacial do mapa."
+      },
+      "Partido": {
+        "properties": {
+          "numero": {
+            "type": "integer",
+            "title": "Numero"
+          },
+          "sigla": {
+            "type": "string",
+            "title": "Sigla"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "sigla"
+        ],
+        "title": "Partido",
+        "description": "Partido da candidatura."
+      },
+      "Ponto": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lon": {
+            "type": "number",
+            "title": "Lon"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lon",
+          "votos"
+        ],
+        "title": "Ponto",
+        "description": "Local de votação."
+      },
+      "Pontos": {
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Locais com voto no recorte."
+          },
+          "limite": {
+            "type": "integer",
+            "title": "Limite"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "truncado": {
+            "type": "boolean",
+            "title": "Truncado",
+            "description": "Há mais páginas além desta."
+          },
+          "pontos": {
+            "items": {
+              "$ref": "#/components/schemas/Ponto"
+            },
+            "type": "array",
+            "title": "Pontos"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ano",
+          "total",
+          "limite",
+          "offset",
+          "truncado",
+          "pontos",
+          "dt_geracao"
+        ],
+        "title": "Pontos",
+        "description": "Corpo de GET /mapa/pontos (densidade de votos por local)."
+      },
+      "ResumoCargo": {
+        "properties": {
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "n_candidaturas": {
+            "type": "integer",
+            "title": "N Candidaturas"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "aptos": {
+            "type": "integer",
+            "title": "Aptos"
+          },
+          "penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao"
+          },
+          "pct_validos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Validos"
+          },
+          "votos_por_km2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Votos Por Km2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cargo",
+          "n_candidaturas",
+          "votos",
+          "aptos",
+          "penetracao",
+          "pct_validos",
+          "votos_por_km2"
+        ],
+        "title": "ResumoCargo",
+        "description": "Desempenho do grupo num cargo dentro do município (um cargo por vez, spec §0)."
+      },
+      "ResumoCustoCandidato": {
+        "properties": {
+          "despesa_contratada": {
+            "type": "number",
+            "title": "Despesa Contratada"
+          },
+          "despesa_paga": {
+            "type": "number",
+            "title": "Despesa Paga"
+          },
+          "divida": {
+            "type": "number",
+            "title": "Divida",
+            "description": "contratada − paga (§4.2)."
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "custo_voto_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Contratado",
+            "description": "R$/voto; null se votos = 0."
+          },
+          "custo_voto_pago": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Pago"
+          }
+        },
+        "type": "object",
+        "required": [
+          "despesa_contratada",
+          "despesa_paga",
+          "divida",
+          "votos",
+          "custo_voto_contratado",
+          "custo_voto_pago"
+        ],
+        "title": "ResumoCustoCandidato",
+        "description": "Despesa (sem transferências) e custo por voto de um candidato."
+      },
+      "ResumoCustoGrupo": {
+        "properties": {
+          "despesa_contratada": {
+            "type": "number",
+            "title": "Despesa Contratada"
+          },
+          "despesa_paga": {
+            "type": "number",
+            "title": "Despesa Paga"
+          },
+          "divida": {
+            "type": "number",
+            "title": "Divida"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "custo_voto_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Contratado"
+          },
+          "custo_voto_pago": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Pago"
+          },
+          "mediana_custo_voto_contratado": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediana Custo Voto Contratado"
+          },
+          "candidatos_sem_voto_excluidos": {
+            "type": "integer",
+            "title": "Candidatos Sem Voto Excluidos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "despesa_contratada",
+          "despesa_paga",
+          "divida",
+          "votos",
+          "custo_voto_contratado",
+          "custo_voto_pago",
+          "mediana_custo_voto_contratado",
+          "candidatos_sem_voto_excluidos"
+        ],
+        "title": "ResumoCustoGrupo",
+        "description": "Agregado: Σ despesa / Σ votos, não média de razões (§4.2)."
+      },
+      "ResumoGrupo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "cargos": {
+            "items": {
+              "$ref": "#/components/schemas/ResumoCargo"
+            },
+            "type": "array",
+            "title": "Cargos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rotulo",
+          "ano",
+          "cargos"
+        ],
+        "title": "ResumoGrupo",
+        "description": "Grupo e seus cargos no município."
+      },
+      "ResumoMunicipio": {
+        "properties": {
+          "cd_mun_ibge": {
+            "type": "integer",
+            "title": "Cd Mun Ibge"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "uf": {
+            "type": "string",
+            "title": "Uf"
+          },
+          "area_km2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area Km2"
+          },
+          "grupos": {
+            "items": {
+              "$ref": "#/components/schemas/ResumoGrupo"
+            },
+            "type": "array",
+            "title": "Grupos"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cd_mun_ibge",
+          "nome",
+          "uf",
+          "area_km2",
+          "grupos",
+          "dt_geracao"
+        ],
+        "title": "ResumoMunicipio",
+        "description": "Corpo de GET /municipios/{cd_mun_ibge}.",
+        "examples": [
+          {
+            "area_km2": 1521.11,
+            "cd_mun_ibge": 3550308,
+            "dt_geracao": "2026-10-06",
+            "grupos": [
+              {
+                "ano": 2026,
+                "cargos": [
+                  {
+                    "aptos": 15000,
+                    "cargo": "DEPUTADO FEDERAL",
+                    "n_candidaturas": 2,
+                    "pct_validos": 10.48,
+                    "penetracao": 73.33,
+                    "votos": 1100,
+                    "votos_por_km2": 0.72
+                  }
+                ],
+                "id": "missao_2026",
+                "rotulo": "Partido Missão 2026"
+              }
+            ],
+            "nome": "São Paulo",
+            "uf": "SP"
+          }
+        ]
+      },
+      "ResumoReceitasOut": {
+        "properties": {
+          "por_categoria": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Por Categoria"
+          },
+          "receita_total": {
+            "type": "number",
+            "title": "Receita Total"
+          },
+          "receita_financeira": {
+            "type": "number",
+            "title": "Receita Financeira"
+          },
+          "pct_publico": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Publico",
+            "description": "FEFC + Fundo Partidário, % da receita total."
+          },
+          "pct_autofinanciamento": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Autofinanciamento"
+          }
+        },
+        "type": "object",
+        "required": [
+          "por_categoria",
+          "receita_total",
+          "receita_financeira",
+          "pct_publico",
+          "pct_autofinanciamento"
+        ],
+        "title": "ResumoReceitasOut",
+        "description": "Receita por categoria (§4.1) e dependência de recursos públicos."
+      },
       "Saude": {
         "properties": {
           "status": {
@@ -146,6 +2264,141 @@
         ],
         "title": "Saude",
         "description": "Estado da API e dos dados."
+      },
+      "UF": {
+        "type": "string",
+        "enum": [
+          "AC",
+          "AL",
+          "AM",
+          "AP",
+          "BA",
+          "CE",
+          "DF",
+          "ES",
+          "GO",
+          "MA",
+          "MG",
+          "MS",
+          "MT",
+          "PA",
+          "PB",
+          "PE",
+          "PI",
+          "PR",
+          "RJ",
+          "RN",
+          "RO",
+          "RR",
+          "RS",
+          "SC",
+          "SE",
+          "SP",
+          "TO"
+        ],
+        "title": "UF",
+        "description": "Unidades da federação (sem exterior: `ZZ` não tem mapa)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VotosMunicipio": {
+        "properties": {
+          "cd_mun_ibge": {
+            "type": "integer",
+            "title": "Cd Mun Ibge"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "uf": {
+            "type": "string",
+            "title": "Uf"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao",
+            "description": "‰ dos aptos do município no cargo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "cd_mun_ibge",
+          "nome",
+          "uf",
+          "votos",
+          "penetracao"
+        ],
+        "title": "VotosMunicipio",
+        "description": "Votos do candidato num município."
+      },
+      "VotosUF": {
+        "properties": {
+          "uf": {
+            "type": "string",
+            "title": "Uf"
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uf",
+          "votos"
+        ],
+        "title": "VotosUF",
+        "description": "Votos do candidato numa UF."
       }
     }
   }

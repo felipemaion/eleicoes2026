@@ -76,7 +76,9 @@ def test_receitas_rotulo_desconhecido_falha_alto() -> None:
 def test_custo_por_voto_vetor() -> None:
     caso = _caso("custo_por_voto", "candidatos_e_agregado")
     entrada = [
-        ind.ContasCandidato(c["sq_candidato"], c["despesa_contratada"], c["despesa_paga"], c["votos"])
+        ind.ContasCandidato(
+            c["sq_candidato"], c["despesa_contratada"], c["despesa_paga"], c["votos"]
+        )
         for c in caso["entrada"]
     ]
     candidatos, grupo = ind.custo_por_voto(entrada)
@@ -118,7 +120,13 @@ def test_evolucao_vetor() -> None:
     for obtido, esperado in zip(obtidos, caso["saida"], strict=True):
         assert obtido.amc == esperado["amc"]
         assert obtido.ganho_absoluto == esperado["ganho_absoluto"]
-        for campo in ("penetracao_2022", "penetracao_2026", "delta_penetracao", "swing_pp", "retencao"):
+        for campo in (
+            "penetracao_2022",
+            "penetracao_2026",
+            "delta_penetracao",
+            "swing_pp",
+            "retencao",
+        ):
             valor = getattr(obtido, campo)
             if esperado[campo] is None:
                 assert valor is None, campo

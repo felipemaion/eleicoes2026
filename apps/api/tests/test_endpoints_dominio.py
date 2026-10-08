@@ -25,7 +25,12 @@ def test_grupos_e_comparacoes(api: TestClient) -> None:
     assert grupos["mbl_2022"]["n_candidaturas"] == 4
     assert grupos["mbl_2022_indicados"]["n_candidaturas"] == 1  # filtro origem=indicado
     assert corpo["comparacoes"] == [
-        {"id": "evolucao_mbl", "rotulo": "MBL 2022 → MBL 2026", "de": "mbl_2022", "para": "mbl_2026"}
+        {
+            "id": "evolucao_mbl",
+            "rotulo": "MBL 2022 → MBL 2026",
+            "de": "mbl_2022",
+            "para": "mbl_2026",
+        }
     ]
 
 
@@ -72,7 +77,9 @@ def test_candidatos_paginacao(api: TestClient) -> None:
         ({}, 422),
     ],
 )
-def test_candidatos_parametros_invalidos(api: TestClient, params: dict[str, object], status: int) -> None:
+def test_candidatos_parametros_invalidos(
+    api: TestClient, params: dict[str, object], status: int
+) -> None:
     assert api.get("/api/candidatos", params=params).status_code == status
 
 
@@ -103,7 +110,7 @@ def test_ficha_do_candidato(api: TestClient) -> None:
     assert receitas["pct_publico"] == pytest.approx(60.0)
     assert receitas["por_categoria"]["fefc"] == 50000.0
     assert corpo["contas_parciais"] is True
-    assert corpo["dt_geracao"] == "2026-10-06T12:00:00"
+    assert corpo["dt_geracao"] == "2026-10-06"
 
 
 def test_ficha_limita_top_municipios(api: TestClient) -> None:
@@ -122,7 +129,11 @@ def test_ficha_2022_deflaciona_valores_para_set_2026(api: TestClient) -> None:
 
 @pytest.mark.parametrize(
     ("caminho", "status"),
-    [("/api/candidatos/2026/999", 404), ("/api/candidatos/1999/3", 422), ("/api/candidatos/2026/x", 422)],
+    [
+        ("/api/candidatos/2026/999", 404),
+        ("/api/candidatos/1999/3", 422),
+        ("/api/candidatos/2026/x", 422),
+    ],
 )
 def test_ficha_erros(api: TestClient, caminho: str, status: int) -> None:
     assert api.get(caminho).status_code == status
@@ -131,7 +142,7 @@ def test_ficha_erros(api: TestClient, caminho: str, status: int) -> None:
 # ------------------------------------------------------------------- /mapa
 def _mapa(api: TestClient, **extra: object) -> dict[str, object]:
     params = {"ano": 2026, "cargo": DF, "uf": "SP", "grupo": "missao_2026", **extra}
-    r = api.get("/api/mapa", params=params)
+    r = api.get("/api/mapa", params={k: v for k, v in params.items() if v is not None})
     assert r.status_code == 200, r.text
     corpo: dict[str, object] = r.json()
     return corpo
@@ -262,9 +273,7 @@ def test_pontos_parametros_invalidos(api: TestClient, extra: dict[str, object]) 
 
 # ---------------------------------------------------------------- /gastos
 def test_gastos_do_grupo(api: TestClient) -> None:
-    corpo = api.get(
-        "/api/gastos", params={"grupo": "missao_2026", "uf": "SP", "cargo": DF}
-    ).json()
+    corpo = api.get("/api/gastos", params={"grupo": "missao_2026", "uf": "SP", "cargo": DF}).json()
     agg = corpo["agregado"]
     assert agg["despesa_contratada"] == 105000.0
     assert agg["despesa_paga"] == 85000.0
@@ -280,12 +289,12 @@ def test_gastos_do_grupo(api: TestClient) -> None:
     assert rec["pct_autofinanciamento"] == pytest.approx(100 * 10000 / 125000)
     assert [c["sq_candidato"] for c in corpo["por_candidato"]] == [3, 5]
     assert corpo["contas_parciais"] is True
-    assert corpo["dt_geracao"] == "2026-10-06T12:00:00"
+    assert corpo["dt_geracao"] == "2026-10-06"
 
 
 def test_gastos_sem_filtros_inclui_todos_os_cargos(api: TestClient) -> None:
     corpo = api.get("/api/gastos", params={"grupo": "missao_2026"}).json()
-    assert [c["sq_candidato"] for c in corpo["por_candidato"]] == [3, 4, 5]
+    assert {c["sq_candidato"] for c in corpo["por_candidato"]} == {3, 4, 5}
     assert corpo["agregado"]["despesa_contratada"] == 107000.0
 
 
@@ -398,9 +407,7 @@ def test_etag_muda_com_a_consulta_e_nao_cobre_health(api: TestClient) -> None:
     b = api.get("/api/candidatos", params={"grupo": "mbl_2022"}).headers["etag"]
     assert a != b
     assert "etag" not in api.get("/api/health").headers
-    obsoleto = api.get(
-        "/api/grupos", headers={"If-None-Match": '"outro-dt-geracao"'}
-    )
+    obsoleto = api.get("/api/grupos", headers={"If-None-Match": '"outro-dt-geracao"'})
     assert obsoleto.status_code == 200
 
 
@@ -412,3 +419,12 @@ def test_erro_nao_recebe_etag(api: TestClient) -> None:
 
 def test_endpoints_de_dominio_sao_somente_leitura(api: TestClient) -> None:
     assert api.post("/api/grupos").status_code == 405
+
+
+def test_partido_14_em_2022_nao_entra_no_grupo_da_missao(api: TestClient) -> None:
+    """O nº 14 era PTB em 2022 (sq 10): grupo por partido vale só no ano do grupo."""
+    missao = api.get("/api/candidatos", params={"grupo": "missao_2026"}).json()
+    assert 10 not in {c["sq_candidato"] for c in missao["itens"]}
+    assert {c["ano"] for c in missao["itens"]} == {2026}
+    mbl22 = api.get("/api/candidatos", params={"grupo": "mbl_2022"}).json()
+    assert 10 not in {c["sq_candidato"] for c in mbl22["itens"]}

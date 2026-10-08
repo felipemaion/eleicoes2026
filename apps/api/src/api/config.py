@@ -17,6 +17,10 @@ class Settings(BaseSettings):
 
     dir_dados: Path = RAIZ / "data" / "processed"
     arquivo_grupos: Path = RAIZ / "config" / "grupos.yaml"
+    # Base dos caminhos relativos de `criterio.lista.arquivo` em grupos.yaml.
+    raiz_repositorio: Path = RAIZ
+    # Cache-Control: o dado muda no máximo diariamente; a revalidação por ETag cobre o resto.
+    cache_max_age: int = 300
     # ADR 0002: o servidor tem pouca CPU; 2 threads é o teto.
     threads: int = 2
     cors_origens: list[str] = ["http://localhost:5173"]
