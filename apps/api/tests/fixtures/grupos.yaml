@@ -1,0 +1,27 @@
+# Grupos de teste (mesma forma de config/grupos.yaml); CSV relativo à raiz = esta pasta.
+grupos:
+  missao_2026:
+    rotulo: "Partido Missão 2026"
+    ano: 2026
+    criterio: {partido: 14}
+  mbl_2026:
+    rotulo: "MBL 2026"
+    ano: 2026
+    criterio:
+      partido: 14
+      lista: {arquivo: mbl_fixture.csv, coluna: sq_candidato_2026}
+  mbl_2022:
+    rotulo: "MBL 2022"
+    ano: 2022
+    criterio:
+      lista: {arquivo: mbl_fixture.csv, coluna: sq_candidato}
+  mbl_2022_indicados:
+    rotulo: "MBL 2022 — indicados"
+    ano: 2022
+    criterio:
+      lista: {arquivo: mbl_fixture.csv, coluna: sq_candidato, filtro: {origem: indicado}}
+comparacoes:
+  evolucao_mbl:
+    rotulo: "MBL 2022 → MBL 2026"
+    de: mbl_2022
+    para: mbl_2026
