@@ -5,7 +5,7 @@ import type { PontoCustoVoto } from "../componentes/graficos/dispersao";
 import type { ReceitaPorFonte } from "../componentes/graficos/empilhado";
 import type { Kpi } from "../componentes/graficos/kpi";
 import type { DetalheParcial } from "../componentes/mapa/mapa";
-import type { Filtros } from "../store";
+import { CARGOS, UFS, type Filtros, type Uf } from "../store";
 import { indicadorDe } from "../textos";
 import { PALETAS } from "../paletas";
 import { marcarNBaixo } from "./n-baixo";
@@ -154,4 +154,11 @@ export function mapaDeDiferenca(c: RespostaComparativo): MapaPronto {
 
 export function barrasMunicipios(f: Ficha, topo: number): Barra[] {
   return [...f.votos_por_municipio].sort((a, b) => b.votos - a.votos).slice(0, topo).map((m) => ({ rotulo: m.nome, valor: m.votos }));
+}
+
+/** Recorte (cargo, UF, ano, grupo) que enquadra um candidato; cargo fora da lista de filtros não entra. */
+export function filtrosDoCandidato(c: { ano: number; cargo: string; sg_uf: string }): Partial<Filtros> {
+  const cargo = CARGOS.find((k) => cargoDaApi(k) === c.cargo);
+  const uf = (UFS as readonly string[]).includes(c.sg_uf) ? (c.sg_uf as Uf) : "BR";
+  return { ...(cargo ? { cargo } : {}), uf, ano: c.ano === 2022 ? 2022 : 2026, grupo: c.ano === 2022 ? "mbl_2022" : "missao_2026" };
 }

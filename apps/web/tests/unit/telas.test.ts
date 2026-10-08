@@ -381,6 +381,28 @@ describe("evolução — escolha de candidatos", () => {
   });
 });
 
+describe("recorte segue o candidato", () => {
+  it("ficha aberta ajusta cargo/UF/ano dos filtros ao candidato (deep-link só com cand=)", async () => {
+    const { definirAjustadorDeRecorte } = await import("../../src/telas/recorte");
+    const ajustar = vi.fn();
+    definirAjustadorDeRecorte(ajustar);
+    await desenhar("candidato", estado("candidato", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(el.querySelector(".ficha")).not.toBeNull(); });
+    expect(ajustar).toHaveBeenCalledWith(expect.objectContaining({ cargo: "deputado_federal", uf: "SE", ano: 2026 }));
+    // a lista do seletor vem do recorte do próprio candidato, não do filtro padrão
+    expect(chamou("uf=SE")).toBe(true);
+    definirAjustadorDeRecorte(null);
+  });
+  it("mapa com candidato também ajusta", async () => {
+    const { definirAjustadorDeRecorte } = await import("../../src/telas/recorte");
+    const ajustar = vi.fn();
+    definirAjustadorDeRecorte(ajustar);
+    await desenhar("mapa", estado("mapa", { candidato: "2026:1" }));
+    await vi.waitFor(() => { expect(ajustar).toHaveBeenCalled(); });
+    definirAjustadorDeRecorte(null);
+  });
+});
+
 describe("candidato", () => {
   it("sem candidato escolhido, pede a escolha e lista os candidatos", async () => {
     await desenhar("candidato");

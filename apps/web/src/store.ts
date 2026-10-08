@@ -39,29 +39,34 @@ export interface Estado {
   filtros: Filtros;
 }
 
-export type Ouvinte = (estado: Readonly<Estado>) => void;
+/** `ajuste` = o filtro foi corrigido para refletir o candidato aberto; a tela não precisa se redesenhar. */
+export type Ouvinte = (estado: Readonly<Estado>, ajuste?: boolean) => void;
 
 export interface Store {
   obter(): Readonly<Estado>;
   /** Aplica mudança parcial; não notifica se nada mudou. */
   definir(filtros: Partial<Filtros>, tela?: Tela): void;
+  /** Como `definir`, mas avisa com `ajuste=true`: usado para o recorte seguir o candidato sem refazer a tela. */
+  ajustar(filtros: Partial<Filtros>): void;
   assinar(ouvinte: Ouvinte): () => void;
 }
 
 export function criarStore(inicial: Estado = { tela: "visao-geral", filtros: { ...FILTROS_PADRAO } }): Store {
   let estado: Estado = inicial;
   const ouvintes = new Set<Ouvinte>();
+  function aplicar(filtros: Partial<Filtros>, tela: Tela | undefined, ajuste: boolean): void {
+    const proximo: Estado = { tela: tela ?? estado.tela, filtros: normalizarFiltros({ ...estado.filtros, ...filtros }) };
+    const igual =
+      proximo.tela === estado.tela &&
+      (Object.keys(proximo.filtros) as (keyof Filtros)[]).every((k) => proximo.filtros[k] === estado.filtros[k]);
+    if (igual) return;
+    estado = proximo;
+    ouvintes.forEach((o) => { o(estado, ajuste); });
+  }
   return {
     obter: () => estado,
-    definir(filtros, tela) {
-      const proximo: Estado = { tela: tela ?? estado.tela, filtros: normalizarFiltros({ ...estado.filtros, ...filtros }) };
-      const igual =
-        proximo.tela === estado.tela &&
-        (Object.keys(proximo.filtros) as (keyof Filtros)[]).every((k) => proximo.filtros[k] === estado.filtros[k]);
-      if (igual) return;
-      estado = proximo;
-      ouvintes.forEach((o) => { o(estado); });
-    },
+    definir: (filtros, tela) => { aplicar(filtros, tela, false); },
+    ajustar: (filtros) => { aplicar(filtros, undefined, true); },
     assinar(ouvinte) {
       ouvintes.add(ouvinte);
       return () => ouvintes.delete(ouvinte);

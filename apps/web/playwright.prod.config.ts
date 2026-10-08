@@ -5,5 +5,5 @@ export default defineConfig({
   testDir: "tests/e2e",
   timeout: 120_000,
   workers: 3,
-  use: { baseURL: "https://eleicoes2026.maionesys.com" },
+  use: { baseURL: process.env["E2E_BASE"] ?? "https://eleicoes2026.maionesys.com" },
 });

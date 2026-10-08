@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { destacarTrecho, hashDaCandidatura, linhaDaSugestao, paramsDaBusca } from "../../src/componentes/busca/busca-logica";
+import { destacarTrecho, hashDaCandidatura, linhaDaSugestao, ordenarSugestoes, paramsDaBusca } from "../../src/componentes/busca/busca-logica";
 import type { CandidaturaBusca } from "../../src/dados/contrato";
 
 const renan: CandidaturaBusca = {
@@ -41,7 +41,20 @@ describe("navegação", () => {
 
 describe("params da busca", () => {
   it("manda q e os filtros presentes; 'BR' e vazio ficam de fora", () => {
-    expect(paramsDaBusca("kim", { uf: "BR", cargo: "deputado_federal", ano: 2026 })).toEqual({ q: "kim", limite: "8" });
-    expect(paramsDaBusca(" kim ", { uf: "SP", cargo: "deputado_federal", ano: 2026 }, true)).toEqual({ q: "kim", limite: "8", uf: "SP", cargo: "DEPUTADO FEDERAL", ano: "2026" });
+    expect(paramsDaBusca("kim", { uf: "BR", cargo: "deputado_federal", ano: 2026 })).toEqual({ q: "kim", limite: "40" });
+    expect(paramsDaBusca(" kim ", { uf: "SP", cargo: "deputado_federal", ano: 2026 }, true)).toEqual({ q: "kim", limite: "40", uf: "SP", cargo: "DEPUTADO FEDERAL", ano: "2026" });
+  });
+});
+
+describe("ordenarSugestoes", () => {
+  const c = (nm: string, votos: number, ano = 2026): CandidaturaBusca => ({ ...renan, nm_urna: nm, nome: nm, votos, ano, sq_candidato: votos });
+  it("nome que COMEÇA pela consulta vem antes; depois mais votado; 2026 desempata 2022", () => {
+    const ordem = ordenarSugestoes([c("CAPITÃO RENAN", 900), c("DR RENAN", 5), c("RENAN SANTOS", 2_000_000), c("RENAN MELO", 500, 2022), c("RENAN MELO", 500)], "renan").map((x) => `${x.nm_urna}/${String(x.ano)}`);
+    expect(ordem).toEqual(["RENAN SANTOS/2026", "RENAN MELO/2026", "RENAN MELO/2022", "CAPITÃO RENAN/2026", "DR RENAN/2026"]);
+  });
+  it("ignora acento e caixa e não altera o vetor de entrada", () => {
+    const e = [c("ZÉ", 1), c("JOSÉ", 99)];
+    expect(ordenarSugestoes(e, "ze")[0]?.nm_urna).toBe("ZÉ");
+    expect(e[0]?.nm_urna).toBe("ZÉ");
   });
 });

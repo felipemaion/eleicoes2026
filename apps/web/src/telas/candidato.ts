@@ -1,5 +1,5 @@
 import { paramsMapaDoCandidato, textoForaDoMapa } from "../dados/abrangencia";
-import { barrasMunicipios, paramsDeFiltros } from "../dados/adaptadores";
+import { barrasMunicipios, filtrosDoCandidato, paramsDeFiltros } from "../dados/adaptadores";
 import { criarCliente } from "../dados/cliente";
 import type { Candidato, Ficha, LinkOficial } from "../dados/contrato";
 import { render as renderBarras } from "../componentes/graficos/barras";
@@ -10,6 +10,7 @@ import { formatarHash } from "../rotas";
 import { campoSelect, h, titulo } from "./dom";
 import { carregar, mostrarErro } from "./estados";
 import { criarPainelMapa } from "./painel-mapa";
+import { seguirCandidato } from "./recorte";
 import { ajuda, avisosUi, cabecalhoDaTela, fonteUi, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
@@ -118,7 +119,12 @@ export const tela: Tela = {
     const [ano, sq] = filtros.candidato.split(":");
     const parar = carregar(
       conteudo,
-      () => Promise.all([cliente.candidatos({ ...paramsDeFiltros(filtros), limite: "500" }), sq && ano ? cliente.ficha(Number(ano), sq) : Promise.resolve(null)]),
+      async () => {
+        const ficha = sq && ano ? await cliente.ficha(Number(ano), sq) : null;
+        // A lista do seletor é do recorte do candidato (cargo/UF/ano dele), não do filtro que estiver na barra.
+        const recorte = ficha ? { ...filtros, ...filtrosDoCandidato(ficha.candidato) } : filtros;
+        return [await cliente.candidatos({ ...paramsDeFiltros(recorte), limite: "500" }), ficha] as const;
+      },
       // Candidato fixado (vindo da busca) vale mesmo que a lista do recorte esteja vazia.
       ([r, ficha]) => (r.itens.length === 0 && !ficha ? "Nenhum candidato encontrado para estes filtros." : null),
       ([r, ficha], destino) => {
@@ -131,6 +137,7 @@ export const tela: Tela = {
         );
         destino.append(h("div", { className: "controles" }, seletor.rotulo));
         if (!ficha) { destino.append(h("p", { className: "estado", textContent: "Escolha um candidato para ver a ficha." })); return; }
+        seguirCandidato(ficha.candidato);
         return desenharFicha(destino, ficha);
       },
     );

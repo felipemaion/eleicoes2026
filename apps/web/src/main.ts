@@ -3,6 +3,7 @@ import "./estilo.css";
 import { render as renderBusca } from "./componentes/busca/busca";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
+import { definirAjustadorDeRecorte } from "./telas/recorte";
 import { criarSobreposicao, definirSobreposicaoGlobal } from "./componentes/ui/sobreposicao";
 import { cssDasCores, TEMAS } from "./paletas";
 import { ligarStoreAoHash, rotaExiste, ROTULOS_TELA } from "./rotas";
@@ -94,8 +95,9 @@ function montar(raiz: HTMLElement): void {
   });
   let telaAnterior: string | null = null;
   let em404 = false;
-  const desenhar = (e: Readonly<Estado>): void => {
-    if (em404) return;
+  const desenhar = (e: Readonly<Estado>, ajuste = false): void => {
+    // Ajuste de recorte (filtros seguindo o candidato) não refaz a tela: ela já está desenhada com esse candidato.
+    if (em404 || ajuste) return;
     for (const { chave, a } of itens) {
       a.href = `#/${chave}`;
       if (chave === e.tela) a.setAttribute("aria-current", "page");
@@ -107,6 +109,7 @@ function montar(raiz: HTMLElement): void {
     if (telaAnterior !== null && telaAnterior !== e.tela) principal.querySelector("h1")?.focus();
     telaAnterior = e.tela;
   };
+  definirAjustadorDeRecorte((f) => { store.ajustar(f); });
   store.assinar(desenhar);
   ligarStoreAoHash(store, window);
 

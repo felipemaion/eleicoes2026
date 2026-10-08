@@ -6,6 +6,10 @@ import { ROTULO_CARGO } from "../../filtros-logica";
 import { CARGOS, FILTROS_PADRAO, UFS, type Cargo, type Filtros, type Tela, type Uf } from "../../store";
 import { formatarHash } from "../../rotas";
 
+/** Quantas candidaturas pedir à API; só `MAX_SUGESTOES` aparecem. */
+export const LIMITE_BUSCA = 40;
+export const MAX_SUGESTOES = 8;
+
 export interface Trecho { texto: string; marca: boolean }
 
 /** Minúsculas sem acento, preservando o comprimento (NFD só separa o acento; o filtro o remove). */
@@ -63,11 +67,19 @@ export function hashDaCandidatura(c: CandidaturaBusca, destino: Extract<Tela, "c
 
 /** `restringir` = a pessoa pediu para buscar só dentro dos filtros atuais; por padrão a busca é global. */
 export function paramsDaBusca(q: string, f: Pick<Filtros, "uf" | "cargo" | "ano">, restringir = false): Record<string, string> {
-  const p: Record<string, string> = { q: q.trim(), limite: "8" };
+  // A API não ordena por relevância: pede uma página maior e `ordenarSugestoes` escolhe as melhores.
+  const p: Record<string, string> = { q: q.trim(), limite: String(LIMITE_BUSCA) };
   if (restringir) {
     if (f.uf !== "BR") p["uf"] = f.uf;
     p["cargo"] = cargoDaApi(f.cargo);
     p["ano"] = String(f.ano);
   }
   return p;
+}
+
+/** Nome de urna que começa pela consulta primeiro; depois mais votados; 2026 antes de 2022 no empate. */
+export function ordenarSugestoes(itens: readonly CandidaturaBusca[], consulta: string): CandidaturaBusca[] {
+  const q = simplificar(consulta.trim());
+  const comeca = (c: CandidaturaBusca): number => (simplificar(c.nm_urna).startsWith(q) ? 0 : 1);
+  return [...itens].sort((a, b) => comeca(a) - comeca(b) || b.votos - a.votos || b.ano - a.ano);
 }

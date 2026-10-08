@@ -7,6 +7,7 @@ import { rotuloDaUf } from "../filtros-logica";
 import type { Uf } from "../store";
 import type { Nivel } from "../componentes/mapa/mapa";
 import { campoSelect, h, nota, titulo } from "./dom";
+import { seguirCandidato } from "./recorte";
 import { iniciarCarga } from "../componentes/ui/sobreposicao";
 import { mostrarErro } from "./estados";
 import { geometria, niveisDisponiveis, UF_DA_DEMONSTRACAO } from "./mapa-embutido";
@@ -155,6 +156,7 @@ export const tela: Tela = {
           const [ano, sq] = filtros.candidato.split(":");
           ficha = await cliente.ficha(Number(ano), sq ?? "");
           if (!vivo || minha !== seqAtualizar) return;
+          seguirCandidato(ficha.candidato);
           desenharFoco();
           if (!cand.select.querySelector(`option[value="${filtros.candidato}"]`)) cand.select.append(new Option(ficha.candidato.nm_urna, filtros.candidato));
           cand.select.value = filtros.candidato;
