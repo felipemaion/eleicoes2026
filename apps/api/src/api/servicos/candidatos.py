@@ -1,5 +1,6 @@
 """Casos de uso /candidatos e /candidatos/{ano}/{sq}."""
 
+from collections import Counter
 from typing import Literal
 
 import polars as pl
@@ -7,7 +8,7 @@ from indicadores import desempenho
 from indicadores.grupos import agregar_grupo
 from pydantic import BaseModel, ConfigDict, Field
 
-from api.erros import nao_encontrado
+from api.erros import nao_encontrado, parametro_invalido
 from api.fontes import Fonte, fontes
 from api.links import Link, links_da_candidatura
 from api.repositorio.base import DadosIndisponiveis, Repositorio
@@ -408,4 +409,54 @@ def montar_ficha(
             ano=ano,
             dt_geracao=repo.dt_geracao(),
         ),
+    )
+
+
+class UfDisponivel(BaseModel):
+    """UF com candidaturas no recorte."""
+
+    uf: str = Field(description="Sigla da UF; `BR` para presidente (candidatura nacional).")
+    candidaturas: int = Field(description="Candidaturas do recorte nessa UF.")
+
+
+class UfsDisponiveis(BaseModel):
+    """Corpo de GET /candidatos/ufs."""
+
+    itens: list[UfDisponivel]
+    dt_geracao: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"itens": [{"uf": "BR", "candidaturas": 1}], "dt_geracao": "2026-10-06"}]
+        }
+    )
+
+
+def ufs_disponiveis(
+    repo: Repositorio,
+    catalogo: Catalogo,
+    *,
+    ano: int | None,
+    cargo: str | None,
+    grupo_id: str | None,
+) -> UfsDisponiveis:
+    """UFs que têm candidatura no recorte (ano ou grupo, cargo), em ordem alfabética.
+
+    Alimenta o seletor de UF do frontend: só aparece o que existe (presidente → `BR`).
+    """
+    if grupo_id is None:
+        if ano is None:
+            raise parametro_invalido("recorte_incompleto", "informe 'ano' ou 'grupo'")
+        achadas = repo.candidaturas(ano, cargo=cargo)
+    else:
+        grupo = catalogo.grupo(grupo_id)
+        if ano is not None and ano != grupo.ano:
+            raise parametro_invalido(
+                "grupo_ano_incompativel", f"o grupo '{grupo_id}' é de {grupo.ano}, não de {ano}"
+            )
+        achadas = candidaturas_do_grupo(repo, grupo, cargo=cargo)
+    contagem = Counter(c.sg_uf for c in achadas)
+    return UfsDisponiveis(
+        itens=[UfDisponivel(uf=u, candidaturas=n) for u, n in sorted(contagem.items())],
+        dt_geracao=repo.dt_geracao(),
     )
