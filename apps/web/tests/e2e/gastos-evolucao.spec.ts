@@ -28,7 +28,7 @@ test("gastos: hover mostra a foto (ou iniciais) e clique/Enter abrem a página d
   await page.route("**/fotos/**", (r) => r.fulfill({ contentType: "image/png", body: PIXEL }));
   await page.addInitScript(() => {
     (window as unknown as { __abertos: unknown[][] }).__abertos = [];
-    window.open = ((...a: unknown[]) => { (window as unknown as { __abertos: unknown[][] }).__abertos.push(a); return null; }) as typeof window.open;
+    window.open = ((...a: unknown[]) => { (window as unknown as { __abertos: unknown[][] }).__abertos.push(a); return null; });
   });
   await page.goto("/#/gastos");
   const balao = page.locator(".tooltip-flutuante:not([hidden])");
