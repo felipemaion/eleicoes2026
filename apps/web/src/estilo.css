@@ -27,3 +27,15 @@ h1 { font-size: var(--texto-h1); margin: var(--esp-3) 0; }
   padding: var(--esp-4); color: var(--cor-texto-suave); overflow-wrap: anywhere;
 }
 footer { border-top: 1px solid var(--cor-borda); font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
+
+/* Mapa */
+.mapa-area { display: grid; gap: var(--esp-2); margin-block: var(--esp-3); }
+.mapa-quadro { position: relative; height: min(70vh, 520px); min-height: 320px; border: 1px solid var(--cor-borda); background: var(--cor-superficie); }
+.mapa-quadro:focus-visible { outline: 3px solid var(--cor-destaque); outline-offset: 2px; }
+.mapa-legenda svg { max-width: 100%; height: auto; }
+.mapa-tooltip { position: absolute; z-index: 5; pointer-events: none; max-width: 16rem; padding: var(--esp-2); background: var(--cor-fundo); color: var(--cor-texto); border: 1px solid var(--cor-borda); box-shadow: 0 2px 8px rgb(0 0 0 / 0.2); font-size: 0.875rem; }
+.mapa-tooltip dl { display: grid; grid-template-columns: auto auto; gap: 0 var(--esp-2); margin: 0; }
+.mapa-tooltip dd { margin: 0; text-align: right; }
+.mapa-tabela { max-height: 20rem; overflow: auto; }
+.mapa-tabela table { border-collapse: collapse; }
+.mapa-tabela th, .mapa-tabela td { padding: 0.15rem 0.5rem; border-bottom: 1px solid var(--cor-borda); text-align: left; }
