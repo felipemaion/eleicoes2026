@@ -14,6 +14,10 @@ export const ROTULOS_TELA: Readonly<Record<Tela, string>> = {
   candidato: "Candidato",
 };
 
+/** Só `ano:sq` com caracteres seguros: o valor vai parar no caminho da API. */
+const CANDIDATO_VALIDO = /^\d{4}:[A-Za-z0-9_-]+$/;
+const PARAM: Readonly<Record<keyof Filtros, string>> = { uf: "uf", cargo: "cargo", grupo: "grupo", ano: "ano", candidato: "cand" };
+
 function escolher<T extends string | number>(validos: readonly T[], bruto: string | null, padrao: T): T {
   return validos.find((v) => String(v) === bruto) ?? padrao;
 }
@@ -30,6 +34,7 @@ export function lerHash(hash: string): Rota | null {
       cargo: escolher(CARGOS, q.get("cargo"), FILTROS_PADRAO.cargo),
       grupo: escolher(GRUPOS, q.get("grupo"), FILTROS_PADRAO.grupo),
       ano: escolher(ANOS, q.get("ano"), FILTROS_PADRAO.ano),
+      candidato: CANDIDATO_VALIDO.test(q.get("cand") ?? "") ? (q.get("cand") ?? "") : FILTROS_PADRAO.candidato,
     },
   };
 }
@@ -37,7 +42,7 @@ export function lerHash(hash: string): Rota | null {
 export function formatarHash(tela: Tela, filtros: Filtros): string {
   const q = new URLSearchParams();
   (Object.keys(filtros) as (keyof Filtros)[]).forEach((k) => {
-    if (filtros[k] !== FILTROS_PADRAO[k]) q.set(k, String(filtros[k]));
+    if (filtros[k] !== FILTROS_PADRAO[k]) q.set(PARAM[k], String(filtros[k]));
   });
   const s = q.toString();
   return `#/${tela}${s ? `?${s}` : ""}`;
