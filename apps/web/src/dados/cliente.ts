@@ -4,7 +4,7 @@
  * malformado falha alto em vez de virar gráfico errado.
  */
 import type {
-  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos,
+  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
@@ -13,7 +13,8 @@ export function foiCancelada(e: unknown): boolean {
   return e instanceof DOMException && e.name === "AbortError";
 }
 
-export type Params = Readonly<Record<string, string | undefined>>;
+/** Valor em lista (ex.: `pessoas`) vira o parâmetro repetido, como o FastAPI espera. */
+export type Params = Readonly<Record<string, string | readonly string[] | undefined>>;
 
 export interface ClienteApi {
   meta(sinal?: AbortSignal): Promise<Meta>;
@@ -26,6 +27,7 @@ export interface ClienteApi {
   gastos(p: Params, sinal?: AbortSignal): Promise<RespostaGastos>;
   comparativo(p: Params, sinal?: AbortSignal): Promise<RespostaComparativo>;
   municipio(ibge: string, sinal?: AbortSignal): Promise<RespostaMunicipio>;
+  pessoas(p: Params, sinal?: AbortSignal): Promise<RespostaPessoas>;
 }
 
 function ehObjeto(x: unknown): x is Record<string, unknown> {
@@ -46,7 +48,11 @@ function comChaves<T>(...chaves: string[]): (x: unknown) => x is T {
 
 function query(p: Params): string {
   const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(p)) if (v !== undefined && v !== "") q.set(k, v);
+  for (const [k, v] of Object.entries(p)) {
+    if (v === undefined || v === "") continue;
+    if (typeof v === "string") q.set(k, v);
+    else for (const x of v) q.append(k, x);
+  }
   const s = q.toString();
   return s ? `?${s}` : "";
 }
@@ -70,7 +76,8 @@ export function criarCliente(base = "/api"): ClienteApi {
     mapa: (p, sinal) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade"), sinal),
     pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
     gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),
-    comparativo: (p) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para")),
+    comparativo: (p, sinal) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para"), sinal),
+    pessoas: (p, sinal) => obter(`/evolucao/pessoas${query(p)}`, comChaves<RespostaPessoas>("itens", "total"), sinal),
     municipio: (ibge, sinal) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos"), sinal),
   };
 }

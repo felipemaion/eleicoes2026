@@ -55,7 +55,7 @@ describe("cliente — endpoints de domínio", () => {
   });
   it("expõe todos os endpoints do contrato", () => {
     const c = criarCliente();
-    for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio"] as const) expect(typeof c[m]).toBe("function");
+    for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio", "pessoas"] as const) expect(typeof c[m]).toBe("function");
   });
 });
 
@@ -69,5 +69,17 @@ describe("cliente — cancelamento", () => {
     const ac = new AbortController();
     await criarCliente().pontos({ uf: "SE" }, ac.signal);
     expect(sinais[0]).toBe(ac.signal);
+  });
+});
+
+describe("pessoas e parâmetros em lista", () => {
+  it("repete o parâmetro para listas (FastAPI) e consulta /evolucao/pessoas", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", (url: string) => { urls.push(url); return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ itens: [], total: 0, comparacao: "x", municipios: [], kpis: {}, de: {}, para: {} }) }); });
+    const c = criarCliente();
+    await c.comparativo({ cargo: "DEPUTADO FEDERAL", pessoas: ["aaaaaaaaaaaa", "bbbbbbbbbbbb"] });
+    await c.pessoas({ q: "ana", uf: "SE" });
+    expect(urls[0]).toBe("/api/comparativo?cargo=DEPUTADO+FEDERAL&pessoas=aaaaaaaaaaaa&pessoas=bbbbbbbbbbbb");
+    expect(urls[1]).toBe("/api/evolucao/pessoas?q=ana&uf=SE");
   });
 });

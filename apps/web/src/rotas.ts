@@ -1,4 +1,5 @@
 /** Roteamento por hash: `#/<tela>?uf=SP&ano=2022`. Só grava na URL o que difere do padrão. */
+import { parsePessoas } from "./dados/evolucao-logica";
 import { ANOS, CARGOS, FILTROS_PADRAO, GRUPOS, TELAS, UFS, type Estado, type Filtros, type Store, type Tela } from "./store";
 
 export interface Rota {
@@ -17,7 +18,7 @@ export const ROTULOS_TELA: Readonly<Record<Tela, string>> = {
 
 /** Só `ano:sq` com caracteres seguros: o valor vai parar no caminho da API. */
 const CANDIDATO_VALIDO = /^\d{4}:[A-Za-z0-9_-]+$/;
-const PARAM: Readonly<Record<keyof Filtros, string>> = { uf: "uf", cargo: "cargo", grupo: "grupo", ano: "ano", candidato: "cand" };
+const PARAM: Readonly<Record<keyof Filtros, string>> = { uf: "uf", cargo: "cargo", grupo: "grupo", ano: "ano", candidato: "cand", pessoas: "pessoas" };
 
 function escolher<T extends string | number>(validos: readonly T[], bruto: string | null, padrao: T): T {
   return validos.find((v) => String(v) === bruto) ?? padrao;
@@ -43,6 +44,7 @@ export function lerHash(hash: string): Rota | null {
       grupo: escolher(GRUPOS, q.get("grupo"), FILTROS_PADRAO.grupo),
       ano: escolher(ANOS, q.get("ano"), FILTROS_PADRAO.ano),
       candidato: CANDIDATO_VALIDO.test(q.get("cand") ?? "") ? (q.get("cand") ?? "") : FILTROS_PADRAO.candidato,
+      pessoas: parsePessoas(q.get("pessoas") ?? "").join(","),
     },
   };
 }
