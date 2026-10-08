@@ -6,6 +6,7 @@ import { formatarPermil } from "../formato";
 import { campoSelect, h, nota, titulo } from "./dom";
 import { carregar } from "./estados";
 import { montarMapa } from "./mapa-embutido";
+import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
 const META_PENETRACAO: MetaIndicador = { nome: "Penetração", tipo: "taxa", unidade: "‰", denominador: "eleitores aptos do município" };
@@ -20,7 +21,7 @@ export const tela: Tela = {
   render(container, { filtros }) {
     const cliente = criarCliente();
     const conteudo = h("div");
-    container.replaceChildren(titulo("Evolução 2022×2026"), conteudo);
+    container.replaceChildren(titulo("Evolução 2022×2026"), cabecalhoDaTela("evolucao"), conteudo);
     let comparacao = "";
     let parar = (): void => { /* ainda sem busca */ };
 
@@ -35,24 +36,26 @@ export const tela: Tela = {
           const seletor = campoSelect("Comparar", "comparacao", g.comparacoes.map((x) => ({ valor: x.id, texto: x.rotulo })), comparacao, (v) => { comparacao = v; iniciar("comparacao"); });
           const { de, para, kpis: k } = c;
           const itens: Kpi[] = [];
-          if (k.penetracao_de !== null) itens.push({ rotulo: `Penetração ${de.rotulo}`, valor: k.penetracao_de, formato: "permil", unidade: "votos por mil aptos" });
-          if (k.penetracao_para !== null) itens.push({ rotulo: `Penetração ${para.rotulo}`, valor: k.penetracao_para, formato: "permil", unidade: "votos por mil aptos" });
-          if (k.delta_penetracao !== null) itens.push({ rotulo: "Δ penetração", valor: k.delta_penetracao, formato: "permil", unidade: "‰ — métrica-âncora (depois − antes)" });
-          if (k.swing_pp !== null) itens.push({ rotulo: "Swing (% válidos)", valor: k.swing_pp, formato: "pontos", unidade: "pontos percentuais" });
-          if (k.retencao !== null) itens.push({ rotulo: "Retenção", valor: k.retencao, formato: "percentual", unidade: "votos depois ÷ votos antes (nos municípios comparáveis)" });
-          if (k.ganho_absoluto !== null) itens.push({ rotulo: "Ganho absoluto", valor: k.ganho_absoluto, formato: "inteiro", unidade: "votos a mais que antes" });
+          if (k.penetracao_de !== null) itens.push({ rotulo: `Penetração ${de.rotulo}`, ajuda: "penetracao", valor: k.penetracao_de, formato: "permil", unidade: "votos por mil aptos" });
+          if (k.penetracao_para !== null) itens.push({ rotulo: `Penetração ${para.rotulo}`, ajuda: "penetracao", valor: k.penetracao_para, formato: "permil", unidade: "votos por mil aptos" });
+          if (k.delta_penetracao !== null) itens.push({ rotulo: "Δ penetração", ajuda: "evolucao", valor: k.delta_penetracao, formato: "permil", unidade: "‰ — métrica-âncora (depois − antes)" });
+          if (k.swing_pp !== null) itens.push({ rotulo: "Swing (% válidos)", ajuda: "evolucao", valor: k.swing_pp, formato: "pontos", unidade: "pontos percentuais" });
+          if (k.retencao !== null) itens.push({ rotulo: "Retenção", ajuda: "evolucao", valor: k.retencao, formato: "percentual", unidade: "votos depois ÷ votos antes (nos municípios comparáveis)" });
+          if (k.ganho_absoluto !== null) itens.push({ rotulo: "Ganho absoluto", ajuda: "evolucao", valor: k.ganho_absoluto, formato: "inteiro", unidade: "votos a mais que antes" });
           const kpis = h("div");
-          const kpi = renderKpi(kpis, itens);
+          const ctx = { dt_geracao: c.dt_geracao };
+          const kpi = renderKpi(kpis, itens, { ajuda: (k) => ajuda(k, ctx) });
           const a = figura(de.rotulo);
           const d = figura(para.rotulo);
           const dif = figura("Diferença (Δ penetração por AMC)");
           destino.append(
+            ...[avisosUi("evolucao", ctx)].filter((x) => x !== null),
             h("div", { className: "controles" }, seletor.rotulo), kpis,
             h("h2", { textContent: "Mapas lado a lado" }),
             h("div", { className: "mapas-3" }, a.fig, d.fig, dif.fig),
             nota("Os mapas de 2022 e 2026 usam as mesmas quebras de cor. Zonas eleitorais não são comparadas entre anos (rezoneamento); a comparação é por município agregado (AMC)."),
             ...(c.mesmos_candidatos ? [nota("Comparação restrita aos candidatos que concorreram nos dois anos.")] : []),
-            nota(`Fonte: TSE. dt_geracao: ${c.dt_geracao}.`),
+            rodapeUi("evolucao", ctx),
           );
           if (focar) destino.querySelector<HTMLElement>(`[name=${focar}]`)?.focus();
 

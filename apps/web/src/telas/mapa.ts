@@ -7,6 +7,7 @@ import { mostrarErro } from "./estados";
 import { geometria, niveisDisponiveis, UF_DA_DEMONSTRACAO } from "./mapa-embutido";
 import { criarPainelMapa } from "./painel-mapa";
 import { desenharMunicipio, focarPainel } from "./painel-municipio";
+import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
 const INDICADORES: readonly { valor: IndicadorApi; texto: string }[] = [
@@ -31,6 +32,7 @@ export const tela: Tela = {
     let ctrlMun: AbortController | null = null;
 
     const status = h("div", { className: "estado" });
+    const rodape = h("div");
     const area = h("div", { className: "mapa-area" });
     const painel = h("aside", { className: "painel-municipio" });
     painel.setAttribute("aria-live", "polite");
@@ -57,7 +59,10 @@ export const tela: Tela = {
       nivelAtual = v === "zona" ? "zona" : "municipio";
       void mapa.definirNivel(nivelAtual).then(atualizar);
     });
-    const ind = campoSelect("Indicador", "indicador", INDICADORES, indicador, (v) => { indicador = v === "pct_validos" ? "pct_validos" : "penetracao"; void atualizar(); });
+    const ind = campoSelect("Indicador", "indicador", INDICADORES, indicador, (v) => { indicador = v === "pct_validos" ? "pct_validos" : "penetracao"; mostrarAjuda(); void atualizar(); });
+    const ajudaInd = h("span");
+    const mostrarAjuda = (): void => { ajudaInd.replaceChildren(ajuda(indicador, {})); };
+    mostrarAjuda();
     const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
     const dens = h("input", { type: "checkbox", name: "densidade", checked: densidade });
     dens.addEventListener("change", () => { densidade = dens.checked; void pontos(); });
@@ -65,10 +70,14 @@ export const tela: Tela = {
     const avisos = h("div");
     container.replaceChildren(
       titulo("Mapa"),
+      cabecalhoDaTela("mapa"),
       avisos,
-      h("div", { className: "controles" }, ind.rotulo, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
+      h("div", { className: "controles" }, ind.rotulo, ajudaInd, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
       status,
       h("div", { className: "mapa-layout" }, area, painel),
+      // Avisos longos ficam abaixo do mapa: o mapa é o conteúdo principal e não deve sair da primeira tela.
+      ...[avisosUi("mapa", {})].filter((x) => x !== null),
+      rodape,
     );
 
     if (filtros.cargo === "todos") avisos.append(nota(`O mapa exige um cargo: mostrando ${CARGO_PADRAO.replace(/_/g, " ")}. Escolha outro no filtro Cargo.`));
@@ -109,6 +118,7 @@ export const tela: Tela = {
       try {
         const r: RespostaMapa | null = await mapa.atualizar(parametros());
         if (!vivo || r === null || minha !== seqAtualizar) return;
+        rodape.replaceChildren(rodapeUi("mapa", { dt_geracao: r.dt_geracao }));
         status.replaceChildren(...(r.escala_sugerida.aviso ? [nota(r.escala_sugerida.aviso)] : []));
         await pontos();
       } catch (e) {

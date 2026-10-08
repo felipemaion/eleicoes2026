@@ -1,8 +1,21 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { servirTiles } from "./servir-tiles";
+
+const raizDoRepo = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig({
-  server: { port: 5173, proxy: { "/api": "http://localhost:8000" } },
+  server: {
+    port: 5173,
+    // Os textos públicos (docs/metodologia/publico) ficam fora de apps/web e entram no build por import.
+    fs: { allow: [raizDoRepo] },
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
+  },
   build: { target: "es2022", sourcemap: true },
   test: { environment: "jsdom", include: ["tests/unit/**/*.test.ts"] },
+  // Em dev o ETL grava os tiles em data/processed/tiles; em produção quem serve /tiles/ é o Caddy.
+  plugins: [servirTiles(fileURLToPath(new URL("../../data/processed/tiles", import.meta.url)))],
 });

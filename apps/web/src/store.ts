@@ -1,6 +1,6 @@
 /** Estado global mínimo e tipado: tela atual + filtros compartilhados. */
 
-export const TELAS = ["visao-geral", "mapa", "gastos", "evolucao", "candidato"] as const;
+export const TELAS = ["visao-geral", "mapa", "gastos", "evolucao", "candidato", "como-ler"] as const;
 export type Tela = (typeof TELAS)[number];
 
 export const UFS = [

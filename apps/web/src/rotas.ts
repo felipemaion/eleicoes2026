@@ -12,6 +12,7 @@ export const ROTULOS_TELA: Readonly<Record<Tela, string>> = {
   gastos: "Gastos",
   evolucao: "Evolução 2022×2026",
   candidato: "Candidato",
+  "como-ler": "Como ler este painel",
 };
 
 /** Só `ano:sq` com caracteres seguros: o valor vai parar no caminho da API. */

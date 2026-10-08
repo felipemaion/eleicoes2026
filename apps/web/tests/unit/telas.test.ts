@@ -97,8 +97,13 @@ describe("visão geral", () => {
     await vi.waitFor(() => { expect(el.querySelectorAll(".kpi")).toHaveLength(5); });
     expect(el.querySelector("svg.grafico")).not.toBeNull();
     expect(el.textContent).toMatch(/parciais/);
-    expect(el.textContent).toMatch(/dt_geracao: 2026-10-07/);
+    expect(el.textContent).toMatch(/07\/10\/2026/);
     expect(chamou("grupo=missao_2026")).toBe(true);
+  });
+  it("cada KPI com texto público ganha um '?' acessível; subtítulo público no topo", async () => {
+    await desenhar("visao-geral");
+    await vi.waitFor(() => { expect(el.querySelectorAll(".kpi button.ajuda-botao").length).toBeGreaterThanOrEqual(3); });
+    expect(el.querySelector(".subtitulo")?.textContent).toMatch(/Missão/);
   });
   it("pede o teto de 500 candidaturas para a soma dos KPIs ser completa", async () => {
     await desenhar("visao-geral");
@@ -190,7 +195,7 @@ describe("gastos", () => {
     await desenhar("gastos");
     await vi.waitFor(() => { expect(el.querySelectorAll("svg.grafico")).toHaveLength(2); });
     expect(el.textContent).toMatch(/Contas de 2026 parciais/);
-    expect(el.textContent).toMatch(/setembro de 2026/);
+    expect(el.textContent).toMatch(/set\/2026/);
     expect(el.querySelector("dl.kpis")?.textContent).toMatch(/R\$/);
   });
   it("alternar contratado/pago redesenha a dispersão", async () => {
@@ -315,5 +320,14 @@ describe("mapa — corridas de requisição", () => {
     c.resolver(0, municipio);
     await new Promise((r) => setTimeout(r, 20));
     expect(el.querySelector(".painel-municipio")?.textContent).not.toContain("Aracaju");
+  });
+});
+
+describe("como ler este painel", () => {
+  it("renderiza o README público copiado no build", async () => {
+    await desenhar("como-ler");
+    await vi.waitFor(() => { expect(el.querySelector("article.como-ler h2")?.textContent).toBe("Como ler este painel"); });
+    expect(el.querySelector("h1")?.textContent).toBe("Como ler este painel");
+    expect(el.querySelectorAll("article table").length).toBeGreaterThan(0);
   });
 });

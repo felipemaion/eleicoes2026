@@ -4,7 +4,7 @@ import { simularApi } from "./api";
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
 test("mapa carrega a fixture, troca indicador sem recarregar geometria e mostra tooltip", async ({ page }) => {
-  await page.goto("/#/mapa");
+  await page.goto("/#/mapa?uf=SE");
   const area = page.locator("[data-mapa-pronto='sim']");
   await expect(area).toBeVisible({ timeout: 15_000 });
   await expect(page.locator(".mapa-quadro canvas")).toBeVisible();
@@ -12,15 +12,16 @@ test("mapa carrega a fixture, troca indicador sem recarregar geometria e mostra 
   // legenda com unidade e denominador
   const legenda = page.locator(".mapa-legenda svg");
   await expect(legenda).toContainText("Denominador");
-  await expect(legenda).toContainText("votos válidos");
+  await expect(legenda).toContainText("eleitores aptos");
+  await expect(legenda).toContainText("Penetração");
 
   const antes = await area.evaluate((e) => ({ f: e.getAttribute("data-fontes"), a: e.getAttribute("data-atualizacoes") }));
   expect(antes.f).toBe("1");
 
-  await page.getByLabel("Indicador").selectOption("swing");
+  await page.getByLabel("Indicador").selectOption("pct_validos");
   await expect(area).toHaveAttribute("data-atualizacoes", String(Number(antes.a) + 1));
   await expect(area).toHaveAttribute("data-fontes", "1"); // geometria não recarregou
-  await expect(legenda).toContainText("Swing");
+  await expect(legenda).toContainText("votos válidos");
 
   // tooltip por teclado
   await page.locator(".mapa-quadro").focus();
@@ -41,14 +42,14 @@ test("mapa carrega a fixture, troca indicador sem recarregar geometria e mostra 
 });
 
 test("tabela alternativa lista os valores do mapa", async ({ page }) => {
-  await page.goto("/#/mapa");
+  await page.goto("/#/mapa?uf=SE");
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
   await page.getByText("Tabela de valores").click();
-  await expect(page.locator(".mapa-tabela tbody tr, .mapa-tabela tr")).toHaveCount(76); // cabeçalho + 75 municípios
+  await expect(page.locator(".mapa-tabela tbody tr, .mapa-tabela tr")).toHaveCount(75); // cabeçalho + 74 municípios com dado (1 sem denominador fica fora)
 });
 
 test("sair da tela do mapa libera o WebGL (sem canvas órfão)", async ({ page }) => {
-  await page.goto("/#/mapa");
+  await page.goto("/#/mapa?uf=SE");
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("navigation", { name: "Telas" }).getByRole("link", { name: "Gastos" }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
@@ -57,7 +58,7 @@ test("sair da tela do mapa libera o WebGL (sem canvas órfão)", async ({ page }
 test("criar e destruir o mapa 20× não esgota contextos WebGL", async ({ page }) => {
   const avisos: string[] = [];
   page.on("console", (m) => { if (m.text().includes("Too many active WebGL contexts")) avisos.push(m.text()); });
-  await page.goto("/#/mapa");
+  await page.goto("/#/mapa?uf=SE");
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
   const nav = page.getByRole("navigation", { name: "Telas" });
   for (let i = 0; i < 20; i++) {
@@ -70,7 +71,7 @@ test("criar e destruir o mapa 20× não esgota contextos WebGL", async ({ page }
 });
 
 test("teclado: o canvas não é focável e as setas funcionam com o foco no quadro", async ({ page }) => {
-  await page.goto("/#/mapa");
+  await page.goto("/#/mapa?uf=SE");
   await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
   await expect(page.locator(".mapa-quadro canvas")).toHaveAttribute("tabindex", "-1");
   await page.keyboard.press("Tab");
@@ -79,4 +80,37 @@ test("teclado: o canvas não é focável e as setas funcionam com o foco no quad
   await expect(page.getByRole("tooltip")).toBeVisible();
   await page.locator("body").click({ position: { x: 1, y: 1 } });
   await expect(page.getByRole("tooltip")).toBeHidden();
+});
+
+test("teclado: Enter no município destacado abre o painel lateral com o foco no título", async ({ page }) => {
+  await page.goto("/#/mapa?uf=SE");
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+  await page.locator(".mapa-quadro").focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  const painel = page.locator(".painel-municipio");
+  await expect(painel.locator("h2")).toBeFocused();
+  await expect(painel).toContainText("Missão 2026");
+  await expect(painel.locator("table").first()).toBeVisible();
+});
+
+test("clique no município abre o painel lateral", async ({ page }) => {
+  await page.goto("/#/mapa?uf=SE");
+  await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 15_000 });
+  // O "Carregando…" some depois do mapa pronto e desloca o layout: espera antes de medir.
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await page.locator(".mapa-quadro").scrollIntoViewIfNeeded();
+  const caixa = await page.locator(".mapa-quadro canvas").boundingBox();
+  if (!caixa) throw new Error("canvas sem caixa");
+  const x = caixa.x + caixa.width / 2;
+  const y = caixa.y + caixa.height / 2;
+  // O WebGL pode demorar a desenhar os polígonos após "pronto": repete o hover até haver feição sob o cursor.
+  await expect(async () => {
+    await page.mouse.move(x - 3, y - 3);
+    await page.mouse.move(x, y, { steps: 4 });
+    await expect(page.getByRole("tooltip")).toBeVisible({ timeout: 500 });
+  }).toPass({ timeout: 10_000 });
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page.locator(".painel-municipio h2")).toBeVisible();
 });

@@ -30,7 +30,7 @@ test("filtro de UF vai para a URL e rodapé mostra fonte", async ({ page }) => {
 
 test("sem rolagem horizontal em 360 px", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
-  for (const rota of ["visao-geral", "mapa", "gastos", "evolucao", "candidato"]) {
+  for (const rota of ["visao-geral", "mapa", "gastos", "evolucao", "candidato", "como-ler"]) {
     await page.goto(`/#/${rota}`);
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(sobra).toBeLessThanOrEqual(0);

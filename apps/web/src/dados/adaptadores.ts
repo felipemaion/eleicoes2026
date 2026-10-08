@@ -6,6 +6,7 @@ import type { ReceitaPorFonte } from "../componentes/graficos/empilhado";
 import type { Kpi } from "../componentes/graficos/kpi";
 import type { DetalheParcial } from "../componentes/mapa/mapa";
 import type { Filtros } from "../store";
+import { indicadorDe } from "../textos";
 import { PALETAS } from "../paletas";
 import type { Candidato, CargoApi, Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "./contrato";
 
@@ -42,14 +43,14 @@ export function kpisDoGrupo(l: RespostaCandidatos, g: RespostaGastos): Kpi[] {
   const votos = l.itens.reduce((a, c) => a + c.votos, 0);
   const parcial = completa ? "" : ` — soma de ${nf(l.itens.length)} de ${nf(l.total)} candidaturas`;
   const lista: Kpi[] = [
-    { rotulo: "Votação nominal do grupo", valor: votos, formato: "inteiro", unidade: `votos nominais${parcial}` },
+    { rotulo: "Votação nominal do grupo", ajuda: "votos_nominais", valor: votos, formato: "inteiro", unidade: `votos nominais${parcial}` },
     { rotulo: "Candidaturas", valor: l.total, formato: "inteiro", unidade: "registradas no grupo" },
   ];
   if (l.itens.some((c) => c.resultado !== null)) {
     lista.push({ rotulo: "Eleitos", valor: l.itens.filter((c) => c.resultado !== null && EH_ELEITO.test(c.resultado)).length, formato: "inteiro", unidade: `de ${nf(l.total)} candidaturas` });
   }
-  if (g.agregado.custo_voto_contratado !== null) lista.push({ rotulo: "Custo por voto contratado", valor: g.agregado.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos nominais" });
-  if (g.receitas.pct_publico !== null) lista.push({ rotulo: "% recursos públicos", valor: g.receitas.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
+  if (g.agregado.custo_voto_contratado !== null) lista.push({ rotulo: "Custo por voto contratado", ajuda: "custo_por_voto", valor: g.agregado.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos nominais" });
+  if (g.receitas.pct_publico !== null) lista.push({ rotulo: "% recursos públicos", ajuda: "pct_publico", valor: g.receitas.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
   return lista;
 }
 
@@ -66,23 +67,7 @@ export function dispersaoCustoVoto(g: RespostaGastos, base: "contratado" | "pago
 
 /** Uma barra empilhada com o grupo inteiro: a API entrega receita por categoria já somada. */
 export function receitaEmpilhada(g: RespostaGastos): ReceitaPorFonte[] {
-  return [{ rotulo: g.grupo, valores: g.receitas.por_categoria }];
-}
-
-const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-export function mesPorExtenso(aaaamm: string): string {
-  const [a, m] = aaaamm.split("-");
-  const nome = MESES[Number(m) - 1];
-  if (!a || !nome) throw new Error(`Mês-base inválido: "${aaaamm}" (esperado AAAA-MM)`);
-  return `${nome} de ${a}`;
-}
-
-/** Avisos obrigatórios de leitura dos gastos. */
-export function avisosGastos(g: Pick<RespostaGastos, "contas_parciais" | "base_ipca">): string[] {
-  const a: string[] = [];
-  if (g.contas_parciais) a.push("Contas de 2026 parciais: candidatos ainda podem prestar contas; custo por voto tende a mudar.");
-  if (g.base_ipca !== null) a.push(`Valores de 2022 deflacionados pelo IPCA para ${mesPorExtenso(g.base_ipca)}.`);
-  return a;
+  return [{ rotulo: "Total do grupo", valores: g.receitas.por_categoria }];
 }
 
 export interface MapaPronto {
@@ -120,7 +105,9 @@ export function escalaDoMapa(r: RespostaMapa): MapaPronto {
   if (r.escala_sugerida.tipo === "simbolo_proporcional") {
     throw new Error(`Indicador "${r.indicador}" é absoluto: use símbolos proporcionais, não coroplético.`);
   }
-  const meta: MetaIndicador = { nome: r.indicador, tipo: "taxa", unidade: r.unidade, denominador: r.denominador ?? "não informado" };
+  // Nome e denominador da legenda vêm do texto público do indicador (o da API é uma palavra solta: "aptos").
+  const texto = indicadorDe(r.indicador, {});
+  const meta: MetaIndicador = { nome: texto.titulo, tipo: "taxa", unidade: r.unidade, denominador: texto.denominador };
   validarCoropletico(meta);
   const valores = soNumeros(r.valores);
   const q = r.escala_sugerida.quebras;

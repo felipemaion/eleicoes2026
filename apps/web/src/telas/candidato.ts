@@ -6,23 +6,25 @@ import { render as renderEmpilhado } from "../componentes/graficos/empilhado";
 import { render as renderKpi, type Kpi } from "../componentes/graficos/kpi";
 import { formatarNumero } from "../formato";
 import { formatarHash } from "../rotas";
-import { campoSelect, h, nota, titulo } from "./dom";
+import { campoSelect, h, titulo } from "./dom";
 import { carregar, mostrarErro } from "./estados";
 import { criarPainelMapa } from "./painel-mapa";
+import { ajuda, avisosUi, cabecalhoDaTela, rodapeUi } from "./textos-ui";
 import type { Tela } from "./tipos";
 
 function desenharFicha(destino: HTMLElement, f: Ficha, filtros: Parameters<Tela["render"]>[1]["filtros"]): () => void {
   const c = f.candidato;
   const kpis: Kpi[] = [{ rotulo: "Votos", valor: c.votos, formato: "inteiro" }];
-  if (c.pct_validos !== null) kpis.push({ rotulo: "% dos válidos", valor: c.pct_validos, formato: "pontos", unidade: "% dos votos válidos" });
-  if (c.penetracao !== null) kpis.push({ rotulo: "Penetração", valor: c.penetracao, formato: "permil", unidade: "votos por mil aptos" });
-  if (f.gastos?.custo_voto_contratado != null) kpis.push({ rotulo: "Custo por voto contratado", valor: f.gastos.custo_voto_contratado, formato: "moeda" });
-  if (f.gastos?.custo_voto_pago != null) kpis.push({ rotulo: "Custo por voto pago", valor: f.gastos.custo_voto_pago, formato: "moeda" });
+  if (c.pct_validos !== null) kpis.push({ rotulo: "% dos válidos", ajuda: "pct_validos", valor: c.pct_validos, formato: "pontos", unidade: "% dos votos válidos" });
+  if (c.penetracao !== null) kpis.push({ rotulo: "Penetração", ajuda: "penetracao", valor: c.penetracao, formato: "permil", unidade: "votos por mil aptos" });
+  if (f.gastos?.custo_voto_contratado != null) kpis.push({ rotulo: "Custo por voto contratado", ajuda: "custo_por_voto", valor: f.gastos.custo_voto_contratado, formato: "moeda" });
+  if (f.gastos?.custo_voto_pago != null) kpis.push({ rotulo: "Custo por voto pago", ajuda: "custo_por_voto", valor: f.gastos.custo_voto_pago, formato: "moeda" });
   const aKpi = h("div");
   const aBarras = h("div");
   const aReceita = h("div");
   const aMapa = h("div", { className: "mapa-area" });
-  const k = renderKpi(aKpi, kpis);
+  const ctx = { dt_geracao: f.dt_geracao, mes_base_ipca: f.base_ipca ?? undefined, contas_parciais: f.contas_parciais };
+  const k = renderKpi(aKpi, kpis, { ajuda: (chave) => ajuda(chave, ctx) });
   const b = renderBarras(aBarras, barrasMunicipios(f, 10), { titulo: "Municípios com mais votos", formato: formatarNumero, colunaValor: "Votos" });
   const e = renderEmpilhado(aReceita, f.receitas ? [{ rotulo: c.nm_urna, valores: f.receitas.por_categoria }] : [], { titulo: "Receita por fonte" });
   const cliente = criarCliente();
@@ -35,10 +37,11 @@ function desenharFicha(destino: HTMLElement, f: Ficha, filtros: Parameters<Tela[
       h("h2", { textContent: c.nm_urna }),
       h("p", { textContent: `${c.partido.sigla} · ${c.cargo.toLowerCase()} · ${c.sg_uf} · ${String(c.ano)} · ${c.resultado ?? "resultado ainda não definido"}` }),
       aKpi,
-      ...(f.contas_parciais ? [nota("Contas de 2026 parciais: gastos e receitas ainda mudam.")] : []),
+      ...[avisosUi("candidato", ctx)].filter((x) => x !== null),
       h("h3", { textContent: "Votos por município" }), aBarras,
       h("h3", { textContent: "Mapa individual" }), erroMapa, aMapa,
       h("h3", { textContent: "Receitas" }), aReceita,
+      rodapeUi("candidato", ctx),
     ),
   );
   return () => { k.destruir(); b.destruir(); e.destruir(); mapa.destruir(); };
@@ -50,7 +53,7 @@ export const tela: Tela = {
     const { filtros } = estado;
     const cliente = criarCliente();
     const conteudo = h("div");
-    container.replaceChildren(titulo("Candidato"), conteudo);
+    container.replaceChildren(titulo("Candidato"), cabecalhoDaTela("candidato"), conteudo);
     const [ano, sq] = filtros.candidato.split(":");
     const parar = carregar(
       conteudo,

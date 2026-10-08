@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  avisosGastos, barrasMunicipios, cargoDaApi, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
+  barrasMunicipios, cargoDaApi, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
   mapaDeDiferenca, paramsComCargo, paramsDeFiltros, penetracaoDosAnos, rankingDeCandidatos, receitaEmpilhada, soNumeros,
 } from "../../src/dados/adaptadores";
 import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
@@ -72,13 +72,7 @@ describe("gastos", () => {
     expect(dispersaoCustoVoto(G, "pago")[0]?.custo).toBe(180000);
   });
   it("receita empilhada: uma barra do grupo com as categorias da API", () => {
-    expect(receitaEmpilhada(G)).toEqual([{ rotulo: "missao_2026", valores: G.receitas.por_categoria }]);
-  });
-  it("avisos: contas parciais e mês-base do deflator (só quando existe)", () => {
-    const a = avisosGastos(G);
-    expect(a.join(" ")).toMatch(/parciais/);
-    expect(a.join(" ")).toMatch(/setembro de 2026/);
-    expect(avisosGastos({ ...G, contas_parciais: false, base_ipca: null })).toEqual([]);
+    expect(receitaEmpilhada(G)).toEqual([{ rotulo: "Total do grupo", valores: G.receitas.por_categoria }]);
   });
 });
 
@@ -87,7 +81,8 @@ describe("mapa", () => {
     const { escala, meta, valores, aviso } = escalaDoMapa(M);
     expect(escala.tipo).toBe("limiar");
     expect(escala.quebras).toEqual(M.escala_sugerida.quebras);
-    expect(meta).toMatchObject({ tipo: "taxa", unidade: "‰", denominador: "aptos" });
+    expect(meta).toMatchObject({ tipo: "taxa", unidade: "‰", nome: "Penetração (votos por mil eleitores)" });
+    expect(meta.denominador).toMatch(/eleitores aptos/);
     expect(aviso).toBeNull();
     expect(Object.keys(valores)).toHaveLength(74); // 1 território sem dado fica de fora
   });

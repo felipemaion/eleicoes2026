@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 
 const lerFixture = (nome: string): string => readFileSync(new URL(`../fixtures/api/${nome}.json`, import.meta.url), "utf-8");
 
-/** A API real ainda não existe: as fixtures do contrato respondem em /api/**. */
+/** Fixtures do contrato (tipadas pelo OpenAPI em contrato-fixtures.test.ts) respondem em /api/**. */
 export async function simularApi(page: Page, sobrescrever: Record<string, { status: number; corpo?: string }> = {}): Promise<string[]> {
   const urls: string[] = [];
   const rotas: Record<string, string> = {
@@ -15,9 +15,15 @@ export async function simularApi(page: Page, sobrescrever: Record<string, { stat
     urls.push(url.pathname + url.search);
     const forca = sobrescrever[url.pathname];
     if (forca) { await route.fulfill({ status: forca.status, contentType: "application/json", body: forca.corpo ?? "{}" }); return; }
-    const nome = url.pathname === "/api/mapa" && url.searchParams.get("indicador") === "swing" ? "mapa-swing" : rotas[url.pathname];
+    // Qualquer município responde com a mesma fixture (o teste escolhe o primeiro da ordem alfabética).
+    const nome = url.pathname.startsWith("/api/municipios/") ? "municipio" : rotas[url.pathname];
     if (!nome) { await route.fulfill({ status: 404, body: "{}" }); return; }
-    await route.fulfill({ contentType: "application/json", body: lerFixture(nome) });
+    let corpo = lerFixture(nome);
+    // O mock devolve a mesma fixture de /mapa; o indicador pedido é espelhado para a legenda mudar de verdade.
+    if (url.pathname === "/api/mapa" && url.searchParams.get("indicador") === "pct_validos") {
+      corpo = JSON.stringify({ ...(JSON.parse(corpo) as object), indicador: "pct_validos", unidade: "%" });
+    }
+    await route.fulfill({ contentType: "application/json", body: corpo });
   });
   return urls;
 }
