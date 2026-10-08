@@ -1,0 +1,184 @@
+{
+  "indicador": "correlacao_redes",
+  "spec": "docs/metodologia/indicadores.md#correlacao-redes",
+  "versao": 1,
+  "descricao": "ρ de Spearman por cargo com IC 95 % por bootstrap percentil (2000 reamostras, semente 2026).",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": [
+    "Pares com nulo saem e são contados em n_excluidos. n < 10 → rho e IC null.",
+    "Reamostragem: random.Random(semente).choices(range(n), k=n) por réplica, um gerador novo por cargo, linhas ordenadas por sq_candidato; réplica com variância zero é descartada.",
+    "Quantis com interpolação linear (numpy padrão)."
+  ],
+  "casos": [
+    {
+      "nome": "dois_cargos_um_pequeno",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": 100,
+            "cd_cargo": 6,
+            "seguidores": 150,
+            "votos": 900
+          },
+          {
+            "sq_candidato": 101,
+            "cd_cargo": 6,
+            "seguidores": 800,
+            "votos": 3100
+          },
+          {
+            "sq_candidato": 102,
+            "cd_cargo": 6,
+            "seguidores": 2300,
+            "votos": 1500
+          },
+          {
+            "sq_candidato": 103,
+            "cd_cargo": 6,
+            "seguidores": 2300,
+            "votos": 7800
+          },
+          {
+            "sq_candidato": 104,
+            "cd_cargo": 6,
+            "seguidores": 5100,
+            "votos": 4200
+          },
+          {
+            "sq_candidato": 105,
+            "cd_cargo": 6,
+            "seguidores": 12000,
+            "votos": 25000
+          },
+          {
+            "sq_candidato": 106,
+            "cd_cargo": 6,
+            "seguidores": 450,
+            "votos": 2200
+          },
+          {
+            "sq_candidato": 107,
+            "cd_cargo": 6,
+            "seguidores": 30000,
+            "votos": 18000
+          },
+          {
+            "sq_candidato": 108,
+            "cd_cargo": 6,
+            "seguidores": 61000,
+            "votos": 9500
+          },
+          {
+            "sq_candidato": 109,
+            "cd_cargo": 6,
+            "seguidores": 9000,
+            "votos": 31000
+          },
+          {
+            "sq_candidato": 110,
+            "cd_cargo": 6,
+            "seguidores": 700,
+            "votos": 1100
+          },
+          {
+            "sq_candidato": 111,
+            "cd_cargo": 6,
+            "seguidores": 150000,
+            "votos": 87000
+          },
+          {
+            "sq_candidato": 112,
+            "cd_cargo": 6,
+            "seguidores": null,
+            "votos": 4000
+          },
+          {
+            "sq_candidato": 113,
+            "cd_cargo": 6,
+            "seguidores": null,
+            "votos": 650
+          },
+          {
+            "sq_candidato": 200,
+            "cd_cargo": 7,
+            "seguidores": 150,
+            "votos": 900
+          },
+          {
+            "sq_candidato": 201,
+            "cd_cargo": 7,
+            "seguidores": 800,
+            "votos": 3100
+          },
+          {
+            "sq_candidato": 202,
+            "cd_cargo": 7,
+            "seguidores": 2300,
+            "votos": 1500
+          },
+          {
+            "sq_candidato": 203,
+            "cd_cargo": 7,
+            "seguidores": 2300,
+            "votos": 7800
+          },
+          {
+            "sq_candidato": 204,
+            "cd_cargo": 7,
+            "seguidores": 5100,
+            "votos": 4200
+          },
+          {
+            "sq_candidato": 205,
+            "cd_cargo": 7,
+            "seguidores": 12000,
+            "votos": 25000
+          },
+          {
+            "sq_candidato": 206,
+            "cd_cargo": 7,
+            "seguidores": 450,
+            "votos": 2200
+          },
+          {
+            "sq_candidato": 207,
+            "cd_cargo": 7,
+            "seguidores": 30000,
+            "votos": 18000
+          },
+          {
+            "sq_candidato": 208,
+            "cd_cargo": 7,
+            "seguidores": 61000,
+            "votos": 9500
+          }
+        ],
+        "x": "seguidores",
+        "y": "votos",
+        "n_bootstrap": 2000,
+        "nivel": 0.95,
+        "semente": 2026
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "n": 12,
+          "n_excluidos": 2,
+          "rho": 0.8756580854229328,
+          "ic_inf": 0.5776364506912749,
+          "ic_sup": 0.9716312056737588,
+          "n_bootstrap_validos": 2000
+        },
+        {
+          "cd_cargo": 7,
+          "n": 9,
+          "n_excluidos": 0,
+          "rho": null,
+          "ic_inf": null,
+          "ic_sup": null,
+          "n_bootstrap_validos": null
+        }
+      ]
+    }
+  ]
+}

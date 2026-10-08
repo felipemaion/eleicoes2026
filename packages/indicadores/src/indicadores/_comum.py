@@ -1,5 +1,6 @@
 """Utilitários internos compartilhados pelos módulos de indicadores (sem I/O, sem estado)."""
 
+import math
 from collections.abc import Iterable, Sequence
 
 import polars as pl
@@ -58,3 +59,38 @@ def exigir_unicidade(df: pl.DataFrame, chaves: Sequence[str], contexto: str) -> 
     """Falha alto se houver linhas repetidas para as `chaves` (tabela não agregada)."""
     if df.select(list(chaves)).is_duplicated().any():
         raise ValueError(f"{contexto}: linhas duplicadas para as chaves {list(chaves)}")
+
+
+def postos(valores: Sequence[float]) -> list[float]:
+    """Postos 1..n com posto médio nos empates (base do ρ de Spearman)."""
+    ordem = sorted(range(len(valores)), key=valores.__getitem__)
+    resultado = [0.0] * len(valores)
+    i = 0
+    while i < len(ordem):
+        j = i
+        while j + 1 < len(ordem) and valores[ordem[j + 1]] == valores[ordem[i]]:
+            j += 1
+        medio = (i + j) / 2 + 1  # posto médio dos empates
+        for k in range(i, j + 1):
+            resultado[ordem[k]] = medio
+        i = j + 1
+    return resultado
+
+
+def spearman_listas(xs: Sequence[float], ys: Sequence[float]) -> float | None:
+    """ρ de Spearman (Spearman 1904) = Pearson dos postos médios; iguais ao `scipy.stats.spearmanr`.
+
+    Menos de 2 pares ou variância zero em um dos lados → `None` (indefinido, spec §0).
+    """
+    if len(xs) != len(ys):
+        raise ValueError("spearman: listas de tamanhos diferentes")
+    if len(xs) < 2:
+        return None
+    rx, ry = postos(xs), postos(ys)
+    media = (len(xs) + 1) / 2  # média dos postos 1..n, inclusive com empates
+    cov = sum((x - media) * (y - media) for x, y in zip(rx, ry, strict=True))
+    var_x = sum((x - media) ** 2 for x in rx)
+    var_y = sum((y - media) ** 2 for y in ry)
+    if var_x == 0 or var_y == 0:
+        return None
+    return cov / math.sqrt(var_x * var_y)

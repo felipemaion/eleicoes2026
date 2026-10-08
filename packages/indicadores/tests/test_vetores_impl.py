@@ -13,7 +13,7 @@ from typing import Any
 
 import polars as pl
 import pytest
-from indicadores import desempenho, espacial, evolucao, financeiro, grupos
+from indicadores import desempenho, espacial, evolucao, financeiro, grupos, redes
 
 RAIZ = Path(__file__).resolve().parents[3]
 VETORES = RAIZ / "docs" / "metodologia" / "vetores"
@@ -266,6 +266,83 @@ def _quebras(entrada: dict[str, Any]) -> dict[str, Any]:
     return {"quebras": limiares}
 
 
+_SCHEMA_PERFIS = {
+    "sq_candidato": pl.Int64,
+    "username": pl.String,
+    "status": pl.String,
+    "followers_count": pl.Int64,
+    "follows_count": pl.Int64,
+    "media_count": pl.Int64,
+    "coletado_em": pl.String,
+}
+_SCHEMA_POSTS = {
+    "username": pl.String,
+    "media_id": pl.String,
+    "timestamp": pl.String,
+    "media_type": pl.String,
+    "media_product_type": pl.String,
+    "like_count": pl.Int64,
+    "comments_count": pl.Int64,
+    "coletado_em": pl.String,
+}
+
+
+def _com_datas(linhas: list[dict[str, Any]], schema: dict[str, Any]) -> pl.DataFrame:
+    """Converte as datas ISO (UTC, "Z") do vetor em Datetime UTC, como no Parquet do `dados`."""
+    df = pl.DataFrame(linhas, schema=schema)
+    datas = [c for c in ("timestamp", "coletado_em") if c in df.columns]
+    return df.with_columns(pl.col(c).str.to_datetime(time_zone="UTC") for c in datas)
+
+
+def _perfis(entrada: dict[str, Any]) -> pl.DataFrame:
+    return _com_datas(entrada["perfis"], _SCHEMA_PERFIS)
+
+
+def _posts(entrada: dict[str, Any]) -> pl.DataFrame:
+    return _com_datas(entrada["posts"], _SCHEMA_POSTS)
+
+
+def _redes_janelas(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    return _linhas(redes.metricas_janelas(_perfis(entrada), _posts(entrada)))
+
+
+def _redes_candidato(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    votos = pl.DataFrame(entrada["votos"])
+    return _linhas(redes.indicadores_candidato(_perfis(entrada), _posts(entrada), votos))
+
+
+def _redes_serie(entrada: dict[str, Any]) -> dict[str, Any]:
+    perfis = _perfis(entrada)
+    return {
+        "serie": _linhas(redes.serie_seguidores(perfis)),
+        "resumo": _linhas(redes.resumo_serie_seguidores(perfis)),
+    }
+
+
+_SCHEMA_LINHAS = {
+    "sq_candidato": pl.Int64,
+    "cd_cargo": pl.Int64,
+    "seguidores": pl.Int64,
+    "votos": pl.Int64,
+}
+
+
+def _redes_correlacao(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    df = redes.correlacao(
+        pl.DataFrame(entrada["linhas"], schema=_SCHEMA_LINHAS),
+        entrada["x"],
+        entrada["y"],
+        n_bootstrap=entrada["n_bootstrap"],
+        nivel=entrada["nivel"],
+        semente=entrada["semente"],
+    )
+    return _linhas(df)
+
+
+def _redes_residuo(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    return _linhas(redes.residuo_log(pl.DataFrame(entrada["linhas"], schema=_SCHEMA_LINHAS)))
+
+
 ADAPTADORES: dict[str, Adaptador] = {
     "votos_nominais": _votos_nominais,
     "pct_validos": _municipal_e_uf,
@@ -291,6 +368,12 @@ ADAPTADORES: dict[str, Adaptador] = {
     "sobreposicao_redutos": _redutos,
     "por_candidato": _por_candidato,
     "quebras_comuns": _quebras,
+    "ritmo_posts": _redes_janelas,
+    "engajamento": _redes_janelas,
+    "seguidores_votos": _redes_candidato,
+    "serie_seguidores": _redes_serie,
+    "correlacao_redes": _redes_correlacao,
+    "residuo_seguidores": _redes_residuo,
 }
 
 

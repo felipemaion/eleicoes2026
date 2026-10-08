@@ -1,0 +1,194 @@
+{
+  "indicador": "serie_seguidores",
+  "spec": "docs/metodologia/indicadores.md#serie-seguidores",
+  "versao": 1,
+  "descricao": "Variação de seguidores entre snapshots consecutivos e do primeiro ao último.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": [
+    "Snapshot sem seguidores (conta virou pessoal, perfil fora do ar) sai da série; a variação seguinte compara com o último snapshot válido.",
+    "Um snapshot só → variações null.",
+    "dias em fração de dia entre as coletas."
+  ],
+  "casos": [
+    {
+      "nome": "snapshots_com_lacuna",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1000,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1200,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1194,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-16T00:00:00Z"
+          },
+          {
+            "sq_candidato": 2,
+            "username": "bia",
+            "status": "ok",
+            "followers_count": 500,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 3,
+            "username": "caio",
+            "status": "nao_comercial",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 6,
+            "username": "fabio",
+            "status": "ok",
+            "followers_count": 300,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 6,
+            "username": "fabio",
+            "status": "nao_comercial",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-09T12:00:00Z"
+          },
+          {
+            "sq_candidato": 6,
+            "username": "fabio",
+            "status": "ok",
+            "followers_count": 330,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-10T12:00:00Z"
+          }
+        ]
+      },
+      "saida": {
+        "serie": [
+          {
+            "username": "ana",
+            "seguidores": 1000,
+            "delta_abs": null,
+            "delta_pct": null,
+            "dias": null
+          },
+          {
+            "username": "ana",
+            "seguidores": 1200,
+            "delta_abs": 200,
+            "delta_pct": 19.999999999999996,
+            "dias": 7.0
+          },
+          {
+            "username": "ana",
+            "seguidores": 1194,
+            "delta_abs": -6,
+            "delta_pct": -0.5000000000000004,
+            "dias": 0.5
+          },
+          {
+            "username": "bia",
+            "seguidores": 500,
+            "delta_abs": null,
+            "delta_pct": null,
+            "dias": null
+          },
+          {
+            "username": "fabio",
+            "seguidores": 300,
+            "delta_abs": null,
+            "delta_pct": null,
+            "dias": null
+          },
+          {
+            "username": "fabio",
+            "seguidores": 330,
+            "delta_abs": 30,
+            "delta_pct": 10.000000000000009,
+            "dias": 2.0
+          }
+        ],
+        "resumo": [
+          {
+            "username": "ana",
+            "n_snapshots": 3,
+            "seguidores_inicial": 1000,
+            "seguidores_final": 1194,
+            "delta_abs": 194,
+            "delta_pct": 19.399999999999995,
+            "dias": 7.5
+          },
+          {
+            "username": "bia",
+            "n_snapshots": 1,
+            "seguidores_inicial": 500,
+            "seguidores_final": 500,
+            "delta_abs": null,
+            "delta_pct": null,
+            "dias": null
+          },
+          {
+            "username": "fabio",
+            "n_snapshots": 2,
+            "seguidores_inicial": 300,
+            "seguidores_final": 330,
+            "delta_abs": 30,
+            "delta_pct": 10.000000000000009,
+            "dias": 2.0
+          }
+        ]
+      }
+    },
+    {
+      "nome": "snapshot_duplicado",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 1,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          },
+          {
+            "sq_candidato": 1,
+            "username": "ana",
+            "status": "ok",
+            "followers_count": 2,
+            "follows_count": 100,
+            "media_count": 50,
+            "coletado_em": "2026-10-08T12:00:00Z"
+          }
+        ]
+      },
+      "erro": "ValueError: linhas duplicadas"
+    }
+  ]
+}

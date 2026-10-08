@@ -14,7 +14,8 @@
   },
   "placeholders": {
     "dt_geracao": "data e hora de geração do arquivo do TSE usado na tela (DT_GERACAO), ex. 07/10/2026 08:00",
-    "mes_base_ipca": "mês-base da correção monetária, ex. set/2026 (enquanto não sair, o último mês publicado do IPCA)"
+    "mes_base_ipca": "mês-base da correção monetária, ex. set/2026 (enquanto não sair, o último mês publicado do IPCA)",
+    "dt_coleta_redes": "data da coleta mais recente do Instagram usada na tela, ex. 08/10/2026"
   },
   "indicadores": {
     "votos_nominais": {
@@ -401,6 +402,72 @@
       "fonte": "TSE — receitas de candidatos; BCB — IPCA (série 433)",
       "vetor": "comparacao_receitas",
       "spec": "comparacao-receitas"
+    },
+    "ritmo_posts": {
+      "titulo": "Posts e vídeos por semana",
+      "resumo": "Quantos posts e vídeos (inclusive reels) a conta publicou por semana antes da campanha, durante a campanha e depois da eleição.",
+      "como_ler": "Os períodos têm tamanhos diferentes (a pré-campanha tem 227 dias; a campanha, 50), por isso comparamos o ritmo por semana, não o total. A variação do ritmo mostra se o candidato publicou mais ou menos depois de 4 de outubro. Datas no horário de Brasília.",
+      "unidade": "posts por semana; % de vídeos entre os posts",
+      "denominador": "dias de cada período, convertidos em semanas",
+      "cuidado": "Posts apagados ou arquivados antes da coleta não aparecem, e stories não entram. Depois da eleição, o ritmo só aparece com pelo menos 7 dias de dados.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE",
+      "vetor": "ritmo_posts",
+      "spec": "ritmo-posts"
+    },
+    "engajamento": {
+      "titulo": "Engajamento por post",
+      "resumo": "Curtidas mais comentários de cada post, em % dos seguidores da conta. Mostramos a mediana (o post típico) e a média.",
+      "como_ler": "Um engajamento de 2 % quer dizer que um post típico recebeu curtidas e comentários equivalentes a 2 de cada 100 seguidores. A mediana não é puxada por um único post que viralizou; a média é. O valor do candidato é o dos posts da campanha.",
+      "unidade": "% dos seguidores, por post",
+      "denominador": "seguidores da conta na coleta mais recente",
+      "cuidado": "Posts com curtidas ocultas ficam fora da conta (não valem zero), assim como posts com menos de 2 dias. Contas pequenas costumam ter engajamento proporcional maior. A API não informa visualizações de vídeos.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE",
+      "vetor": "engajamento",
+      "spec": "engajamento"
+    },
+    "seguidores_votos": {
+      "titulo": "Votos por mil seguidores",
+      "resumo": "Quantos votos o candidato teve para cada mil seguidores no Instagram, e o inverso: seguidores por mil votos.",
+      "como_ler": "Acima de 1.000 votos por mil seguidores, o candidato teve mais votos do que seguidores. Abaixo, a audiência na rede foi maior que a votação. Compare só candidatos do mesmo cargo.",
+      "unidade": "votos por mil seguidores (e seguidores por mil votos)",
+      "denominador": "seguidores da conta principal na coleta mais recente; votos nominais válidos",
+      "cuidado": "Seguidores não são eleitores: incluem gente de outros estados, menores de idade, estrangeiros e perfis falsos. Contas pessoais não têm números e aparecem só com o link.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE; TSE — votação nominal",
+      "vetor": "seguidores_votos",
+      "spec": "seguidores-votos"
+    },
+    "serie_seguidores": {
+      "titulo": "Evolução dos seguidores",
+      "resumo": "Quantos seguidores a conta ganhou ou perdeu entre uma coleta e outra, a partir de 8 de outubro de 2026.",
+      "como_ler": "Cada ponto é uma coleta diária. A variação compara com a coleta anterior e, no resumo, a primeira com a última. Com uma coleta só ainda não há variação.",
+      "unidade": "seguidores; variação em seguidores e em %",
+      "denominador": "seguidores na coleta anterior",
+      "cuidado": "O Instagram não informa seguidores do passado: não há como saber quantos o candidato tinha antes ou durante a campanha. Saltos bruscos podem ser limpeza de perfis falsos pela plataforma.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE",
+      "vetor": "serie_seguidores",
+      "spec": "serie-seguidores"
+    },
+    "correlacao_redes": {
+      "titulo": "Redes sociais e voto andam juntos?",
+      "resumo": "Mede se candidatos com mais seguidores, mais engajamento ou mais posts também tiveram mais votos, entre candidatos do mesmo cargo.",
+      "como_ler": "O coeficiente vai de −1 a 1: perto de 1, quem tem mais seguidores tende a ter mais votos; perto de 0, não há relação. A faixa mostra a margem de incerteza (95 %). Com menos de 10 candidatos com dados, não calculamos.",
+      "unidade": "coeficiente de Spearman (−1 a 1), com intervalo de 95 %",
+      "denominador": "candidatos do mesmo cargo com conta comercial ou de criador",
+      "cuidado": "Andar junto não é causa: candidatos já conhecidos atraem seguidores e votos. Contas sem dados ficam fora e são contadas na tela.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE; TSE — votação nominal",
+      "vetor": "correlacao_redes",
+      "spec": "correlacao-redes"
+    },
+    "residuo_seguidores": {
+      "titulo": "Voto acima ou abaixo do esperado",
+      "resumo": "Compara os votos do candidato com o que seria esperado, no grupo, para uma conta do tamanho da dele.",
+      "como_ler": "Traçamos a tendência entre seguidores e votos dos candidatos do mesmo cargo. Um valor 2 indica o dobro dos votos esperados para aquele número de seguidores; 0,5, a metade. Acima de 1, o voto foi além da rede.",
+      "unidade": "razão entre votos obtidos e esperados (1 = o esperado)",
+      "denominador": "votos esperados pela tendência do grupo",
+      "cuidado": "É uma comparação dentro do grupo, não uma previsão. Com poucos candidatos, um caso extremo muda a tendência. Estados de tamanhos diferentes também pesam.",
+      "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE; TSE — votação nominal",
+      "vetor": "residuo_seguidores",
+      "spec": "residuo-seguidores"
     }
   },
   "telas": {
@@ -517,6 +584,25 @@
         "resultado_sub_judice",
         "legenda_nao_atribuida"
       ]
+    },
+    "redes": {
+      "titulo": "Redes sociais",
+      "subtitulo": "Seguidores, ritmo de posts e vídeos, engajamento e a relação com os votos dos candidatos do Partido Missão no Instagram.",
+      "nota_rodape": "Fonte: Instagram (API oficial da Meta), coletado em {dt_coleta_redes}; perfis declarados ao TSE no registro de candidatura; votos do TSE gerados em {dt_geracao}.",
+      "indicadores": [
+        "ritmo_posts",
+        "engajamento",
+        "seguidores_votos",
+        "serie_seguidores",
+        "correlacao_redes",
+        "residuo_seguidores"
+      ],
+      "avisos": [
+        "redes_nao_causalidade",
+        "redes_contas_sem_dados",
+        "redes_seguidores_sem_historico",
+        "redes_segundo_turno"
+      ]
     }
   },
   "avisos": {
@@ -569,6 +655,26 @@
       "titulo": "Repasses entre candidatos",
       "texto": "No total do grupo, o dinheiro repassado de um candidato a outro do mesmo grupo é contado uma vez só. Quando o TSE não informa quem repassou, o valor aparece à parte.",
       "nivel": "info"
+    },
+    "redes_nao_causalidade": {
+      "titulo": "Correlação não é causa",
+      "nivel": "atencao",
+      "texto": "Ter mais seguidores e ter mais votos podem andar juntos sem que um cause o outro: candidatos já conhecidos atraem os dois. Seguidores incluem pessoas de outros estados e quem não vota."
+    },
+    "redes_contas_sem_dados": {
+      "titulo": "Contas sem números",
+      "nivel": "info",
+      "texto": "A API do Instagram só mostra números de contas comerciais ou de criador. Contas pessoais aparecem só com o link e ficam fora das médias e das comparações; a tela informa quantas são."
+    },
+    "redes_seguidores_sem_historico": {
+      "titulo": "Seguidores só a partir de 8/10",
+      "nivel": "info",
+      "texto": "O Instagram não informa quantos seguidores uma conta tinha no passado. A série começa na primeira coleta (8/10/2026). Antes e depois da eleição só é possível comparar posts, que têm data."
+    },
+    "redes_segundo_turno": {
+      "titulo": "Segundo turno",
+      "nivel": "info",
+      "texto": "Para quem disputa o 2º turno (25/10), o período depois da eleição inclui a campanha do segundo turno."
     }
   },
   "glossario": {
@@ -691,6 +797,26 @@
     "comparador": {
       "termo": "Comparador 2022×2026",
       "definicao": "Põe lado a lado um lado de 2022 e um de 2026. Cada lado é um grupo pronto ou candidatos escolhidos na busca. Só compara o mesmo cargo na mesma UF, no 1º turno, por município e hexágono, nunca por zona eleitoral, que mudou entre os anos."
+    },
+    "engajamento": {
+      "termo": "Engajamento",
+      "definicao": "Curtidas mais comentários de um post, divididos pelo número de seguidores da conta. Mede quanto o público reage, não quantas pessoas viram."
+    },
+    "reels": {
+      "termo": "Reels",
+      "definicao": "Vídeos curtos do Instagram. No painel, \"vídeos\" inclui os reels; carrosséis (várias fotos ou vídeos num post) contam como post, não como vídeo."
+    },
+    "conta_comercial": {
+      "termo": "Conta comercial ou de criador",
+      "definicao": "Tipo de conta do Instagram que permite consultar seguidores e posts pela API oficial. Contas pessoais não permitem: aparecem só com o link."
+    },
+    "correlacao_spearman": {
+      "termo": "Correlação de Spearman",
+      "definicao": "Mede, de −1 a 1, se duas coisas sobem juntas comparando a ordem dos candidatos (do maior ao menor), e não os valores. Não é afetada por um único candidato com números muito grandes."
+    },
+    "pre_campanha": {
+      "termo": "Pré-campanha e campanha",
+      "definicao": "Pré-campanha: de 1/1 a 15/8/2026. Campanha: de 16/8 (quando a propaganda eleitoral passa a ser permitida) até o 1º turno, em 4/10. Pós-eleição: de 5/10 em diante."
     }
   },
   "comparador": {

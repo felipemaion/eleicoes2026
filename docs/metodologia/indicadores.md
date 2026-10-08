@@ -10,7 +10,7 @@
 0. [Convenções](#convencoes) · 1. [Decisões](#decisoes) · 2. [Desempenho](#desempenho) ·
 3. [Espaciais](#espaciais) · 4. [Financeiros](#financeiros) · 5. [Evolução](#evolucao) ·
 6. [Descartados](#descartados) · 7. [Colunas × fontes](#colunas) · 8. [KPIs e cores](#kpis) ·
-9. [Referências](#referencias)
+9. [Redes sociais](#redes-sociais) · 10. [Referências](#referencias)
 
 ---
 
@@ -673,8 +673,153 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
   todas as diferenças nulas (ausência ≠ zero). Escalas sequenciais: `espacial.quebras_comuns`
   ([§8.3](#quebras-comuns)).
 
+<a id="redes-sociais"></a>
+## 9. Redes sociais (Instagram) — T-A10
+
+Fonte e limites da coleta: [ADR 0008](../adr/0008-redes-sociais-instagram.md) (perfis declarados
+ao TSE; métricas da API oficial da Meta, *Business Discovery*). Implementação: `indicadores.redes`.
+Entradas = tabelas do `dados` (T-D08): `redes_perfis` (um registro por coleta: `sq_candidato,
+username, status, followers_count, follows_count, media_count, coletado_em`) e `redes_posts`
+(`username, media_id, timestamp` UTC, `media_type, media_product_type, like_count` — nulo se
+oculto —, `comments_count, coletado_em`).
+
+<a id="redes-decisoes"></a>
+### 9.0 Decisões comuns
+- **Fuso.** O `timestamp` da API é UTC; a janela usa a **data no horário de Brasília (UTC−3)**
+  — sem horário de verão desde o Decreto 9.772/2019. Um post às 23h30 de 04/10 (02h30 UTC de
+  05/10) é **campanha**, não pós-eleição.
+- **Janelas** (datas inclusivas, em Brasília):
+
+  | janela | de | até | dias |
+  |---|---|---|---|
+  | `pre_campanha` | 01/01/2026 | 15/08/2026 | 227 |
+  | `campanha` | 16/08/2026 (propaganda permitida, Lei 9.504/1997 art. 36) | 04/10/2026 (1º turno, CF art. 77) | 50 |
+  | `pos_eleicao` | 05/10/2026 00:00 | última coleta da conta | fracionário |
+  | `total` | 01/01/2026 | última coleta da conta | fracionário |
+
+  Antes de 01/01/2026 fica fora (a coleta pagina só até essa data). Para quem disputa o 2º turno
+  (25/10/2026), `pos_eleicao` inclui a campanha do 2º turno — a tela avisa nesses cargos.
+- **Taxa, não total.** As janelas têm durações muito diferentes (227 × 50 dias): compara-se
+  `por_semana = 7 × n / dias`. Janela com **menos de 7 dias** → taxa `null` (o `n` continua): três
+  dias de pós-eleição não estimam um ritmo semanal (nunca extrapolar).
+- **Post repetido** em várias coletas (mesmo `media_id`): vale o da coleta **mais recente**
+  (curtidas acumuladas). **Vídeo** = `media_type = VIDEO` (inclui reels,
+  `media_product_type = REELS`); carrossel conta como post, não como vídeo (a API não diz o tipo
+  dos itens internos sem outra chamada por post).
+- **Conta com dados** = `followers_count` não nulo no último snapshot. Conta pessoal ou
+  inexistente (`status` ≠ `ok`) não tem métrica: aparece **só com o link** e sai de médias e
+  correlações — sempre **contada** (`n_excluidos`, `tem_dados = false`). Candidato sem
+  Instagram declarado ao TSE → `status = sem_rede`.
+- **Conta principal.** Candidato com mais de uma conta com dados: vale a de **mais seguidores**
+  no último snapshot (empate: `username` em ordem alfabética). Somar contas dupla-contaria o
+  público comum; as demais aparecem só como link.
+- **Seguidores = último snapshot.** A API não tem histórico de seguidores (ADR 0008): o
+  denominador do engajamento de um post de março é o público de outubro. Por isso o engajamento
+  padrão da tela é o da **campanha** (perto da coleta), não o do ano.
+
+<a id="ritmo-posts"></a>
+### 9.1 Posts e vídeos por janela e ritmo de publicação
+- **Fórmulas** por conta × janela: `n_posts`, `n_videos`; `posts_por_semana = 7 × n_posts / dias`;
+  `videos_por_semana = 7 × n_videos / dias`; `pct_video = 100 × n_videos / n_posts` (sem post →
+  `null`). Conta com dados e sem post na janela → `n = 0` e taxa **0** (zero real, não ausência).
+- **Variação de ritmo** (por candidato, §9.3): `variacao_ritmo_pct = 100 × (posts_semana_pos /
+  posts_semana_campanha − 1)`; campanha sem post ou pós com < 7 dias → `null`.
+- **Unidade:** posts/semana; %. **Recorte:** conta (candidato) × janela.
+- **Limitações:** post apagado ou arquivado antes da coleta não aparece (a contagem do
+  pré-campanha é um piso); stories não vêm na API (somem em 24 h); `media_count` do perfil conta
+  a vida inteira da conta e **não** é usado nas janelas.
+- Vetor: `vetores/ritmo_posts.json`
+
+<a id="engajamento"></a>
+### 9.2 Engajamento por post
+- **Fórmula:** `engajamento = 100 × (curtidas + comentários) / seguidores` por post (% dos
+  seguidores); por conta × janela, **média** e **mediana** (a cauda de um post viral puxa a
+  média — mostrar as duas) e `n_posts_engajamento`.
+- **Fora da conta** (post não entra no denominador): curtidas ou comentários **nulos** (curtidas
+  ocultas pelo dono: nulo, não zero); post com **menos de 48 h** na coleta (curtidas ainda
+  acumulando); seguidores 0 → `null`.
+- **Unidade:** % dos seguidores por post. **Recorte:** conta × janela; resumo do candidato usa a
+  janela `campanha`.
+- **Limitações:** não há visualizações de vídeos de terceiros na API (reel muito visto e pouco
+  curtido parece fraco); a taxa cai mecanicamente com o tamanho da conta (contas pequenas têm
+  engajamento proporcional maior), então engajamento × votos mistura efeito de tamanho; curtidas
+  de posts impulsionados (anúncio) não entram no `like_count` (documentação da Meta).
+- Vetor: `vetores/engajamento.json`
+
+<a id="seguidores-votos"></a>
+### 9.3 Seguidores × votos por candidato
+- **Fórmulas:** `seguidores_por_mil_votos = 1000 × seguidores / votos` (votos 0 → `null`);
+  `votos_por_mil_seguidores = 1000 × votos / seguidores` (seguidores 0 → `null`). `votos` =
+  votos nominais válidos do candidato no cargo (§2.1), total da UF (Brasil para presidente).
+- **Resumo por candidato** (uma linha por candidatura, inclusive sem conta): `username`,
+  `status`, `tem_dados`, `seguidores`, as duas razões, `posts_semana_campanha`,
+  `posts_semana_pos`, `variacao_ritmo_pct` (§9.1), `pct_video` (janela `total`),
+  `engajamento_mediano` e `engajamento_medio` (janela `campanha`).
+- **Por que as duas razões:** "votos por mil seguidores" lê como **conversão** do público em voto
+  (> 1000 = teve mais votos do que seguidores); "seguidores por mil votos" lê como **tamanho da
+  audiência** diante do resultado. São inversas; a tela mostra a primeira.
+- **Unidade:** razão por mil. **Recorte:** candidato (um cargo por vez).
+- **Limitações:** seguidores incluem **eleitores de outras UFs, menores, estrangeiros e contas
+  falsas** — não é uma fração do eleitorado; a conta pode ser anterior à candidatura (público
+  construído em outra atividade).
+- Vetor: `vetores/seguidores_votos.json`
+
+<a id="serie-seguidores"></a>
+### 9.4 Série de seguidores
+- **Fórmulas** por conta, snapshots em ordem de `coletado_em`: `delta_abs = seg_t − seg_(t−1)`;
+  `delta_pct = 100 × (seg_t / seg_(t−1) − 1)`; `dias` entre as coletas (fracionário). Resumo
+  primeiro → último: `n_snapshots`, `delta_abs`, `delta_pct`, `dias`.
+- **Só com ≥ 2 snapshots** válidos; com um → variações `null`. Snapshot sem seguidores (conta
+  virou pessoal, fora do ar) **sai** da série e a variação seguinte compara com o último válido.
+  Nunca interpolar nem extrapolar para antes de 08/10/2026 (início da coleta).
+- Snapshot repetido (mesma conta e mesmo `coletado_em`) **falha alto**.
+- **Unidade:** seguidores; %; dias. **Limitações:** a série começa no primeiro snapshot (sem
+  "antes da eleição" para seguidores — só para posts, §9.1); compra de seguidores e limpezas de
+  contas falsas pela Meta geram saltos que não são efeito de campanha.
+- Vetor: `vetores/serie_seguidores.json`
+
+<a id="correlacao-redes"></a>
+### 9.5 Correlação com o voto
+- **Pares** (candidatos do **mesmo cargo**, contas com dados): seguidores × votos; engajamento
+  mediano da campanha × votos; posts por semana na campanha × votos.
+- **Estatística:** ρ de **Spearman** (postos médios nos empates) — robusto à cauda longa de
+  seguidores e votos e invariante a transformações monotônicas: ρ(log seguidores, log votos) =
+  ρ(seguidores, votos), então o log não muda o ρ (só o ajuste do §9.6).
+- **IC 95 %:** *bootstrap* percentil pareado (Efron & Tibshirani 1993), **2000** reamostras com
+  reposição dos candidatos, semente fixa **2026** (resultado reprodutível);
+  `random.Random(semente).choices(range(n), k=n)` por réplica, um gerador novo por grupo, linhas
+  em ordem de `sq_candidato`; réplica com variância zero é descartada (`n_bootstrap_validos`);
+  quantis com interpolação linear.
+- **n mínimo 10** pares: abaixo, ρ e IC `null` (a tela mostra "poucos candidatos"). Sempre
+  publicar `n` e `n_excluidos` (contas sem dado ou valor nulo).
+- **Recorte:** `por = cd_cargo` (padrão). Deputados de UFs diferentes disputam eleitorados de
+  tamanhos muito diferentes: quando houver `n ≥ 10` numa UF, preferir `por = (cd_cargo, sg_uf)`
+  ou trocar `votos` por **penetração** (§2.3) — a função aceita qualquer par de colunas.
+- **Leitura obrigatória na tela:** correlação **não é causalidade** (candidato forte atrai
+  seguidores, e não só o contrário); seguidores incluem não eleitores e outras UFs; contas sem
+  dado ficam fora (contadas); três correlações sobre os mesmos candidatos são descritivas, sem
+  correção de múltiplas comparações. Previsão de voto por redes tem histórico ruim
+  (Gayo-Avello 2013); a associação existe, mas é confundida com o tamanho e a notoriedade do
+  candidato (DiGrazia et al. 2013).
+- Vetor: `vetores/correlacao_redes.json`
+
+<a id="residuo-seguidores"></a>
+### 9.6 Voto acima ou abaixo do esperado pelos seguidores (resíduo log-log)
+- **Ajuste** por cargo (mínimos quadrados, contas com dados, n ≥ 10):
+  `log10(1 + votos) = a + b · log10(1 + seguidores)`. O `1 +` mantém quem tem 0 votos ou 0
+  seguidores; `b` (`inclinacao`) é a elasticidade: +1 % de seguidores ↔ +b % de votos.
+- **Por candidato:** `votos_esperados = 10^(a + b·log10(1 + seguidores)) − 1`;
+  `residuo_log10 = log10(1 + votos) − (a + b·log10(1 + seguidores))`;
+  `razao_obs_esperado = 10^residuo_log10` (2 = o dobro do voto esperado para o tamanho da conta;
+  0,5 = metade). Sem dado ou cargo com n < 10 → `null`.
+- **Unidade:** votos; razão (escala log, divergente centrada em 1).
+- **Limitações:** é um ajuste **descritivo** dentro do grupo, não um modelo de voto; com poucos
+  candidatos um ponto extremo move a reta (MQO não é robusto) — mostrar n e a nuvem de pontos,
+  não só o ranking. Mesmo cuidado de UF do §9.5.
+- Vetor: `vetores/residuo_seguidores.json`
+
 <a id="referencias"></a>
-## 9. Referências
+## 10. Referências
 - Ames, B. (1995). Electoral strategy under open-list proportional representation. *American
   Journal of Political Science* 39(2): 406–433.
 - Anselin, L. (1995). Local indicators of spatial association — LISA. *Geographical Analysis*
@@ -697,5 +842,18 @@ Escolhas que a spec deixava em aberto, fixadas no código e cobertas por teste:
 - Moran, P. A. P. (1950). Notes on continuous stochastic phenomena. *Biometrika* 37: 17–23.
 - NCHS/CDC — critério de confiabilidade de taxas (< 20 eventos).
 - Código Eleitoral (Lei 4.737/1965), arts. 106–109 e 175 §4º; Lei 14.211/2021 (cláusula de 10 % do QE).
+- Spearman, C. (1904). The proof and measurement of association between two things. *American
+  Journal of Psychology* 15(1): 72–101.
+- Efron, B.; Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall
+  (intervalo percentil, cap. 13).
+- Gayo-Avello, D. (2013). A meta-analysis of state-of-the-art electoral prediction from Twitter
+  data. *Social Science Computer Review* 31(6): 649–679.
+- DiGrazia, J.; McKelvey, K.; Bollen, J.; Rojas, F. (2013). More tweets, more votes: social media
+  as a quantitative indicator of political behavior. *PLoS ONE* 8(11): e79449.
+- Constituição Federal, art. 77 (1º turno no primeiro domingo de outubro; 2º no último);
+  Lei 9.504/1997, arts. 36 e 36-A (propaganda a partir de 16/08; pré-campanha); Decreto
+  9.772/2019 (fim do horário de verão).
+- Meta — Instagram Graph API, *Business Discovery* e *IG Media* (`like_count` omitido quando
+  oculto): https://developers.facebook.com/docs/instagram-platform/
 - Uber H3 — tabela de áreas por resolução: https://h3geo.org/docs/core-library/restable/
 - BCB SGS 433 (IPCA, variação mensal): https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json
