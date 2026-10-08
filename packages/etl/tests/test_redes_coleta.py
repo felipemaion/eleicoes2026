@@ -64,10 +64,8 @@ class Grafo:
         fatia = perfil["posts"][inicio : inicio + TAM_PAGINA]
         media: dict[str, Any] = {"data": fatia}
         if inicio + TAM_PAGINA < len(perfil["posts"]):
-            media["paging"] = {
-                "cursors": {"after": str(inicio + TAM_PAGINA)},
-                "next": "https://graph.facebook.com/...",
-            }
+            # como na API real: sem `next`, só o cursor `after` (e nada na última página)
+            media["paging"] = {"cursors": {"after": str(inicio + TAM_PAGINA)}}
         return httpx.Response(
             200,
             json={
@@ -256,3 +254,27 @@ def test_manifesto_registra_versao_da_api_horario_e_nunca_o_token(
     assert coleta["iniciada_em"] == "2026-10-08T15:00:00+00:00"
     assert coleta["perfis"] == {"ok": 1}
     assert coleta["chamadas"] == 3
+
+
+def test_perfil_indisponivel_so_e_reverificado_depois_de_uma_semana(
+    grafo: Grafo, tmp_path: Path
+) -> None:
+    cand = _candidatos((1, "fantasma"), (2, "bia"))
+    _rodar(grafo, tmp_path, cand, DIA1)
+    grafo.pedidos.clear()
+    _rodar(grafo, tmp_path, cand, DIA2)
+    assert grafo.chamadas_de("fantasma") == 0  # economiza ~1 chamada/dia por perfil sem conta
+    assert grafo.chamadas_de("bia") == 1  # perfil ok é lido todo dia (série de seguidores)
+    _rodar(grafo, tmp_path, cand, DIA1 + timedelta(days=7))
+    assert grafo.chamadas_de("fantasma") == 1
+    perfis = _ler(tmp_path, "redes_perfis").filter(pl.col("username") == "fantasma")
+    assert perfis.height == 2
+
+
+def test_perfil_que_virou_comercial_volta_a_ser_coletado(grafo: Grafo, tmp_path: Path) -> None:
+    cand = _candidatos((1, "novo"))
+    _rodar(grafo, tmp_path, cand, DIA1)
+    grafo.adicionar("novo", [_post(1, "2026-10-07")])
+    _rodar(grafo, tmp_path, cand, DIA1 + timedelta(days=8))
+    ultimo = _ler(tmp_path, "redes_perfis").sort("coletado_em").row(-1, named=True)
+    assert ultimo["status"] == "ok"

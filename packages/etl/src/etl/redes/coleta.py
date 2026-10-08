@@ -20,7 +20,7 @@ import os
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,8 @@ from contratos import CONTRATOS, validar
 from etl.redes.meta import VERSAO_API, ClienteMeta, Pagina, PerfilIndisponivel
 
 DESDE_PADRAO = date(2026, 1, 1)
+# Conta pessoal/inexistente raramente muda: relê a cada 7 dias em vez de gastar 1 chamada/dia.
+REVERIFICAR_INDISPONIVEL = timedelta(days=7)
 CT_PERFIS = CONTRATOS["redes_perfis"]
 CT_POSTS = CONTRATOS["redes_posts"]
 
@@ -117,6 +119,15 @@ def _percorrer(
     return primeira, [m for m in midias if m["timestamp"] >= corte]
 
 
+def _recem_indisponivel(perfis: pl.DataFrame, username: str, agora: datetime) -> bool:
+    """Último snapshot não-ok e recente: não vale gastar chamada (ver REVERIFICAR_INDISPONIVEL)."""
+    ultimo = perfis.filter(pl.col("username") == username).sort("coletado_em").tail(1)
+    if ultimo.is_empty():
+        return False
+    linha = ultimo.row(0, named=True)
+    return bool(linha["status"] != "ok" and agora - linha["coletado_em"] < REVERIFICAR_INDISPONIVEL)
+
+
 def _ler_ou_vazio(caminho: Path, contrato_nome: str) -> pl.DataFrame:
     if caminho.exists():
         return pl.read_parquet(caminho)
@@ -161,7 +172,11 @@ def coletar(
     posts = _ler_ou_vazio(saida / "redes_posts.parquet", "redes_posts")
     posts_antes = posts.height
     ordenados = candidatos.sort(["principal", "sq_candidato"], descending=[True, False])
-    usernames = ordenados["username"].unique(maintain_order=True).to_list()[:limite]
+    usernames = [
+        u
+        for u in ordenados["username"].unique(maintain_order=True).to_list()
+        if not _recem_indisponivel(perfis, u, inicio)
+    ][:limite]
     cache = raiz_raw / "meta" / inicio.date().isoformat()
     corte = datetime.combine(desde, time.min, tzinfo=UTC)
     novos_perfis: list[dict[str, Any]] = []

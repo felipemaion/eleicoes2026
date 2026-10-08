@@ -106,7 +106,7 @@ def test_pagina_do_perfil_com_curtida_oculta_nula() -> None:
                                 "permalink": "https://www.instagram.com/reel/x/",
                             }
                         ],
-                        "paging": {"cursors": {"after": "CUR2"}, "next": "https://..."},
+                        "paging": {"cursors": {"before": "CUR0", "after": "CUR2"}},
                     },
                 }
             },
@@ -215,7 +215,8 @@ def test_uso_do_app_acima_de_95_por_cento_pausa_antes_da_proxima() -> None:
     cliente.get("me/accounts", {})
     assert dormidos == []  # a chamada que mostrou o uso alto já foi feita
     cliente.get("me/accounts", {})
-    assert dormidos == [10.0]
+    assert dormidos == [cliente.pausa_uso]  # espera o uso do app cair, bem mais que o backoff
+    assert cliente.pausa_uso >= 300
 
 
 def test_username_malformado_nunca_vai_para_a_query() -> None:

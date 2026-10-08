@@ -85,6 +85,8 @@ class ClienteMeta:
     http: httpx.Client = field(default_factory=lambda: httpx.Client(timeout=60.0))
     dormir: Callable[[float], None] = time.sleep
     espera_base: float = 60.0
+    # uso do app ≥95%: o contador é de janela móvel de 1 h, então 1 min não adianta
+    pausa_uso: float = 300.0
     max_tentativas: int = 5
     chamadas: int = 0
     _pausa_pendente: bool = field(default=False, repr=False)
@@ -96,7 +98,7 @@ class ClienteMeta:
         for tentativa in range(self.max_tentativas):
             if self._pausa_pendente:
                 self._pausa_pendente = False
-                self.dormir(self.espera_base)
+                self.dormir(self.pausa_uso)
             resposta = self._requisitar(caminho, params, bearer or self.token)
             corpo = _json(resposta)
             self._ler_uso(resposta)
@@ -164,7 +166,8 @@ class ClienteMeta:
             seguindo=bd.get("follows_count"),
             midias_total=bd.get("media_count"),
             midias=[_midia(m) for m in media.get("data", [])],
-            proximo=paging.get("cursors", {}).get("after") if paging.get("next") else None,
+            # a Business Discovery não manda `next`: só `cursors.after`, ausente na última página
+            proximo=paging.get("cursors", {}).get("after"),
         )
 
     @staticmethod
