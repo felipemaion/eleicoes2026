@@ -84,7 +84,11 @@ nav a[aria-current="page"] { background: var(--cor-acento); color: var(--cor-tex
 select, input[type="text"], input[type="search"] { font: inherit; padding: 0.4rem 0.6rem; color: var(--cor-texto); background: var(--cor-fundo); border: 1px solid var(--cor-borda); border-radius: var(--raio); min-width: 0; max-width: 100%; }
 select:hover { border-color: var(--cor-destaque); }
 main { min-width: 0; padding: var(--esp-3); min-height: 70dvh; }
+.lateral-alternar { width: 100%; text-align: left; min-height: 2.5rem; font-weight: 600; }
+.lateral[data-aberto="nao"] #area-filtros { display: none; }
 @media (min-width: 64rem) {
+  .lateral-alternar { display: none; }
+  .lateral[data-aberto="nao"] #area-filtros { display: block; }
   .corpo { grid-template-columns: var(--largura-lateral) minmax(0, 1fr); }
   .lateral { position: sticky; top: var(--altura-topo); height: calc(100dvh - var(--altura-topo)); overflow: auto; border-bottom: 0; border-right: 1px solid var(--cor-borda); padding: var(--esp-4) var(--esp-3); }
   .lateral h2 { display: block; }
@@ -149,8 +153,9 @@ footer p { margin: var(--esp-1) 0; }
 .kpi:hover{background:var(--cor-superficie-alta);border-color:var(--cor-destaque)}
 .kpi>dt{color:var(--cor-texto-suave);font-size:.85rem}
 .kpi>dd{margin:0;font-size:1.6rem;font-weight:700;color:var(--cor-destaque)}
+.kpi-fim{white-space:nowrap}
 .kpi>dd.fonte-linha{margin:.35rem 0 0;font-size:.75rem;font-weight:400}
-.fonte,.fonte-botao{white-space:nowrap}
+.fonte-botao{white-space:nowrap}
 .kpi>dd.unidade{margin:0;font-weight:600;font-size:.85rem;color:var(--cor-texto-suave)}
 .grafico .marca{cursor:pointer;transition:filter .12s}
 .grafico .marca:hover{filter:brightness(1.2);stroke:var(--cor-texto);stroke-width:1.5}

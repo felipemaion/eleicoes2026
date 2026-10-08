@@ -25,6 +25,8 @@ const VIEWPORTS = [
 async function pronto(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle", { timeout: 60_000 }).catch(() => undefined);
   await expect(page.locator("main h1")).toBeVisible({ timeout: 30_000 });
+  // O overlay só aparece após 200 ms: o que prova "carregou" é a reserva de espaço ter sumido.
+  await expect(page.locator(".reserva-carga")).toHaveCount(0, { timeout: 60_000 });
   await expect(page.getByRole("status")).toHaveCount(0, { timeout: 60_000 });
 }
 
@@ -38,7 +40,8 @@ for (const vp of VIEWPORTS) {
         await expect(page.getByRole("alert")).toHaveCount(0);
         await expect(page.locator("body")).not.toContainText("Não foi possível carregar");
         if (tela === "mapa" || tela === "candidato") await page.waitForTimeout(2500);
-        await page.screenshot({ path: `${IMG}/item7-${vp.nome}-${nome}-${tela}.png` });
+        // Só o Renan Santos vai ao repositório (o repositório não precisa de 60 imagens); os demais provam-se pelo teste.
+        if (nome === "renan") await page.screenshot({ path: `${IMG}/item7-${vp.nome}-${nome}-${tela}.jpg`, type: "jpeg", quality: 55 });
       });
     }
   }
@@ -86,6 +89,7 @@ for (const vp of VIEWPORTS) {
       await foto(page, "item3-gastos-hover");
       // foco por teclado
       await page.keyboard.press("Escape");
+      await c.blur();
       await c.focus();
       await expect(page.locator(".tooltip:visible").first()).toContainText("Despesa paga");
     });
@@ -103,6 +107,9 @@ for (const vp of VIEWPORTS) {
       await fonte.focus();
       await expect(page.locator(".fonte-painel:visible").first()).toBeVisible();
       await foto(page, "item4-fonte");
+      // o texto do painel quebra dentro dele (nada transborda nem é cortado)
+      const sobra = await page.locator(".fonte-painel:visible").first().evaluate((el) => el.scrollWidth - el.clientWidth);
+      expect(sobra).toBeLessThanOrEqual(1);
       // o chip não pode quebrar de linha dentro do 1º cartão
       const h1 = await page.locator(".kpi").first().evaluate((el) => (el.querySelector(".fonte-botao") as HTMLElement).getBoundingClientRect().height);
       expect(h1).toBeLessThan(40);
@@ -142,8 +149,21 @@ for (const vp of VIEWPORTS) {
       await page.keyboard.press("Escape");
       const busca = page.getByPlaceholder("Nome, número ou partido");
       await busca.fill("renan");
-      await expect(page.locator("[role=option]").filter({ hasText: /RENAN SANTOS/i }).first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator("[role=option]").first()).toContainText(/RENAN SANTOS/i, { timeout: 15_000 });
       await foto(page, "item8-busca");
+    });
+
+    test("item8b deep-link só com cand= ajusta os filtros ao candidato", async ({ page }) => {
+      await page.goto("/#/mapa?cand=2026%3A190002544120");
+      await expect(page.locator("[data-mapa-pronto='sim']")).toBeVisible({ timeout: 90_000 });
+      if (vp.width < 1024) {
+        // Celular: os filtros ficam recolhidos; o botão resume o recorte, que tem de ser o do candidato.
+        await expect(page.getByRole("button", { name: /^Filtros:/ })).toContainText("Governador · RJ");
+        await page.getByRole("button", { name: /^Filtros:/ }).click();
+      }
+      await expect(page.getByRole("radio", { name: "Governador" })).toBeChecked();
+      await expect(page.locator("input[name=uf]")).toHaveValue(/Rio de Janeiro/);
+      await foto(page, "item8b-filtros-seguem-candidato");
     });
 
     test("item9 mapa do candidato mostra só a região dele", async ({ page }) => {

@@ -36,7 +36,22 @@ describe("formatação pt-BR", () => {
   });
 });
 
+describe("barras: nome inteiro à vista", () => {
+  it("nome em MAIÚSCULAS com posição não é cortado: a margem esquerda cobre a largura estimada do texto", () => {
+    barras.render(el, [{ rotulo: "MARCELO BRIGADEIRO", valor: 5 }, { rotulo: "BEN MENDES", valor: 3 }], { titulo: "T", prefixo: (_, i) => `${String(i + 1)}. ` });
+    const x = Number(el.querySelector("rect.marca")?.getAttribute("x"));
+    // 21 caracteres, quase todos maiúsculos: ~8 px cada em 12 px de fonte
+    expect(x).toBeGreaterThanOrEqual(21 * 8);
+  });
+});
+
 describe("kpi", () => {
+  it("o ? fica colado à última palavra do rótulo (nunca sozinho na linha de baixo)", () => {
+    kpi.render(el, [{ rotulo: "Votação nominal do grupo", valor: 1, formato: "inteiro", ajuda: "a" }], { ajuda: () => Object.assign(document.createElement("button"), { textContent: "?" }) });
+    const fim = el.querySelector(".kpi > dt > .kpi-fim");
+    expect(fim?.textContent).toBe("grupo ?");
+    expect(el.querySelector(".kpi > dt")?.textContent).toBe("Votação nominal do grupo ?");
+  });
   it("põe o chip de fonte na linha própria (nunca quebra o título ao lado do ?)", () => {
     kpi.render(el, [{ rotulo: "Custo por voto contratado", valor: 1, formato: "moeda", ajuda: "a", fonte: "f" }], {
       ajuda: () => document.createTextNode("?"),

@@ -3,6 +3,7 @@ import "./estilo.css";
 import { render as renderBusca } from "./componentes/busca/busca";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
+import { ROTULO_CARGO } from "./filtros-logica";
 import { definirAjustadorDeRecorte } from "./telas/recorte";
 import { criarSobreposicao, definirSobreposicaoGlobal } from "./componentes/ui/sobreposicao";
 import { cssDasCores, TEMAS } from "./paletas";
@@ -66,8 +67,18 @@ function montar(raiz: HTMLElement): void {
   ligarTema(botaoTema);
   const lateral = el("aside", { className: "lateral" });
   lateral.setAttribute("aria-label", "Filtros");
-  const areaFiltros = el("div");
-  lateral.append(el("h2", { textContent: "Filtros" }), areaFiltros);
+  const areaFiltros = el("div", { id: "area-filtros" });
+  // Só no celular: sem o botão os filtros ocupam a primeira tela inteira e empurram o conteúdo para baixo.
+  const alternar = el("button", { type: "button", className: "lateral-alternar" });
+  alternar.setAttribute("aria-controls", "area-filtros");
+  alternar.setAttribute("aria-expanded", "false");
+  alternar.addEventListener("click", () => {
+    const aberto = lateral.dataset["aberto"] !== "sim";
+    lateral.dataset["aberto"] = aberto ? "sim" : "nao";
+    alternar.setAttribute("aria-expanded", String(aberto));
+  });
+  lateral.dataset["aberto"] = "nao";
+  lateral.append(el("h2", { textContent: "Filtros" }), alternar, areaFiltros);
 
   const principal = el("main", { id: "principal", tabIndex: -1 });
   const rodape = el("footer");
@@ -110,6 +121,12 @@ function montar(raiz: HTMLElement): void {
     telaAnterior = e.tela;
   };
   definirAjustadorDeRecorte((f) => { store.ajustar(f); });
+  const resumo = (e: Readonly<Estado>): void => {
+    const f = e.filtros;
+    alternar.textContent = `Filtros: ${ROTULO_CARGO[f.cargo]} · ${f.uf === "BR" ? "Brasil" : f.uf} · ${String(f.ano)} ▾`;
+  };
+  resumo(store.obter());
+  store.assinar(resumo);
   store.assinar(desenhar);
   ligarStoreAoHash(store, window);
 

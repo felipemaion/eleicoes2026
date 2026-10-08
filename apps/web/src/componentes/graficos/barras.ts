@@ -28,8 +28,15 @@ const DIR = 60;
 const TOPO = 8;
 const BAIXO = 28;
 const LINHA = 26;
-/** Largura média de um caractere do rótulo (12 px sans) — estimativa; a quebra de linha cobre o erro. */
-const PX_POR_CHAR = 6.6;
+/**
+ * Largura estimada do rótulo (12 px sans). Maiúsculas e dígitos são bem mais largos que minúsculas:
+ * nomes de urna vêm em CAIXA ALTA, e a média única cortava o começo do nome no ranking.
+ */
+export function larguraEstimada(texto: string): number {
+  let w = 0;
+  for (const c of texto) w += c === " " ? 3.6 : /[A-ZÀ-Ý0-9]/.test(c) ? 8.2 : 6.4;
+  return w;
+}
 
 /** Quebra por palavras em linhas de até `max` caracteres; palavra maior que `max` fica inteira (nunca corta). */
 export function quebrarLinhas(texto: string, max: number): string[] {
@@ -59,9 +66,11 @@ export function desenhar(container: HTMLElement, dados: readonly Barra[], o: Opc
   
   const rot = (b: Barra, i: number): string => (o.prefixo ? o.prefixo(b, i) : "") + b.rotulo;
   // A margem esquerda acomoda o nome mais longo até 38% da largura; o que passar disso quebra em até 3 linhas.
-  const maiorRotulo = Math.max(...dados.map((d, i) => rot(d, i).length));
-  const ESQ = Math.round(Math.min(Math.max(ESQ_MIN, maiorRotulo * PX_POR_CHAR + 12), w * 0.38));
-  const maxChars = Math.max(10, Math.floor((ESQ - 12) / PX_POR_CHAR));
+  const maiorRotulo = Math.max(...dados.map((d, i) => larguraEstimada(rot(d, i))));
+  const ESQ = Math.round(Math.min(Math.max(ESQ_MIN, maiorRotulo + 12), w * 0.38));
+  // Caracteres que cabem na margem, medidos pela largura média do próprio texto desta lista.
+  const mediaPx = maiorRotulo / Math.max(...dados.map((d, i) => rot(d, i).length));
+  const maxChars = Math.max(10, Math.floor((ESQ - 12) / mediaPx));
   const linhasDe = dados.map((d, i) => quebrarLinhas(rot(d, i), maxChars));
   const alturaLinha = linhasDe.some((l) => l.length > 1) ? Math.max(LINHA, 14 * Math.max(...linhasDe.map((l) => l.length)) + 8) : LINHA;
   const h = TOPO + BAIXO + dados.length * alturaLinha;
