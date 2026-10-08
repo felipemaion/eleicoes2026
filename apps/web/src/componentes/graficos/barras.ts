@@ -94,7 +94,6 @@ export function desenhar(container: HTMLElement, dados: readonly Barra[], o: Opc
     svg.append(rotuloSvg);
     const r = no("rect", { class: "marca", x: ESQ, y: yi, width: larg, height: y.bandwidth(), fill: COR.principal });
     marcaAcessivel(r, `${rot(d, i)}: ${fmt(d.valor)}`);
-    r.querySelector("title")?.remove();
     const linhasTip: [string, string][] = [...(d.detalhe ?? []).map(([a, b]): [string, string] => [a, b]), [o.colunaValor ?? "Valor", fmt(d.valor)]];
     r.dataset["tooltip"] = [d.rotulo, ...linhasTip.map(([a, b]) => `${a}: ${b}`)].join(" · ");
     ligarMarca(r, tooltipBarras(), () => corpoRico({ titulo: d.rotulo, linhas: linhasTip }));

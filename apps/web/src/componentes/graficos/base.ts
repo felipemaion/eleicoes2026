@@ -47,16 +47,14 @@ export function criarSvg(largura: number, altura: number, rotulo: string): SVGSV
     "aria-label": rotulo,
     class: "grafico",
   });
-  svg.append(no("title", {}, rotulo));
   return svg;
 }
 
-/** Torna uma marca focável e descrita; o rótulo vira também `<title>` (tooltip nativo). */
+/** Torna uma marca focável e descrita pelo `aria-label`. Sem `<title>`: o tooltip nativo apareceria por cima do tooltip rico. */
 export function marcaAcessivel(m: SVGElement, rotulo: string): void {
   m.setAttribute("role", "img");
   m.setAttribute("tabindex", "0");
   m.setAttribute("aria-label", rotulo);
-  m.append(no("title", {}, rotulo));
 }
 
 export function mensagemVazia(container: HTMLElement): void {
