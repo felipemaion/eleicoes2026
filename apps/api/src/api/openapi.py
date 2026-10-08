@@ -3,12 +3,14 @@
 import json
 import sys
 
+from api.config import Settings
 from api.main import criar_app
 
 
 def main() -> None:
     """Gera o esquema sem abrir o lifespan."""
-    sys.stdout.write(json.dumps(criar_app().openapi(), indent=2, ensure_ascii=False) + "\n")
+    app = criar_app(Settings(versao_app="openapi"))
+    sys.stdout.write(json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
