@@ -79,11 +79,6 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
 # `ano` vem da partição hive (`ano=AAAA/`): é ele que o DuckDB poda, sem abrir os outros anos.
 # `ds_cargo` vem em caixa de título do TSE ("Deputado Federal"); `upper` casa com o enum `Cargo`.
 # Turno 1 em todas as views: 2º turno tem decisão própria (spec §1.3).
-# O TSE grava "ESTIMÁVEL"; `indicadores.financeiro` espera "ESTIMADO".
-# TODO(analise): aceitar o rótulo do TSE na biblioteca e remover este mapeamento.
-_NATUREZA_DA_BIBLIOTECA = (
-    "CASE ds_natureza_receita WHEN 'ESTIMÁVEL' THEN 'ESTIMADO' ELSE ds_natureza_receita END"
-)
 _VIEWS = {
     "candidatos": (
         "consulta_cand",
@@ -252,7 +247,7 @@ class RepositorioDuckDB:
             self._view(
                 "receitas",
                 "SELECT ano, sq_candidato, ds_fonte_receita, ds_origem_receita,"  # noqa: S608
-                f" {_NATUREZA_DA_BIBLIOTECA} AS ds_natureza_receita, vr_receita,"
+                " ds_natureza_receita, vr_receita,"
                 f" {doador} AS sq_candidato_doador"
                 f" FROM {receitas} WHERE nr_turno = 1"
                 # "Sem movimento": fonte e origem nulas com valor 0 (não é receita).
