@@ -120,6 +120,31 @@ cruzando duas medidas:
 O corte é a mediana dos candidatos competitivos (com ao menos 10 % do quociente eleitoral) do
 mesmo cargo e estado, de **todos os partidos**. É uma comparação relativa àquela disputa.
 
+## Redes sociais
+
+A aba **Redes sociais** mostra o Instagram dos candidatos do Partido Missão. Os perfis são os que
+cada candidato **declarou ao TSE** no registro de candidatura; os números vêm da **API oficial da
+Meta**, coletados uma vez por dia a partir de 8 de outubro de 2026.
+
+- **Três períodos:** **pré-campanha** (1/1 a 15/8/2026), **campanha** (16/8, quando a propaganda
+  passa a ser permitida, até o 1º turno, em 4/10) e **pós-eleição** (de 5/10 em diante). Como têm
+  tamanhos muito diferentes, comparamos posts e vídeos **por semana**, e não o total.
+- **Engajamento** = curtidas + comentários de um post, em % dos seguidores. Mostramos a
+  **mediana** (o post típico). Posts com **curtidas ocultas** ficam fora da conta — não valem
+  zero.
+- **Votos por mil seguidores** compara o tamanho da rede com o resultado nas urnas.
+- **Voto acima ou abaixo do esperado:** traçamos a tendência entre seguidores e votos dos
+  candidatos do mesmo cargo; um valor 2 quer dizer o dobro dos votos esperados para aquele
+  número de seguidores.
+- **Seguidores só daqui para a frente:** o Instagram não informa quantos seguidores uma conta
+  tinha no passado. Antes e depois da eleição, só dá para comparar os posts, que têm data.
+- **Contas pessoais** não permitem consulta pela API: aparecem só com o link e ficam fora das
+  médias. A tela diz quantas são.
+
+**Andar junto não é causa.** Se candidatos com mais seguidores tiveram mais votos, isso não
+prova que a rede trouxe os votos: quem já é conhecido atrai as duas coisas. E seguidores não são
+eleitores — incluem pessoas de outros estados, menores de idade e perfis falsos.
+
 ## Resultados podem mudar
 
 Candidaturas **sub judice** (registro em julgamento) podem ter votos validados, anulados ou

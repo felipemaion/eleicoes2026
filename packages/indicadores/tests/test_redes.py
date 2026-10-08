@@ -12,12 +12,12 @@ import numpy as np
 import polars as pl
 import pytest
 from indicadores import redes
-from scipy import stats
+from scipy import stats  # type: ignore[import-untyped]
 
 
 def _amostra(n: int, semente: int) -> tuple[list[int], list[int]]:
     """Seguidores e votos com cauda longa, correlação moderada e empates."""
-    rng = random.Random(semente)
+    rng = random.Random(semente)  # noqa: S311 - dados sintéticos de teste
     seguidores = [int(10 ** rng.uniform(2, 6)) // 100 * 100 for _ in range(n)]
     votos = [max(0, int(s**0.6 * 10 ** rng.gauss(1, 0.4))) for s in seguidores]
     return seguidores, votos
@@ -94,7 +94,10 @@ def test_correlacao_por_cargo_e_uf() -> None:
         pl.Series("sg_uf", ["SP"] * 12 + ["RJ"] * 15)
     )
     out = redes.correlacao(df, "seguidores", "votos", por=("cd_cargo", "sg_uf"), n_bootstrap=10)
-    assert out.select("sg_uf", "n").to_dicts() == [{"sg_uf": "RJ", "n": 15}, {"sg_uf": "SP", "n": 12}]
+    assert out.select("sg_uf", "n").to_dicts() == [
+        {"sg_uf": "RJ", "n": 15},
+        {"sg_uf": "SP", "n": 12},
+    ]
     assert out.filter(sg_uf="SP")["rho"][0] == pytest.approx(stats.spearmanr(s1, v1).statistic)
 
 
@@ -179,3 +182,18 @@ def test_posts_de_conta_sem_perfil_sao_ignorados_e_colunas_exigidas() -> None:
     assert out["n_posts"].sum() == 0
     with pytest.raises(ValueError, match="colunas ausentes"):
         redes.metricas_janelas(perfis, posts.drop("like_count"))
+
+
+def test_erros_falham_alto() -> None:
+    df = _linhas(*_amostra(12, 4))
+    with pytest.raises(ValueError, match="n_bootstrap"):
+        redes.correlacao(df, "seguidores", "votos", n_bootstrap=0)
+    with pytest.raises(ValueError, match="negativos"):
+        redes.residuo_log(df.with_columns(pl.lit(-1).alias("votos")))
+    perfis = pl.DataFrame([_perfil("ana", 1, datetime(2026, 10, 8))]).with_columns(
+        pl.col("coletado_em").cast(pl.String)
+    )
+    with pytest.raises(ValueError, match="data/hora"):
+        redes.ultimo_snapshot(perfis)
+    with pytest.raises(ValueError, match="tamanhos diferentes"):
+        redes.spearman_listas([1.0, 2.0], [1.0])

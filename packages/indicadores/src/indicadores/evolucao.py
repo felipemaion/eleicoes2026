@@ -5,7 +5,6 @@ Unidade espacial: AMC (município IBGE com desmembramentos agregados ao de orige
 Zona **nunca** (rezoneamento, ADR 0003). Sempre mesmo cargo e 1º turno.
 """
 
-import math
 from collections.abc import Sequence
 
 import polars as pl
@@ -16,6 +15,7 @@ from indicadores._comum import (
     expr_pct_validos,
     expr_penetracao,
     razao,
+    spearman_listas,
 )
 
 _CONTAGENS = ("aptos", "validos", "votos")
@@ -94,38 +94,13 @@ def evolucao(
     ).sort(chaves)
 
 
-def _postos(valores: list[float]) -> list[float]:
-    ordem = sorted(range(len(valores)), key=lambda i: valores[i])
-    postos = [0.0] * len(valores)
-    i = 0
-    while i < len(ordem):
-        j = i
-        while j + 1 < len(ordem) and valores[ordem[j + 1]] == valores[ordem[i]]:
-            j += 1
-        medio = (i + j) / 2 + 1  # posto médio dos empates
-        for k in range(i, j + 1):
-            postos[ordem[k]] = medio
-        i = j + 1
-    return postos
-
-
 def spearman(a: pl.Series, b: pl.Series) -> float | None:
     """ρ de Spearman com postos médios nos empates; pares com nulo saem (spec §5.2).
 
     Menos de 2 pares ou variância zero → `None`.
     """
     pares = [(x, y) for x, y in zip(a.to_list(), b.to_list(), strict=True) if None not in (x, y)]
-    if len(pares) < 2:
-        return None
-    ra = _postos([float(x) for x, _ in pares])
-    rb = _postos([float(y) for _, y in pares])
-    media = (len(pares) + 1) / 2  # média dos postos 1..n, inclusive com empates
-    cov = sum((x - media) * (y - media) for x, y in zip(ra, rb, strict=True))
-    var_a = sum((x - media) ** 2 for x in ra)
-    var_b = sum((y - media) ** 2 for y in rb)
-    if var_a == 0 or var_b == 0:
-        return None
-    return cov / math.sqrt(var_a * var_b)
+    return spearman_listas([float(x) for x, _ in pares], [float(y) for _, y in pares])
 
 
 def sobreposicao_redutos(

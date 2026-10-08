@@ -218,7 +218,11 @@ def test_tela_de_redes_sociais(textos: dict[str, Any]) -> None:
     tela = textos["telas"]["redes"]
     assert set(INDICADORES_REDES) <= set(tela["indicadores"])
     # Os três cuidados do brief (T-A10) aparecem como aviso da tela.
-    for aviso in ("redes_nao_causalidade", "redes_contas_sem_dados", "redes_seguidores_sem_historico"):
+    for aviso in (
+        "redes_nao_causalidade",
+        "redes_contas_sem_dados",
+        "redes_seguidores_sem_historico",
+    ):
         assert aviso in tela["avisos"], f"tela redes sem aviso {aviso}"
     assert "{dt_coleta_redes}" in tela["nota_rodape"]
     assert "API oficial da Meta" in tela["nota_rodape"]
