@@ -32,7 +32,9 @@ class CandidatoResumo(BaseModel):
     sg_uf: str
     cargo: str
     partido: Partido
-    situacao: str = Field(description="`ds_situacao_candidatura` (APTO, INDEFERIDO…).")
+    situacao: str | None = Field(
+        description="`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou."
+    )
     resultado: str | None = Field(
         description="`ds_sit_tot_turno` (ELEITO, SUPLENTE…); null se sem apuração."
     )

@@ -1,0 +1,38 @@
+# Eleicoes2026 API — contêiner único atrás do Caddy (docs/deploy.md, ADR 0002).
+# Sem `ports:`: o Caddy alcança `eleicoes2026-api:8000` pela rede externa `proxy`.
+# Local/espelho: em produção o compose é do Oracle e a imagem vem do GitHub Actions (ghcr.io).
+# Local:  docker compose -f infra/compose.yaml up -d --build
+name: eleicoes2026
+
+services:
+  api:
+    container_name: eleicoes2026-api
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      platforms: [linux/arm64]
+    image: ghcr.io/felipemaion/eleicoes2026-api:${TAG:-latest}
+    restart: unless-stopped
+    # CPU é o recurso escasso do servidor (4 outros serviços): teto 1 vCPU, 2 GB.
+    cpus: "1.0"
+    mem_limit: 2g
+    environment:
+      ELEICOES_THREADS: "2"
+      ELEICOES_CORS_ORIGINS: '["https://eleicoes2026.maionesys.com"]'
+    volumes:
+      # Parquet rsyncados do ETL local (fora de `data/`, que entra no backup).
+      - ${DATASETS_DIR:-../datasets}:/datasets:ro
+    networks: [proxy]
+    read_only: true
+    working_dir: /tmp # DuckDB pode derramar para ./.tmp em consultas grandes
+    tmpfs:
+      - /tmp:size=512m,uid=10001,gid=10001
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  proxy:
+    external: true

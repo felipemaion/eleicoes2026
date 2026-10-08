@@ -8,7 +8,7 @@ from enum import IntEnum, StrEnum
 
 
 class Cargo(StrEnum):
-    """`ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza)."""
+    """`ds_cargo` em maiúsculas; o ETL grava em caixa de título e as views aplicam `upper`."""
 
     PRESIDENTE = "PRESIDENTE"
     GOVERNADOR = "GOVERNADOR"

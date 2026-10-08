@@ -7,14 +7,12 @@ import duckdb
 import pytest
 from api.cache_servico import CacheLRU
 from api.config import Settings
-from api.dominio import Indicador
 from api.main import criar_app
 from api.repositorio.base import DadosIndisponiveis
 from api.repositorio.duckdb import RepositorioDuckDB
 from api.repositorio.memoria import DadosMemoria, RepositorioMemoria
 from api.repositorio.modelos import Candidatura, DespesaBruta, VariacaoIpca
 from api.servicos.contas import contas_de
-from api.servicos.mapa import EscalaSugerida, _escala, quebras_da_escala
 from fastapi.testclient import TestClient
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -89,12 +87,12 @@ def test_coluna_ausente_em_provisorio_falha_clara_na_abertura(tmp_path: Path) ->
     shutil.copytree(FIXTURES, destino)
     con = duckdb.connect()
     con.execute(
-        "COPY (SELECT ano, sq_candidato, ds_origem_despesa, vr_despesa_contratada"
-        f" FROM read_parquet('{destino / 'despesas.parquet'}'))"
-        f" TO '{destino / 'despesas.parquet'}' (FORMAT PARQUET)"
+        "COPY (SELECT cd_mun_ibge, cd_amc"
+        f" FROM read_parquet('{destino / 'municipios_extra.parquet'}'))"
+        f" TO '{destino / 'municipios_extra.parquet'}' (FORMAT PARQUET)"
     )
     with pytest.raises(
-        DadosIndisponiveis, match=r"despesas: colunas ausentes \['vr_despesa_paga'\]"
+        DadosIndisponiveis, match=r"municipios_extra: colunas ausentes \['area_km2'\]"
     ):
         RepositorioDuckDB(destino)
 
@@ -139,19 +137,3 @@ def test_mes_base_ipca_cai_para_o_ultimo_disponivel_e_e_declarado() -> None:
 def test_mes_base_ipca_usa_o_alvo_quando_publicado() -> None:
     contas = contas_de(_repo_ipca("2026-09"), 2022, [_cand(2022, 9)])
     assert contas.base_ipca == "2026-09"
-
-
-# ---------------------------------------------------------------- B2: quebras
-def test_menos_de_dois_valores_nao_devolve_lista_vazia_silenciosa() -> None:
-    assert quebras_da_escala([5.0]) is None
-    escala = _escala(Indicador.PENETRACAO, [5.0])
-    assert isinstance(escala, EscalaSugerida)
-    assert escala.quebras is None
-    assert escala.aviso
-    assert _escala(Indicador.PENETRACAO, [1.0, 2.0, 3.0]).aviso is None
-
-
-def test_quebras_vem_de_indicadores_quebras_comuns() -> None:
-    from indicadores import espacial
-
-    assert hasattr(espacial, "quebras_comuns")

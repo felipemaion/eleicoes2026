@@ -1,0 +1,16 @@
+# Ignorados pelo build da API (BuildKit lê <Dockerfile>.dockerignore). Lista branca implícita:
+# o Dockerfile só COPIA caminhos nomeados; isto só impede o contexto de carregar peso inútil.
+.git
+.worktrees
+.venv
+**/__pycache__
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+.coverage
+node_modules
+apps/web
+data/raw
+data/processed
+docs
+infra
