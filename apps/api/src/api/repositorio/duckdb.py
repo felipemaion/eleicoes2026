@@ -16,6 +16,7 @@ from api.repositorio.modelos import (
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
+    VotosSemCoordenada,
     VotosTerritorio,
 )
 
@@ -510,7 +511,7 @@ class RepositorioDuckDB:
             ) v
             JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge
                                   AND l.nr_zona = v.nr_zona AND l.nr_local = v.nr_local
-            WHERE l.sg_uf = ? AND v.votos > 0
+            WHERE l.sg_uf = ? AND v.votos > 0 AND l.lat IS NOT NULL AND l.lon IS NOT NULL
         """
         params: list[object] = [ano, list(sqs), ano, uf]
         total = self._linhas("SELECT COUNT(*) " + base, params)[0][0]
@@ -521,6 +522,31 @@ class RepositorioDuckDB:
             [*params, limite, offset],
         )
         return int(str(total)), [PontoVotacao(*linha) for linha in linhas]  # type: ignore[arg-type]
+
+    def votos_sem_coordenada(
+        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+    ) -> VotosSemCoordenada:
+        """Votos em locais sem lat/lon (pontos) ou sem célula H3 (H3), e o total do recorte."""
+        # O critério é fixo (não vem do usuário): cada rota perde os locais que ela não desenha.
+        ausente = "l.h3 IS NULL" if por_h3 else "(l.lat IS NULL OR l.lon IS NULL)"
+        if por_h3 and not self._tem_h3:
+            raise DadosIndisponiveis("locais_h3 ausente")
+        linha = self._linhas(
+            f"""
+            SELECT COALESCE(SUM(CASE WHEN {ausente} THEN v.votos END), 0)::BIGINT,
+                   COALESCE(SUM(v.votos), 0)::BIGINT
+            FROM (
+              SELECT cd_mun_ibge, nr_zona, nr_local, SUM(votos) AS votos
+              FROM votos_local WHERE ano = ? AND sq_candidato IN (SELECT unnest(?::BIGINT[]))
+              GROUP BY ALL
+            ) v
+            JOIN locais_votacao l ON l.ano = ? AND l.cd_mun_ibge = v.cd_mun_ibge
+                                  AND l.nr_zona = v.nr_zona AND l.nr_local = v.nr_local
+            WHERE l.sg_uf = ?
+            """,  # noqa: S608
+            [ano, list(sqs), ano, uf],
+        )[0]
+        return VotosSemCoordenada(int(str(linha[0])), int(str(linha[1])))
 
     def receitas(self, ano: int, sqs: Sequence[int]) -> list[ReceitaBruta]:
         """Receitas agregadas por candidato × rótulos."""

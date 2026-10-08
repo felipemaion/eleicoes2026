@@ -12,6 +12,7 @@ from api.repositorio.modelos import (
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
+    VotosSemCoordenada,
     VotosTerritorio,
 )
 
@@ -103,6 +104,12 @@ class Repositorio(Protocol):
         self, ano: int, sqs: Sequence[int], *, uf: str, limite: int, offset: int
     ) -> tuple[int, list[PontoVotacao]]:
         """(total de locais com voto, página) ordenados por votos desc."""
+        ...
+
+    def votos_sem_coordenada(
+        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+    ) -> VotosSemCoordenada:
+        """Votos em locais sem lat/lon (`por_h3=False`) ou sem célula H3 (`por_h3=True`)."""
         ...
 
     def receitas(self, ano: int, sqs: Sequence[int]) -> list[ReceitaBruta]:

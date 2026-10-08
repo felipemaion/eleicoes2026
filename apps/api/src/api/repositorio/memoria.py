@@ -12,6 +12,7 @@ from api.repositorio.modelos import (
     PontoVotacao,
     ReceitaBruta,
     VariacaoIpca,
+    VotosSemCoordenada,
     VotosTerritorio,
 )
 
@@ -198,6 +199,12 @@ class RepositorioMemoria:
     ) -> tuple[int, list[PontoVotacao]]:
         """Não modelado em memória."""
         raise NotImplementedError("pontos só no DuckDB")
+
+    def votos_sem_coordenada(
+        self, ano: int, sqs: Sequence[int], *, uf: str, por_h3: bool
+    ) -> VotosSemCoordenada:
+        """Não modelado em memória."""
+        raise NotImplementedError("coordenadas só no DuckDB")
 
     def receitas(self, ano: int, sqs: Sequence[int]) -> list[ReceitaBruta]:
         """Receitas dos candidatos pedidos."""
