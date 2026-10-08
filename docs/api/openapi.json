@@ -172,6 +172,90 @@
         }
       }
     },
+    "/api/candidatos/ufs": {
+      "get": {
+        "tags": [
+          "candidatos"
+        ],
+        "summary": "UFs com candidaturas",
+        "description": "UFs com candidaturas no recorte (`ano` ou `grupo`, mais `cargo`), com contagem.\n\nPresidente devolve só `BR`. Exige `ano` ou `grupo`; o grupo define o ano.",
+        "operationId": "candidatos_ufs_api_candidatos_ufs_get",
+        "parameters": [
+          {
+            "name": "ano",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Ano"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ano"
+            }
+          },
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Cargo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cargo"
+            }
+          },
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Id do grupo; exclusivo com sq_candidato.",
+              "title": "Grupo"
+            },
+            "description": "Id do grupo; exclusivo com sq_candidato."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UfsDisponiveis"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/candidatos/{ano}/{sq_candidato}": {
       "get": {
         "tags": [
@@ -3435,6 +3519,60 @@
         ],
         "title": "UF",
         "description": "Unidades da federação (sem exterior: `ZZ` não tem mapa)."
+      },
+      "UfDisponivel": {
+        "properties": {
+          "uf": {
+            "type": "string",
+            "title": "Uf",
+            "description": "Sigla da UF; `BR` para presidente (candidatura nacional)."
+          },
+          "candidaturas": {
+            "type": "integer",
+            "title": "Candidaturas",
+            "description": "Candidaturas do recorte nessa UF."
+          }
+        },
+        "type": "object",
+        "required": [
+          "uf",
+          "candidaturas"
+        ],
+        "title": "UfDisponivel",
+        "description": "UF com candidaturas no recorte."
+      },
+      "UfsDisponiveis": {
+        "properties": {
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/UfDisponivel"
+            },
+            "type": "array",
+            "title": "Itens"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "itens",
+          "dt_geracao"
+        ],
+        "title": "UfsDisponiveis",
+        "description": "Corpo de GET /candidatos/ufs.",
+        "examples": [
+          {
+            "dt_geracao": "2026-10-06",
+            "itens": [
+              {
+                "candidaturas": 1,
+                "uf": "BR"
+              }
+            ]
+          }
+        ]
       },
       "ValidationError": {
         "properties": {

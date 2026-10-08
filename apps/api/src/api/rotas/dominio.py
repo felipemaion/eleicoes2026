@@ -8,7 +8,13 @@ from pydantic import StringConstraints
 from api.deps import CacheDep, CatalogoDep, RepositorioDep
 from api.dominio import UF, Ano, Cargo, Indicador, Nivel
 from api.servicos.busca import ListaPessoas, ResultadoBusca, buscar, listar_pessoas
-from api.servicos.candidatos import FichaCandidato, ListaCandidatos, montar_ficha
+from api.servicos.candidatos import (
+    FichaCandidato,
+    ListaCandidatos,
+    UfsDisponiveis,
+    montar_ficha,
+    ufs_disponiveis,
+)
 from api.servicos.comparativo import Comparativo
 from api.servicos.consultas import candidatos_em_cache, comparativo_em_cache, gastos_em_cache
 from api.servicos.gastos import Gastos
@@ -59,6 +65,37 @@ def candidatos(
         cargo=cargo.value if cargo else None,
         limite=limite,
         offset=offset,
+    )
+
+
+@router.get(
+    "/candidatos/ufs",
+    response_model=UfsDisponiveis,
+    tags=["candidatos"],
+    summary="UFs com candidaturas",
+)
+def candidatos_ufs(
+    repo: RepositorioDep,
+    catalogo: CatalogoDep,
+    cache: CacheDep,
+    ano: Ano | None = None,
+    cargo: Cargo | None = None,
+    grupo: GrupoOpcional = None,
+) -> UfsDisponiveis:
+    """UFs com candidaturas no recorte (`ano` ou `grupo`, mais `cargo`), com contagem.
+
+    Presidente devolve só `BR`. Exige `ano` ou `grupo`; o grupo define o ano.
+    """
+    return cache.obter(
+        repo.dt_geracao(),
+        ("candidatos_ufs", ano, cargo, grupo),
+        lambda: ufs_disponiveis(
+            repo,
+            catalogo,
+            ano=ano.value if ano else None,
+            cargo=cargo.value if cargo else None,
+            grupo_id=grupo,
+        ),
     )
 
 
