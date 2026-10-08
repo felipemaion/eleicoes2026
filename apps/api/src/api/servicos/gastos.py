@@ -6,7 +6,15 @@ from api.fontes import Fonte, fontes
 from api.fotos import ComFotoELink, foto_e_link
 from api.repositorio.base import Repositorio
 from api.servicos.candidatos import Partido
-from api.servicos.contas import ResumoCustoCandidato, ResumoCustoGrupo, ResumoReceitasOut, contas_de
+from api.servicos.contas import (
+    DistribuicaoReceita,
+    ReceitaPorVotoGrupo,
+    ResumoCustoCandidato,
+    ResumoCustoGrupo,
+    ResumoReceitasOut,
+    SaldoGrupo,
+    contas_de,
+)
 from api.servicos.grupos import Catalogo, candidaturas_do_grupo
 
 
@@ -19,11 +27,32 @@ class GastoCandidato(ComFotoELink):
     cargo: str
     partido: Partido
     resultado: str | None = Field(description="`ds_sit_tot_turno`; null até a apuração.")
-    receita_total: float
+    receita_total: float | None = Field(
+        description="Receita **bruta** do candidato; null se não há linha de receita (≠ zero)."
+    )
     pct_publico: float | None = Field(
         description="FEFC + Fundo Partidário, % da receita do candidato."
     )
     pct_autofinanciamento: float | None
+    pct_pessoa_fisica: float | None = Field(
+        description="Pessoa física + financiamento coletivo, %."
+    )
+    n_efetivo_fontes: float | None = Field(description="1 / HHI das categorias de receita (§4.5).")
+    receita_repasses_candidatos: float | None = Field(
+        description="Recebido de outros candidatos (§4.6)."
+    )
+    receita_sem_repasses: float | None
+    receita_por_voto: float | None = Field(
+        description="R$/voto = receita **bruta** ÷ votos (§4.7); null com 0 votos."
+    )
+    receita_por_mil_aptos: float | None = Field(
+        description="R$ de receita **bruta** por mil aptos da circunscrição."
+    )
+    saldo_contratado: float | None = Field(
+        description="receita **bruta** − despesa contratada, com repasses (§4.8)."
+    )
+    saldo_financeiro: float | None = Field(description="receita financeira bruta − despesa paga.")
+    pct_receita_gasta: float | None = Field(description="100 × despesa contratada ÷ receita bruta.")
     custo: ResumoCustoCandidato
 
 
@@ -35,7 +64,18 @@ class Gastos(BaseModel):
     cargo: str | None
     uf: str | None
     agregado: ResumoCustoGrupo
-    receitas: ResumoReceitasOut
+    receitas: ResumoReceitasOut | None = Field(
+        description="Receita **líquida** de repasses internos; null se ninguém tem receita."
+    )
+    receita_por_voto: ReceitaPorVotoGrupo
+    distribuicao_receita: DistribuicaoReceita
+    saldo: SaldoGrupo
+    receita_por_mil_aptos: float | None = Field(
+        description="1000 × receita **líquida** do grupo ÷ eleitorado de todas as circunscrições "
+        "do grupo no cargo, contado uma vez (§4.7), inclusive as sem contas; "
+        "null com mais de um cargo."
+    )
+    aptos: int | None = Field(description="Eleitorado usado em `receita_por_mil_aptos`.")
     por_candidato: list[GastoCandidato]
     contas_parciais: bool
     base_ipca: str | None
@@ -66,7 +106,24 @@ class Gastos(BaseModel):
                         "receita_financeira": 116000.0,
                         "pct_publico": 67.8,
                         "pct_autofinanciamento": 8.47,
+                        "pct_pessoa_fisica": 21.2,
+                        "n_efetivo_fontes": 2.1,
+                        "receita_repasses_internos": 7000.0,
+                        "faixa_receita": {"minima": 118000.0, "maxima": 118000.0},
                     },
+                    "receita_por_voto": {
+                        "receita_por_voto": 100.0,
+                        "mediana_receita_por_voto": 96.4,
+                        "candidatos_sem_voto_excluidos": 0,
+                        "candidatos_sem_contas_excluidos": 0,
+                    },
+                    "saldo": {
+                        "saldo_contratado": 19600.0,
+                        "saldo_financeiro": 39600.0,
+                        "pct_receita_gasta": 84.3,
+                    },
+                    "receita_por_mil_aptos": 7866.7,
+                    "aptos": 15000,
                     "por_candidato": [],
                     "contas_parciais": True,
                     "base_ipca": None,
@@ -92,6 +149,11 @@ def montar_gastos(
         uf=uf,
         agregado=contas.agregado,
         receitas=contas.receitas,
+        receita_por_voto=contas.receita_por_voto,
+        distribuicao_receita=contas.distribuicao,
+        saldo=contas.saldo,
+        receita_por_mil_aptos=contas.receita_por_mil_aptos,
+        aptos=contas.aptos,
         por_candidato=[
             GastoCandidato(
                 sq_candidato=c.candidatura.sq_candidato,
@@ -103,6 +165,15 @@ def montar_gastos(
                 receita_total=c.receita_total,
                 pct_publico=c.pct_publico,
                 pct_autofinanciamento=c.pct_autofinanciamento,
+                pct_pessoa_fisica=c.resumo.get("pct_pessoa_fisica"),
+                n_efetivo_fontes=c.resumo.get("n_efetivo_fontes"),
+                receita_repasses_candidatos=c.resumo.get("receita_repasses_candidatos"),
+                receita_sem_repasses=c.resumo.get("receita_sem_repasses"),
+                receita_por_voto=c.receita_por_voto,
+                receita_por_mil_aptos=c.receita_por_mil_aptos,
+                saldo_contratado=c.saldo_contratado,
+                saldo_financeiro=c.saldo_financeiro,
+                pct_receita_gasta=c.pct_receita_gasta,
                 custo=c.custo,
                 **foto_e_link(
                     fotos,

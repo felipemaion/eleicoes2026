@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 
 import polars as pl
-from indicadores import evolucao, grupos
+from indicadores import evolucao, financeiro, grupos
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Cargo, Indicador
@@ -11,6 +11,7 @@ from api.erros import nao_encontrado, parametro_invalido
 from api.fontes import Fonte, fontes
 from api.repositorio.base import DadosIndisponiveis, Repositorio
 from api.repositorio.modelos import Candidatura
+from api.servicos.contas import ANO_NOMINAL, ContasAgregadas, contas_de, correcao_do_ano
 from api.servicos.grupos import Catalogo, DefinicaoGrupo, candidaturas_do_grupo
 from api.servicos.mapa import EscalaSugerida, Linha, escala_comum
 
@@ -52,6 +53,35 @@ class KpisComparativo(BaseModel):
     votos_para: int | None
 
 
+class IndicadorComparado(BaseModel):
+    """Um indicador de receita nos dois anos (spec §4.10)."""
+
+    de_nominal: float | None = Field(description="Valor do ano 'de' como o TSE publicou.")
+    de: float | None = Field(
+        description="Valor do ano 'de' em R$ do mês-base (monetário) ou igual ao nominal (%)."
+    )
+    para: float | None
+    delta: float | None = Field(description="para − de (R$ do mês-base, ou p.p. nos percentuais).")
+    var_pct: float | None = Field(description="100 × (para / de − 1); só monetários.")
+
+
+class ComparativoReceitas(BaseModel):
+    """Receitas do grupo 'de' × 'para', 2022 deflacionado ao mês-base."""
+
+    base_ipca: str = Field(description="Mês-base (AAAA-MM) em que o ano 'de' foi corrigido.")
+    contas_parciais_de: bool
+    contas_parciais_para: bool = Field(
+        description="2026 parcial: queda de receita é esperada até a prestação final (§4.10)."
+    )
+    monetarios: dict[str, IndicadorComparado] = Field(
+        description="receita_total, receita_<categoria>, receita_por_voto, receita_por_mil_aptos, "
+        "receita_media_candidato, receita_mediana_candidato."
+    )
+    percentuais: dict[str, IndicadorComparado] = Field(
+        description="pct_publico, pct_autofinanciamento, pct_pessoa_fisica, pct_estimavel."
+    )
+
+
 class Comparativo(BaseModel):
     """Corpo de GET /comparativo."""
 
@@ -71,6 +101,9 @@ class Comparativo(BaseModel):
         description="Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas)."
     )
     municipios: list[EvolucaoMunicipio]
+    receitas: ComparativoReceitas | None = Field(
+        description="Receitas 2022→2026 deflacionadas; null se algum lado não tem contas."
+    )
     dt_geracao: str
     fontes: list[Fonte] = Field(description="Procedência dos números (arquivo, regra, spec).")
 
@@ -98,6 +131,7 @@ class Comparativo(BaseModel):
                         "votos_para": 1880,
                     },
                     "municipios": [],
+                    "receitas": None,
                     "dt_geracao": "2026-10-06",
                     "fontes": [],
                 }
@@ -202,6 +236,84 @@ def _selecao(
     return list(de.values()), list(para.values())
 
 
+_MONETARIOS_FIXOS = (
+    "receita_total",
+    "receita_por_voto",
+    "receita_por_mil_aptos",
+    "receita_media_candidato",
+    "receita_mediana_candidato",
+)
+_PERCENTUAIS = ("pct_publico", "pct_autofinanciamento", "pct_pessoa_fisica", "pct_estimavel")
+
+
+def _indicadores_do_lado(contas: ContasAgregadas) -> dict[str, float | None]:
+    """Indicadores de receita de um lado, nominais, com os nomes que a lib compara."""
+    rec = contas.receitas
+    if rec is None:
+        raise DadosIndisponiveis("lado da comparação sem receitas")
+    return {
+        "receita_total": rec.receita_total,
+        **{f"receita_{c}": rec.por_categoria.get(c, 0.0) for c in financeiro.CATEGORIAS_RECEITA},
+        "receita_por_voto": contas.receita_por_voto.receita_por_voto,
+        "receita_por_mil_aptos": contas.receita_por_mil_aptos,
+        "receita_media_candidato": contas.distribuicao.media,
+        "receita_mediana_candidato": contas.distribuicao.mediana,
+        **{p: getattr(rec, p) for p in _PERCENTUAIS},
+    }
+
+
+def _comparar_receitas(
+    repo: Repositorio,
+    de: GrupoRef,
+    para: GrupoRef,
+    c_de: Sequence[Candidatura],
+    c_para: Sequence[Candidatura],
+) -> ComparativoReceitas | None:
+    """Compara as receitas dos dois lados com `comparar_receitas` (2022 nominal → mês-base)."""
+    if not (de.ano < ANO_NOMINAL <= para.ano):
+        return None  # só 2022→2026 tem correção definida (ADR 0007)
+    lado_de = contas_de(repo, de.ano, c_de, nominal=True)
+    lado_para = contas_de(repo, para.ano, c_para)
+    if lado_de.receitas is None or lado_para.receitas is None:
+        return None
+    correcao = correcao_do_ano(repo, de.ano)
+    if correcao is None:
+        raise DadosIndisponiveis(f"sem correção pelo IPCA para {de.ano}")
+    serie, origem, base = correcao
+    v_de, v_para = _indicadores_do_lado(lado_de), _indicadores_do_lado(lado_para)
+    monetarios = [*(c for c in v_de if c not in _PERCENTUAIS)]
+    quadro = pl.DataFrame(
+        {
+            **{f"{c}_2022": [v_de[c]] for c in v_de},
+            **{f"{c}_2026": [v_para[c]] for c in v_para},
+        },
+        schema={f"{c}_{a}": pl.Float64 for c in v_de for a in (2022, 2026)},
+    )
+    try:
+        r = financeiro.comparar_receitas(
+            quadro, monetarios, _PERCENTUAIS, serie, origem, base
+        ).to_dicts()[0]
+    except ValueError as erro:
+        raise DadosIndisponiveis(str(erro)) from erro
+
+    def indicador(c: str, *, monetario: bool) -> IndicadorComparado:
+        return IndicadorComparado(
+            de_nominal=v_de[c],
+            de=r[f"{c}_2022"],
+            para=r[f"{c}_2026"],
+            delta=r[f"delta_{c}"],
+            var_pct=r[f"var_pct_{c}"] if monetario else None,
+        )
+
+    return ComparativoReceitas(
+        base_ipca=base,
+        contas_parciais_de=repo.tp_prestacao_contas(de.ano).upper() == "PARCIAL",
+        contas_parciais_para=repo.tp_prestacao_contas(para.ano).upper() == "PARCIAL",
+        monetarios={c: indicador(c, monetario=True) for c in monetarios},
+        percentuais={c: indicador(c, monetario=False) for c in _PERCENTUAIS},
+    )
+
+
 def montar_comparativo(
     repo: Repositorio,
     catalogo: Catalogo,
@@ -285,6 +397,7 @@ def montar_comparativo(
     if any(a not in cabecas for a in por_amc["amc"]):
         raise DadosIndisponiveis("AMC sem município de referência")
     kpis = total.to_dicts()[0] if total.height else {}
+    receitas = _comparar_receitas(repo, de, para, c_de, c_para)
     return Comparativo(
         comparacao=id_comp,
         rotulo=rotulo,
@@ -328,12 +441,15 @@ def montar_comparativo(
             )
             for e in por_amc.to_dicts()
         ],
+        receitas=receitas,
         dt_geracao=repo.dt_geracao(),
         fontes=[
             f
             for ano in (de.ano, para.ano)
             for f in fontes(
-                ["votacao_candidato_munzona", "detalhe_votacao_munzona"],
+                ["votacao_candidato_munzona", "detalhe_votacao_munzona"]
+                + (["prestacao_contas"] if receitas else [])
+                + (["ipca"] if receitas and ano == de.ano else []),
                 ano=ano,
                 dt_geracao=repo.dt_geracao(),
             )
