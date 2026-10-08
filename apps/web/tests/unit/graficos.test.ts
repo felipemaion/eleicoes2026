@@ -84,11 +84,11 @@ describe("barras", () => {
   it("largura da barra é proporcional ao valor", () => {
     barras.render(el, dados, { titulo: "t" });
     const w = [...el.querySelectorAll("rect.marca")].map((m) => Number(m.getAttribute("width")));
-    expect(w[1]! / w[0]!).toBeCloseTo(2.5, 5);
+    expect((w[1] ?? 0) / (w[0] ?? 1)).toBeCloseTo(2.5, 5);
   });
   it("usa só cores das paletas", () => {
     barras.render(el, dados, { titulo: "t" });
-    coresUsadas(el).forEach((c) => expect(todasCores.has(c.toLowerCase())).toBe(true));
+    coresUsadas(el).forEach((c) => { expect(todasCores.has(c.toLowerCase())).toBe(true); });
   });
   it("sem dados mostra mensagem em vez de gráfico vazio", () => {
     barras.render(el, [], { titulo: "t" });
@@ -149,7 +149,7 @@ describe("dispersão custo × votos (log)", () => {
   });
   it("foco por teclado nos pontos", () => {
     dispersao.render(el, pontos, { titulo: "t" });
-    el.querySelectorAll("circle.marca").forEach((m) => expect(m.getAttribute("tabindex")).toBe("0"));
+    el.querySelectorAll("circle.marca").forEach((m) => { expect(m.getAttribute("tabindex")).toBe("0"); });
   });
 });
 
@@ -163,7 +163,7 @@ describe("empilhado", () => {
     expect(el.querySelectorAll("rect.marca")).toHaveLength(4);
     expect(el.querySelectorAll(".legenda-item")).toHaveLength(3);
     expect(tabela(el).querySelectorAll("tbody tr")).toHaveLength(2);
-    coresUsadas(el).forEach((c) => expect(todasCores.has(c.toLowerCase())).toBe(true));
+    coresUsadas(el).forEach((c) => { expect(todasCores.has(c.toLowerCase())).toBe(true); });
     expect(el.querySelector("rect.marca")?.getAttribute("aria-label")).toContain("R$");
   });
 });
@@ -199,6 +199,6 @@ describe("pequenos múltiplos", () => {
     );
     expect(el.querySelectorAll(".painel")).toHaveLength(2);
     const w = [...el.querySelectorAll("rect.marca")].map((m) => Number(m.getAttribute("width")));
-    expect(w[1]! / w[0]!).toBeCloseTo(4, 5);
+    expect((w[1] ?? 0) / (w[0] ?? 1)).toBeCloseTo(4, 5);
   });
 });
