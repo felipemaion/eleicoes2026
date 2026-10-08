@@ -44,10 +44,483 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/grupos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Grupos e comparações
+         * @description Grupos configurados (com nº de candidaturas nos dados) e comparações entre eles.
+         */
+        get: operations["grupos_api_grupos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Candidatos de um grupo
+         * @description Votos, % dos válidos, penetração, resultado e partido, ordenados por votos.
+         */
+        get: operations["candidatos_api_candidatos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/candidatos/{ano}/{sq_candidato}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ficha do candidato
+         * @description Votos por UF e município (top N), gastos, receitas por fonte e custo por voto.
+         */
+        get: operations["ficha_api_candidatos__ano___sq_candidato__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mapa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Indicador por território
+         * @description `valores` por território (município, `município-zona` ou célula H3) + escala sugerida.
+         */
+        get: operations["mapa_api_mapa_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mapa/pontos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Locais de votação (densidade)
+         * @description `{lat, lon, votos}` por local, mais votados primeiro; paginado por UF.
+         */
+        get: operations["pontos_api_mapa_pontos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gastos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gastos e receitas do grupo
+         * @description Custo por voto (contratado/pago), receita por fonte, % público e % autofinanciamento.
+         */
+        get: operations["gastos_api_gastos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comparativo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evolução 2022→2026
+         * @description Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.
+         */
+        get: operations["comparativo_api_comparativo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/municipios/{cd_mun_ibge}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo do município
+         * @description Desempenho de cada grupo no município, por cargo.
+         */
+        get: operations["municipio_api_municipios__cd_mun_ibge__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Ano
+         * @description Anos de eleição geral suportados.
+         * @enum {integer}
+         */
+        Ano: 2022 | 2026;
+        /**
+         * CandidatoResumo
+         * @description Candidato com votos e taxas na sua circunscrição (cargo × UF).
+         */
+        CandidatoResumo: {
+            /** Ano */
+            ano: number;
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /** Sg Uf */
+            sg_uf: string;
+            /** Cargo */
+            cargo: string;
+            partido: components["schemas"]["Partido"];
+            /**
+             * Situacao
+             * @description `ds_situacao_candidatura` (APTO, INDEFERIDO…).
+             */
+            situacao: string;
+            /**
+             * Resultado
+             * @description `ds_sit_tot_turno` (ELEITO, SUPLENTE…); null se sem apuração.
+             */
+            resultado: string | null;
+            /**
+             * Votos
+             * @description Votos nominais válidos (spec §2.1).
+             */
+            votos: number;
+            /**
+             * Pct Validos
+             * @description % dos válidos do cargo na UF (§2.2).
+             */
+            pct_validos: number | null;
+            /**
+             * Penetracao
+             * @description ‰ dos aptos do cargo na UF (§2.3).
+             */
+            penetracao: number | null;
+        };
+        /**
+         * Cargo
+         * @description `ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza).
+         * @enum {string}
+         */
+        Cargo: "PRESIDENTE" | "GOVERNADOR" | "SENADOR" | "DEPUTADO FEDERAL" | "DEPUTADO ESTADUAL" | "DEPUTADO DISTRITAL";
+        /**
+         * ComparacaoResumo
+         * @description Comparação configurada entre dois grupos.
+         */
+        ComparacaoResumo: {
+            /** Id */
+            id: string;
+            /** Rotulo */
+            rotulo: string;
+            /** De */
+            de: string;
+            /** Para */
+            para: string;
+        };
+        /**
+         * Comparativo
+         * @description Corpo de GET /comparativo.
+         * @example {
+         *       "cargo": "DEPUTADO FEDERAL",
+         *       "comparacao": "evolucao_mbl",
+         *       "de": {
+         *         "ano": 2022,
+         *         "id": "mbl_2022",
+         *         "rotulo": "MBL 2022"
+         *       },
+         *       "dt_geracao": "2026-10-06",
+         *       "kpis": {
+         *         "delta_penetracao": 37.1,
+         *         "ganho_absoluto": 720,
+         *         "penetracao_de": 70.3,
+         *         "penetracao_para": 107.4,
+         *         "retencao": 1.62,
+         *         "swing_pp": 5.9,
+         *         "votos_de": 1160,
+         *         "votos_para": 1880
+         *       },
+         *       "mesmos_candidatos": false,
+         *       "municipios": [],
+         *       "n_de": 3,
+         *       "n_para": 3,
+         *       "para": {
+         *         "ano": 2026,
+         *         "id": "mbl_2026",
+         *         "rotulo": "MBL 2026"
+         *       },
+         *       "rotulo": "MBL 2022 → MBL 2026",
+         *       "uf": "SP"
+         *     }
+         */
+        Comparativo: {
+            /** Comparacao */
+            comparacao: string;
+            /** Rotulo */
+            rotulo: string;
+            de: components["schemas"]["GrupoRef"];
+            para: components["schemas"]["GrupoRef"];
+            /** Cargo */
+            cargo: string;
+            /** Uf */
+            uf: string | null;
+            /** Mesmos Candidatos */
+            mesmos_candidatos: boolean;
+            /**
+             * N De
+             * @description Candidaturas do lado 'de' (após o recorte).
+             */
+            n_de: number;
+            /** N Para */
+            n_para: number;
+            kpis: components["schemas"]["KpisComparativo"];
+            /** Municipios */
+            municipios: components["schemas"]["EvolucaoMunicipio"][];
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
+        /**
+         * Detalhe
+         * @description Numerador e denominadores de um território.
+         */
+        Detalhe: {
+            /** Votos */
+            votos: number;
+            /** Aptos */
+            aptos: number;
+            /**
+             * Validos
+             * @description null no H3: não há 'válidos' por célula (§2.2).
+             */
+            validos: number | null;
+            /**
+             * Taxa
+             * @description Valor do indicador; null = sem dado (denominador 0).
+             */
+            taxa: number | null;
+        };
+        /**
+         * EscalaSugerida
+         * @description Sugestão de classes para a legenda (spec §8.2); o front decide a cor final.
+         */
+        EscalaSugerida: {
+            /**
+             * Tipo
+             * @description `sequencial` (taxas) ou `simbolo_proporcional` (absolutos).
+             */
+            tipo: string;
+            /** Paleta */
+            paleta: string;
+            /**
+             * Quebras
+             * @description Cortes internos da legenda; null quando não há como calcular (ver `aviso`).
+             */
+            quebras: number[] | null;
+            /**
+             * Aviso
+             * @description Por que `quebras` é null, se for.
+             */
+            aviso?: string | null;
+        };
+        /**
+         * EvolucaoMunicipio
+         * @description Evolução numa AMC (município IBGE com desmembramentos agregados, §5.1).
+         */
+        EvolucaoMunicipio: {
+            /** Cd Amc */
+            cd_amc: number;
+            /** Nome */
+            nome: string;
+            /** Uf */
+            uf: string;
+            /** Penetracao De */
+            penetracao_de: number | null;
+            /** Penetracao Para */
+            penetracao_para: number | null;
+            /**
+             * Delta Penetracao
+             * @description ‰ — métrica-âncora.
+             */
+            delta_penetracao: number | null;
+            /**
+             * Swing Pp
+             * @description p.p. de votos válidos.
+             */
+            swing_pp: number | null;
+            /**
+             * Retencao
+             * @description votos_para / votos_de; null se votos_de = 0.
+             */
+            retencao: number | null;
+            /**
+             * Ganho Absoluto
+             * @description null se a AMC só existe num dos anos.
+             */
+            ganho_absoluto: number | null;
+            /** Votos De */
+            votos_de: number | null;
+            /** Votos Para */
+            votos_para: number | null;
+        };
+        /**
+         * FichaCandidato
+         * @description Ficha completa: votação, geografia e finanças.
+         */
+        FichaCandidato: {
+            candidato: components["schemas"]["CandidatoResumo"];
+            /** Votos Total */
+            votos_total: number;
+            /** Votos Por Uf */
+            votos_por_uf: components["schemas"]["VotosUF"][];
+            /**
+             * Votos Por Municipio
+             * @description Top N por votos.
+             */
+            votos_por_municipio: components["schemas"]["VotosMunicipio"][];
+            /** @description null se não há prestação de contas. */
+            gastos: components["schemas"]["ResumoCustoCandidato"] | null;
+            receitas: components["schemas"]["ResumoReceitasOut"] | null;
+            /**
+             * Contas Parciais
+             * @description Prestação de contas ainda parcial (2026).
+             */
+            contas_parciais: boolean;
+            /**
+             * Base Ipca
+             * @description Mês-base da correção do IPCA (valores de 2022).
+             */
+            base_ipca: string | null;
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
+        /**
+         * GastoCandidato
+         * @description Contas de um candidato do grupo.
+         */
+        GastoCandidato: {
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /** Sg Uf */
+            sg_uf: string;
+            /** Cargo */
+            cargo: string;
+            /** Receita Total */
+            receita_total: number;
+            custo: components["schemas"]["ResumoCustoCandidato"];
+        };
+        /**
+         * Gastos
+         * @description Corpo de GET /gastos.
+         * @example {
+         *       "agregado": {
+         *         "candidatos_sem_voto_excluidos": 0,
+         *         "custo_voto_contratado": 88.98,
+         *         "custo_voto_pago": 72.03,
+         *         "despesa_contratada": 105000,
+         *         "despesa_paga": 85000,
+         *         "divida": 20000,
+         *         "mediana_custo_voto_contratado": 63.89,
+         *         "votos": 1180
+         *       },
+         *       "ano": 2026,
+         *       "cargo": "DEPUTADO FEDERAL",
+         *       "contas_parciais": true,
+         *       "dt_geracao": "2026-10-06",
+         *       "grupo": "missao_2026",
+         *       "por_candidato": [],
+         *       "receitas": {
+         *         "pct_autofinanciamento": 8.47,
+         *         "pct_publico": 67.8,
+         *         "por_categoria": {
+         *           "fefc": 70000,
+         *           "fundo_partidario": 10000
+         *         },
+         *         "receita_financeira": 116000,
+         *         "receita_total": 118000
+         *       },
+         *       "uf": "SP"
+         *     }
+         */
+        Gastos: {
+            /** Grupo */
+            grupo: string;
+            /** Ano */
+            ano: number;
+            /** Cargo */
+            cargo: string | null;
+            /** Uf */
+            uf: string | null;
+            agregado: components["schemas"]["ResumoCustoGrupo"];
+            receitas: components["schemas"]["ResumoReceitasOut"];
+            /** Por Candidato */
+            por_candidato: components["schemas"]["GastoCandidato"][];
+            /** Contas Parciais */
+            contas_parciais: boolean;
+            /** Base Ipca */
+            base_ipca: string | null;
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
         /**
          * Grupo
          * @description Grupo comparável definido em config/grupos.yaml.
@@ -59,6 +532,193 @@ export interface components {
             rotulo: string;
             /** Ano */
             ano: number;
+        };
+        /**
+         * GrupoRef
+         * @description Grupo de um dos lados da comparação.
+         */
+        GrupoRef: {
+            /** Id */
+            id: string;
+            /** Rotulo */
+            rotulo: string;
+            /** Ano */
+            ano: number;
+        };
+        /**
+         * GrupoResumo
+         * @description Item de GET /grupos.
+         */
+        GrupoResumo: {
+            /** Id */
+            id: string;
+            /** Rotulo */
+            rotulo: string;
+            /** Ano */
+            ano: number;
+            /**
+             * N Candidaturas
+             * @description Candidaturas do grupo presentes nos dados.
+             */
+            n_candidaturas: number;
+        };
+        /**
+         * GruposResposta
+         * @description Corpo de GET /grupos.
+         * @example {
+         *       "comparacoes": [
+         *         {
+         *           "de": "mbl_2022",
+         *           "id": "evolucao_mbl",
+         *           "para": "mbl_2026",
+         *           "rotulo": "MBL 2022 → MBL 2026"
+         *         }
+         *       ],
+         *       "grupos": [
+         *         {
+         *           "ano": 2026,
+         *           "id": "missao_2026",
+         *           "n_candidaturas": 3,
+         *           "rotulo": "Partido Missão 2026"
+         *         }
+         *       ]
+         *     }
+         */
+        GruposResposta: {
+            /** Grupos */
+            grupos: components["schemas"]["GrupoResumo"][];
+            /** Comparacoes */
+            comparacoes: components["schemas"]["ComparacaoResumo"][];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * Indicador
+         * @description Indicadores mapeáveis (spec §2): taxas em coroplético, absoluto em símbolo.
+         * @enum {string}
+         */
+        Indicador: "penetracao" | "pct_validos" | "votos";
+        /**
+         * KpisComparativo
+         * @description Os mesmos indicadores sobre o recorte inteiro (Σ votos / Σ base, não média de AMCs).
+         */
+        KpisComparativo: {
+            /** Penetracao De */
+            penetracao_de: number | null;
+            /** Penetracao Para */
+            penetracao_para: number | null;
+            /** Delta Penetracao */
+            delta_penetracao: number | null;
+            /** Swing Pp */
+            swing_pp: number | null;
+            /** Retencao */
+            retencao: number | null;
+            /** Ganho Absoluto */
+            ganho_absoluto: number | null;
+            /** Votos De */
+            votos_de: number | null;
+            /** Votos Para */
+            votos_para: number | null;
+        };
+        /**
+         * ListaCandidatos
+         * @description Página de candidatos.
+         * @example {
+         *       "itens": [
+         *         {
+         *           "ano": 2026,
+         *           "cargo": "DEPUTADO FEDERAL",
+         *           "nm_urna": "A",
+         *           "partido": {
+         *             "numero": 14,
+         *             "sigla": "MISSÃO"
+         *           },
+         *           "pct_validos": 8.06,
+         *           "penetracao": 57.14,
+         *           "resultado": "SUPLENTE",
+         *           "sg_uf": "SP",
+         *           "situacao": "APTO",
+         *           "sq_candidato": 3,
+         *           "votos": 1000
+         *         }
+         *       ],
+         *       "limite": 200,
+         *       "offset": 0,
+         *       "total": 1
+         *     }
+         */
+        ListaCandidatos: {
+            /** Total */
+            total: number;
+            /** Limite */
+            limite: number;
+            /** Offset */
+            offset: number;
+            /** Itens */
+            itens: components["schemas"]["CandidatoResumo"][];
+        };
+        /**
+         * Mapa
+         * @description Corpo de GET /mapa. Chaves: IBGE (município), `IBGE-zona`, ou índice H3.
+         * @example {
+         *       "ano": 2026,
+         *       "denominador": "aptos",
+         *       "detalhes": {
+         *         "3550308": {
+         *           "aptos": 15000,
+         *           "taxa": 73.33,
+         *           "validos": 10500,
+         *           "votos": 1100
+         *         }
+         *       },
+         *       "dt_geracao": "2026-10-06",
+         *       "escala_sugerida": {
+         *         "paleta": "viridis",
+         *         "quebras": [
+         *           20,
+         *           40,
+         *           60,
+         *           70
+         *         ],
+         *         "tipo": "sequencial"
+         *       },
+         *       "indicador": "penetracao",
+         *       "n_candidaturas": 2,
+         *       "nivel": "municipio",
+         *       "unidade": "‰",
+         *       "valores": {
+         *         "3509502": 20,
+         *         "3550308": 73.33
+         *       }
+         *     }
+         */
+        Mapa: {
+            /** Ano */
+            ano: number;
+            /** Nivel */
+            nivel: string;
+            /** Indicador */
+            indicador: string;
+            /** Valores */
+            valores: {
+                [key: string]: number | null;
+            };
+            /** Detalhes */
+            detalhes: {
+                [key: string]: components["schemas"]["Detalhe"];
+            };
+            escala_sugerida: components["schemas"]["EscalaSugerida"];
+            /** Unidade */
+            unidade: string;
+            /** Denominador */
+            denominador: string | null;
+            /** N Candidaturas */
+            n_candidaturas: number;
+            /** Dt Geracao */
+            dt_geracao: string;
         };
         /**
          * Meta
@@ -77,6 +737,204 @@ export interface components {
             dt_geracao: string;
         };
         /**
+         * Nivel
+         * @description Recorte espacial do mapa.
+         * @enum {string}
+         */
+        Nivel: "municipio" | "zona" | "h3";
+        /**
+         * Partido
+         * @description Partido da candidatura.
+         */
+        Partido: {
+            /** Numero */
+            numero: number;
+            /** Sigla */
+            sigla: string;
+        };
+        /**
+         * Ponto
+         * @description Local de votação.
+         */
+        Ponto: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Votos */
+            votos: number;
+        };
+        /**
+         * Pontos
+         * @description Corpo de GET /mapa/pontos (densidade de votos por local).
+         */
+        Pontos: {
+            /** Ano */
+            ano: number;
+            /**
+             * Total
+             * @description Locais com voto no recorte.
+             */
+            total: number;
+            /** Limite */
+            limite: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Truncado
+             * @description Há mais páginas além desta.
+             */
+            truncado: boolean;
+            /** Pontos */
+            pontos: components["schemas"]["Ponto"][];
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
+        /**
+         * ResumoCargo
+         * @description Desempenho do grupo num cargo dentro do município (um cargo por vez, spec §0).
+         */
+        ResumoCargo: {
+            /** Cargo */
+            cargo: string;
+            /** N Candidaturas */
+            n_candidaturas: number;
+            /** Votos */
+            votos: number;
+            /** Aptos */
+            aptos: number;
+            /** Penetracao */
+            penetracao: number | null;
+            /** Pct Validos */
+            pct_validos: number | null;
+            /** Votos Por Km2 */
+            votos_por_km2: number | null;
+        };
+        /**
+         * ResumoCustoCandidato
+         * @description Despesa (sem transferências) e custo por voto de um candidato.
+         */
+        ResumoCustoCandidato: {
+            /** Despesa Contratada */
+            despesa_contratada: number;
+            /** Despesa Paga */
+            despesa_paga: number;
+            /**
+             * Divida
+             * @description contratada − paga (§4.2).
+             */
+            divida: number;
+            /** Votos */
+            votos: number;
+            /**
+             * Custo Voto Contratado
+             * @description R$/voto; null se votos = 0.
+             */
+            custo_voto_contratado: number | null;
+            /** Custo Voto Pago */
+            custo_voto_pago: number | null;
+        };
+        /**
+         * ResumoCustoGrupo
+         * @description Agregado: Σ despesa / Σ votos, não média de razões (§4.2).
+         */
+        ResumoCustoGrupo: {
+            /** Despesa Contratada */
+            despesa_contratada: number;
+            /** Despesa Paga */
+            despesa_paga: number;
+            /** Divida */
+            divida: number;
+            /** Votos */
+            votos: number;
+            /** Custo Voto Contratado */
+            custo_voto_contratado: number | null;
+            /** Custo Voto Pago */
+            custo_voto_pago: number | null;
+            /** Mediana Custo Voto Contratado */
+            mediana_custo_voto_contratado: number | null;
+            /** Candidatos Sem Voto Excluidos */
+            candidatos_sem_voto_excluidos: number;
+        };
+        /**
+         * ResumoGrupo
+         * @description Grupo e seus cargos no município.
+         */
+        ResumoGrupo: {
+            /** Id */
+            id: string;
+            /** Rotulo */
+            rotulo: string;
+            /** Ano */
+            ano: number;
+            /** Cargos */
+            cargos: components["schemas"]["ResumoCargo"][];
+        };
+        /**
+         * ResumoMunicipio
+         * @description Corpo de GET /municipios/{cd_mun_ibge}.
+         * @example {
+         *       "area_km2": 1521.11,
+         *       "cd_mun_ibge": 3550308,
+         *       "dt_geracao": "2026-10-06",
+         *       "grupos": [
+         *         {
+         *           "ano": 2026,
+         *           "cargos": [
+         *             {
+         *               "aptos": 15000,
+         *               "cargo": "DEPUTADO FEDERAL",
+         *               "n_candidaturas": 2,
+         *               "pct_validos": 10.48,
+         *               "penetracao": 73.33,
+         *               "votos": 1100,
+         *               "votos_por_km2": 0.72
+         *             }
+         *           ],
+         *           "id": "missao_2026",
+         *           "rotulo": "Partido Missão 2026"
+         *         }
+         *       ],
+         *       "nome": "São Paulo",
+         *       "uf": "SP"
+         *     }
+         */
+        ResumoMunicipio: {
+            /** Cd Mun Ibge */
+            cd_mun_ibge: number;
+            /** Nome */
+            nome: string;
+            /** Uf */
+            uf: string;
+            /** Area Km2 */
+            area_km2: number | null;
+            /** Grupos */
+            grupos: components["schemas"]["ResumoGrupo"][];
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
+        /**
+         * ResumoReceitasOut
+         * @description Receita por categoria (§4.1) e dependência de recursos públicos.
+         */
+        ResumoReceitasOut: {
+            /** Por Categoria */
+            por_categoria: {
+                [key: string]: number;
+            };
+            /** Receita Total */
+            receita_total: number;
+            /** Receita Financeira */
+            receita_financeira: number;
+            /**
+             * Pct Publico
+             * @description FEFC + Fundo Partidário, % da receita total.
+             */
+            pct_publico: number | null;
+            /** Pct Autofinanciamento */
+            pct_autofinanciamento: number | null;
+        };
+        /**
          * Saude
          * @description Estado da API e dos dados.
          */
@@ -87,6 +945,54 @@ export interface components {
             versao: string;
             /** Dt Geracao */
             dt_geracao: string;
+        };
+        /**
+         * UF
+         * @description Unidades da federação (sem exterior: `ZZ` não tem mapa).
+         * @enum {string}
+         */
+        UF: "AC" | "AL" | "AM" | "AP" | "BA" | "CE" | "DF" | "ES" | "GO" | "MA" | "MG" | "MS" | "MT" | "PA" | "PB" | "PE" | "PI" | "PR" | "RJ" | "RN" | "RO" | "RR" | "RS" | "SC" | "SE" | "SP" | "TO";
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+        /**
+         * VotosMunicipio
+         * @description Votos do candidato num município.
+         */
+        VotosMunicipio: {
+            /** Cd Mun Ibge */
+            cd_mun_ibge: number;
+            /** Nome */
+            nome: string;
+            /** Uf */
+            uf: string;
+            /** Votos */
+            votos: number;
+            /**
+             * Penetracao
+             * @description ‰ dos aptos do município no cargo.
+             */
+            penetracao: number | null;
+        };
+        /**
+         * VotosUF
+         * @description Votos do candidato numa UF.
+         */
+        VotosUF: {
+            /** Uf */
+            uf: string;
+            /** Votos */
+            votos: number;
         };
     };
     responses: never;
@@ -133,6 +1039,291 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Meta"];
+                };
+            };
+        };
+    };
+    grupos_api_grupos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GruposResposta"];
+                };
+            };
+        };
+    };
+    candidatos_api_candidatos_get: {
+        parameters: {
+            query: {
+                /** @description Id do grupo em config/grupos.yaml (ex.: missao_2026). */
+                grupo: string;
+                uf?: components["schemas"]["UF"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+                limite?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaCandidatos"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ficha_api_candidatos__ano___sq_candidato__get: {
+        parameters: {
+            query?: {
+                /** @description Municípios no ranking. */
+                top?: number;
+            };
+            header?: never;
+            path: {
+                ano: components["schemas"]["Ano"];
+                sq_candidato: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaCandidato"];
+                };
+            };
+            /** @description Candidato inexistente. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mapa_api_mapa_get: {
+        parameters: {
+            query: {
+                ano: components["schemas"]["Ano"];
+                cargo: components["schemas"]["Cargo"];
+                uf?: components["schemas"]["UF"] | null;
+                nivel?: components["schemas"]["Nivel"];
+                /** @description Id do grupo; exclusivo com sq_candidato. */
+                grupo?: string | null;
+                /** @description SQ_CANDIDATO; exclusivo com grupo. */
+                sq_candidato?: number | null;
+                indicador?: components["schemas"]["Indicador"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mapa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pontos_api_mapa_pontos_get: {
+        parameters: {
+            query: {
+                ano: components["schemas"]["Ano"];
+                cargo: components["schemas"]["Cargo"];
+                uf: components["schemas"]["UF"];
+                /** @description Id do grupo; exclusivo com sq_candidato. */
+                grupo?: string | null;
+                /** @description SQ_CANDIDATO; exclusivo com grupo. */
+                sq_candidato?: number | null;
+                limite?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pontos"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gastos_api_gastos_get: {
+        parameters: {
+            query: {
+                /** @description Id do grupo em config/grupos.yaml (ex.: missao_2026). */
+                grupo: string;
+                uf?: components["schemas"]["UF"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gastos"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    comparativo_api_comparativo_get: {
+        parameters: {
+            query: {
+                /** @description Id em `comparacoes` (ex.: evolucao_mbl). */
+                comparacao: string;
+                cargo: components["schemas"]["Cargo"];
+                uf?: components["schemas"]["UF"] | null;
+                /** @description Só pessoas que concorreram nos dois anos (pessoa_id). */
+                mesmos_candidatos?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comparativo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    municipio_api_municipios__cd_mun_ibge__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Código IBGE de 7 dígitos. */
+                cd_mun_ibge: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumoMunicipio"];
+                };
+            };
+            /** @description Município inexistente. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

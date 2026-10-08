@@ -15,16 +15,15 @@ export const tela: Tela = {
     const parar = carregar(
       conteudo,
       () => criarCliente().gastos(paramsDeFiltros(filtros)),
-      (g) => (g.candidatos.length === 0 ? "Sem gastos declarados para estes filtros." : null),
+      (g) => (g.por_candidato.length === 0 ? "Sem gastos declarados para estes filtros." : null),
       (g, destino) => {
         let base: "contratado" | "pago" = "contratado";
         const kpis: Kpi[] = [];
-        if (g.custo_voto_contratado !== null) kpis.push({ rotulo: "Custo por voto contratado", valor: g.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos" });
-        if (g.custo_voto_pago !== null) kpis.push({ rotulo: "Custo por voto pago", valor: g.custo_voto_pago, formato: "moeda", unidade: "R$ pagos ÷ votos" });
-        kpis.push(
-          { rotulo: "% recursos públicos", valor: g.pct_publico, formato: "percentual", unidade: "FEFC + Fundo Partidário ÷ receitas" },
-          { rotulo: "% autofinanciamento", valor: g.pct_autofinanciamento, formato: "percentual", unidade: "recursos próprios ÷ receitas" },
-        );
+        const { agregado: ag, receitas: rc } = g;
+        if (ag.custo_voto_contratado !== null) kpis.push({ rotulo: "Custo por voto contratado", valor: ag.custo_voto_contratado, formato: "moeda", unidade: "R$ contratados ÷ votos" });
+        if (ag.custo_voto_pago !== null) kpis.push({ rotulo: "Custo por voto pago", valor: ag.custo_voto_pago, formato: "moeda", unidade: "R$ pagos ÷ votos" });
+        if (rc.pct_publico !== null) kpis.push({ rotulo: "% recursos públicos", valor: rc.pct_publico, formato: "pontos", unidade: "FEFC + Fundo Partidário ÷ receitas" });
+        if (rc.pct_autofinanciamento !== null) kpis.push({ rotulo: "% autofinanciamento", valor: rc.pct_autofinanciamento, formato: "pontos", unidade: "recursos próprios ÷ receitas" });
         const avisos = h("aside", { className: "avisos" }, ...avisosGastos(g).map((a) => h("p", { textContent: a })));
         avisos.setAttribute("aria-label", "Avisos de leitura");
         const areaKpi = h("div");

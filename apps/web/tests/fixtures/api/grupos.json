@@ -15,16 +15,16 @@
  ],
  "comparacoes": [
   {
-   "id": "mbl2022_mbl2026",
-   "rotulo": "MBL 2022 → MBL 2026",
-   "antes": "mbl_2022",
-   "depois": "mbl_2026"
-  },
-  {
    "id": "mbl2022_missao2026",
    "rotulo": "MBL 2022 → Missão 2026",
-   "antes": "mbl_2022",
-   "depois": "missao_2026"
+   "de": "mbl_2022",
+   "para": "missao_2026"
+  },
+  {
+   "id": "mbl2022_mbl2026",
+   "rotulo": "MBL 2022 → MBL 2026",
+   "de": "mbl_2022",
+   "para": "mbl_2026"
   }
  ]
 }

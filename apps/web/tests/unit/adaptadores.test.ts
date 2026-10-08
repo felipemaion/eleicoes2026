@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  avisosGastos, barrasMunicipios, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
-  mapaDeDiferenca, paramsDeFiltros, paresDaComparacao, rankingDeCandidatos,
+  avisosGastos, barrasMunicipios, cargoDaApi, dispersaoCustoVoto, escalaDoMapa, escalaIgualNosDoisAnos, kpisDoGrupo,
+  mapaDeDiferenca, paramsComCargo, paramsDeFiltros, penetracaoDosAnos, rankingDeCandidatos, receitaEmpilhada, soNumeros,
 } from "../../src/dados/adaptadores";
-import type { RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
+import type { Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "../../src/dados/contrato";
 import { FILTROS_PADRAO } from "../../src/store";
 import candidatos from "../fixtures/api/candidatos.json";
 import comparativo from "../fixtures/api/comparativo.json";
@@ -11,96 +11,117 @@ import ficha from "../fixtures/api/ficha.json";
 import gastos from "../fixtures/api/gastos.json";
 import mapa from "../fixtures/api/mapa.json";
 
-const C = candidatos as RespostaCandidatos;
-const G = gastos as RespostaGastos;
-const M = mapa as RespostaMapa;
-const kpisC = (C.kpis ?? (() => { throw new Error("fixture sem kpis"); })());
-const CMP = comparativo as RespostaComparativo;
+const C: RespostaCandidatos = candidatos;
+const G: RespostaGastos = gastos;
+const M: RespostaMapa = mapa;
+const CMP: RespostaComparativo = comparativo;
+const F: Ficha = ficha;
+const primeiro = C.itens[0] ?? (() => { throw new Error("fixture sem candidatos"); })();
+const primeiroGasto = G.por_candidato[0] ?? (() => { throw new Error("fixture sem gastos"); })();
 
-describe("paramsDeFiltros", () => {
-  it("omite BR e 'todos' (padrões da API) e mantém o resto", () => {
+describe("parâmetros da API", () => {
+  it("omite BR e 'todos' (padrões da API) e traduz o cargo para o enum do OpenAPI", () => {
     expect(paramsDeFiltros(FILTROS_PADRAO)).toEqual({ ano: "2026", grupo: "missao_2026" });
-    expect(paramsDeFiltros({ ...FILTROS_PADRAO, uf: "SE", cargo: "deputado_federal" })).toMatchObject({ uf: "SE", cargo: "deputado_federal" });
+    expect(paramsDeFiltros({ ...FILTROS_PADRAO, uf: "SE", cargo: "deputado_federal" })).toMatchObject({ uf: "SE", cargo: "DEPUTADO FEDERAL" });
+    expect(cargoDaApi("presidente")).toBe("PRESIDENTE");
+  });
+  it("mapa e comparativo exigem cargo: 'todos' vira deputado federal", () => {
+    expect(paramsComCargo(FILTROS_PADRAO)["cargo"]).toBe("DEPUTADO FEDERAL");
+    expect(paramsComCargo({ ...FILTROS_PADRAO, cargo: "senador" })["cargo"]).toBe("SENADOR");
   });
 });
 
 describe("kpisDoGrupo", () => {
-  it("monta os 7 KPIs da spec §8.1 com unidade", () => {
-    const k = kpisDoGrupo(kpisC);
-    expect(k.map((x) => x.rotulo)).toEqual([
-      "Votação do partido", "Penetração", "% dos válidos", "Eleitos / candidaturas aptas",
-      "Custo por voto contratado", "% recursos públicos", "Δ penetração vs MBL 2022",
-    ]);
-    expect(k.find((x) => x.rotulo === "Penetração")?.unidade).toMatch(/aptos/);
+  it("soma votos, conta candidaturas, eleitos e traz custo/% público do /gastos", () => {
+    const k = kpisDoGrupo(C, G);
+    expect(k.map((x) => x.rotulo)).toEqual(["Votação nominal do grupo", "Candidaturas", "Eleitos", "Custo por voto contratado", "% recursos públicos"]);
+    expect(k[0]).toMatchObject({ valor: 33195, formato: "inteiro" });
+    expect(k[2]?.valor).toBe(0); // "NÃO ELEITO" e "SUPLENTE" não contam
+    expect(k[4]).toMatchObject({ formato: "pontos", valor: 86.2 });
   });
-  it("sem comparação, o KPI de Δ some em vez de virar 0", () => {
-    const k = kpisDoGrupo({ ...kpisC, delta_penetracao: null, penetracao_comparada: null, custo_voto_contratado: null });
-    expect(k.some((x) => x.rotulo.startsWith("Δ"))).toBe(false);
-    expect(k.some((x) => x.rotulo === "Custo por voto contratado")).toBe(false);
+  it("'NÃO ELEITO' não conta como eleito; 'ELEITO POR QP' conta", () => {
+    const l: RespostaCandidatos = { ...C, itens: [{ ...primeiro, resultado: "ELEITO POR QP" }, ...C.itens.slice(1)] };
+    expect(kpisDoGrupo(l, G)[2]?.valor).toBe(1);
+  });
+  it("sem resultado nenhum (apuração não saiu) o KPI de eleitos some; nada vira 0", () => {
+    const l: RespostaCandidatos = { ...C, itens: C.itens.map((c) => ({ ...c, resultado: null })) };
+    expect(kpisDoGrupo(l, G).map((x) => x.rotulo)).not.toContain("Eleitos");
+  });
+  it("lista truncada (total > itens) é rotulada como soma parcial", () => {
+    const k = kpisDoGrupo({ ...C, total: 900 }, G);
+    expect(k[0]?.unidade).toMatch(/3 de 900/);
+  });
+  it("KPI nulo some (custo por voto, % público)", () => {
+    const k = kpisDoGrupo(C, { ...G, agregado: { ...G.agregado, custo_voto_contratado: null }, receitas: { ...G.receitas, pct_publico: null } });
+    expect(k.map((x) => x.rotulo)).toEqual(["Votação nominal do grupo", "Candidaturas", "Eleitos"]);
   });
 });
 
 describe("rankingDeCandidatos", () => {
-  it("ordena por votos e filtra 'só indicados'", () => {
-    expect(rankingDeCandidatos(C.candidatos, false).map((b) => b.rotulo)).toEqual(["Ana Souza", "Bruno Lima", "Carla Dias"]);
-    expect(rankingDeCandidatos(C.candidatos, true).map((b) => b.rotulo)).toEqual(["Ana Souza", "Bruno Lima"]);
+  it("ordena por votos e usa o nome de urna", () => {
+    expect(rankingDeCandidatos([...C.itens].reverse()).map((b) => b.rotulo)).toEqual(["Ana Souza", "Bruno Lima", "Carla Dias"]);
   });
 });
 
 describe("gastos", () => {
-  it("dispersão mantém zeros (o gráfico os põe na calha, nunca some candidato) e escolhe contratado ou pago", () => {
-    const pts = dispersaoCustoVoto({ ...G, candidatos: [...G.candidatos, { id: "9", rotulo: "Zero", votos: 0, custo_contratado: 5, custo_pago: 0 }] }, "contratado");
+  it("dispersão mantém zeros e escolhe contratado ou pago", () => {
+    const zero = { ...primeiroGasto, sq_candidato: 9, nm_urna: "Zero", custo: { ...primeiroGasto.custo, votos: 0, despesa_contratada: 5 } };
+    const pts = dispersaoCustoVoto({ ...G, por_candidato: [...G.por_candidato, zero] }, "contratado");
     expect(pts.map((p) => p.id)).toEqual(["1", "2", "3", "9"]);
     expect(pts[0]).toMatchObject({ custo: 223000, votos: 18049 });
     expect(dispersaoCustoVoto(G, "pago")[0]?.custo).toBe(180000);
   });
-  it("avisos: contas parciais e mês-base do deflator, sempre explícitos", () => {
+  it("receita empilhada: uma barra do grupo com as categorias da API", () => {
+    expect(receitaEmpilhada(G)).toEqual([{ rotulo: "missao_2026", valores: G.receitas.por_categoria }]);
+  });
+  it("avisos: contas parciais e mês-base do deflator (só quando existe)", () => {
     const a = avisosGastos(G);
     expect(a.join(" ")).toMatch(/parciais/);
-    expect(a.join(" ")).toMatch(/2026-09|setembro de 2026/);
-    expect(avisosGastos({ ...G, contas_parciais: false }).join(" ")).not.toMatch(/parciais/);
+    expect(a.join(" ")).toMatch(/setembro de 2026/);
+    expect(avisosGastos({ ...G, contas_parciais: false, base_ipca: null })).toEqual([]);
   });
 });
 
 describe("mapa", () => {
-  it("quantil → escala com meta de taxa (coroplético permitido)", () => {
-    const { escala, meta, valores } = escalaDoMapa(M);
-    expect(escala.tipo).toBe("quantil");
-    expect(meta).toMatchObject({ tipo: "taxa", unidade: "% dos votos válidos" });
-    expect(Object.keys(valores)).toHaveLength(75);
+  it("quebras sugeridas pela API viram escala de limiares (a legenda é a da API)", () => {
+    const { escala, meta, valores, aviso } = escalaDoMapa(M);
+    expect(escala.tipo).toBe("limiar");
+    expect(escala.quebras).toEqual(M.escala_sugerida.quebras);
+    expect(meta).toMatchObject({ tipo: "taxa", unidade: "‰", denominador: "aptos" });
+    expect(aviso).toBeNull();
+    expect(Object.keys(valores)).toHaveLength(74); // 1 território sem dado fica de fora
   });
-  it("divergente usa a extensão da API; sem ela, o maior |valor|", () => {
-    const base: RespostaMapa = { ...M, escala_sugerida: "divergente", tipo: "diferenca", valores: { a: -0.02, b: 0.01 } };
-    expect(escalaDoMapa(base).escala.tipo).toBe("divergente");
-    expect(() => escalaDoMapa({ ...base, valores: {} })).not.toThrow();
+  it("território sem denominador (null) é 'sem dado', nunca 0", () => {
+    expect(soNumeros({ a: 1, b: null })).toEqual({ a: 1 });
+    const { detalhes } = escalaDoMapa(M);
+    const semDado = Object.entries(M.valores).find(([, v]) => v === null)?.[0] ?? "";
+    expect(detalhes[semDado]?.taxa).toBeUndefined();
   });
-  it("recusa resposta sem unidade/denominador (legenda exige)", () => {
-    expect(() => escalaDoMapa({ ...M, denominador: "" })).toThrow(/denominador/);
+  it("sem quebras (poucos valores) cai em quantil e repassa o aviso do backend", () => {
+    const r: RespostaMapa = { ...M, valores: { a: 1, b: 2 }, detalhes: {}, escala_sugerida: { tipo: "sequencial", paleta: "viridis", quebras: null, aviso: "menos de 2 valores" } };
+    const e = escalaDoMapa(r);
+    expect(e.escala.tipo).toBe("quantil");
+    expect(e.aviso).toBe("menos de 2 valores");
+  });
+  it("indicador absoluto não vira coroplético: falha alto", () => {
+    expect(() => escalaDoMapa({ ...M, indicador: "votos", escala_sugerida: { tipo: "simbolo_proporcional", paleta: "um_matiz", quebras: [] } })).toThrow(/absoluto/);
   });
   it("2022 e 2026 compartilham as MESMAS quebras", () => {
-    const { antes, depois } = escalaIgualNosDoisAnos(CMP.penetracao_antes, CMP.penetracao_depois);
+    const pen = penetracaoDosAnos(CMP);
+    const { antes, depois } = escalaIgualNosDoisAnos(pen.antes, pen.depois);
     expect(antes.quebras).toEqual(depois.quebras);
-    const so26 = escalaDoMapa({ ...M, valores: CMP.penetracao_depois }).escala.quebras;
-    expect(antes.quebras).not.toEqual(so26);
   });
-  it("mapa de diferença é divergente centrado em 0, simétrico", () => {
+  it("mapa de diferença é divergente centrado em 0, em ‰, chaveado por AMC", () => {
     const d = mapaDeDiferenca(CMP);
     expect(d.escala.tipo).toBe("divergente");
-    expect(d.meta.tipo).toBe("diferenca");
-    expect(d.meta.unidade).toMatch(/penetração/i);
-    expect(d.valores["2800100"]).toBe(CMP.municipios.find((m) => m.cd_mun_ibge === "2800100")?.delta_penetracao);
+    expect(d.meta).toMatchObject({ tipo: "diferenca", unidade: "‰" });
+    expect(d.valores["2800100"]).toBe(CMP.municipios.find((m) => m.cd_amc === 2800100)?.delta_penetracao);
   });
 });
 
-describe("evolução e candidato", () => {
-  it("pares antes/depois por candidato", () => {
-    expect(paresDaComparacao(CMP)).toEqual([
-      { rotulo: "Ana Souza", antes: 0.009, depois: 0.0123 },
-      { rotulo: "Bruno Lima", antes: 0.0095, depois: 0.0081 },
-    ]);
-  });
+describe("candidato", () => {
   it("barras da ficha: top municípios por votos", () => {
-    const b = barrasMunicipios(ficha, 5);
+    const b = barrasMunicipios(F, 5);
     expect(b).toHaveLength(5);
     expect(b[0]?.valor).toBeGreaterThanOrEqual(b[4]?.valor ?? Infinity);
   });

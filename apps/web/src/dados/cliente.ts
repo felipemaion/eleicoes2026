@@ -4,7 +4,7 @@
  * malformado falha alto em vez de virar gráfico errado.
  */
 import type {
-  Ficha, Meta, PontoVoto, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio,
+  Ficha, Meta, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
@@ -19,9 +19,9 @@ export interface ClienteApi {
   meta(sinal?: AbortSignal): Promise<Meta>;
   grupos(sinal?: AbortSignal): Promise<RespostaGrupos>;
   candidatos(p: Params, sinal?: AbortSignal): Promise<RespostaCandidatos>;
-  ficha(ano: number, sq: string, sinal?: AbortSignal): Promise<Ficha>;
+  ficha(ano: number, sq: string | number, sinal?: AbortSignal): Promise<Ficha>;
   mapa(p: Params, sinal?: AbortSignal): Promise<RespostaMapa>;
-  pontos(p: Params, sinal?: AbortSignal): Promise<{ pontos: PontoVoto[] }>;
+  pontos(p: Params, sinal?: AbortSignal): Promise<RespostaPontos>;
   gastos(p: Params, sinal?: AbortSignal): Promise<RespostaGastos>;
   comparativo(p: Params, sinal?: AbortSignal): Promise<RespostaComparativo>;
   municipio(ibge: string, sinal?: AbortSignal): Promise<RespostaMunicipio>;
@@ -63,12 +63,12 @@ export function criarCliente(base = "/api"): ClienteApi {
   return {
     meta: (sinal) => obter("/meta", ehMeta, sinal),
     grupos: (sinal) => obter("/grupos", comChaves<RespostaGrupos>("grupos"), sinal),
-    candidatos: (p, sinal) => obter(`/candidatos${query(p)}`, comChaves<RespostaCandidatos>("candidatos"), sinal),
-    ficha: (ano, sq, sinal) => obter(`/candidatos/${String(ano)}/${encodeURIComponent(sq)}`, comChaves<Ficha>("candidato", "votos_municipios", "gastos", "receitas"), sinal),
-    mapa: (p, sinal) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade", "denominador"), sinal),
-    pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<{ pontos: PontoVoto[] }>("pontos"), sinal),
-    gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("candidatos", "mes_base_deflator"), sinal),
-    comparativo: (p) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "candidatos", "mes_base_deflator")),
+    candidatos: (p, sinal) => obter(`/candidatos${query(p)}`, comChaves<RespostaCandidatos>("itens", "total"), sinal),
+    ficha: (ano, sq, sinal) => obter(`/candidatos/${String(ano)}/${encodeURIComponent(sq)}`, comChaves<Ficha>("candidato", "votos_por_municipio", "votos_por_uf", "votos_total"), sinal),
+    mapa: (p, sinal) => obter(`/mapa${query(p)}`, comChaves<RespostaMapa>("valores", "detalhes", "escala_sugerida", "unidade"), sinal),
+    pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
+    gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),
+    comparativo: (p) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para")),
     municipio: (ibge, sinal) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos"), sinal),
   };
 }

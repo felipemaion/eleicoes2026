@@ -1,34 +1,29 @@
-import { paramsDeFiltros } from "../dados/adaptadores";
+import { CARGO_PADRAO, paramsComCargo, paramsDeFiltros } from "../dados/adaptadores";
 import { criarCliente, foiCancelada } from "../dados/cliente";
-import type { Candidato, RespostaMapa, RespostaMunicipio } from "../dados/contrato";
-import { formatarInteiro, formatarPercentual } from "../formato";
+import type { IndicadorApi, RespostaMapa } from "../dados/contrato";
+import type { Nivel } from "../componentes/mapa/mapa";
 import { campoSelect, h, nota, titulo } from "./dom";
 import { mostrarErro } from "./estados";
-import { criarPainelMapa, UF_COM_GEOMETRIA } from "./painel-mapa";
+import { geometria, niveisDisponiveis, UF_DA_DEMONSTRACAO } from "./mapa-embutido";
+import { criarPainelMapa } from "./painel-mapa";
+import { desenharMunicipio, focarPainel } from "./painel-municipio";
 import type { Tela } from "./tipos";
 
-const INDICADORES = [
-  { valor: "penetracao", texto: "Penetração (% dos aptos)" },
+const INDICADORES: readonly { valor: IndicadorApi; texto: string }[] = [
+  { valor: "penetracao", texto: "Penetração (‰ dos aptos)" },
   { valor: "pct_validos", texto: "% dos votos válidos" },
-  { valor: "lq", texto: "Quociente locacional (LQ)" },
-  { valor: "swing", texto: "Swing 2022→2026" },
-] as const;
+];
 
-function desenharMunicipio(destino: HTMLElement, m: RespostaMunicipio): void {
-  destino.replaceChildren(
-    h("h2", { textContent: `${m.nome} (${m.uf})` }),
-    h("p", { textContent: `Eleitores aptos: ${formatarInteiro(m.aptos)}` }),
-    h("table", {}, h("thead", {}, h("tr", {}, h("th", { textContent: "Grupo", scope: "col" }), h("th", { textContent: "Votos", scope: "col" }), h("th", { textContent: "% dos aptos", scope: "col" }))),
-      h("tbody", {}, ...m.grupos.map((g) => h("tr", {}, h("th", { textContent: g.rotulo, scope: "row" }), h("td", { textContent: formatarInteiro(g.votos) }), h("td", { textContent: formatarPercentual(g.taxa) }))))),
-  );
-}
+/** O município de uma chave do mapa: "2800308" (município) ou "2800308-12" (zona). */
+export const municipioDaChave = (id: string): string => id.split("-")[0] ?? id;
 
 export const tela: Tela = {
   titulo: "Mapa",
   render(container, { filtros }) {
     const cliente = criarCliente();
-    let indicador = "penetracao";
+    let indicador: IndicadorApi = "penetracao";
     let candidato = "";
+    let nivelAtual: Nivel = "municipio";
     let densidade = true;
     let vivo = true;
     let seqAtualizar = 0;
@@ -39,52 +34,68 @@ export const tela: Tela = {
     const area = h("div", { className: "mapa-area" });
     const painel = h("aside", { className: "painel-municipio" });
     painel.setAttribute("aria-live", "polite");
-    painel.append(h("p", { textContent: "Escolha um município para ver o resumo." }));
+    painel.setAttribute("aria-label", "Resumo do município");
+    painel.append(h("p", { textContent: "Clique em um município (ou use as setas e Enter com o mapa em foco) para ver o resumo." }));
 
-    const nivel = campoSelect("Nível", "nivel", [
-      { valor: "municipio", texto: "Município" },
-      { valor: "zona", texto: "Zona eleitoral (em breve)", desabilitada: true },
-      { valor: "h3", texto: "Hexágono H3 (em breve)", desabilitada: true },
-    ], "municipio", () => { /* só município até os PMTiles (T-D04) */ });
-    const ind = campoSelect("Indicador", "indicador", INDICADORES, indicador, (v) => { indicador = v; void atualizar(); });
-    const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
-    const mun = campoSelect("Resumo do município", "municipio", [{ valor: "", texto: "Selecione…" }], "", (v) => {
-      if (v === "") return;
+    function selecionar(id: string): void {
+      const ibge = municipioDaChave(id);
       ctrlMun?.abort();
       const ctrl = (ctrlMun = new AbortController());
       const minha = ++seqMun;
       const atual = (): boolean => vivo && minha === seqMun;
-      cliente.municipio(v, ctrl.signal).then((m) => { if (atual()) desenharMunicipio(painel, m); }, (e: unknown) => { if (atual() && !foiCancelada(e)) mostrarErro(painel, e, () => { mun.select.dispatchEvent(new Event("change")); }); });
+      cliente.municipio(ibge, ctrl.signal).then(
+        (m) => { if (atual()) { desenharMunicipio(painel, m); focarPainel(painel); } },
+        (e: unknown) => { if (atual() && !foiCancelada(e)) mostrarErro(painel, e, () => { selecionar(id); }); },
+      );
+    }
+
+    const nivel = campoSelect("Nível", "nivel", [
+      { valor: "municipio", texto: "Município" },
+      { valor: "zona", texto: "Zona eleitoral", desabilitada: true },
+      { valor: "h3", texto: "Hexágono H3 (em breve)", desabilitada: true },
+    ], "municipio", (v) => {
+      nivelAtual = v === "zona" ? "zona" : "municipio";
+      void mapa.definirNivel(nivelAtual).then(atualizar);
     });
+    const ind = campoSelect("Indicador", "indicador", INDICADORES, indicador, (v) => { indicador = v === "pct_validos" ? "pct_validos" : "penetracao"; void atualizar(); });
+    const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
     const dens = h("input", { type: "checkbox", name: "densidade", checked: densidade });
     dens.addEventListener("change", () => { densidade = dens.checked; void pontos(); });
 
-    const avisoGeo = filtros.uf === UF_COM_GEOMETRIA
-      ? null
-      : nota(`Geometria de demonstração: enquanto os PMTiles do Brasil não existem, o mapa desenha apenas Sergipe (UF selecionada: ${filtros.uf}).`);
+    const avisos = h("div");
     container.replaceChildren(
       titulo("Mapa"),
-      ...(avisoGeo ? [avisoGeo] : []),
-      h("div", { className: "controles" }, ind.rotulo, nivel.rotulo, cand.rotulo, mun.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
+      avisos,
+      h("div", { className: "controles" }, ind.rotulo, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
       status,
       h("div", { className: "mapa-layout" }, area, painel),
     );
 
-    const mapa = criarPainelMapa(area, cliente, `Mapa de ${filtros.uf === "BR" ? "municípios" : `municípios — ${filtros.uf}`}`);
-    const parametros = (): Record<string, string | undefined> => ({
-      ...paramsDeFiltros(filtros), indicador, nivel: "municipio", sq_candidato: candidato || undefined,
-    });
+    if (filtros.cargo === "todos") avisos.append(nota(`O mapa exige um cargo: mostrando ${CARGO_PADRAO.replace(/_/g, " ")}. Escolha outro no filtro Cargo.`));
+    // Avisos que dependem da geometria disponível e habilitam o nível zona.
+    void Promise.all([geometria(), niveisDisponiveis(filtros.ano)]).then(([g, niveis]) => {
+      if (!vivo) return;
+      if (g === "demonstracao" && filtros.uf !== UF_DA_DEMONSTRACAO) {
+        avisos.append(nota(`Geometria de demonstração: os PMTiles do Brasil ainda não foram publicados e o mapa desenha apenas Sergipe (UF selecionada: ${filtros.uf}).`));
+      }
+      const zona = nivel.select.querySelector<HTMLOptionElement>("option[value=zona]");
+      if (zona && niveis.includes("zona")) {
+        if (filtros.uf === "BR") zona.textContent = "Zona eleitoral (escolha uma UF)";
+        else zona.disabled = false;
+      }
+    }, (e: unknown) => { if (vivo) mostrarErro(status, e, () => { window.location.reload(); }); });
 
-    function preencherMunicipios(r: RespostaMapa): void {
-      const atual = mun.select.value;
-      const ordenados = Object.entries(r.detalhes).map(([id, d]) => ({ id, nome: d.nome ?? id })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-      mun.select.replaceChildren(new Option("Selecione…", ""), ...ordenados.map((o) => new Option(o.nome, o.id)));
-      mun.select.value = atual;
-    }
+    const mapa = criarPainelMapa(area, cliente, `Mapa de ${filtros.uf === "BR" ? "municípios" : `municípios — ${filtros.uf}`}`, { ano: filtros.ano, aoSelecionar: (id) => { selecionar(id); } });
+    const parametros = (): Record<string, string | undefined> => ({
+      ...paramsComCargo(filtros), indicador, nivel: nivelAtual, sq_candidato: candidato || undefined,
+      // `grupo` e `sq_candidato` são exclusivos na API.
+      ...(candidato ? { grupo: undefined } : {}),
+    });
 
     async function pontos(): Promise<void> {
       try {
-        await mapa.mostrarPontos(densidade ? parametros() : null);
+        // /mapa/pontos exige UF; no Brasil inteiro a densidade fica desligada, com aviso na tela.
+        await mapa.mostrarPontos(densidade && filtros.uf !== "BR" ? parametros() : null);
       } catch (e) {
         // Cancelada = substituída por pedido mais novo; o erro "real" só vale se ainda for o atual.
         if (vivo && !foiCancelada(e)) mostrarErro(status, e, () => { void pontos(); });
@@ -96,23 +107,21 @@ export const tela: Tela = {
       status.replaceChildren(h("p", { textContent: "Carregando…" }));
       status.firstElementChild?.setAttribute("role", "status");
       try {
-        const r = await mapa.atualizar(parametros());
+        const r: RespostaMapa | null = await mapa.atualizar(parametros());
         if (!vivo || r === null || minha !== seqAtualizar) return;
-        preencherMunicipios(r);
-        status.replaceChildren();
+        status.replaceChildren(...(r.escala_sugerida.aviso ? [nota(r.escala_sugerida.aviso)] : []));
         await pontos();
       } catch (e) {
         if (vivo && minha === seqAtualizar && !foiCancelada(e)) mostrarErro(status, e, () => { void atualizar(); });
       }
     }
 
-    cliente.candidatos(paramsDeFiltros(filtros)).then((r) => {
+    cliente.candidatos({ ...paramsDeFiltros(filtros), limite: "500" }).then((r) => {
       if (!vivo) return;
-      const unicos: Candidato[] = r.candidatos;
-      cand.select.append(...unicos.map((c) => new Option(c.nome, c.sq_candidato)));
+      cand.select.append(...r.itens.map((c) => new Option(c.nm_urna, String(c.sq_candidato))));
     }, () => { /* a lista é opcional; o mapa do grupo funciona sem ela */ });
 
     void atualizar();
-    return () => { vivo = false; mapa.destruir(); container.replaceChildren(); };
+    return () => { vivo = false; ctrlMun?.abort(); mapa.destruir(); container.replaceChildren(); };
   },
 };

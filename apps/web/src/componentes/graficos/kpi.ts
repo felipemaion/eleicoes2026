@@ -1,15 +1,16 @@
-import { formatarMoeda, formatarNumero, formatarPercentual } from "../../formato";
+import { formatarMoeda, formatarNumero, formatarPercentual, formatarPermil, formatarPontos } from "../../formato";
 import type { Grafico } from "./base";
 
 export interface Kpi {
   rotulo: string;
   valor: number;
-  formato: "inteiro" | "moeda" | "percentual";
+  /** "percentual" recebe fração (0,05); "pontos" recebe 0–100; "permil" recebe ‰. */
+  formato: "inteiro" | "moeda" | "percentual" | "permil" | "pontos";
   /** Ex.: "% dos votos válidos" — vai junto do valor para não deixar o número solto. */
   unidade?: string;
 }
 
-const FORMATOS = { inteiro: formatarNumero, moeda: formatarMoeda, percentual: formatarPercentual } as const;
+const FORMATOS = { inteiro: formatarNumero, moeda: formatarMoeda, percentual: formatarPercentual, permil: formatarPermil, pontos: formatarPontos } as const;
 
 /** Cartões de indicador. Texto puro (`<dl>`): já é acessível, dispensa tabela alternativa. */
 export function render(container: HTMLElement, dados: readonly Kpi[]): Grafico<readonly Kpi[]> {
