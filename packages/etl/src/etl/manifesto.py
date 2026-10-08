@@ -20,6 +20,8 @@ class Entrada:
     etag: str | None = None
     last_modified: str | None = None
     dt_geracao: str | None = None  # preenchido ao ler o CSV (T-D02)
+    # sha256(sal)[:12] usado no pessoa_id deste arquivo (T-D06); nunca o sal em si
+    sal_impressao: str | None = None
 
 
 class Manifesto:
