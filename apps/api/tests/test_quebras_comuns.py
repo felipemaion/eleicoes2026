@@ -15,7 +15,7 @@ MUNICIPIOS = [3500000 + i * 100 for i in range(1, 13)]  # 12 municípios, todos 
 
 
 def _cand(ano: int, sq: int) -> Candidatura:
-    return Candidatura(ano, sq, f"p{sq}", f"C{sq}", "SP", DF, 14, "MISSAO", "DEFERIDO", None)
+    return Candidatura(ano, sq, f"p{sq}", f"C{sq}", "SP", DF, 14, "MISSAO", "APTO", None)
 
 
 def _repo(com_ano_2022: bool = True) -> RepositorioMemoria:
@@ -118,3 +118,20 @@ def test_comparacao_exige_grupo_de_um_dos_lados(catalogo: Catalogo) -> None:
 
     with pytest.raises(ErroDominio):
         _mapa(_repo(), catalogo, 2026, None, comparacao="evo")
+
+
+def test_n_aptas_nulo_quando_o_tse_ainda_nao_publicou_a_situacao(catalogo: Catalogo) -> None:
+    """2026 real chega com `ds_situacao_candidatura` nulo: 0 seria dado falso; null é honesto."""
+    repo = _repo()
+    sem_situacao = Candidatura(2026, 2, "p2", "C2", "SP", DF, 14, "MISSAO", None, None)
+    repo._d.candidaturas[:] = [_cand(2022, 1), sem_situacao]
+    comp = montar_comparativo(
+        repo,
+        catalogo,
+        comparacao_id="evo",
+        cargo=Cargo.DEPUTADO_FEDERAL,
+        uf="SP",
+        mesmos_candidatos=False,
+    )
+    assert comp.n_de == 1
+    assert comp.n_para is None

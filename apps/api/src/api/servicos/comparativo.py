@@ -61,8 +61,10 @@ class Comparativo(BaseModel):
     cargo: str
     uf: str | None
     mesmos_candidatos: bool
-    n_de: int = Field(description="Candidaturas do lado 'de' (após o recorte).")
-    n_para: int
+    n_de: int | None = Field(
+        description="Candidaturas aptas do lado 'de'; null = situação não publicada."
+    )
+    n_para: int | None
     kpis: KpisComparativo
     escala_sugerida: EscalaSugerida = Field(
         description="Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas)."
@@ -140,7 +142,10 @@ def _pessoas(candidaturas: Sequence[Candidatura], votos: dict[int, int]) -> pl.D
     )
 
 
-def _n_aptas(candidaturas: Sequence[Candidatura]) -> int:
+def _n_aptas(candidaturas: Sequence[Candidatura]) -> int | None:
+    """Aptas do lado; `None` se o TSE ainda não publicou a situação (0 seria dado falso)."""
+    if candidaturas and all(c.ds_situacao_candidatura is None for c in candidaturas):
+        return None
     quadro = pl.DataFrame(
         [(c.sq_candidato, c.ds_situacao_candidatura) for c in candidaturas],
         schema={"sq_candidato": pl.Int64, "ds_situacao_candidatura": pl.String},

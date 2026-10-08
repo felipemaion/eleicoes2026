@@ -881,12 +881,26 @@
             "title": "Mesmos Candidatos"
           },
           "n_de": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "N De",
-            "description": "Candidaturas do lado 'de' (após o recorte)."
+            "description": "Candidaturas aptas do lado 'de'; null = situação não publicada."
           },
           "n_para": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "N Para"
           },
           "kpis": {

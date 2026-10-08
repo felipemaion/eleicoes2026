@@ -15,7 +15,7 @@ class Candidatura:
     ds_cargo: str
     nr_partido: int
     sg_partido: str
-    ds_situacao_candidatura: str
+    ds_situacao_candidatura: str | None  # 2026 chega nulo do TSE até a publicação
     ds_sit_tot_turno: str | None
 
 
