@@ -36,6 +36,7 @@ test("gastos: avisos, dispersão e receita por fonte, com tabela alternativa", a
   await simularApi(page);
   await page.goto("/#/gastos");
   await expect(page.locator("svg.grafico")).toHaveCount(2);
+  await page.locator("aside.avisos summary").click();
   await expect(page.getByText(/reais de set\/2026/)).toBeVisible();
   await expect(page.locator("aside.avisos").getByText("Contas de 2026 parciais.")).toBeVisible();
   await page.getByLabel("Base do custo").selectOption("pago");
@@ -63,7 +64,7 @@ test("candidato: escolher no seletor leva ao deep-link e mostra a ficha", async 
   await simularApi(page);
   await page.goto("/#/candidato");
   await expect(page.getByText("Escolha um candidato para ver a ficha.")).toBeVisible();
-  await page.getByLabel("Candidato").selectOption("2026:1");
+  await page.getByLabel(/^Candidato/).selectOption("2026:1");
   await expect(page).toHaveURL(/cand=2026%3A1/);
   await expect(page.getByRole("heading", { level: 2, name: "Ana Souza" })).toBeVisible();
   await expect(page.locator(".ficha svg.grafico")).toHaveCount(2);

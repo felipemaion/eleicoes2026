@@ -18,3 +18,12 @@ export function expressaoPesoCalor(votosMax: number): Expressao {
 export function soFinitos(valores: Readonly<Record<string, number>>): Record<string, number> {
   return Object.fromEntries(Object.entries(valores).filter(([, v]) => Number.isFinite(v)));
 }
+
+/**
+ * Opacidade do preenchimento por abrangência: áreas cujo código IBGE começa pelo da UF ficam
+ * cheias, as demais esmaecidas. Vale para município ("2800308") e zona ("2800308-12").
+ */
+export function expressaoOpacidade(propriedadeId: string, codigoUf: string | null, cheia: number, esmaecida: number): Expressao | number {
+  if (codigoUf === null) return cheia;
+  return ["case", ["==", ["slice", ["to-string", ["get", propriedadeId]], 0, 2], codigoUf], cheia, esmaecida];
+}

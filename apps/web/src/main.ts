@@ -1,5 +1,6 @@
 import "./tokens.css";
 import "./estilo.css";
+import { render as renderBusca } from "./componentes/busca/busca";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
 import { criarSobreposicao, definirSobreposicaoGlobal } from "./componentes/ui/sobreposicao";
@@ -59,7 +60,8 @@ function montar(raiz: HTMLElement): void {
   });
   nav.append(lista);
   const botaoTema = el("button", { type: "button", className: "tema-botao" });
-  cabecalho.append(marca, nav, botaoTema);
+  const slotBusca = el("div", { className: "busca-slot" });
+  cabecalho.append(marca, nav, slotBusca, botaoTema);
   ligarTema(botaoTema);
   const lateral = el("aside", { className: "lateral" });
   lateral.setAttribute("aria-label", "Filtros");
@@ -80,7 +82,9 @@ function montar(raiz: HTMLElement): void {
   raiz.append(cabecalho, corpo, rodape);
   definirSobreposicaoGlobal(criarSobreposicao(document.body, principal));
 
-  renderFiltros(areaFiltros, store);
+  const clienteBusca = criarCliente();
+  renderFiltros(areaFiltros, store, clienteBusca);
+  renderBusca(slotBusca, { cliente: clienteBusca, filtros: () => store.obter().filtros });
 
   const gerenciador = criarGerenciadorDeTelas(principal, TELAS_POR_CHAVE);
   // O skip link aponta para #principal; deixar o navegador mudar o hash dispararia a rota.

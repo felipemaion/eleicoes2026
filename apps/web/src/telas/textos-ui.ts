@@ -27,17 +27,22 @@ export function ajuda(chave: string, ctx: Contexto): HTMLElement {
   return raiz;
 }
 
-/** Avisos obrigatórios da tela; `null` quando nenhum se aplica (sem região vazia para leitores de tela). */
+/**
+ * Avisos obrigatórios da tela, compactos: o mais importante (1º de nível "atencao", senão o 1º) fica
+ * à vista e o restante recolhe em "Notas sobre os dados (N)". `null` quando nenhum se aplica.
+ */
 export function avisosUi(tela: TelaComTextos, ctx: ContextoAvisos): HTMLElement | null {
   const lista = avisosDaTela(tela, ctx);
   if (lista.length === 0) return null;
-  const aside = h("aside", { className: "avisos" },
-    ...lista.map((a) => {
-      const p = h("p", {}, h("strong", { textContent: `${a.titulo}. ` }), a.texto);
-      p.dataset["nivel"] = a.nivel;
-      return p;
-    }),
-  );
+  const essencial = lista.find((a) => a.nivel === "atencao") ?? lista[0];
+  const resto = lista.filter((a) => a !== essencial);
+  const linha = (a: (typeof lista)[number]): HTMLElement => {
+    const p = h("p", {}, h("strong", { textContent: `${a.titulo}. ` }), a.texto);
+    p.dataset["nivel"] = a.nivel;
+    return p;
+  };
+  const aside = h("aside", { className: "avisos" }, ...(essencial ? [linha(essencial)] : []));
+  if (resto.length > 0) aside.append(h("details", { className: "avisos-resto" }, h("summary", { textContent: `Notas sobre os dados (${String(resto.length)})` }), ...resto.map(linha)));
   aside.setAttribute("aria-label", "Avisos de leitura");
   return aside;
 }

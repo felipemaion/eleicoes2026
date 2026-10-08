@@ -1,55 +1,77 @@
 {
- "total": 3,
- "limite": 500,
- "offset": 0,
- "itens": [
-  {
-   "ano": 2026,
-   "sq_candidato": 1,
-   "nm_urna": "Ana Souza",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "partido": {
-    "numero": 14,
-    "sigla": "MISSÃO"
-   },
-   "situacao": "APTO",
-   "resultado": "NÃO ELEITO",
-   "votos": 18049,
-   "pct_validos": 4.12,
-   "penetracao": 12.3
-  },
-  {
-   "ano": 2026,
-   "sq_candidato": 2,
-   "nm_urna": "Bruno Lima",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "partido": {
-    "numero": 14,
-    "sigla": "MISSÃO"
-   },
-   "situacao": "APTO",
-   "resultado": "NÃO ELEITO",
-   "votos": 11991,
-   "pct_validos": 2.73,
-   "penetracao": 8.1
-  },
-  {
-   "ano": 2026,
-   "sq_candidato": 3,
-   "nm_urna": "Carla Dias",
-   "sg_uf": "SE",
-   "cargo": "DEPUTADO FEDERAL",
-   "partido": {
-    "numero": 14,
-    "sigla": "MISSÃO"
-   },
-   "situacao": "APTO",
-   "resultado": "SUPLENTE",
-   "votos": 3155,
-   "pct_validos": 0.7,
-   "penetracao": 1.9
+  "total": 3,
+  "limite": 500,
+  "offset": 0,
+  "itens": [
+    {
+      "ano": 2026,
+      "sq_candidato": 1,
+      "nm_urna": "Ana Souza",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "situacao": "APTO",
+      "resultado": "NÃO ELEITO",
+      "votos": 18049,
+      "pct_validos": 4.12,
+      "penetracao": 12.3,
+      "indicado": false,
+      "abrangencia": {
+        "tipo": "uf",
+        "uf": "SE"
+      }
+    },
+    {
+      "ano": 2026,
+      "sq_candidato": 2,
+      "nm_urna": "Bruno Lima",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "situacao": "APTO",
+      "resultado": "NÃO ELEITO",
+      "votos": 11991,
+      "pct_validos": 2.73,
+      "penetracao": 8.1,
+      "indicado": false,
+      "abrangencia": {
+        "tipo": "uf",
+        "uf": "SE"
+      }
+    },
+    {
+      "ano": 2026,
+      "sq_candidato": 3,
+      "nm_urna": "Carla Dias",
+      "sg_uf": "SE",
+      "cargo": "DEPUTADO FEDERAL",
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "situacao": "APTO",
+      "resultado": "SUPLENTE",
+      "votos": 3155,
+      "pct_validos": 0.7,
+      "penetracao": 1.9,
+      "indicado": false,
+      "abrangencia": {
+        "tipo": "uf",
+        "uf": "SE"
+      }
+    }
+  ],
+  "kpis": {
+    "votos": 33195,
+    "aptos": 1700000,
+    "validos": 1000000,
+    "pct_validos": 3.32,
+    "penetracao": 19.53
   }
- ]
 }

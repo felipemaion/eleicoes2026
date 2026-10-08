@@ -1,133 +1,138 @@
 {
- "candidato": {
-  "ano": 2026,
-  "sq_candidato": 1,
-  "nm_urna": "Ana Souza",
-  "sg_uf": "SE",
-  "cargo": "DEPUTADO FEDERAL",
-  "partido": {
-   "numero": 14,
-   "sigla": "MISSÃO"
+  "candidato": {
+    "ano": 2026,
+    "sq_candidato": 1,
+    "nm_urna": "Ana Souza",
+    "sg_uf": "SE",
+    "cargo": "DEPUTADO FEDERAL",
+    "partido": {
+      "numero": 14,
+      "sigla": "MISSÃO"
+    },
+    "situacao": "APTO",
+    "resultado": "NÃO ELEITO",
+    "votos": 18049,
+    "pct_validos": 4.12,
+    "penetracao": 12.3,
+    "indicado": false,
+    "abrangencia": {
+      "tipo": "uf",
+      "uf": "SE"
+    }
   },
-  "situacao": "APTO",
-  "resultado": "NÃO ELEITO",
-  "votos": 18049,
-  "pct_validos": 4.12,
-  "penetracao": 12.3
- },
- "votos_total": 18049,
- "votos_por_uf": [
-  {
-   "uf": "SE",
-   "votos": 18049
-  }
- ],
- "votos_por_municipio": [
-  {
-   "cd_mun_ibge": 2800670,
-   "nome": "Boquim",
-   "uf": "SE",
-   "votos": 18049,
-   "penetracao": 96.43
+  "votos_total": 18049,
+  "votos_por_uf": [
+    {
+      "uf": "SE",
+      "votos": 18049
+    }
+  ],
+  "votos_por_municipio": [
+    {
+      "cd_mun_ibge": 2800670,
+      "nome": "Boquim",
+      "uf": "SE",
+      "votos": 18049,
+      "penetracao": 96.43
+    },
+    {
+      "cd_mun_ibge": 2802106,
+      "nome": "Estância",
+      "uf": "SE",
+      "votos": 18042,
+      "penetracao": 117.56
+    },
+    {
+      "cd_mun_ibge": 2803104,
+      "nome": "Itabi",
+      "uf": "SE",
+      "votos": 17981,
+      "penetracao": 118.73
+    },
+    {
+      "cd_mun_ibge": 2803609,
+      "nome": "Laranjeiras",
+      "uf": "SE",
+      "votos": 15291,
+      "penetracao": 94.26
+    },
+    {
+      "cd_mun_ibge": 2807105,
+      "nome": "Simão Dias",
+      "uf": "SE",
+      "votos": 13449,
+      "penetracao": 102.05
+    },
+    {
+      "cd_mun_ibge": 2804003,
+      "nome": "Maruim",
+      "uf": "SE",
+      "votos": 13334,
+      "penetracao": 109.77
+    },
+    {
+      "cd_mun_ibge": 2803708,
+      "nome": "Macambira",
+      "uf": "SE",
+      "votos": 13059,
+      "penetracao": 61.91
+    },
+    {
+      "cd_mun_ibge": 2807006,
+      "nome": "São Miguel do Aleixo",
+      "uf": "SE",
+      "votos": 12944,
+      "penetracao": 115.24
+    },
+    {
+      "cd_mun_ibge": 2806008,
+      "nome": "Ribeirópolis",
+      "uf": "SE",
+      "votos": 12537,
+      "penetracao": 86.29
+    },
+    {
+      "cd_mun_ibge": 2800407,
+      "nome": "Arauá",
+      "uf": "SE",
+      "votos": 11991,
+      "penetracao": 77.62
+    },
+    {
+      "cd_mun_ibge": 2805307,
+      "nome": "Pirambu",
+      "uf": "SE",
+      "votos": 11943,
+      "penetracao": 90.99
+    },
+    {
+      "cd_mun_ibge": 2805208,
+      "nome": "Pinhão",
+      "uf": "SE",
+      "votos": 11551,
+      "penetracao": 80.31
+    }
+  ],
+  "gastos": {
+    "despesa_contratada": 223000,
+    "despesa_paga": 180000,
+    "divida": 43000,
+    "votos": 18049,
+    "custo_voto_contratado": 12.36,
+    "custo_voto_pago": 9.97
   },
-  {
-   "cd_mun_ibge": 2802106,
-   "nome": "Estância",
-   "uf": "SE",
-   "votos": 18042,
-   "penetracao": 117.56
+  "receitas": {
+    "por_categoria": {
+      "FEFC": 150000,
+      "Fundo Partidário": 40000,
+      "Autofinanciamento": 20000
+    },
+    "receita_total": 210000,
+    "receita_financeira": 210000,
+    "pct_publico": 90.5,
+    "pct_autofinanciamento": 9.5
   },
-  {
-   "cd_mun_ibge": 2803104,
-   "nome": "Itabi",
-   "uf": "SE",
-   "votos": 17981,
-   "penetracao": 118.73
-  },
-  {
-   "cd_mun_ibge": 2803609,
-   "nome": "Laranjeiras",
-   "uf": "SE",
-   "votos": 15291,
-   "penetracao": 94.26
-  },
-  {
-   "cd_mun_ibge": 2807105,
-   "nome": "Simão Dias",
-   "uf": "SE",
-   "votos": 13449,
-   "penetracao": 102.05
-  },
-  {
-   "cd_mun_ibge": 2804003,
-   "nome": "Maruim",
-   "uf": "SE",
-   "votos": 13334,
-   "penetracao": 109.77
-  },
-  {
-   "cd_mun_ibge": 2803708,
-   "nome": "Macambira",
-   "uf": "SE",
-   "votos": 13059,
-   "penetracao": 61.91
-  },
-  {
-   "cd_mun_ibge": 2807006,
-   "nome": "São Miguel do Aleixo",
-   "uf": "SE",
-   "votos": 12944,
-   "penetracao": 115.24
-  },
-  {
-   "cd_mun_ibge": 2806008,
-   "nome": "Ribeirópolis",
-   "uf": "SE",
-   "votos": 12537,
-   "penetracao": 86.29
-  },
-  {
-   "cd_mun_ibge": 2800407,
-   "nome": "Arauá",
-   "uf": "SE",
-   "votos": 11991,
-   "penetracao": 77.62
-  },
-  {
-   "cd_mun_ibge": 2805307,
-   "nome": "Pirambu",
-   "uf": "SE",
-   "votos": 11943,
-   "penetracao": 90.99
-  },
-  {
-   "cd_mun_ibge": 2805208,
-   "nome": "Pinhão",
-   "uf": "SE",
-   "votos": 11551,
-   "penetracao": 80.31
-  }
- ],
- "gastos": {
-  "despesa_contratada": 223000,
-  "despesa_paga": 180000,
-  "divida": 43000,
-  "votos": 18049,
-  "custo_voto_contratado": 12.36,
-  "custo_voto_pago": 9.97
- },
- "receitas": {
-  "por_categoria": {
-   "FEFC": 150000,
-   "Fundo Partidário": 40000,
-   "Autofinanciamento": 20000
-  },
-  "receita_total": 210000,
-  "receita_financeira": 210000,
-  "pct_publico": 90.5,
-  "pct_autofinanciamento": 9.5
- },
- "contas_parciais": true,
- "base_ipca": "2026-09",
- "dt_geracao": "2026-10-07"
+  "contas_parciais": true,
+  "base_ipca": "2026-09",
+  "dt_geracao": "2026-10-07"
 }

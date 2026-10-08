@@ -1,6 +1,10 @@
-import { CARGO_PADRAO, paramsComCargo, paramsDeFiltros } from "../dados/adaptadores";
+import { paramsMapaDoCandidato, textoForaDoMapa } from "../dados/abrangencia";
+import { paramsDeFiltros } from "../dados/adaptadores";
 import { criarCliente, foiCancelada } from "../dados/cliente";
-import type { IndicadorApi, RespostaMapa } from "../dados/contrato";
+import type { Abrangencia, Ficha, IndicadorApi, RespostaMapa } from "../dados/contrato";
+import { formatarHash } from "../rotas";
+import { rotuloDaUf } from "../filtros-logica";
+import type { Uf } from "../store";
 import type { Nivel } from "../componentes/mapa/mapa";
 import { campoSelect, h, nota, titulo } from "./dom";
 import { iniciarCarga } from "../componentes/ui/sobreposicao";
@@ -24,7 +28,7 @@ export const tela: Tela = {
   render(container, { filtros }) {
     const cliente = criarCliente();
     let indicador: IndicadorApi = "penetracao";
-    let candidato = "";
+    let ficha: Ficha | null = null;
     let nivelAtual: Nivel = "municipio";
     let densidade = false;
     let vivo = true;
@@ -64,7 +68,12 @@ export const tela: Tela = {
     const ajudaInd = h("span");
     const mostrarAjuda = (): void => { ajudaInd.replaceChildren(ajuda(indicador, {})); };
     mostrarAjuda();
-    const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], "", (v) => { candidato = v; void atualizar(); });
+    const cand = campoSelect("Candidato", "candidatoMapa", [{ valor: "", texto: "Grupo inteiro" }], filtros.candidato, (v) => {
+      // O hash é a fonte de verdade: a rota atualiza o store e a tela se redesenha (deep-link grátis).
+      window.location.hash = formatarHash("mapa", { ...filtros, candidato: v });
+    });
+    const foco = h("div", { className: "mapa-foco" });
+    foco.hidden = true;
     const dens = h("input", { type: "checkbox", name: "densidade", checked: densidade });
     const avisoPontos = h("p", { className: "aviso-pontos" });
     avisoPontos.setAttribute("role", "status");
@@ -75,6 +84,7 @@ export const tela: Tela = {
       titulo("Mapa"),
       cabecalhoDaTela("mapa"),
       avisos,
+      foco,
       h("div", { className: "controles" }, ind.rotulo, ajudaInd, nivel.rotulo, cand.rotulo, h("label", {}, dens, " Densidade de votos (locais)")),
       status,
       avisoPontos,
@@ -84,7 +94,6 @@ export const tela: Tela = {
       rodape,
     );
 
-    if (filtros.cargo === "todos") avisos.append(nota(`O mapa exige um cargo: mostrando ${CARGO_PADRAO.replace(/_/g, " ")}. Escolha outro no filtro Cargo.`));
     // Avisos que dependem da geometria disponível e habilitam o nível zona.
     void Promise.all([geometria(), niveisDisponiveis(filtros.ano)]).then(([g, niveis]) => {
       if (!vivo) return;
@@ -99,17 +108,30 @@ export const tela: Tela = {
     }, (e: unknown) => { if (vivo) mostrarErro(status, e, () => { window.location.reload(); }); });
 
     const mapa = criarPainelMapa(area, cliente, `Mapa de ${filtros.uf === "BR" ? "municípios" : `municípios — ${filtros.uf}`}`, { ano: filtros.ano, aoSelecionar: (id) => { selecionar(id); } });
+    // Com candidato, ano/cargo/UF vêm DELE (a ficha), nunca dos filtros da tela: presidente é o país todo.
     const parametros = (): Record<string, string | undefined> => ({
-      ...paramsComCargo(filtros), indicador, nivel: nivelAtual, sq_candidato: candidato || undefined,
-      // `grupo` e `sq_candidato` são exclusivos na API.
-      ...(candidato ? { grupo: undefined } : {}),
+      ...(ficha ? paramsMapaDoCandidato(ficha.candidato) : paramsDeFiltros(filtros)), indicador, nivel: nivelAtual,
     });
+    const abrangencia = (): Abrangencia => ficha?.candidato.abrangencia ?? (filtros.uf === "BR" ? { tipo: "pais", uf: null } : { tipo: "uf", uf: filtros.uf });
+
+    function desenharFoco(): void {
+      foco.hidden = ficha === null;
+      if (!ficha) { foco.replaceChildren(); return; }
+      const c = ficha.candidato;
+      const a = c.abrangencia;
+      const onde = a.tipo === "uf" && a.uf !== null ? rotuloDaUf(a.uf as Uf) : "Brasil inteiro";
+      const sair = h("button", { type: "button", textContent: "Ver o grupo todo" });
+      sair.addEventListener("click", () => { window.location.hash = formatarHash("mapa", { ...filtros, candidato: "" }); });
+      foco.replaceChildren(h("p", {}, h("strong", { textContent: c.nm_urna }), ` — ${c.partido.sigla} · ${String(c.ano)}. Mostrando só onde disputou: ${onde}.`), sair);
+    }
 
     async function pontos(): Promise<void> {
       try {
         // /mapa/pontos exige UF; no Brasil inteiro a densidade fica desligada, com aviso na tela.
         avisoPontos.textContent = "";
-        await mapa.mostrarPontos(densidade && filtros.uf !== "BR" ? parametros() : null);
+        const p = parametros();
+        await mapa.mostrarPontos(densidade && p["uf"] !== undefined ? p : null);
+        if (densidade && p["uf"] === undefined) avisoPontos.textContent = "A densidade por local de votação exige uma UF; escolha um estado ou um candidato estadual.";
       } catch (e) {
         // Cancelada = substituída por pedido mais novo. Falha real: o coroplético segue de pé,
         // só a densidade sai de cena, com aviso discreto (detalhe no console).
@@ -129,10 +151,21 @@ export const tela: Tela = {
       status.replaceChildren();
       const fim = iniciarCarga("Carregando o mapa…");
       try {
+        if (filtros.candidato && !ficha) {
+          const [ano, sq] = filtros.candidato.split(":");
+          ficha = await cliente.ficha(Number(ano), sq ?? "");
+          if (!vivo || minha !== seqAtualizar) return;
+          desenharFoco();
+          if (!cand.select.querySelector(`option[value="${filtros.candidato}"]`)) cand.select.append(new Option(ficha.candidato.nm_urna, filtros.candidato));
+          cand.select.value = filtros.candidato;
+        }
+        // Antes de colorir: o enquadramento tem de estar pronto quando `data-mapa-pronto` virar "sim".
+        await mapa.definirAbrangencia(abrangencia());
         const r: RespostaMapa | null = await mapa.atualizar(parametros());
         if (!vivo || r === null || minha !== seqAtualizar) return;
         rodape.replaceChildren(rodapeUi("mapa", { dt_geracao: r.dt_geracao }));
-        status.replaceChildren(...(r.escala_sugerida.aviso ? [nota(r.escala_sugerida.aviso)] : []));
+        const fora = textoForaDoMapa(r.votos_fora_do_mapa);
+        status.replaceChildren(...(r.escala_sugerida.aviso ? [nota(r.escala_sugerida.aviso)] : []), ...(fora ? [nota(fora)] : []));
         await pontos();
       } catch (e) {
         if (vivo && minha === seqAtualizar && !foiCancelada(e)) mostrarErro(status, e, () => { void atualizar(); });
@@ -143,7 +176,10 @@ export const tela: Tela = {
 
     cliente.candidatos({ ...paramsDeFiltros(filtros), limite: "500" }).then((r) => {
       if (!vivo) return;
-      cand.select.append(...r.itens.map((c) => new Option(c.nm_urna, String(c.sq_candidato))));
+      // O valor é `ano:sq`, o mesmo formato do hash (`cand=`), para a escolha virar deep-link.
+      const existentes = new Set([...cand.select.options].map((o) => o.value));
+      cand.select.append(...r.itens.map((c) => new Option(c.nm_urna, `${String(c.ano)}:${String(c.sq_candidato)}`)).filter((o) => !existentes.has(o.value)));
+      cand.select.value = filtros.candidato;
     }, () => { /* a lista é opcional; o mapa do grupo funciona sem ela */ });
 
     void atualizar();

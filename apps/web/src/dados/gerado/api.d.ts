@@ -133,7 +133,7 @@ export interface paths {
         };
         /**
          * Locais de votação (densidade)
-         * @description `{lat, lon, votos}` por local, mais votados primeiro; paginado por UF.
+         * @description `{lat, lon, votos}` por local, mais votados primeiro; paginado.
          */
         get: operations["pontos_api_mapa_pontos_get"];
         put?: never;
@@ -174,8 +174,51 @@ export interface paths {
         /**
          * Evolução 2022→2026
          * @description Δ penetração (‰), swing (p.p.), retenção e ganho por AMC, mais KPIs do recorte.
+         *
+         *     Dois modos: `comparacao` (grupos configurados) ou uma seleção (`pessoas`, `sq_2022`,
+         *     `sq_2026`). Sem candidaturas dos dois lados no cargo/UF → 422 `sem_par_comparavel`.
          */
         get: operations["comparativo_api_comparativo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/busca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Busca de candidaturas
+         * @description Candidaturas com ano, cargo, UF, partido, votos, resultado e `abrangencia` do mapa.
+         */
+        get: operations["busca_api_busca_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evolucao/pessoas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pessoas em 2022 e 2026
+         * @description Quem concorreu nos dois anos, com o resumo de cada ano; alimenta `/comparativo?pessoas=`.
+         */
+        get: operations["evolucao_pessoas_api_evolucao_pessoas_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -209,6 +252,23 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * Abrangencia
+         * @description Região em que o candidato disputa: o front enquadra o mapa por ela.
+         */
+        Abrangencia: {
+            /**
+             * Tipo
+             * @description `pais` (presidente) ou `uf`.
+             * @enum {string}
+             */
+            tipo: "pais" | "uf";
+            /**
+             * Uf
+             * @description Sigla da UF; null quando `tipo = pais`.
+             */
+            uf: string | null;
+        };
+        /**
          * Ano
          * @description Anos de eleição geral suportados.
          * @enum {integer}
@@ -232,9 +292,9 @@ export interface components {
             partido: components["schemas"]["Partido"];
             /**
              * Situacao
-             * @description `ds_situacao_candidatura` (APTO, INDEFERIDO…).
+             * @description `ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou.
              */
-            situacao: string;
+            situacao: string | null;
             /**
              * Resultado
              * @description `ds_sit_tot_turno` (ELEITO, SUPLENTE…); null se sem apuração.
@@ -255,10 +315,67 @@ export interface components {
              * @description ‰ dos aptos do cargo na UF (§2.3).
              */
             penetracao: number | null;
+            /**
+             * Indicado
+             * @description Candidatura indicada pelo grupo (`origem=indicado` na lista de referência); false para candidatos próprios ou fora da lista.
+             */
+            indicado: boolean;
+            abrangencia: components["schemas"]["Abrangencia"];
+        };
+        /**
+         * CandidaturaBusca
+         * @description Candidatura achada: o bastante para listar, escolher e enquadrar o mapa.
+         */
+        CandidaturaBusca: {
+            /** Ano */
+            ano: number;
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /**
+             * Nome
+             * @description Nome civil, como no registro de candidatura do TSE.
+             */
+            nome: string | null;
+            /**
+             * Numero
+             * @description Número de urna.
+             */
+            numero: number | null;
+            /** Cargo */
+            cargo: string;
+            /**
+             * Uf
+             * @description UF da candidatura; `BR` para presidente.
+             */
+            uf: string;
+            partido: components["schemas"]["Partido"];
+            /**
+             * Votos
+             * @description Votos nominais válidos (spec §2.1); 0 sem apuração.
+             */
+            votos: number;
+            /**
+             * Resultado
+             * @description `ds_sit_tot_turno`; null se sem apuração.
+             */
+            resultado: string | null;
+            /**
+             * Indicado
+             * @description Candidatura indicada pelo grupo (lista de referência).
+             */
+            indicado: boolean;
+            /**
+             * Pessoa Id Publico
+             * @description Hash curto e não reversível da pessoa, só para ligar anos. Não é o `pessoa_id` interno nem identifica ninguém fora desta API.
+             */
+            pessoa_id_publico: string;
+            abrangencia: components["schemas"]["Abrangencia"];
         };
         /**
          * Cargo
-         * @description `ds_cargo` como gravado nos Parquet (maiúsculas; o ETL normaliza).
+         * @description `ds_cargo` em maiúsculas; o ETL grava em caixa de título e as views aplicam `upper`.
          * @enum {string}
          */
         Cargo: "PRESIDENTE" | "GOVERNADOR" | "SENADOR" | "DEPUTADO FEDERAL" | "DEPUTADO ESTADUAL" | "DEPUTADO DISTRITAL";
@@ -326,12 +443,14 @@ export interface components {
             mesmos_candidatos: boolean;
             /**
              * N De
-             * @description Candidaturas do lado 'de' (após o recorte).
+             * @description Candidaturas aptas do lado 'de'; null = situação não publicada.
              */
-            n_de: number;
+            n_de: number | null;
             /** N Para */
-            n_para: number;
+            n_para: number | null;
             kpis: components["schemas"]["KpisComparativo"];
+            /** @description Quebras comuns 2022+2026 da penetração municipal (as dos dois mapas). */
+            escala_sugerida: components["schemas"]["EscalaSugerida"];
             /** Municipios */
             municipios: components["schemas"]["EvolucaoMunicipio"][];
             /** Dt Geracao */
@@ -356,6 +475,11 @@ export interface components {
              * @description Valor do indicador; null = sem dado (denominador 0).
              */
             taxa: number | null;
+            /**
+             * Nome
+             * @description Nome do município (também nas chaves `IBGE-zona`); null no H3 ou se o município não consta do cadastro.
+             */
+            nome?: string | null;
         };
         /**
          * EscalaSugerida
@@ -379,6 +503,11 @@ export interface components {
              * @description Por que `quebras` é null, se for.
              */
             aviso?: string | null;
+            /**
+             * Anos
+             * @description Anos cujos valores entraram nas quebras (2022+2026 numa comparação).
+             */
+            anos?: number[];
         };
         /**
          * EvolucaoMunicipio
@@ -624,13 +753,49 @@ export interface components {
             votos_para: number | null;
         };
         /**
+         * KpisGrupo
+         * @description Grupo como candidato coletivo no recorte (cargo × UF): soma única, nunca de cargos.
+         */
+        KpisGrupo: {
+            /**
+             * Votos
+             * @description Σ votos nominais válidos dos membros (spec §2.1).
+             */
+            votos: number;
+            /**
+             * Aptos
+             * @description Aptos do cargo no recorte (denominador da penetração).
+             */
+            aptos: number;
+            /**
+             * Validos
+             * @description Votos válidos do cargo no recorte (denominador do %).
+             */
+            validos: number;
+            /**
+             * Pct Validos
+             * @description % dos válidos do cargo (§2.2).
+             */
+            pct_validos: number | null;
+            /**
+             * Penetracao
+             * @description ‰ dos aptos do cargo (§2.3).
+             */
+            penetracao: number | null;
+        };
+        /**
          * ListaCandidatos
          * @description Página de candidatos.
          * @example {
          *       "itens": [
          *         {
+         *           "abrangencia": {
+         *             "tipo": "uf",
+         *             "uf": "SP"
+         *           },
          *           "ano": 2026,
          *           "cargo": "DEPUTADO FEDERAL",
+         *           "indicado": false,
          *           "nm_urna": "A",
          *           "partido": {
          *             "numero": 14,
@@ -645,6 +810,13 @@ export interface components {
          *           "votos": 1000
          *         }
          *       ],
+         *       "kpis": {
+         *         "aptos": 17500,
+         *         "pct_validos": 8.06,
+         *         "penetracao": 57.14,
+         *         "validos": 12400,
+         *         "votos": 1000
+         *       },
          *       "limite": 200,
          *       "offset": 0,
          *       "total": 1
@@ -659,6 +831,22 @@ export interface components {
             offset: number;
             /** Itens */
             itens: components["schemas"]["CandidatoResumo"][];
+            /** @description Indicadores do grupo inteiro no recorte; null sem `cargo` (não se somam cargos) ou sem candidaturas. */
+            kpis: components["schemas"]["KpisGrupo"] | null;
+        };
+        /**
+         * ListaPessoas
+         * @description Corpo de GET /evolucao/pessoas.
+         */
+        ListaPessoas: {
+            /** Total */
+            total: number;
+            /** Limite */
+            limite: number;
+            /** Itens */
+            itens: components["schemas"]["PessoaEvolucao"][];
+            /** Dt Geracao */
+            dt_geracao: string;
         };
         /**
          * Mapa
@@ -717,6 +905,22 @@ export interface components {
             denominador: string | null;
             /** N Candidaturas */
             n_candidaturas: number;
+            /**
+             * Votos Sem Coordenada
+             * @description Só no H3: votos do recorte em locais sem coordenada, que não aparecem em nenhuma célula. null nos demais níveis.
+             */
+            votos_sem_coordenada?: number | null;
+            /**
+             * Pct Votos Sem Coordenada
+             * @description `votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%).
+             */
+            pct_votos_sem_coordenada?: number | null;
+            /**
+             * Votos Fora Do Mapa
+             * @description Votos do recorte sem município IBGE (exterior, `ZZ`): contam no total do candidato, mas não têm polígono e ficam fora de `valores`.
+             * @default 0
+             */
+            votos_fora_do_mapa: number;
             /** Dt Geracao */
             dt_geracao: string;
         };
@@ -753,6 +957,33 @@ export interface components {
             sigla: string;
         };
         /**
+         * PessoaEvolucao
+         * @description Uma pessoa com candidatura em 2022 e em 2026, resumida nos dois anos.
+         */
+        PessoaEvolucao: {
+            /** Pessoa Id Publico */
+            pessoa_id_publico: string;
+            /**
+             * Nome
+             * @description Nome de urna em 2026.
+             */
+            nome: string;
+            /**
+             * Mesmo Cargo
+             * @description Concorreu ao mesmo cargo nos dois anos.
+             */
+            mesmo_cargo: boolean;
+            /**
+             * Comparavel
+             * @description Entra em /comparativo: mesmo cargo e não Senado (1 voto × 2 votos, §1.8).
+             */
+            comparavel: boolean;
+            /** @description Candidatura de 2022. */
+            de: components["schemas"]["CandidaturaBusca"];
+            /** @description Candidatura de 2026. */
+            para: components["schemas"]["CandidaturaBusca"];
+        };
+        /**
          * Ponto
          * @description Local de votação.
          */
@@ -773,9 +1004,14 @@ export interface components {
             ano: number;
             /**
              * Total
-             * @description Locais com voto no recorte.
+             * @description Pontos no recorte (locais com voto ou, na grade, células).
              */
             total: number;
+            /**
+             * Grade Graus
+             * @description Sem `uf` (Brasil): tamanho em graus da célula lat/lon em que os locais são somados (cada ponto é o centroide ponderado por votos). null = um ponto por local.
+             */
+            grade_graus: number | null;
             /** Limite */
             limite: number;
             /** Offset */
@@ -785,8 +1021,63 @@ export interface components {
              * @description Há mais páginas além desta.
              */
             truncado: boolean;
+            /**
+             * Votos Sem Coordenada
+             * @description Votos do recorte (UF inteira, não só a página) em locais sem coordenada, que não viram ponto.
+             */
+            votos_sem_coordenada: number;
+            /**
+             * Pct Votos Sem Coordenada
+             * @description `votos_sem_coordenada` em % dos votos do recorte (o front avisa se > 5%).
+             */
+            pct_votos_sem_coordenada: number;
             /** Pontos */
             pontos: components["schemas"]["Ponto"][];
+            /** Dt Geracao */
+            dt_geracao: string;
+        };
+        /**
+         * ResultadoBusca
+         * @description Corpo de GET /busca.
+         * @example {
+         *       "dt_geracao": "2026-10-06",
+         *       "itens": [
+         *         {
+         *           "abrangencia": {
+         *             "tipo": "uf",
+         *             "uf": "SP"
+         *           },
+         *           "ano": 2026,
+         *           "cargo": "DEPUTADO FEDERAL",
+         *           "indicado": false,
+         *           "nm_urna": "A",
+         *           "nome": "ANA ALVES DA SILVA",
+         *           "numero": 1415,
+         *           "partido": {
+         *             "numero": 14,
+         *             "sigla": "MISSÃO"
+         *           },
+         *           "pessoa_id_publico": "3f2a9c1d7b40",
+         *           "resultado": "SUPLENTE",
+         *           "sq_candidato": 3,
+         *           "uf": "SP",
+         *           "votos": 1000
+         *         }
+         *       ],
+         *       "limite": 20,
+         *       "total": 1
+         *     }
+         */
+        ResultadoBusca: {
+            /**
+             * Total
+             * @description Candidaturas que casam (além da página devolvida).
+             */
+            total: number;
+            /** Limite */
+            limite: number;
+            /** Itens */
+            itens: components["schemas"]["CandidaturaBusca"][];
             /** Dt Geracao */
             dt_geracao: string;
         };
@@ -815,9 +1106,15 @@ export interface components {
          * @description Despesa (sem transferências) e custo por voto de um candidato.
          */
         ResumoCustoCandidato: {
-            /** Despesa Contratada */
+            /**
+             * Despesa Contratada
+             * @description R$ da própria campanha, sem repasses.
+             */
             despesa_contratada: number;
-            /** Despesa Paga */
+            /**
+             * Despesa Paga
+             * @description R$ pagos da própria campanha, sem repasses.
+             */
             despesa_paga: number;
             /**
              * Divida
@@ -828,10 +1125,13 @@ export interface components {
             votos: number;
             /**
              * Custo Voto Contratado
-             * @description R$/voto; null se votos = 0.
+             * @description R$/voto = despesa contratada ÷ votos nominais. Exclui repasses a outros candidatos/partidos (§4.2). null se votos = 0.
              */
             custo_voto_contratado: number | null;
-            /** Custo Voto Pago */
+            /**
+             * Custo Voto Pago
+             * @description R$/voto pago; exclui repasses a outros candidatos/partidos (§4.2).
+             */
             custo_voto_pago: number | null;
         };
         /**
@@ -839,19 +1139,34 @@ export interface components {
          * @description Agregado: Σ despesa / Σ votos, não média de razões (§4.2).
          */
         ResumoCustoGrupo: {
-            /** Despesa Contratada */
+            /**
+             * Despesa Contratada
+             * @description Σ da própria campanha, sem repasses.
+             */
             despesa_contratada: number;
-            /** Despesa Paga */
+            /**
+             * Despesa Paga
+             * @description Σ paga da própria campanha, sem repasses.
+             */
             despesa_paga: number;
             /** Divida */
             divida: number;
             /** Votos */
             votos: number;
-            /** Custo Voto Contratado */
+            /**
+             * Custo Voto Contratado
+             * @description Σ despesa contratada ÷ Σ votos; exclui repasses a outros candidatos/partidos (§4.2).
+             */
             custo_voto_contratado: number | null;
-            /** Custo Voto Pago */
+            /**
+             * Custo Voto Pago
+             * @description Σ despesa paga ÷ Σ votos; exclui repasses a outros candidatos/partidos.
+             */
             custo_voto_pago: number | null;
-            /** Mediana Custo Voto Contratado */
+            /**
+             * Mediana Custo Voto Contratado
+             * @description Mediana entre candidatos com voto; exclui repasses (§4.2).
+             */
             mediana_custo_voto_contratado: number | null;
             /** Candidatos Sem Voto Excluidos */
             candidatos_sem_voto_excluidos: number;
@@ -1153,6 +1468,8 @@ export interface operations {
                 /** @description SQ_CANDIDATO; exclusivo com grupo. */
                 sq_candidato?: number | null;
                 indicador?: components["schemas"]["Indicador"];
+                /** @description Id em `comparacoes`: a escala usa quebras comuns aos dois anos (exige `grupo` = um dos lados). */
+                comparacao?: string | null;
             };
             header?: never;
             path?: never;
@@ -1185,7 +1502,8 @@ export interface operations {
             query: {
                 ano: components["schemas"]["Ano"];
                 cargo: components["schemas"]["Cargo"];
-                uf: components["schemas"]["UF"];
+                /** @description Sem UF (Brasil, ex.: presidente): locais somados em células de 0,1°. */
+                uf?: components["schemas"]["UF"] | null;
                 /** @description Id do grupo; exclusivo com sq_candidato. */
                 grupo?: string | null;
                 /** @description SQ_CANDIDATO; exclusivo com grupo. */
@@ -1256,12 +1574,18 @@ export interface operations {
     comparativo_api_comparativo_get: {
         parameters: {
             query: {
-                /** @description Id em `comparacoes` (ex.: evolucao_mbl). */
-                comparacao: string;
                 cargo: components["schemas"]["Cargo"];
+                /** @description Id em `comparacoes` (ex.: evolucao_mbl). */
+                comparacao?: string | null;
                 uf?: components["schemas"]["UF"] | null;
                 /** @description Só pessoas que concorreram nos dois anos (pessoa_id). */
                 mesmos_candidatos?: boolean;
+                /** @description Seleção do usuário: `pessoa_id_publico` (de /busca ou /evolucao/pessoas); compara as candidaturas delas em 2022 e 2026. Exclusivo com `comparacao`. */
+                pessoas?: string[] | null;
+                /** @description Seleção: `sq_candidato` de 2022. */
+                sq_2022?: number[] | null;
+                /** @description Seleção: `sq_candidato` de 2026. */
+                sq_2026?: number[] | null;
             };
             header?: never;
             path?: never;
@@ -1276,6 +1600,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Comparativo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    busca_api_busca_get: {
+        parameters: {
+            query: {
+                /** @description Nome de urna ou civil (sem acento, qualquer caixa; início de palavra antes de trecho), número de urna (prefixo), número ou sigla do partido. */
+                q: string;
+                ano?: components["schemas"]["Ano"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+                uf?: components["schemas"]["UF"] | null;
+                /** @description Id do grupo; exclusivo com sq_candidato. */
+                grupo?: string | null;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoBusca"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evolucao_pessoas_api_evolucao_pessoas_get: {
+        parameters: {
+            query?: {
+                /** @description Nome (urna ou civil), como em /busca. */
+                q?: string | null;
+                uf?: components["schemas"]["UF"] | null;
+                /** @description Exige este cargo nos dois anos. */
+                cargo?: components["schemas"]["Cargo"] | null;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaPessoas"];
                 };
             };
             /** @description Validation Error */

@@ -9,7 +9,8 @@ export const UFS = [
 ] as const;
 export type Uf = (typeof UFS)[number] | "BR";
 
-export const CARGOS = ["todos", "deputado_federal", "deputado_estadual", "senador", "governador", "presidente"] as const;
+/** Sem "todos": somar cargos diferentes (presidente + deputados) daria um número sem significado. */
+export const CARGOS = ["deputado_federal", "deputado_estadual", "senador", "governador", "presidente"] as const;
 export type Cargo = (typeof CARGOS)[number];
 
 export const GRUPOS = ["missao_2026", "mbl_2022"] as const;
@@ -27,7 +28,9 @@ export interface Filtros {
   candidato: string;
 }
 
-export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "todos", grupo: "missao_2026", ano: 2026, candidato: "" };
+export const FILTROS_PADRAO: Readonly<Filtros> = { uf: "BR", cargo: "deputado_federal", grupo: "missao_2026", ano: 2026, candidato: "" };
+
+import { normalizarFiltros } from "./filtros-logica";
 
 export interface Estado {
   tela: Tela;
@@ -49,7 +52,7 @@ export function criarStore(inicial: Estado = { tela: "visao-geral", filtros: { .
   return {
     obter: () => estado,
     definir(filtros, tela) {
-      const proximo: Estado = { tela: tela ?? estado.tela, filtros: { ...estado.filtros, ...filtros } };
+      const proximo: Estado = { tela: tela ?? estado.tela, filtros: normalizarFiltros({ ...estado.filtros, ...filtros }) };
       const igual =
         proximo.tela === estado.tela &&
         (Object.keys(proximo.filtros) as (keyof Filtros)[]).every((k) => proximo.filtros[k] === estado.filtros[k]);

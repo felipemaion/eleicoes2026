@@ -1,20 +1,23 @@
 {
- "ano": 2026,
- "total": 2,
- "limite": 5000,
- "offset": 0,
- "truncado": false,
- "pontos": [
-  {
-   "lat": -10.9,
-   "lon": -37.07,
-   "votos": 1200
-  },
-  {
-   "lat": -10.5,
-   "lon": -37.4,
-   "votos": 300
-  }
- ],
- "dt_geracao": "2026-10-07"
+  "ano": 2026,
+  "total": 2,
+  "limite": 5000,
+  "offset": 0,
+  "truncado": false,
+  "pontos": [
+    {
+      "lat": -10.9,
+      "lon": -37.07,
+      "votos": 1200
+    },
+    {
+      "lat": -10.5,
+      "lon": -37.4,
+      "votos": 300
+    }
+  ],
+  "dt_geracao": "2026-10-07",
+  "grade_graus": null,
+  "votos_sem_coordenada": 0,
+  "pct_votos_sem_coordenada": 0.0
 }

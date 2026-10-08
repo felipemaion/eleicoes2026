@@ -47,6 +47,19 @@ describe("avisos, cabeçalho e rodapé", () => {
     expect(aside.querySelector("[data-nivel=atencao]")).not.toBeNull();
     expect(avisosUi("gastos", { contas_parciais: false })).toBeNull();
   });
+  it("vários avisos: o essencial fica à vista e o resto recolhido em 'Notas sobre os dados (N)'", () => {
+    const aside = avisosUi("gastos", { contas_parciais: true, dt_geracao: "2026-10-07", mes_base_ipca: "2026-09" }) as HTMLElement;
+    const visiveis = [...aside.children].filter((c) => c.tagName === "P");
+    expect(visiveis).toHaveLength(1);
+    expect(visiveis[0]?.textContent).toMatch(/Contas de 2026 parciais/);
+    const resto = aside.querySelector("details") as HTMLDetailsElement;
+    expect(resto.open).toBe(false);
+    expect(resto.querySelector("summary")?.textContent).toBe("Notas sobre os dados (1)");
+  });
+  it("aviso único não ganha recolhimento", () => {
+    const aside = avisosUi("gastos", { contas_parciais: true, dt_geracao: "2026-10-07" }) as HTMLElement;
+    expect(aside.querySelector("details")).toBeNull();
+  });
   it("cabeçalho: subtítulo público da tela", () => {
     expect(cabecalhoDaTela("mapa").textContent).toMatch(/Penetração/);
   });

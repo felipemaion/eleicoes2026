@@ -44,6 +44,7 @@ test("mapa: legenda explica a hachura de n baixo e o aviso público aparece", as
   await simularApi(page);
   await page.goto("/#/mapa?uf=SE");
   await expect(page.locator(".mapa-legenda .legenda-hachura")).toContainText("menos de 20 votos esperados");
+  await page.locator("aside.avisos summary").click();
   await expect(page.locator("aside.avisos").getByText("Estimativa instável")).toBeVisible();
 });
 

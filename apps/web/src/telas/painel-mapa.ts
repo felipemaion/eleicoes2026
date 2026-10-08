@@ -3,8 +3,9 @@ import type { FeatureCollection } from "geojson";
 import { escalaDoMapa } from "../dados/adaptadores";
 import { formatadorDaUnidade } from "../formato";
 import type { ClienteApi, Params } from "../dados/cliente";
-import type { PontoVoto, RespostaMapa } from "../dados/contrato";
+import type { Abrangencia, PontoVoto, RespostaMapa } from "../dados/contrato";
 import type { Nivel } from "../componentes/mapa/mapa";
+import { codigoDaAbrangencia, limitesDaAbrangencia } from "../dados/abrangencia";
 import { montarMapa, type OpcoesEmbutido } from "./mapa-embutido";
 
 export interface PainelMapa {
@@ -12,6 +13,8 @@ export interface PainelMapa {
   atualizar(params: Params): Promise<RespostaMapa | null>;
   /** Símbolos proporcionais (absolutos) por local de votação. */
   mostrarPontos(params: Params | null): Promise<void>;
+  /** Enquadra a região do candidato e esmaece o resto (país = Brasil inteiro, sem esmaecer). */
+  definirAbrangencia(a: Abrangencia): Promise<void>;
   /** Troca o nível exibido (município/zona); depois, chame `atualizar` para colorir. */
   definirNivel(nivel: Nivel): Promise<void>;
   destruir(): void;
@@ -66,6 +69,12 @@ export function criarPainelMapa(area: HTMLElement, cliente: ClienteApi, rotulo: 
       const ctrl = (ctrlPontos = new AbortController());
       const { pontos } = await cliente.pontos(params, ctrl.signal);
       if (minha === seqPontos && !estaDestruido()) m.definirPontos(paraGeoJson(pontos));
+    },
+    async definirAbrangencia(a) {
+      const m = await mapa;
+      if (destruido) return;
+      m.definirAbrangencia(codigoDaAbrangencia(a), limitesDaAbrangencia(a));
+      area.dataset["abrangencia"] = a.tipo === "uf" && a.uf !== null ? a.uf : "pais";
     },
     async definirNivel(nivel) {
       (await mapa).definirNivel(nivel);

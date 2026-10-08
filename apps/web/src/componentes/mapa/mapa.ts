@@ -12,7 +12,7 @@ import { formatarPercentual } from "../../formato";
 import { PALETAS } from "../../paletas";
 import { expressaoCor, validarCoropletico, type Escala, type MetaIndicador } from "../escalas/escalas";
 import { criarLegenda } from "../escalas/legenda";
-import { expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoes";
+import { expressaoOpacidade, expressaoPesoCalor, expressaoRaioCirculo, soFinitos } from "./expressoes";
 import { limitesDe, type Limites } from "./geo";
 import { limitesDosIds } from "../../dados/limites-uf";
 import { ancoraEm, corpoRico, encaixar } from "../ui/tooltip";
@@ -64,6 +64,11 @@ export interface Mapa {
   /** Colore o nível atual. Recusa indicadores absolutos (use `definirPontos`). */
   definirValores(valores: Readonly<Record<string, number>>, escala: Escala, meta: MetaIndicador, detalhes?: Readonly<Record<string, DetalheParcial>>): void;
   definirNivel(nivel: Nivel): void;
+  /**
+   * Foca a região do candidato: enquadra `limites` (ou o país, se `null`) e esmaece as áreas fora da UF
+   * (`codigoUf` = prefixo IBGE de 2 dígitos; `null` = nenhuma esmaecida).
+   */
+  definirAbrangencia(codigoUf: string | null, limites: Limites | null): void;
   /** Densidade: heatmap + círculos com raio ∝ √votos. Feature precisa da propriedade `votos`. */
   definirPontos(pontos: FeatureCollection): void;
   estatisticas(): EstatisticasMapa;
@@ -164,11 +169,16 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
   const detalhesPorNivel = new Map<Nivel, Readonly<Record<string, DetalheParcial>>>();
   let metaAtual: MetaIndicador | null = null;
   let destacado: string | null = null;
+  let abrangenciaUf: string | null = null;
 
   const idFonte = (n: Nivel): string => `geo-${n}`;
   const idFill = (n: Nivel): string => `fill-${n}`;
   const idLinha = (n: Nivel): string => `linha-${n}`;
   const idHachura = (n: Nivel): string => `hachura-${n}`;
+
+  const ESMAECIDA = 0.12;
+  const opacidadeFill = (idProp: string): number | ExpressionSpecification => expressaoOpacidade(idProp, abrangenciaUf, 0.92, ESMAECIDA) as number | ExpressionSpecification;
+  const opacidadeLinha = (idProp: string): number | ExpressionSpecification => expressaoOpacidade(idProp, abrangenciaUf, 1, 0.15) as number | ExpressionSpecification;
 
   function garantirNivel(n: Nivel): FonteGeometria {
     const f = opcoes.fontes[n];
@@ -178,14 +188,14 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
     else mapa.addSource(idFonte(n), { type: "vector", url: `${PROTOCOLO_PMTILES}://${f.url}`, promoteId: f.idPropriedade });
     const camada = f.tipo === "pmtiles" ? { "source-layer": f.camadaFonte } : {};
     const destaque: ExpressionSpecification = ["case", ["boolean", ["feature-state", "destaque"], false], 3, 0.6];
-    mapa.addLayer({ id: idFill(n), type: "fill", source: idFonte(n), ...camada, paint: { "fill-color": cssVar("--cor-sem-dado", "#c3c9d0"), "fill-opacity": 0.92 } }, camadaPontosAcima());
+    mapa.addLayer({ id: idFill(n), type: "fill", source: idFonte(n), ...camada, paint: { "fill-color": cssVar("--cor-sem-dado", "#c3c9d0"), "fill-opacity": opacidadeFill(f.idPropriedade) } }, camadaPontosAcima());
     if (!mapa.hasImage(IMAGEM_HACHURA)) mapa.addImage(IMAGEM_HACHURA, imagemHachura(cssVar("--cor-texto", "#1b2430")));
     // fill-pattern não aceita feature-state, mas fill-opacity aceita: a hachura existe em todos e só aparece onde nbaixo.
     mapa.addLayer({
       id: idHachura(n), type: "fill", source: idFonte(n), ...camada,
       paint: { "fill-pattern": IMAGEM_HACHURA, "fill-opacity": ["case", ["boolean", ["feature-state", "nbaixo"], false], 0.55, 0] },
     }, camadaPontosAcima());
-    mapa.addLayer({ id: idLinha(n), type: "line", source: idFonte(n), ...camada, paint: { "line-color": cssVar("--cor-texto-suave", "#4a5360"), "line-width": destaque } }, camadaPontosAcima());
+    mapa.addLayer({ id: idLinha(n), type: "line", source: idFonte(n), ...camada, paint: { "line-color": cssVar("--cor-texto-suave", "#4a5360"), "line-width": destaque, "line-opacity": opacidadeLinha(f.idPropriedade) } }, camadaPontosAcima());
     adicionadas.add(n);
     stats.fontesCarregadas += 1;
     ligarInteracao(n, f);
@@ -417,6 +427,18 @@ export function criarMapa(container: HTMLElement, opcoes: OpcoesMapa): Mapa {
       const nTabela = nivel;
       tabelaPendente = () => { preencherTabela(nTabela, finitos, meta, detalhes); };
       if (tabela.open) { const f = tabelaPendente; tabelaPendente = null; f(); }
+    },
+    definirAbrangencia(codigoUf, limites) {
+      abrangenciaUf = codigoUf;
+      quandoPronto(() => {
+        for (const n of adicionadas) {
+          const f = opcoes.fontes[n];
+          if (!f) continue;
+          mapa.setPaintProperty(idFill(n), "fill-opacity", opacidadeFill(f.idPropriedade));
+          mapa.setPaintProperty(idLinha(n), "line-opacity", opacidadeLinha(f.idPropriedade));
+        }
+        mapa.fitBounds(limites ?? limitesIniciais(opcoes.fontes[nivel] ?? opcoes.fontes.municipio), { padding: 24, duration: 0 });
+      });
     },
     definirNivel(novo) {
       if (!opcoes.fontes[novo]) throw new Error(`Nível "${novo}" sem fonte de geometria configurada.`);

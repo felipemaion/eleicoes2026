@@ -11,7 +11,8 @@ export default defineConfig({
     // Os textos públicos (docs/metodologia/publico) ficam fora de apps/web e entram no build por import.
     fs: { allow: [raizDoRepo] },
     proxy: {
-      "/api": "http://localhost:8000",
+      // API_ALVO permite apontar o dev/preview para outra API (ex.: a de um worktree em outra porta).
+      "/api": process.env["API_ALVO"] ?? "http://localhost:8000",
     },
   },
   // Produção é same-origin na raiz (Caddy): `/api`, `/tiles`, `/assets`.

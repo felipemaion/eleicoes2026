@@ -1,0 +1,28 @@
+{
+  "total": 1,
+  "limite": 8,
+  "itens": [
+    {
+      "ano": 2026,
+      "sq_candidato": 1,
+      "nm_urna": "CANDIDATA UM",
+      "nome": "CANDIDATA DE TESTE UM",
+      "numero": 1414,
+      "cargo": "DEPUTADO FEDERAL",
+      "uf": "SE",
+      "partido": {
+        "numero": 14,
+        "sigla": "MISSÃO"
+      },
+      "votos": 12345,
+      "resultado": null,
+      "indicado": false,
+      "pessoa_id_publico": "abc123abc123",
+      "abrangencia": {
+        "tipo": "uf",
+        "uf": "SE"
+      }
+    }
+  ],
+  "dt_geracao": "2026-10-07"
+}

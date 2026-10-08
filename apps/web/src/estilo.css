@@ -27,7 +27,53 @@ nav a {
 }
 nav a:hover { border-color: var(--cor-acento); background: var(--cor-superficie-alta); }
 nav a[aria-current="page"] { background: var(--cor-acento); color: var(--cor-texto-acento); border-color: var(--cor-acento); }
-.tema-botao { margin-left: auto; font-weight: 600; }
+.tema-botao { font-weight: 600; }
+.busca-slot { flex: 0 1 22rem; min-width: 12rem; margin-left: auto; }
+
+/* Busca global (combobox): campo, atalho "/" e lista de sugestões. */
+.busca { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: var(--esp-2); }
+.busca-rotulo { grid-column: 1 / -1; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.busca input { width: 100%; }
+.busca-atalho { padding: 0 0.45rem; border: 1px solid var(--cor-borda); border-bottom-width: 2px; border-radius: 0.3rem; font: 600 0.8rem var(--fonte-mono); color: var(--cor-texto-suave); background: var(--cor-superficie); }
+.busca-estado { grid-column: 1 / -1; margin: 0; font-size: var(--texto-pequeno); color: var(--cor-texto-suave); }
+.busca-estado:empty { display: none; }
+.combobox-lista {
+  position: absolute; z-index: 600; left: 0; right: 0; top: 100%; margin: var(--esp-1) 0 0; padding: var(--esp-1); list-style: none;
+  max-height: 22rem; overflow: auto; background: var(--cor-superficie-alta); border: 1px solid var(--cor-borda); border-radius: var(--raio); box-shadow: var(--sombra);
+}
+.busca .combobox-lista { min-width: min(30rem, 92vw); left: auto; right: 0; }
+.combobox-lista[hidden] { display: none; }
+.combobox-opcao { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.45rem 0.6rem; border-radius: 0.35rem; cursor: pointer; }
+.combobox-opcao:hover, .combobox-opcao[aria-selected="true"] { background: var(--cor-acento); color: var(--cor-texto-acento); }
+.busca-nome { font-weight: 700; }
+.busca-nome mark { background: transparent; color: inherit; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 3px; }
+.busca-contexto { font-size: var(--texto-pequeno); opacity: 0.85; }
+
+/* Filtros: segmentos (chips), UF com busca, contagem ao vivo. */
+.filtros fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.filtros legend, .filtro-uf > label, .filtro-grupo > label { padding: 0; margin-bottom: var(--esp-1); font-size: var(--texto-pequeno); color: var(--cor-texto-suave); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--esp-1); }
+.chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips label {
+  display: inline-flex; flex-direction: row; padding: 0.3rem 0.75rem; border: 1px solid var(--cor-borda); border-radius: 999px; cursor: pointer;
+  font-size: var(--texto-pequeno); font-weight: 600; color: var(--cor-texto); background: var(--cor-fundo);
+}
+.chips label:hover { border-color: var(--cor-acento); }
+.chips input:checked + label { background: var(--cor-acento); color: var(--cor-texto-acento); border-color: var(--cor-acento); }
+.chips input:focus-visible + label { outline: 3px solid var(--cor-destaque); outline-offset: 2px; }
+.filtro-uf, .filtro-grupo { position: relative; display: flex; flex-direction: column; }
+.filtro-uf input:disabled { opacity: 0.6; cursor: not-allowed; }
+.filtro-dica { color: var(--cor-texto-suave); font-weight: 400; margin-top: var(--esp-1); }
+.filtro-dica:empty { display: none; }
+.filtros-contagem { margin: 0; font-weight: 700; }
+.filtros-contagem:empty { display: none; }
+.filtros-limpar { justify-self: start; }
+
+/* Mapa focado no candidato. */
+.mapa-foco { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--esp-2); margin: var(--esp-2) 0; padding: var(--esp-2) var(--esp-3); border-left: 4px solid var(--cor-acento); background: var(--cor-superficie); }
+.mapa-foco[hidden] { display: none; }
+.mapa-foco p { margin: 0; }
+.avisos-resto summary { cursor: pointer; font-weight: 600; color: var(--cor-texto-suave); }
 
 /* Corpo: filtros à esquerda (fixos) e conteúdo ocupando todo o resto da largura. */
 .corpo { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }

@@ -3,6 +3,7 @@
  * renomear um campo, `pnpm typecheck` quebra aqui antes de qualquer tela quebrar em produção.
  */
 import { describe, expect, it } from "vitest";
+import busca from "../fixtures/api/busca.json";
 import candidatos from "../fixtures/api/candidatos.json";
 import comparativo from "../fixtures/api/comparativo.json";
 import ficha from "../fixtures/api/ficha.json";
@@ -12,21 +13,23 @@ import mapa from "../fixtures/api/mapa.json";
 import pontos from "../fixtures/api/mapa-pontos.json";
 import meta from "../fixtures/api/meta.json";
 import municipio from "../fixtures/api/municipio.json";
-import type { Meta, Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos } from "../../src/dados/contrato";
+import { fichaTipada, listaTipada } from "../fixtures/api/tipado";
+import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos } from "../../src/dados/contrato";
 
 describe("fixtures seguem o OpenAPI gerado", () => {
   it("tipam contra components['schemas']", () => {
     const todas: unknown[] = [
       meta satisfies Meta,
       grupos satisfies RespostaGrupos,
-      candidatos satisfies RespostaCandidatos,
-      ficha satisfies Ficha,
+      listaTipada(candidatos) satisfies RespostaCandidatos,
+      listaTipada(busca) satisfies RespostaBusca,
+      fichaTipada(ficha) satisfies Ficha,
       mapa satisfies RespostaMapa,
       pontos satisfies RespostaPontos,
       gastos satisfies RespostaGastos,
       comparativo satisfies RespostaComparativo,
       municipio satisfies RespostaMunicipio,
     ];
-    expect(todas).toHaveLength(9);
+    expect(todas).toHaveLength(10);
   });
 });

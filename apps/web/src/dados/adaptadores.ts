@@ -12,25 +12,20 @@ import { marcarNBaixo } from "./n-baixo";
 import type { Candidato, CargoApi, Ficha, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaMapa } from "./contrato";
 
 /** Chave do filtro (`deputado_federal`) → valor do enum do OpenAPI (`DEPUTADO FEDERAL`). */
-export function cargoDaApi(c: Exclude<Filtros["cargo"], "todos">): CargoApi {
+export function cargoDaApi(c: Filtros["cargo"]): CargoApi {
   return c.replace(/_/g, " ").toUpperCase() as CargoApi;
 }
 
-/** Cargo usado quando o endpoint exige um e o filtro está em "todos". */
-export const CARGO_PADRAO: Exclude<Filtros["cargo"], "todos"> = "deputado_federal";
-
-/** Filtros → query string da API. "BR" e "todos" são o padrão da API: não vão na URL. */
+/** Filtros → query string da API. "BR" é o padrão da API: não vai na URL. O cargo é sempre enviado (não há "todos"). */
 export function paramsDeFiltros(f: Readonly<Filtros>): Record<string, string> {
   const q: Record<string, string> = { ano: String(f.ano), grupo: f.grupo };
   if (f.uf !== "BR") q["uf"] = f.uf;
-  if (f.cargo !== "todos") q["cargo"] = cargoDaApi(f.cargo);
+  q["cargo"] = cargoDaApi(f.cargo);
   return q;
 }
 
-/** Como `paramsDeFiltros`, para endpoints em que `cargo` é obrigatório (mapa, comparativo). */
-export function paramsComCargo(f: Readonly<Filtros>): Record<string, string> {
-  return { ...paramsDeFiltros(f), cargo: cargoDaApi(f.cargo === "todos" ? CARGO_PADRAO : f.cargo) };
-}
+/** Alias de `paramsDeFiltros` mantido para os endpoints em que `cargo` é obrigatório (mapa, comparativo). */
+export const paramsComCargo = paramsDeFiltros;
 
 const nf = (v: number): string => new Intl.NumberFormat("pt-BR").format(v);
 const EH_ELEITO = /^ELEITO/i;
@@ -40,8 +35,9 @@ const EH_ELEITO = /^ELEITO/i;
  * Soma só vale com a lista inteira: se `total` > itens, o valor é rotulado como parcial.
  */
 export function kpisDoGrupo(l: RespostaCandidatos, g: RespostaGastos): Kpi[] {
-  const completa = l.itens.length >= l.total;
-  const votos = l.itens.reduce((a, c) => a + c.votos, 0);
+  // `kpis` (grupo no recorte de um cargo) é exato; a soma dos itens só vale com a lista inteira.
+  const completa = l.kpis !== null || l.itens.length >= l.total;
+  const votos = l.kpis?.votos ?? l.itens.reduce((a, c) => a + c.votos, 0);
   const parcial = completa ? "" : ` — soma de ${nf(l.itens.length)} de ${nf(l.total)} candidaturas`;
   const lista: Kpi[] = [
     { rotulo: "Votação nominal do grupo", ajuda: "votos_nominais", valor: votos, formato: "inteiro", unidade: `votos nominais${parcial}` },
