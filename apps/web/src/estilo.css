@@ -28,7 +28,11 @@ nav a {
 nav a:hover { border-color: var(--cor-acento); background: var(--cor-superficie-alta); }
 nav a[aria-current="page"] { background: var(--cor-acento); color: var(--cor-texto-acento); border-color: var(--cor-acento); }
 .tema-botao { font-weight: 600; }
-.busca-slot { flex: 0 1 22rem; min-width: 12rem; margin-left: auto; }
+.busca-slot { flex: 0 1 22rem; min-width: 12rem; margin-left: auto; order: 2; }
+.menu-painel { display: contents; }
+.menu-painel nav { order: 1; }
+.tema-botao { order: 3; }
+.botao-topo { display: none; }
 
 /* Busca global (combobox): campo, atalho "/" e lista de sugestões. */
 .busca { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: var(--esp-2); }
@@ -345,3 +349,40 @@ circle.marca.com-link { cursor: pointer; }
 .serie-numero strong { font-size: 2rem; }
 .serie-resumo { margin-block: var(--esp-2); }
 @media (max-width: 40rem) { .foco-cartao { flex-direction: column; } .rankings-redes { grid-template-columns: 1fr; } }
+
+/* ---- Cabeçalho compacto no celular (T-W25): uma barra fina; abas e tema no menu ☰; busca abre por cima. ---- */
+@media (max-width: 768px) {
+  .topo { flex-wrap: nowrap; gap: var(--esp-2); padding: 0 var(--esp-3); height: var(--altura-topo); min-height: 0; }
+  .marca-site { font-size: 1rem; margin-right: auto; }
+  .marca-site .sub { display: none; }
+  .botao-topo { display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border-radius: var(--raio); flex: none; }
+  .busca-slot { display: none; }
+  .topo[data-busca-aberta] .busca-slot {
+    display: block; position: absolute; inset: 0; z-index: 2; margin: 0; min-width: 0; flex: none;
+    padding: 0.4rem calc(2.75rem + var(--esp-3)) 0.4rem var(--esp-3); background: var(--cor-fundo);
+  }
+  .topo[data-busca-aberta] .busca { height: 100%; }
+  .topo[data-busca-aberta] .busca-atalho { display: none; }
+  .topo[data-busca-aberta] .botao-busca { position: absolute; right: var(--esp-3); top: 50%; transform: translateY(-50%); z-index: 3; }
+  .topo[data-busca-aberta] .botao-menu { visibility: hidden; }
+  .busca .combobox-lista { left: 0; right: auto; min-width: 0; width: calc(100vw - 2 * var(--esp-3)); max-height: 70dvh; }
+  .menu-painel {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1; padding: var(--esp-2) var(--esp-3) var(--esp-3);
+    background: var(--cor-fundo); border-bottom: 2px solid var(--cor-acento); box-shadow: 0 12px 24px rgb(0 0 0 / 0.35);
+    max-height: calc(100dvh - var(--altura-topo)); overflow-y: auto;
+  }
+  .topo[data-menu-aberto] .menu-painel { display: block; }
+  .menu-painel nav { flex: none; }
+  nav ul { flex-direction: column; flex-wrap: nowrap; }
+  nav a { display: block; border-radius: var(--raio); padding: 0.7rem 0.8rem; }
+  .tema-botao { margin-top: var(--esp-2); width: 100%; min-height: 2.75rem; }
+}
+/* Filtros no celular/tablet: o painel flutua sobre o conteúdo em vez de empurrá-lo. */
+@media (max-width: 63.99rem) {
+  .lateral { position: relative; padding: var(--esp-1) var(--esp-3); }
+  .lateral-alternar { min-height: 2.5rem; padding-block: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #area-filtros {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 50; padding: var(--esp-3); background: var(--cor-superficie);
+    border-bottom: 2px solid var(--cor-acento); box-shadow: 0 12px 24px rgb(0 0 0 / 0.35); max-height: 75dvh; overflow-y: auto;
+  }
+}

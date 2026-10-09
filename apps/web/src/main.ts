@@ -1,6 +1,7 @@
 import "./tokens.css";
 import "./estilo.css";
 import { render as renderBusca } from "./componentes/busca/busca";
+import { ligarCabecalhoMovel } from "./componentes/ui/cabecalho-movel";
 import { render as renderFiltros } from "./componentes/filtros/filtros";
 import { criarCliente } from "./dados/cliente";
 import { ROTULO_CARGO } from "./filtros-logica";
@@ -63,7 +64,22 @@ function montar(raiz: HTMLElement): void {
   nav.append(lista);
   const botaoTema = el("button", { type: "button", className: "tema-botao" });
   const slotBusca = el("div", { className: "busca-slot" });
-  cabecalho.append(marca, nav, slotBusca, botaoTema);
+  // Painel do menu: no desktop é transparente (display: contents); no celular abre pelo ☰ com "Tema" dentro.
+  const painelMenu = el("div", { className: "menu-painel", id: "menu-painel" });
+  painelMenu.append(nav, botaoTema);
+  const botaoBusca = el("button", { type: "button", className: "botao-topo botao-busca" });
+  botaoBusca.setAttribute("aria-label", "Buscar");
+  botaoBusca.setAttribute("aria-expanded", "false");
+  botaoBusca.setAttribute("aria-controls", "busca-slot");
+  botaoBusca.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15l6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const botaoMenu = el("button", { type: "button", className: "botao-topo botao-menu" });
+  botaoMenu.setAttribute("aria-label", "Menu");
+  botaoMenu.setAttribute("aria-expanded", "false");
+  botaoMenu.setAttribute("aria-controls", "menu-painel");
+  botaoMenu.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  slotBusca.id = "busca-slot";
+  cabecalho.append(marca, slotBusca, botaoBusca, botaoMenu, painelMenu);
+  ligarCabecalhoMovel({ cabecalho, botaoMenu, painelMenu, botaoBusca, slotBusca });
   ligarTema(botaoTema);
   const lateral = el("aside", { className: "lateral" });
   lateral.setAttribute("aria-label", "Filtros");
@@ -78,6 +94,20 @@ function montar(raiz: HTMLElement): void {
     alternar.setAttribute("aria-expanded", String(aberto));
   });
   lateral.dataset["aberto"] = "nao";
+  const fecharFiltros = (devolverFoco: boolean): void => {
+    if (lateral.dataset["aberto"] !== "sim") return;
+    lateral.dataset["aberto"] = "nao";
+    alternar.setAttribute("aria-expanded", "false");
+    if (devolverFoco) alternar.focus();
+  };
+  // Esc fecha o painel, mas só depois de a lista de UF (combobox) ter tratado o seu próprio Esc.
+  lateral.addEventListener("keydown", (ev) => {
+    const alvo = ev.target instanceof HTMLElement ? ev.target : null;
+    if (ev.key === "Escape" && (alvo === alternar || alvo?.getAttribute("aria-expanded") !== "true")) fecharFiltros(true);
+  });
+  document.addEventListener("pointerdown", (ev) => {
+    if (ev.target instanceof Node && !lateral.contains(ev.target)) fecharFiltros(false);
+  });
   lateral.append(el("h2", { textContent: "Filtros" }), alternar, areaFiltros);
 
   const principal = el("main", { id: "principal", tabIndex: -1 });
