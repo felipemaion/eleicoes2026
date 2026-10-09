@@ -1,0 +1,52 @@
+{
+ "sq_candidato": 1,
+ "nm_urna": "Ana Souza",
+ "series": [
+  {
+   "username": "anasouza_14",
+   "link": "https://www.instagram.com/anasouza_14/",
+   "status": "ok",
+   "pontos": [
+    {
+     "coletado_em": "2026-10-08T12:00:00Z",
+     "seguidores": 52000,
+     "delta_abs": null,
+     "delta_pct": null,
+     "dias": null
+    }
+   ],
+   "resumo": {
+    "n_snapshots": 1,
+    "seguidores_inicial": 52000,
+    "seguidores_final": 52000,
+    "delta_abs": null,
+    "delta_pct": null,
+    "dias": null
+   }
+  }
+ ],
+ "primeira_coleta": "2026-10-08T12:00:00Z",
+ "coletado_em": "2026-10-08T12:00:00Z",
+ "avisos": [
+  "redes_seguidores_sem_historico"
+ ],
+ "dt_geracao": "2026-10-06",
+ "fontes": [
+  {
+   "dataset": "redes_perfis",
+   "arquivo_oficial_url": "https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/business-discovery",
+   "dt_geracao": "2026-10-08T12:00:00+00:00",
+   "coluna_regra": "followers_count, media_count e posts (timestamp, like_count, comments_count, media_type) da conta analisada",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Instagram — API oficial da Meta, coletado em 08/10/2026"
+  },
+  {
+   "dataset": "rede_social_candidato",
+   "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/rede_social_candidato_2026.zip",
+   "dt_geracao": "2026-10-06",
+   "coluna_regra": "DS_URL declarada pelo candidato normalizada para o username",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Perfis declarados pelos candidatos ao TSE (cadastro)"
+  }
+ ]
+}

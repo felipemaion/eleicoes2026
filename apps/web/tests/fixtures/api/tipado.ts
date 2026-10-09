@@ -25,3 +25,27 @@ export const pessoasTipadas = <L extends { itens: ItemPessoa[] }>(l: L): Omit<L,
 /** `/gastos` não tem abrangência; só o tipo do link da candidatura precisa ser estreitado. */
 export const gastosTipados = <G extends { por_candidato: { link_tse_candidato: { tipo: string } }[] }>(g: G): Omit<G, "por_candidato"> & { por_candidato: (Omit<G["por_candidato"][number], "link_tse_candidato"> & { link_tse_candidato: ReturnType<typeof estreitarLink<G["por_candidato"][number]["link_tse_candidato"]>> })[] } =>
   ({ ...g, por_candidato: g.por_candidato.map((c) => ({ ...c, link_tse_candidato: estreitarLink(c.link_tse_candidato) })) }) as ReturnType<typeof gastosTipados<G>>;
+
+/** Enums que o JSON importado alarga para `string`: estreitados aqui, falhando alto se a fixture sair do contrato. */
+const STATUS_REDE = ["ok", "nao_encontrado", "nao_comercial", "nao_coletado", "sem_rede"] as const;
+const JANELAS_REDE = ["pre_campanha", "campanha", "pos_eleicao", "total"] as const;
+function dentro<T extends string>(validos: readonly T[], v: string, onde: string): T {
+  const achado = validos.find((x) => x === v);
+  if (achado === undefined) throw new Error(`fixture fora do contrato em ${onde}: "${v}"`);
+  return achado;
+}
+type CandidatoRedeJson = { link_tse_candidato: { tipo: string }; status: string; janelas: { janela: string }[] };
+/** `/redes`: estreita `status`, `janela` e o tipo do link de cada candidato. */
+export const redesTipadas = <R extends { candidatos: CandidatoRedeJson[] }>(r: R): Omit<R, "candidatos"> & {
+  candidatos: (Omit<R["candidatos"][number], "link_tse_candidato" | "status" | "janelas"> & {
+    link_tse_candidato: ReturnType<typeof estreitarLink<R["candidatos"][number]["link_tse_candidato"]>>;
+    status: (typeof STATUS_REDE)[number];
+    janelas: (Omit<R["candidatos"][number]["janelas"][number], "janela"> & { janela: (typeof JANELAS_REDE)[number] })[];
+  })[];
+} => ({
+  ...r,
+  candidatos: r.candidatos.map((c) => ({
+    ...c, link_tse_candidato: estreitarLink(c.link_tse_candidato), status: dentro(STATUS_REDE, c.status, "status"),
+    janelas: c.janelas.map((j) => ({ ...j, janela: dentro(JANELAS_REDE, j.janela, "janela") })),
+  })),
+}) as ReturnType<typeof redesTipadas<R>>;

@@ -27,6 +27,8 @@ export interface Contexto {
   dt_geracao?: string | undefined;
   /** Mês-base do IPCA (`base_ipca` da API, AAAA-MM). */
   mes_base_ipca?: string | undefined;
+  /** Momento (ISO, UTC) da coleta mais recente do Instagram; vira a data de Brasília no texto. */
+  dt_coleta_redes?: string | undefined;
 }
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -45,12 +47,20 @@ export function formatarMesBase(aaaamm: string): string {
   return `${nome}/${m[1] ?? ""}`;
 }
 
+/** DD/MM/AAAA no fuso de Brasília: a coleta é registrada em UTC, e perto da meia-noite o dia muda. */
+export function formatarDataBrasilia(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) throw new Error(`data inválida: "${iso}"`);
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+}
+
 const INDISPONIVEL = "indisponível";
 
 /** Troca `{dt_geracao}` e `{mes_base_ipca}`; dado ausente vira "indisponível" (visível), não chave crua. */
 export function preencher(texto: string, c: Contexto): string {
   return texto
     .replaceAll("{dt_geracao}", c.dt_geracao === undefined ? INDISPONIVEL : formatarDtGeracao(c.dt_geracao))
+    .replaceAll("{dt_coleta_redes}", c.dt_coleta_redes === undefined ? INDISPONIVEL : formatarDataBrasilia(c.dt_coleta_redes))
     .replaceAll("{mes_base_ipca}", c.mes_base_ipca === undefined ? INDISPONIVEL : formatarMesBase(c.mes_base_ipca));
 }
 
@@ -77,12 +87,27 @@ export const subtituloDaTela = (t: TelaComTextos): string => daTela(t).subtitulo
 export const notaRodape = (t: TelaComTextos, c: Contexto): string => preencher(daTela(t).nota_rodape, c);
 
 export interface Aviso extends AvisoTexto { chave: string }
-export interface ContextoAvisos extends Contexto { contas_parciais?: boolean }
+export interface ContextoAvisos extends Contexto {
+  contas_parciais?: boolean;
+  /** Ids de aviso que a API de redes mandou; sem a lista, todos os avisos de redes valem. */
+  avisos_redes?: readonly string[] | undefined;
+  /** O cargo tem 2º turno (presidente, governador): só então o aviso do 2º turno vale. */
+  segundo_turno?: boolean;
+}
+
+/** Aviso de redes que a API decide (menos o do 2º turno, que depende do cargo). */
+const AVISO_REDES_DA_API = (k: string): boolean => k.startsWith("redes_") && k !== "redes_segundo_turno";
 
 
 export function avisosDaTela(t: TelaComTextos, c: ContextoAvisos): Aviso[] {
   return daTela(t).avisos
-    .filter((k) => (k === "contas_parciais" ? c.contas_parciais === true : k === "ipca" ? c.mes_base_ipca !== undefined : true))
+    .filter((k) => {
+      if (k === "contas_parciais") return c.contas_parciais === true;
+      if (k === "ipca") return c.mes_base_ipca !== undefined;
+      if (k === "redes_segundo_turno") return c.segundo_turno === true;
+      if (AVISO_REDES_DA_API(k)) return c.avisos_redes === undefined || c.avisos_redes.includes(k);
+      return true;
+    })
     .map((chave) => {
       const a = T.avisos[chave];
       if (!a) throw new Error(`Aviso sem texto público: "${chave}"`);

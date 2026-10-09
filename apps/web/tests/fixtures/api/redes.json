@@ -1,0 +1,1222 @@
+{
+ "grupo": "missao_2026",
+ "ano": 2026,
+ "cargo": "DEPUTADO FEDERAL",
+ "uf": "SE",
+ "candidatos": [
+  {
+   "foto_url": "/fotos/2026/1.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/1",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 1,
+   "nm_urna": "Ana Souza",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 18200,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "anasouza_14",
+     "link": "https://www.instagram.com/anasouza_14/",
+     "url_tse": "https://instagram.com/anasouza_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 52000,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 52000,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 2857.1,
+   "votos_por_mil_seguidores": 350.0,
+   "posts_semana_campanha": 1.4,
+   "posts_semana_pos": 0.9,
+   "variacao_ritmo_pct": -35.7,
+   "pct_video": 35,
+   "engajamento_mediano": 1.68,
+   "engajamento_medio": 2.1,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 1.8900000000000001,
+     "engajamento_mediano": 1.51
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 10,
+     "n_videos": 2,
+     "posts_por_semana": 1.4,
+     "videos_por_semana": 0.28,
+     "pct_video": 35,
+     "n_posts_engajamento": 9,
+     "engajamento_medio": 2.1,
+     "engajamento_mediano": 1.68
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 35,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 2.1,
+     "engajamento_mediano": 1.68
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 11879.4,
+    "residuo_log10": 0.1853,
+    "razao_obs_esperado": 1.532
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/6.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/6",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 6,
+   "nm_urna": "Fábio Nunes",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 11800,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "fabionunes_14",
+     "link": "https://www.instagram.com/fabionunes_14/",
+     "url_tse": "https://instagram.com/fabionunes_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 12000,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 12000,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 1016.9,
+   "votos_por_mil_seguidores": 983.3,
+   "posts_semana_campanha": 2.1,
+   "posts_semana_pos": 1.4,
+   "variacao_ritmo_pct": -33.3,
+   "pct_video": 60,
+   "engajamento_mediano": 2.4,
+   "engajamento_medio": 3.0,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 2.7,
+     "engajamento_mediano": 2.16
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 16,
+     "n_videos": 2,
+     "posts_por_semana": 2.1,
+     "videos_por_semana": 0.26,
+     "pct_video": 60,
+     "n_posts_engajamento": 15,
+     "engajamento_medio": 3.0,
+     "engajamento_mediano": 2.4
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 60,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 3.0,
+     "engajamento_mediano": 2.4
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 5252.0,
+    "residuo_log10": 0.3516,
+    "razao_obs_esperado": 2.247
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/7.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/7",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 7,
+   "nm_urna": "Gabi Torres",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 9400,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "gabitorres_14",
+     "link": "https://www.instagram.com/gabitorres_14/",
+     "url_tse": "https://instagram.com/gabitorres_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 76000,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 76000,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 8085.1,
+   "votos_por_mil_seguidores": 123.7,
+   "posts_semana_campanha": 1.1,
+   "posts_semana_pos": 0.8,
+   "variacao_ritmo_pct": -27.3,
+   "pct_video": 28,
+   "engajamento_mediano": 0.96,
+   "engajamento_medio": 1.2,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 1.08,
+     "engajamento_mediano": 0.86
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 8,
+     "n_videos": 2,
+     "posts_por_semana": 1.1,
+     "videos_por_semana": 0.28,
+     "pct_video": 28,
+     "n_posts_engajamento": 7,
+     "engajamento_medio": 1.2,
+     "engajamento_mediano": 0.96
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 28,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 1.2,
+     "engajamento_mediano": 0.96
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 14673.3,
+    "residuo_log10": -0.1931,
+    "razao_obs_esperado": 0.641
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/2.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/2",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 2,
+   "nm_urna": "Bruno Lima",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 9100,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "brunolima_14",
+     "link": "https://www.instagram.com/brunolima_14/",
+     "url_tse": "https://instagram.com/brunolima_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 18000,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 18000,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 1978.0,
+   "votos_por_mil_seguidores": 505.6,
+   "posts_semana_campanha": 0.9,
+   "posts_semana_pos": 0.7,
+   "variacao_ritmo_pct": -22.2,
+   "pct_video": 22,
+   "engajamento_mediano": 2.72,
+   "engajamento_medio": 3.4,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 3.06,
+     "engajamento_mediano": 2.45
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 7,
+     "n_videos": 2,
+     "posts_por_semana": 0.9,
+     "videos_por_semana": 0.26,
+     "pct_video": 22,
+     "n_posts_engajamento": 6,
+     "engajamento_medio": 3.4,
+     "engajamento_mediano": 2.72
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 22,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 3.4,
+     "engajamento_mediano": 2.72
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 6581.7,
+    "residuo_log10": 0.1408,
+    "razao_obs_esperado": 1.383
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/9.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/9",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 9,
+   "nm_urna": "Iara Campos",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 6900,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "iaracampos_14",
+     "link": "https://www.instagram.com/iaracampos_14/",
+     "url_tse": "https://instagram.com/iaracampos_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 15500,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 15500,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 2246.4,
+   "votos_por_mil_seguidores": 445.2,
+   "posts_semana_campanha": 0.7,
+   "posts_semana_pos": 0.5,
+   "variacao_ritmo_pct": -28.6,
+   "pct_video": 18,
+   "engajamento_mediano": 2.16,
+   "engajamento_medio": 2.7,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 2.43,
+     "engajamento_mediano": 1.94
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 5,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.28,
+     "pct_video": 18,
+     "n_posts_engajamento": 4,
+     "engajamento_medio": 2.7,
+     "engajamento_mediano": 2.16
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 18,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 2.7,
+     "engajamento_mediano": 2.16
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 6056.1,
+    "residuo_log10": 0.0565,
+    "razao_obs_esperado": 1.139
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/4.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/4",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 4,
+   "nm_urna": "Diego Prado",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 5200,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "diegoprado_14",
+     "link": "https://www.instagram.com/diegoprado_14/",
+     "url_tse": "https://instagram.com/diegoprado_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 31000,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 31000,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 5961.5,
+   "votos_por_mil_seguidores": 167.7,
+   "posts_semana_campanha": 0.8,
+   "posts_semana_pos": 0.5,
+   "variacao_ritmo_pct": -37.5,
+   "pct_video": 40,
+   "engajamento_mediano": 1.44,
+   "engajamento_medio": 1.8,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 1.62,
+     "engajamento_mediano": 1.3
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.8,
+     "videos_por_semana": 0.27,
+     "pct_video": 40,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 1.8,
+     "engajamento_mediano": 1.44
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 40,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 1.8,
+     "engajamento_mediano": 1.44
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 8907.5,
+    "residuo_log10": -0.2336,
+    "razao_obs_esperado": 0.584
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/10.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/10",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 10,
+   "nm_urna": "João Pires",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 4400,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "joaopires_14",
+     "link": "https://www.instagram.com/joaopires_14/",
+     "url_tse": "https://instagram.com/joaopires_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 8300,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 8300,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 1886.4,
+   "votos_por_mil_seguidores": 530.1,
+   "posts_semana_campanha": 0.6,
+   "posts_semana_pos": 0.9,
+   "variacao_ritmo_pct": 50.0,
+   "pct_video": 12,
+   "engajamento_mediano": 3.28,
+   "engajamento_medio": 4.1,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 3.69,
+     "engajamento_mediano": 2.95
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 4,
+     "n_videos": 2,
+     "posts_por_semana": 0.6,
+     "videos_por_semana": 0.3,
+     "pct_video": 12,
+     "n_posts_engajamento": 3,
+     "engajamento_medio": 4.1,
+     "engajamento_mediano": 3.28
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 12,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 4.1,
+     "engajamento_mediano": 3.28
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 4277.6,
+    "residuo_log10": 0.0124,
+    "razao_obs_esperado": 1.029
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/3.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/3",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 3,
+   "nm_urna": "Carla Mendes",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 3100,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "carlamendes_14",
+     "link": "https://www.instagram.com/carlamendes_14/",
+     "url_tse": "https://instagram.com/carlamendes_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 9500,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 9500,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 3064.5,
+   "votos_por_mil_seguidores": 326.3,
+   "posts_semana_campanha": 0.5,
+   "posts_semana_pos": 0.6,
+   "variacao_ritmo_pct": 20.0,
+   "pct_video": 10,
+   "engajamento_mediano": 4.16,
+   "engajamento_medio": 5.2,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 4.680000000000001,
+     "engajamento_mediano": 3.74
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 4,
+     "n_videos": 2,
+     "posts_por_semana": 0.5,
+     "videos_por_semana": 0.25,
+     "pct_video": 10,
+     "n_posts_engajamento": 3,
+     "engajamento_medio": 5.2,
+     "engajamento_mediano": 4.16
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 10,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 5.2,
+     "engajamento_mediano": 4.16
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 4611.5,
+    "residuo_log10": -0.1726,
+    "razao_obs_esperado": 0.672
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/5.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/5",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 5,
+   "nm_urna": "Elisa Rocha",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 2600,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "elisarocha_14",
+     "link": "https://www.instagram.com/elisarocha_14/",
+     "url_tse": "https://instagram.com/elisarocha_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 4200,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 4200,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 1615.4,
+   "votos_por_mil_seguidores": 619.0,
+   "posts_semana_campanha": 0.3,
+   "posts_semana_pos": 0.4,
+   "variacao_ritmo_pct": 33.3,
+   "pct_video": 5,
+   "engajamento_mediano": 5.52,
+   "engajamento_medio": 6.9,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 6.210000000000001,
+     "engajamento_mediano": 4.97
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 2,
+     "n_videos": 2,
+     "posts_por_semana": 0.3,
+     "videos_por_semana": 0.3,
+     "pct_video": 5,
+     "n_posts_engajamento": 1,
+     "engajamento_medio": 6.9,
+     "engajamento_mediano": 5.52
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 5,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 6.9,
+     "engajamento_mediano": 5.52
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 2927.7,
+    "residuo_log10": -0.0516,
+    "razao_obs_esperado": 0.888
+   }
+  },
+  {
+   "foto_url": "/fotos/2026/14.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/14",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 14,
+   "nm_urna": "Nando Reis",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 2500,
+   "status": "nao_encontrado",
+   "tem_dados": false,
+   "perfis": [
+    {
+     "username": "nandoreis_14",
+     "link": "https://www.instagram.com/nandoreis_14/",
+     "url_tse": "https://instagram.com/nandoreis_14",
+     "principal": true,
+     "analisado": true,
+     "status": "nao_encontrado",
+     "seguidores": null,
+     "seguindo": null,
+     "n_midias": null,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": null,
+   "seguindo": null,
+   "seguidores_por_mil_votos": null,
+   "votos_por_mil_seguidores": null,
+   "posts_semana_campanha": null,
+   "posts_semana_pos": null,
+   "variacao_ritmo_pct": null,
+   "pct_video": null,
+   "engajamento_mediano": null,
+   "engajamento_medio": null,
+   "janelas": [],
+   "voto_esperado": null
+  },
+  {
+   "foto_url": "/fotos/2026/13.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/13",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 13,
+   "nm_urna": "Marta Vieira",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 2400,
+   "status": "nao_coletado",
+   "tem_dados": false,
+   "perfis": [
+    {
+     "username": "martavieira_14",
+     "link": "https://www.instagram.com/martavieira_14/",
+     "url_tse": "https://instagram.com/martavieira_14",
+     "principal": true,
+     "analisado": true,
+     "status": "nao_coletado",
+     "seguidores": null,
+     "seguindo": null,
+     "n_midias": null,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": null,
+   "seguindo": null,
+   "seguidores_por_mil_votos": null,
+   "votos_por_mil_seguidores": null,
+   "posts_semana_campanha": null,
+   "posts_semana_pos": null,
+   "variacao_ritmo_pct": null,
+   "pct_video": null,
+   "engajamento_mediano": null,
+   "engajamento_medio": null,
+   "janelas": [],
+   "voto_esperado": null
+  },
+  {
+   "foto_url": "/fotos/2026/12.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/12",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 12,
+   "nm_urna": "Léo Barros",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 2300,
+   "status": "sem_rede",
+   "tem_dados": false,
+   "perfis": [],
+   "seguidores": null,
+   "seguindo": null,
+   "seguidores_por_mil_votos": null,
+   "votos_por_mil_seguidores": null,
+   "posts_semana_campanha": null,
+   "posts_semana_pos": null,
+   "variacao_ritmo_pct": null,
+   "pct_video": null,
+   "engajamento_mediano": null,
+   "engajamento_medio": null,
+   "janelas": [],
+   "voto_esperado": null
+  },
+  {
+   "foto_url": "/fotos/2026/11.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/11",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 11,
+   "nm_urna": "Késia Dantas",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 2200,
+   "status": "nao_comercial",
+   "tem_dados": false,
+   "perfis": [
+    {
+     "username": "kesiadantas_14",
+     "link": "https://www.instagram.com/kesiadantas_14/",
+     "url_tse": "https://instagram.com/kesiadantas_14",
+     "principal": true,
+     "analisado": true,
+     "status": "nao_comercial",
+     "seguidores": null,
+     "seguindo": null,
+     "n_midias": null,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": null,
+   "seguindo": null,
+   "seguidores_por_mil_votos": null,
+   "votos_por_mil_seguidores": null,
+   "posts_semana_campanha": null,
+   "posts_semana_pos": null,
+   "variacao_ritmo_pct": null,
+   "pct_video": null,
+   "engajamento_mediano": null,
+   "engajamento_medio": null,
+   "janelas": [],
+   "voto_esperado": null
+  },
+  {
+   "foto_url": "/fotos/2026/8.webp",
+   "link_tse_candidato": {
+    "tipo": "divulgacand_candidato",
+    "rotulo": "Página do candidato no TSE",
+    "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/BR/SE/2026/8",
+    "verificado": true,
+    "nota": null
+   },
+   "sq_candidato": 8,
+   "nm_urna": "Hugo Alves",
+   "sg_uf": "SE",
+   "cargo": "DEPUTADO FEDERAL",
+   "partido": {
+    "numero": 14,
+    "sigla": "MISSÃO"
+   },
+   "votos": 1800,
+   "status": "ok",
+   "tem_dados": true,
+   "perfis": [
+    {
+     "username": "hugoalves_14",
+     "link": "https://www.instagram.com/hugoalves_14/",
+     "url_tse": "https://instagram.com/hugoalves_14",
+     "principal": true,
+     "analisado": true,
+     "status": "ok",
+     "seguidores": 2600,
+     "seguindo": 300,
+     "n_midias": 240,
+     "coletado_em": "2026-10-08T12:00:00Z"
+    }
+   ],
+   "seguidores": 2600,
+   "seguindo": 300,
+   "seguidores_por_mil_votos": 1444.4,
+   "votos_por_mil_seguidores": 692.3,
+   "posts_semana_campanha": 0.2,
+   "posts_semana_pos": 0.3,
+   "variacao_ritmo_pct": 50.0,
+   "pct_video": 0,
+   "engajamento_mediano": 6.0,
+   "engajamento_medio": 7.5,
+   "janelas": [
+    {
+     "janela": "pre_campanha",
+     "dias": 60,
+     "n_posts": 6,
+     "n_videos": 2,
+     "posts_por_semana": 0.7,
+     "videos_por_semana": 0.23,
+     "pct_video": 33.3,
+     "n_posts_engajamento": 5,
+     "engajamento_medio": 6.75,
+     "engajamento_mediano": 5.4
+    },
+    {
+     "janela": "campanha",
+     "dias": 52,
+     "n_posts": 1,
+     "n_videos": 2,
+     "posts_por_semana": 0.2,
+     "videos_por_semana": 0.4,
+     "pct_video": 0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": 7.5,
+     "engajamento_mediano": 6.0
+    },
+    {
+     "janela": "pos_eleicao",
+     "dias": 3,
+     "n_posts": 1,
+     "n_videos": 0,
+     "posts_por_semana": null,
+     "videos_por_semana": null,
+     "pct_video": 0.0,
+     "n_posts_engajamento": 0,
+     "engajamento_medio": null,
+     "engajamento_mediano": null
+    },
+    {
+     "janela": "total",
+     "dias": 115,
+     "n_posts": 12,
+     "n_videos": 4,
+     "posts_por_semana": 0.73,
+     "videos_por_semana": 0.24,
+     "pct_video": 0,
+     "n_posts_engajamento": 11,
+     "engajamento_medio": 7.5,
+     "engajamento_mediano": 6.0
+    }
+   ],
+   "voto_esperado": {
+    "votos_esperados": 2241.8,
+    "residuo_log10": -0.0953,
+    "razao_obs_esperado": 0.803
+   }
+  }
+ ],
+ "agregado": {
+  "n_candidatos": 14,
+  "n_com_dados": 10,
+  "seguidores_total": 229100,
+  "mediana_seguidores": 13750.0,
+  "mediana_posts_semana_campanha": 0.75,
+  "mediana_engajamento_mediano": 2.56,
+  "mediana_pct_video": 20.0
+ },
+ "excluidos": {
+  "sem_instagram": 1,
+  "nao_coletado": 1,
+  "indisponivel": 2,
+  "sem_votos": 0
+ },
+ "coletado_em": "2026-10-08T12:00:00Z",
+ "avisos": [
+  "redes_contas_sem_dados",
+  "redes_seguidores_sem_historico"
+ ],
+ "dt_geracao": "2026-10-06",
+ "fontes": [
+  {
+   "dataset": "redes_perfis",
+   "arquivo_oficial_url": "https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/business-discovery",
+   "dt_geracao": "2026-10-08T12:00:00+00:00",
+   "coluna_regra": "followers_count, media_count e posts (timestamp, like_count, comments_count, media_type) da conta analisada",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Instagram — API oficial da Meta, coletado em 08/10/2026"
+  },
+  {
+   "dataset": "rede_social_candidato",
+   "arquivo_oficial_url": "https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/rede_social_candidato_2026.zip",
+   "dt_geracao": "2026-10-06",
+   "coluna_regra": "DS_URL declarada pelo candidato normalizada para o username",
+   "metodologia_url": "https://github.com/felipemaion/eleicoes2026/blob/main/docs/metodologia/indicadores.md",
+   "rotulo": "Perfis declarados pelos candidatos ao TSE (cadastro)"
+  }
+ ]
+}

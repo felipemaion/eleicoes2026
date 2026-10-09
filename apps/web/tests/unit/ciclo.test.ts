@@ -16,7 +16,7 @@ describe("gerenciador de telas", () => {
       },
     });
     const g = criarGerenciadorDeTelas(document.createElement("main"), {
-      "visao-geral": fabrica("a"), mapa: fabrica("b"), gastos: fabrica("c"), evolucao: fabrica("d"), candidato: fabrica("e"), "como-ler": fabrica("f"),
+      "visao-geral": fabrica("a"), mapa: fabrica("b"), gastos: fabrica("c"), redes: fabrica("r"), evolucao: fabrica("d"), candidato: fabrica("e"), "como-ler": fabrica("f"),
     });
     g.desenhar(estado("visao-geral"));
     g.desenhar(estado("visao-geral"));
@@ -29,7 +29,7 @@ describe("gerenciador de telas", () => {
   it("destruir é idempotente", () => {
     const dispose = vi.fn();
     const t: Tela = { titulo: "t", render: () => dispose };
-    const g = criarGerenciadorDeTelas(document.createElement("main"), { "visao-geral": t, mapa: t, gastos: t, evolucao: t, candidato: t, "como-ler": t });
+    const g = criarGerenciadorDeTelas(document.createElement("main"), { "visao-geral": t, mapa: t, gastos: t, redes: t, evolucao: t, candidato: t, "como-ler": t });
     g.desenhar(estado("mapa"));
     g.destruir();
     g.destruir();

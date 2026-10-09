@@ -1,4 +1,5 @@
 import { axisBottom, axisLeft, scaleLog, select, type ScaleLogarithmic } from "d3";
+import { PALETAS } from "../../paletas";
 import { formatarCompacto, formatarMoeda, formatarNumero } from "../../formato";
 import { abrirNoTse, avisoLinkTse, type LinkTse } from "../ui/foto-candidato";
 import { corpoRico, criarFlutuante, ligarMarca } from "../ui/tooltip";
@@ -15,6 +16,10 @@ export interface PontoCustoVoto {
   foto?: string | null;
   /** Página do candidato no TSE: clique/Enter no círculo abre em nova aba. */
   linkTse?: LinkTse;
+  /** Outro destino externo (ex.: perfil no Instagram); `convite` é a linha do tooltip que avisa do clique. */
+  linkExterno?: { url: string; convite: string };
+  /** Posição em relação ao esperado: muda a cor do círculo (o texto do tooltip diz o mesmo). */
+  classe?: "acima" | "abaixo" | "neutro";
 }
 
 export interface OpcoesDispersao {
@@ -27,6 +32,14 @@ export interface OpcoesDispersao {
   referencia?: { custoPorVoto: number; rotulo: string };
   /** O que o eixo horizontal mede ("custo de campanha" por padrão; "receita de campanha" na dispersão de receitas). */
   grandeza?: string;
+  /** Formata o eixo horizontal e os valores do tooltip/tabela (padrão: moeda). */
+  formatoX?: (v: number) => string;
+  /** Texto completo do título do eixo horizontal (padrão: "<grandeza> (R$, escala log)"). */
+  rotuloEixoX?: string;
+  /** Linha de tendência `log10(1+y) = a + b·log10(1+x)` desenhada sobre a nuvem. */
+  reta?: { intercepto: number; inclinacao: number; rotulo: string };
+  /** Nota de rodapé sobre a linha de referência (padrão fala de custo por voto). */
+  notaReferencia?: string;
 }
 
 export interface GraficoDispersao extends Grafico<readonly PontoCustoVoto[]> {
@@ -49,6 +62,9 @@ function aplicarDestaque(raiz: ParentNode, ids: ReadonlySet<string>): void {
     c.setAttribute("r", quer ? "8" : "5");
   });
 }
+
+/** Em escala log o D3 enche o eixo de 2…9 por década e os rótulos se sobrepõem: ficam só 1, 2 e 5. */
+const ticksLegiveis = (e: ScaleLogarithmic<number, number>): number[] => e.ticks().filter((t) => /^[125]/.test(String(t)));
 
 const ESQ = 76;
 const DIR = 20;
@@ -78,6 +94,27 @@ function desenharReferencia(svg: SVGSVGElement, x: ScaleLogarithmic<number, numb
   );
 }
 
+/** Reta do ajuste log-log: amostrada, porque o "1 +" a deixa levemente curva nos eixos logarítmicos. */
+function desenharReta(svg: SVGSVGElement, x: ScaleLogarithmic<number, number>, y: ScaleLogarithmic<number, number>, r: { intercepto: number; inclinacao: number; rotulo: string }): void {
+  const [x0, x1] = x.domain() as [number, number];
+  const pontos: string[] = [];
+  const [y0, y1] = y.domain() as [number, number];
+  for (let i = 0; i <= 40; i++) {
+    const sx = x0 * Math.pow(x1 / x0, i / 40);
+    const sy = Math.pow(10, r.intercepto + r.inclinacao * Math.log10(1 + sx)) - 1;
+    if (sy >= y0 && sy <= y1) pontos.push(`${String(x(sx))},${String(y(sy))}`);
+  }
+  if (pontos.length < 2) return;
+  const ultimo = pontos[pontos.length - 1]?.split(",") ?? ["0", "0"];
+  svg.append(
+    no("polyline", { class: "reta-ajuste", points: pontos.join(" "), fill: "none", stroke: "var(--cor-texto-suave)", "stroke-width": 1.5, "stroke-dasharray": "6 4" }),
+    textoSvg(Number(ultimo[0]) - 4, Number(ultimo[1]) - 6, r.rotulo, { class: "referencia-rotulo", "text-anchor": "end", fill: "var(--cor-texto-suave)" }),
+  );
+}
+
+/** Divergente seguro para daltônicos (azul × vermelhão do Okabe-Ito) em torno de um cinza neutro: o texto do tooltip repete a posição. */
+const COR_CLASSE = { acima: PALETAS.categorica[5], abaixo: PALETAS.categorica[6], neutro: "var(--cor-texto-suave)" } as const;
+
 function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: OpcoesDispersao): void {
   if (dados.length === 0) { mensagemVazia(container); return; }
   const w = o.largura ?? 640;
@@ -89,6 +126,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   const grandeza = o.grandeza ?? "custo de campanha";
   const Grandeza = grandeza.charAt(0).toUpperCase() + grandeza.slice(1);
   const palavra = grandeza.split(" ")[0] ?? "valor";
+  const fmtX = o.formatoX ?? formatarMoeda;
   const nZero = dados.filter((d) => d.custo <= 0 || d.votos <= 0).length;
 
   const svg = criarSvg(
@@ -98,9 +136,9 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
       (nZero > 0 ? ` ${String(nZero)} com ${palavra} ou votos zero, marcados à parte na faixa "0".` : ""),
   );
   const gx = select(svg).append("g").attr("class", "eixo-x").attr("transform", `translate(0,${String(h - BAIXO)})`);
-  gx.call(axisBottom(x).ticks(5).tickFormat((v) => formatarCompacto(+v)));
+  gx.call(axisBottom(x).tickValues(ticksLegiveis(x)).tickFormat((v) => formatarCompacto(+v)));
   const gy = select(svg).append("g").attr("class", "eixo-y").attr("transform", `translate(${String(ESQ)},0)`);
-  gy.call(axisLeft(y).ticks(5).tickFormat((v) => formatarCompacto(+v)));
+  gy.call(axisLeft(y).tickValues(ticksLegiveis(y)).tickFormat((v) => formatarCompacto(+v)));
   for (const g of [gx, gy]) {
     g.selectAll("text").attr("fill", "var(--cor-texto-suave)");
     g.selectAll("path,line").attr("stroke", "var(--cor-borda)");
@@ -108,11 +146,12 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   svg.append(
     textoSvg(xZero, h - BAIXO + 16, "0", { class: "tick-zero", "text-anchor": "middle", fill: "var(--cor-texto-suave)" }),
     textoSvg(ESQ - 8, yZero, "0", { class: "tick-zero", "text-anchor": "end", fill: "var(--cor-texto-suave)" }),
-    textoSvg((ESQ + w - DIR) / 2, h - 6, `${Grandeza} (R$, escala log)`, { "text-anchor": "middle" }),
+    textoSvg((ESQ + w - DIR) / 2, h - 6, o.rotuloEixoX ?? `${Grandeza} (R$, escala log)`, { "text-anchor": "middle" }),
     textoSvg(14, h / 2, "Votos (escala log)", { "text-anchor": "middle", transform: `rotate(-90 14 ${String(h / 2)})` }),
   );
 
   if (o.referencia && o.referencia.custoPorVoto > 0) desenharReferencia(svg, x, y, o.referencia);
+  if (o.reta) desenharReta(svg, x, y, o.reta);
   for (const d of dados) {
     const zeroX = d.custo <= 0;
     const zeroY = d.votos <= 0;
@@ -122,25 +161,27 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
       cx: zeroX ? xZero : x(d.custo),
       cy: zeroY ? yZero : y(d.votos),
       r: 5,
-      fill: zeroX || zeroY ? "none" : COR.principal,
-      stroke: zeroX || zeroY ? COR.zero : COR.principal,
+      fill: zeroX || zeroY ? "none" : COR_CLASSE[d.classe ?? "neutro"],
+      stroke: zeroX || zeroY ? COR.zero : COR_CLASSE[d.classe ?? "neutro"],
       "stroke-width": 2,
     });
     const aviso = [zeroX ? `${palavra} zero` : "", zeroY ? "votos zero" : ""].filter(Boolean).join(", ");
-    marcaAcessivel(c, `${d.rotulo}: ${formatarMoeda(d.custo)}, ${formatarNumero(d.votos)} votos${aviso ? ` (${aviso})` : ""}`);
-    const linhas = [...(d.detalhe ?? [["Custo", formatarMoeda(d.custo)], ["Votos", formatarNumero(d.votos)]]), ...(aviso ? [["Atenção", aviso] as const] : [])];
+    marcaAcessivel(c, `${d.rotulo}: ${fmtX(d.custo)}, ${formatarNumero(d.votos)} votos${aviso ? ` (${aviso})` : ""}`);
+    const linhas = [...(d.detalhe ?? [[Grandeza.split(" ")[0] ?? "Custo", fmtX(d.custo)], ["Votos", formatarNumero(d.votos)]]), ...(aviso ? [["Atenção", aviso] as const] : [])];
     c.dataset["tooltip"] = [d.rotulo, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
     const link = d.linkTse;
+    const externo = d.linkExterno;
     ligarMarca(c, tooltipDispersao(), () => corpoRico({
       titulo: d.rotulo, linhas,
       ...(d.foto !== undefined ? { foto: { nome: d.rotulo, url: d.foto } } : {}),
-      ...(link ? { rodape: avisoLinkTse(link) } : {}),
+      ...(link ? { rodape: avisoLinkTse(link) } : externo ? { rodape: [externo.convite] } : {}),
     }));
-    if (link) {
+    const destino = link?.url ?? externo?.url;
+    if (destino !== undefined) {
       c.setAttribute("role", "link");
       c.classList.add("com-link");
-      c.addEventListener("click", () => { abrirNoTse(link.url); });
-      c.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); abrirNoTse(link.url); } });
+      c.addEventListener("click", () => { abrirNoTse(destino); });
+      c.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); abrirNoTse(destino); } });
     }
     svg.append(c);
   }
@@ -148,8 +189,8 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
   aplicarDestaque(svg, o.destaque ?? new Set());
   substituir(container,
     svg,
-    ...(o.referencia ? [Object.assign(document.createElement("p"), { className: "nota", textContent: `Linha tracejada: ${o.referencia.rotulo}. Acima dela, o candidato rendeu mais votos por real que a mediana.` })] : []),
-    tabelaAlternativa(o.titulo, ["Candidato", Grandeza.split(" ")[0] ?? "Valor", "Votos", "Observação"], dados.map((d) => [d.rotulo, formatarMoeda(d.custo), formatarNumero(d.votos), d.custo <= 0 || d.votos <= 0 ? "valor zero fora da escala log" : ""])),
+    ...(o.referencia ? [Object.assign(document.createElement("p"), { className: "nota", textContent: o.notaReferencia ?? `Linha tracejada: ${o.referencia.rotulo}. Acima dela, o candidato rendeu mais votos por real que a mediana.` })] : []),
+    tabelaAlternativa(o.titulo, ["Candidato", Grandeza.split(" ")[0] ?? "Valor", "Votos", "Observação"], dados.map((d) => [d.rotulo, fmtX(d.custo), formatarNumero(d.votos), d.custo <= 0 || d.votos <= 0 ? "valor zero fora da escala log" : ""])),
   );
 }
 

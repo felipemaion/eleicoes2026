@@ -15,8 +15,12 @@ import mapa from "../fixtures/api/mapa.json";
 import pontos from "../fixtures/api/mapa-pontos.json";
 import meta from "../fixtures/api/meta.json";
 import municipio from "../fixtures/api/municipio.json";
-import { fichaTipada, gastosTipados, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
-import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos, RespostaPessoas, RespostaUfs } from "../../src/dados/contrato";
+import redes from "../fixtures/api/redes.json";
+import redesCorrelacoes from "../fixtures/api/redes-correlacoes.json";
+import redesSerie from "../fixtures/api/redes-serie.json";
+import redesSerie2 from "../fixtures/api/redes-serie-2pontos.json";
+import { redesTipadas, fichaTipada, gastosTipados, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
+import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos, RespostaPessoas, RespostaUfs, RespostaRedes, RespostaCorrelacoes, RespostaSerieRedes } from "../../src/dados/contrato";
 
 describe("fixtures seguem o OpenAPI gerado", () => {
   it("tipam contra components['schemas']", () => {
@@ -33,7 +37,11 @@ describe("fixtures seguem o OpenAPI gerado", () => {
       comparativo satisfies RespostaComparativo,
       municipio satisfies RespostaMunicipio,
       pessoasTipadas(pessoas) satisfies RespostaPessoas,
+      redesTipadas(redes) satisfies RespostaRedes,
+      redesCorrelacoes satisfies RespostaCorrelacoes,
+      redesSerie satisfies RespostaSerieRedes,
+      redesSerie2 satisfies RespostaSerieRedes,
     ];
-    expect(todas).toHaveLength(12);
+    expect(todas).toHaveLength(16);
   });
 });

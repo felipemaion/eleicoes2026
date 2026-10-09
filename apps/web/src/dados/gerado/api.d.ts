@@ -272,6 +272,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/redes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Instagram dos candidatos do grupo
+         * @description Perfis, seguidores, ritmo de posts, engajamento e seguidores por mil votos.
+         *
+         *     Perfil indisponível (conta pessoal ou inexistente) volta com campos nulos e `status`: nunca
+         *     zero. `excluidos` conta quem fica fora das médias e correlações, por motivo.
+         */
+        get: operations["redes_api_redes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/redes/correlacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Correlação entre redes e votos
+         * @description ρ de Spearman (IC 95 % bootstrap, n, exclusões) e nuvem seguidores × votos por cargo.
+         *
+         *     Descritivo: correlação não é causalidade. Com menos de 10 candidatos o ρ vem nulo.
+         */
+        get: operations["correlacoes_api_redes_correlacoes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/redes/serie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Série de seguidores no tempo
+         * @description Seguidores a cada coleta, desde a primeira (08/10/2026); nunca interpola o passado.
+         */
+        get: operations["serie_api_redes_serie_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -294,11 +359,65 @@ export interface components {
             uf: string | null;
         };
         /**
+         * AgregadoRedes
+         * @description Resumo do grupo no recorte, só com as contas com números.
+         */
+        AgregadoRedes: {
+            /** N Candidatos */
+            n_candidatos: number;
+            /** N Com Dados */
+            n_com_dados: number;
+            /** Seguidores Total */
+            seguidores_total: number | null;
+            /** Mediana Seguidores */
+            mediana_seguidores: number | null;
+            /** Mediana Posts Semana Campanha */
+            mediana_posts_semana_campanha: number | null;
+            /** Mediana Engajamento Mediano */
+            mediana_engajamento_mediano: number | null;
+            /** Mediana Pct Video */
+            mediana_pct_video: number | null;
+        };
+        /**
+         * AjusteLogLog
+         * @description Reta `log10(1+votos) = intercepto + inclinacao · log10(1+seguidores)` (spec §9.6).
+         */
+        AjusteLogLog: {
+            /** Intercepto */
+            intercepto: number;
+            /**
+             * Inclinacao
+             * @description Elasticidade: +1 % de seguidores ↔ +b % de votos.
+             */
+            inclinacao: number;
+            /** N */
+            n: number;
+        };
+        /**
          * Ano
          * @description Anos de eleição geral suportados.
          * @enum {integer}
          */
         Ano: 2022 | 2026;
+        /**
+         * BlocoRedes
+         * @description Bloco `redes` da ficha: perfis e última coleta.
+         */
+        BlocoRedes: {
+            /**
+             * Perfis
+             * @description Vazio = não declarou Instagram ao TSE.
+             */
+            perfis: components["schemas"]["PerfilRede"][];
+            /**
+             * Coletado Em
+             * Format: date-time
+             * @description Coleta mais recente do Instagram (UTC).
+             */
+            coletado_em: string;
+            /** Fontes */
+            fontes: components["schemas"]["FonteRede"][];
+        };
         /**
          * CandidatoResumo
          * @description Candidato com votos e taxas na sua circunscrição (cargo × UF).
@@ -539,6 +658,38 @@ export interface components {
             };
         };
         /**
+         * Correlacoes
+         * @description Corpo de GET /redes/correlacoes.
+         */
+        Correlacoes: {
+            /** Grupo */
+            grupo: string;
+            /** Ano */
+            ano: number;
+            /** Cargo */
+            cargo: string | null;
+            /** Uf */
+            uf: string | null;
+            /** Por Uf */
+            por_uf: boolean;
+            /** Recortes */
+            recortes: components["schemas"]["RecorteCorrelacao"][];
+            /**
+             * Coletado Em
+             * Format: date-time
+             */
+            coletado_em: string;
+            /**
+             * Avisos
+             * @description Ids em `docs/metodologia/publico/textos.json`.
+             */
+            avisos: string[];
+            /** Dt Geracao */
+            dt_geracao: string;
+            /** Fontes */
+            fontes: components["schemas"]["FonteRede"][];
+        };
+        /**
          * Detalhe
          * @description Numerador e denominadores de um território.
          */
@@ -654,6 +805,32 @@ export interface components {
             votos_para: number | null;
         };
         /**
+         * Excluidos
+         * @description Candidatos fora das médias e correlações, por motivo (cada candidato conta uma vez).
+         */
+        Excluidos: {
+            /**
+             * Sem Instagram
+             * @description Não declararam Instagram ao TSE.
+             */
+            sem_instagram: number;
+            /**
+             * Nao Coletado
+             * @description Declararam, mas a coleta ainda não chegou.
+             */
+            nao_coletado: number;
+            /**
+             * Indisponivel
+             * @description Conta pessoal ou inexistente: a API não dá números.
+             */
+            indisponivel: number;
+            /**
+             * Sem Votos
+             * @description Têm números de rede, mas nenhum voto registrado.
+             */
+            sem_votos: number;
+        };
+        /**
          * FaixaReceita
          * @description Intervalo honesto da receita do grupo quando há repasse de doador desconhecido (§4.6).
          */
@@ -709,6 +886,8 @@ export interface components {
              * @description Procedência dos números da ficha.
              */
             fontes: components["schemas"]["Fonte"][];
+            /** @description Instagram: perfis declarados e última coleta. `perfis` vazio = não declarou; null = dado de redes não publicado ou eleição sem coleta (2022). */
+            redes: components["schemas"]["BlocoRedes"] | null;
         };
         /**
          * Fonte
@@ -740,6 +919,42 @@ export interface components {
              * @description Seção da spec que define o número (GitHub).
              */
             metodologia_url: string;
+        };
+        /**
+         * FonteRede
+         * @description Fonte com o texto de procedência pronto para a tela.
+         */
+        FonteRede: {
+            /**
+             * Dataset
+             * @description Id do dataset no catálogo (ex.: `votacao_candidato_munzona`).
+             */
+            dataset: string;
+            /**
+             * Arquivo Oficial Url
+             * @description URL do arquivo oficial (ZIP no CDN do TSE etc.).
+             */
+            arquivo_oficial_url: string;
+            /**
+             * Dt Geracao
+             * @description `DT_GERACAO` dos dados publicados pelo TSE.
+             */
+            dt_geracao: string;
+            /**
+             * Coluna Regra
+             * @description Coluna(s) usada(s) e regra aplicada sobre elas.
+             */
+            coluna_regra: string;
+            /**
+             * Metodologia Url
+             * @description Seção da spec que define o número (GitHub).
+             */
+            metodologia_url: string;
+            /**
+             * Rotulo
+             * @description Frase de procedência exibida ao leitor.
+             */
+            rotulo: string;
         };
         /**
          * GastoCandidato
@@ -1127,6 +1342,47 @@ export interface components {
             var_pct: number | null;
         };
         /**
+         * JanelaRede
+         * @description Posts e engajamento da conta analisada numa janela (spec §9.1 e §9.2).
+         */
+        JanelaRede: {
+            /**
+             * Janela
+             * @enum {string}
+             */
+            janela: "pre_campanha" | "campanha" | "pos_eleicao" | "total";
+            /** Dias */
+            dias: number;
+            /** N Posts */
+            n_posts: number;
+            /** N Videos */
+            n_videos: number;
+            /**
+             * Posts Por Semana
+             * @description null em janela com menos de 7 dias.
+             */
+            posts_por_semana: number | null;
+            /** Videos Por Semana */
+            videos_por_semana: number | null;
+            /**
+             * Pct Video
+             * @description null sem posts na janela.
+             */
+            pct_video: number | null;
+            /**
+             * N Posts Engajamento
+             * @description Posts que entram no engajamento.
+             */
+            n_posts_engajamento: number;
+            /**
+             * Engajamento Medio
+             * @description % dos seguidores por post (§9.2).
+             */
+            engajamento_medio: number | null;
+            /** Engajamento Mediano */
+            engajamento_mediano: number | null;
+        };
+        /**
          * KpisComparativo
          * @description Os mesmos indicadores sobre o recorte inteiro (Σ votos / Σ base, não média de AMCs).
          */
@@ -1388,6 +1644,48 @@ export interface components {
          */
         Nivel: "municipio" | "zona" | "h3";
         /**
+         * ParCorrelacao
+         * @description ρ de Spearman entre duas medidas dos candidatos de um recorte.
+         */
+        ParCorrelacao: {
+            /** Id */
+            id: string;
+            /** Rotulo */
+            rotulo: string;
+            /**
+             * X
+             * @description Coluna do eixo x; o eixo y é sempre `votos`.
+             */
+            x: string;
+            /** Y */
+            y: string;
+            /**
+             * N
+             * @description Candidatos com os dois valores.
+             */
+            n: number;
+            /**
+             * N Excluidos
+             * @description Candidatos do recorte sem um dos valores.
+             */
+            n_excluidos: number;
+            /**
+             * Rho
+             * @description null com menos de `n_minimo` candidatos.
+             */
+            rho: number | null;
+            /** Ic Inf */
+            ic_inf: number | null;
+            /** Ic Sup */
+            ic_sup: number | null;
+            /** N Bootstrap Validos */
+            n_bootstrap_validos: number | null;
+            /** Nivel Ic */
+            nivel_ic: number;
+            /** N Minimo */
+            n_minimo: number;
+        };
+        /**
          * Partido
          * @description Partido da candidatura.
          */
@@ -1396,6 +1694,56 @@ export interface components {
             numero: number;
             /** Sigla */
             sigla: string;
+        };
+        /**
+         * PerfilRede
+         * @description Um perfil declarado ao TSE, com a última coleta (campos nulos se não há números).
+         */
+        PerfilRede: {
+            /** Username */
+            username: string;
+            /**
+             * Link
+             * @description Endereço público do perfil no Instagram.
+             */
+            link: string;
+            /**
+             * Url Tse
+             * @description Texto declarado ao TSE; null se só a coleta o tem.
+             */
+            url_tse: string | null;
+            /**
+             * Principal
+             * @description Declarado primeiro ao TSE (menor `NR_ORDEM`).
+             */
+            principal: boolean;
+            /**
+             * Analisado
+             * @description Conta usada nos indicadores: a de mais seguidores entre as com números.
+             */
+            analisado: boolean;
+            /**
+             * Status
+             * @description `ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial` ou `nao_coletado` (declarado, ainda sem coleta). Só `ok` traz números.
+             */
+            status: string;
+            /**
+             * Seguidores
+             * @description null = indisponível (≠ zero).
+             */
+            seguidores: number | null;
+            /** Seguindo */
+            seguindo: number | null;
+            /**
+             * N Midias
+             * @description Posts da vida inteira da conta (`media_count`).
+             */
+            n_midias: number | null;
+            /**
+             * Coletado Em
+             * @description Última coleta (UTC); null se nunca coletado.
+             */
+            coletado_em: string | null;
         };
         /**
          * PessoaEvolucao
@@ -1435,6 +1783,64 @@ export interface components {
             lon: number;
             /** Votos */
             votos: number;
+        };
+        /**
+         * PontoDispersao
+         * @description Um candidato na nuvem seguidores × votos.
+         */
+        PontoDispersao: {
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /** Sg Uf */
+            sg_uf: string;
+            /**
+             * Username
+             * @description Conta analisada.
+             */
+            username: string;
+            /** Seguidores */
+            seguidores: number;
+            /** Votos */
+            votos: number;
+            /**
+             * Razao Obs Esperado
+             * @description Voto observado ÷ esperado (§9.6).
+             */
+            razao_obs_esperado: number | null;
+            /** Foto Url */
+            foto_url: string | null;
+            /**
+             * Link
+             * @description Perfil no Instagram.
+             */
+            link: string;
+        };
+        /**
+         * PontoSerie
+         * @description Seguidores numa coleta e variação desde a coleta válida anterior.
+         */
+        PontoSerie: {
+            /**
+             * Coletado Em
+             * Format: date-time
+             */
+            coletado_em: string;
+            /** Seguidores */
+            seguidores: number;
+            /**
+             * Delta Abs
+             * @description null no primeiro ponto.
+             */
+            delta_abs: number | null;
+            /** Delta Pct */
+            delta_pct: number | null;
+            /**
+             * Dias
+             * @description Dias desde a coleta anterior.
+             */
+            dias: number | null;
         };
         /**
          * Pontos
@@ -1490,6 +1896,163 @@ export interface components {
             candidatos_sem_voto_excluidos: number;
             /** Candidatos Sem Contas Excluidos */
             candidatos_sem_contas_excluidos: number;
+        };
+        /**
+         * RecorteCorrelacao
+         * @description Correlações de um cargo (ou cargo × UF).
+         */
+        RecorteCorrelacao: {
+            /** Cargo */
+            cargo: string;
+            /**
+             * Uf
+             * @description null quando o recorte soma todas as UFs do cargo.
+             */
+            uf: string | null;
+            /** N Candidatos */
+            n_candidatos: number;
+            /** Pares */
+            pares: components["schemas"]["ParCorrelacao"][];
+            /** @description null com menos de 10 candidatos. */
+            ajuste: components["schemas"]["AjusteLogLog"] | null;
+            /** Pontos */
+            pontos: components["schemas"]["PontoDispersao"][];
+        };
+        /**
+         * RedeCandidato
+         * @description Candidato com seus perfis e indicadores de redes.
+         */
+        RedeCandidato: {
+            /**
+             * Foto Url
+             * @description Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura.
+             */
+            foto_url: string | null;
+            /** @description Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026. */
+            link_tse_candidato: components["schemas"]["Link"];
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /** Sg Uf */
+            sg_uf: string;
+            /** Cargo */
+            cargo: string;
+            partido: components["schemas"]["Partido"];
+            /**
+             * Votos
+             * @description Votos nominais válidos; null = sem voto registrado.
+             */
+            votos: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "nao_encontrado" | "nao_comercial" | "nao_coletado" | "sem_rede";
+            /**
+             * Tem Dados
+             * @description A conta analisada tem seguidores (conta com números).
+             */
+            tem_dados: boolean;
+            /** Perfis */
+            perfis: components["schemas"]["PerfilRede"][];
+            /** Seguidores */
+            seguidores: number | null;
+            /** Seguindo */
+            seguindo: number | null;
+            /** Seguidores Por Mil Votos */
+            seguidores_por_mil_votos: number | null;
+            /** Votos Por Mil Seguidores */
+            votos_por_mil_seguidores: number | null;
+            /** Posts Semana Campanha */
+            posts_semana_campanha: number | null;
+            /** Posts Semana Pos */
+            posts_semana_pos: number | null;
+            /**
+             * Variacao Ritmo Pct
+             * @description Pós-eleição vs. campanha (§9.1).
+             */
+            variacao_ritmo_pct: number | null;
+            /** Pct Video */
+            pct_video: number | null;
+            /**
+             * Engajamento Mediano
+             * @description Janela da campanha.
+             */
+            engajamento_mediano: number | null;
+            /** Engajamento Medio */
+            engajamento_medio: number | null;
+            /**
+             * Janelas
+             * @description Conta analisada; vazio sem números.
+             */
+            janelas: components["schemas"]["JanelaRede"][];
+            /** @description null sem números ou com menos de 10 candidatos com dados no cargo. */
+            voto_esperado: components["schemas"]["VotoEsperado"] | null;
+        };
+        /**
+         * Redes
+         * @description Corpo de GET /redes.
+         * @example {
+         *       "agregado": {
+         *         "mediana_engajamento_mediano": 20.95,
+         *         "mediana_pct_video": 33.3,
+         *         "mediana_posts_semana_campanha": 0.56,
+         *         "mediana_seguidores": 10500,
+         *         "n_candidatos": 2,
+         *         "n_com_dados": 1,
+         *         "seguidores_total": 10500
+         *       },
+         *       "ano": 2026,
+         *       "avisos": [
+         *         "redes_contas_sem_dados"
+         *       ],
+         *       "candidatos": [],
+         *       "cargo": "DEPUTADO FEDERAL",
+         *       "coletado_em": "2026-10-08T12:00:00Z",
+         *       "dt_geracao": "2026-10-06",
+         *       "excluidos": {
+         *         "indisponivel": 1,
+         *         "nao_coletado": 0,
+         *         "sem_instagram": 0,
+         *         "sem_votos": 0
+         *       },
+         *       "fontes": [],
+         *       "grupo": "missao_2026",
+         *       "uf": "SP"
+         *     }
+         */
+        Redes: {
+            /** Grupo */
+            grupo: string;
+            /** Ano */
+            ano: number;
+            /** Cargo */
+            cargo: string | null;
+            /** Uf */
+            uf: string | null;
+            /**
+             * Candidatos
+             * @description Ordenados por votos (maior primeiro).
+             */
+            candidatos: components["schemas"]["RedeCandidato"][];
+            agregado: components["schemas"]["AgregadoRedes"];
+            excluidos: components["schemas"]["Excluidos"];
+            /**
+             * Coletado Em
+             * Format: date-time
+             * @description Coleta mais recente do Instagram (UTC).
+             */
+            coletado_em: string;
+            /**
+             * Avisos
+             * @description Ids em `docs/metodologia/publico/textos.json`.
+             */
+            avisos: string[];
+            /** Dt Geracao */
+            dt_geracao: string;
+            /** Fontes */
+            fontes: components["schemas"]["FonteRede"][];
         };
         /**
          * ResultadoBusca
@@ -1752,6 +2315,24 @@ export interface components {
             n_efetivo_fontes: number | null;
         };
         /**
+         * ResumoSerie
+         * @description Do primeiro ao último ponto; variações nulas com um só ponto.
+         */
+        ResumoSerie: {
+            /** N Snapshots */
+            n_snapshots: number;
+            /** Seguidores Inicial */
+            seguidores_inicial: number;
+            /** Seguidores Final */
+            seguidores_final: number;
+            /** Delta Abs */
+            delta_abs: number | null;
+            /** Delta Pct */
+            delta_pct: number | null;
+            /** Dias */
+            dias: number | null;
+        };
+        /**
          * SaldoGrupo
          * @description Saldo (§4.8) dos candidatos com receita: receita **bruta** menos despesa com repasses.
          *
@@ -1785,6 +2366,56 @@ export interface components {
             versao: string;
             /** Dt Geracao */
             dt_geracao: string;
+        };
+        /**
+         * SerieConta
+         * @description Série de seguidores de um perfil.
+         */
+        SerieConta: {
+            /** Username */
+            username: string;
+            /** Link */
+            link: string;
+            /**
+             * Status
+             * @description Situação na coleta mais recente (`ok`, `nao_encontrado`…).
+             */
+            status: string;
+            /**
+             * Pontos
+             * @description Só coletas com seguidores; pelo menos uma.
+             */
+            pontos: components["schemas"]["PontoSerie"][];
+            resumo: components["schemas"]["ResumoSerie"];
+        };
+        /**
+         * SerieRedes
+         * @description Corpo de GET /redes/serie.
+         */
+        SerieRedes: {
+            /** Sq Candidato */
+            sq_candidato: number | null;
+            /** Nm Urna */
+            nm_urna: string | null;
+            /** Series */
+            series: components["schemas"]["SerieConta"][];
+            /**
+             * Primeira Coleta
+             * Format: date-time
+             * @description A série não existe antes disto.
+             */
+            primeira_coleta: string;
+            /**
+             * Coletado Em
+             * Format: date-time
+             */
+            coletado_em: string;
+            /** Avisos */
+            avisos: string[];
+            /** Dt Geracao */
+            dt_geracao: string;
+            /** Fontes */
+            fontes: components["schemas"]["FonteRede"][];
         };
         /**
          * UF
@@ -1839,6 +2470,21 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * VotoEsperado
+         * @description Voto observado × esperado pelo tamanho da conta (ajuste log-log, spec §9.6).
+         */
+        VotoEsperado: {
+            /** Votos Esperados */
+            votos_esperados: number;
+            /** Residuo Log10 */
+            residuo_log10: number;
+            /**
+             * Razao Obs Esperado
+             * @description 2 = o dobro do esperado; 0,5 = metade.
+             */
+            razao_obs_esperado: number;
         };
         /**
          * VotosMunicipio
@@ -2323,6 +2969,132 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    redes_api_redes_get: {
+        parameters: {
+            query: {
+                /** @description Id do grupo em config/grupos.yaml (só 2026). */
+                grupo: string;
+                uf?: components["schemas"]["UF"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Redes"];
+                };
+            };
+            /** @description Grupo de outro ano ou desconhecido. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados de redes sociais ainda não publicados. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    correlacoes_api_redes_correlacoes_get: {
+        parameters: {
+            query: {
+                /** @description Id do grupo em config/grupos.yaml (só 2026). */
+                grupo: string;
+                uf?: components["schemas"]["UF"] | null;
+                cargo?: components["schemas"]["Cargo"] | null;
+                /** @description Uma correlação por cargo × UF (deputados de UFs diferentes). */
+                por_uf?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Correlacoes"];
+                };
+            };
+            /** @description Grupo de outro ano ou desconhecido. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados de redes sociais ainda não publicados. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    serie_api_redes_serie_get: {
+        parameters: {
+            query?: {
+                /** @description SQ_CANDIDATO (2026); exclusivo com username. */
+                sq?: number | null;
+                /** @description Perfil do Instagram; exclusivo com sq. */
+                username?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerieRedes"];
+                };
+            };
+            /** @description Candidato inexistente ou sem nenhuma coleta com seguidores. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Informe exatamente um entre `sq` e `username`. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dados de redes sociais ainda não publicados. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

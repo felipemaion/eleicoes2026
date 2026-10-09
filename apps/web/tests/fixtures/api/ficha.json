@@ -202,5 +202,6 @@
       "coluna_regra": "VR_DESPESA_CONTRATADA e VR_DESPESA_PAGA",
       "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md#prestacao_contas"
     }
-  ]
+  ],
+  "redes": null
 }

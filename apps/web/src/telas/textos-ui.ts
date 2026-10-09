@@ -1,5 +1,5 @@
 /** Textos públicos em DOM: "?" de ajuda, avisos, subtítulo e rodapé de cada tela. */
-import type { Fonte } from "../dados/contrato";
+import type { Fonte, FonteRede } from "../dados/contrato";
 import { avisosDaTela, formatarDtGeracao, indicadorDe, notaRodape, subtituloDaTela, type Contexto, type ContextoAvisos, type TelaComTextos } from "../textos";
 import { ligarPainel } from "../componentes/ui/tooltip";
 import { h, nota } from "./dom";
@@ -75,6 +75,33 @@ export function fonteUi(fontes: readonly Fonte[], datasets: readonly string[]): 
   );
   const botao = h("button", { type: "button", className: "fonte-botao", textContent: "fonte" });
   botao.setAttribute("aria-label", `Fonte dos dados: ${usadas.map((f) => f.dataset).join(", ")}`);
+  botao.setAttribute("aria-expanded", "false");
+  botao.setAttribute("aria-controls", id);
+  const raiz = h("span", { className: "fonte" }, botao, painel);
+  ligarPainel(raiz, botao, painel);
+  return raiz;
+}
+
+/**
+ * "fonte" para números que não vêm do TSE (Instagram): mostra a frase de procedência pronta da API
+ * (`rotulo`, ex.: "Instagram — API oficial da Meta, coletado em 08/10/2026"), a regra e os links.
+ */
+export function fonteRotuladaUi(fontes: readonly FonteRede[], datasets: readonly string[]): HTMLElement {
+  const usadas = fontes.filter((f) => datasets.includes(f.dataset));
+  if (usadas.length === 0) return h("span", { className: "fonte fonte-ausente", textContent: "fonte não informada" });
+  const id = `fonte-${String(++contador)}`;
+  const painel = h("div", { id, hidden: true, className: "fonte-painel" },
+    ...usadas.map((f) => h("div", { className: "fonte-item" },
+      h("strong", { textContent: f.rotulo }),
+      h("dl", {}, h("dt", { textContent: "Regra" }), h("dd", { textContent: f.coluna_regra })),
+      h("p", {},
+        h("a", { href: f.arquivo_oficial_url, target: "_blank", rel: "noopener noreferrer", textContent: "Fonte oficial" }), " · ",
+        h("a", { href: f.metodologia_url, target: "_blank", rel: "noopener noreferrer", textContent: "Metodologia" }),
+      ),
+    )),
+  );
+  const botao = h("button", { type: "button", className: "fonte-botao", textContent: "fonte" });
+  botao.setAttribute("aria-label", `Fonte dos dados: ${usadas.map((f) => f.rotulo).join("; ")}`);
   botao.setAttribute("aria-expanded", "false");
   botao.setAttribute("aria-controls", id);
   const raiz = h("span", { className: "fonte" }, botao, painel);

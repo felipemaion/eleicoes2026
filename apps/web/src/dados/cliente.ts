@@ -5,7 +5,7 @@
  */
 import { VERSAO_BUILD } from "../versao";
 import type {
-  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos, RespostaUfs,
+  Ficha, Meta, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPessoas, RespostaPontos, RespostaRedes, RespostaCorrelacoes, RespostaSerieRedes, RespostaUfs,
 } from "./contrato";
 
 export type { Meta } from "./contrato";
@@ -43,6 +43,11 @@ export interface ClienteApi {
   comparativo(p: Params, sinal?: AbortSignal): Promise<RespostaComparativo>;
   municipio(ibge: string, sinal?: AbortSignal): Promise<RespostaMunicipio>;
   pessoas(p: Params, sinal?: AbortSignal): Promise<RespostaPessoas>;
+  /** Redes sociais (Instagram) do grupo no recorte: contas, ritmo, engajamento e voto esperado. */
+  redes(p: Params, sinal?: AbortSignal): Promise<RespostaRedes>;
+  redesCorrelacoes(p: Params, sinal?: AbortSignal): Promise<RespostaCorrelacoes>;
+  /** Série de seguidores: `sq` (candidatura de 2026) ou `username`. */
+  redesSerie(p: Params, sinal?: AbortSignal): Promise<RespostaSerieRedes>;
   /** UFs com candidaturas no recorte (ano/grupo + cargo): alimenta o filtro de UF dependente. */
   ufs(p: Params, sinal?: AbortSignal): Promise<RespostaUfs>;
 }
@@ -99,6 +104,9 @@ export function criarCliente(base = "/api"): ClienteApi {
     pontos: (p, sinal) => obter(`/mapa/pontos${query(p)}`, comChaves<RespostaPontos>("pontos", "truncado"), sinal),
     gastos: (p, sinal) => obter(`/gastos${query(p)}`, comChaves<RespostaGastos>("agregado", "receitas", "por_candidato"), sinal),
     comparativo: (p, sinal) => obter(`/comparativo${query(p)}`, comChaves<RespostaComparativo>("municipios", "kpis", "de", "para"), sinal),
+    redes: (p, sinal) => obter(`/redes${query(p)}`, comChaves<RespostaRedes>("candidatos", "agregado", "excluidos", "fontes"), sinal),
+    redesCorrelacoes: (p, sinal) => obter(`/redes/correlacoes${query(p)}`, comChaves<RespostaCorrelacoes>("recortes", "fontes"), sinal),
+    redesSerie: (p, sinal) => obter(`/redes/serie${query(p)}`, comChaves<RespostaSerieRedes>("series", "primeira_coleta"), sinal),
     ufs: (p, sinal) => obter(`/candidatos/ufs${query(p)}`, comChaves<RespostaUfs>("itens"), sinal),
     pessoas: (p, sinal) => obter(`/evolucao/pessoas${query(p)}`, comChaves<RespostaPessoas>("itens", "total"), sinal),
     municipio: (ibge, sinal) => obter(`/municipios/${encodeURIComponent(ibge)}`, comChaves<RespostaMunicipio>("cd_mun_ibge", "grupos"), sinal),

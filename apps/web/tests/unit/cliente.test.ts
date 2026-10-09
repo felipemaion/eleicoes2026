@@ -55,7 +55,7 @@ describe("cliente — endpoints de domínio", () => {
   });
   it("expõe todos os endpoints do contrato", () => {
     const c = criarCliente();
-    for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio", "pessoas", "ufs"] as const) expect(typeof c[m]).toBe("function");
+    for (const m of ["meta", "grupos", "candidatos", "ficha", "mapa", "pontos", "gastos", "comparativo", "municipio", "pessoas", "ufs", "redes", "redesCorrelacoes", "redesSerie"] as const) expect(typeof c[m]).toBe("function");
   });
 });
 
