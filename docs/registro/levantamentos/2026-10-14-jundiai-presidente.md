@@ -44,13 +44,22 @@ Com os Parquet atualizados (`etl baixar` + `etl processar` dos dois datasets), e
 
 ```python
 import duckdb
+
 D = "data/processed"
 v = f"read_parquet('{D}/votacao_candidato_munzona/**/*.parquet', hive_partitioning=true, union_by_name=true)"
 d = f"read_parquet('{D}/detalhe_votacao_munzona/**/*.parquet', hive_partitioning=true, union_by_name=true)"
 f = "ano_eleicao=2026 and cd_mun_ibge=3525904 and ds_cargo ilike 'presidente' and nr_turno={t}"
 for t in (1, 2):
-    print(duckdb.sql(f"select nm_urna_candidato, sg_partido, sum(qt_votos_nominais_validos) v from {v} "
-                     f"where {f.format(t=t)} group by 1,2 order by v desc").fetchall())
-    print(duckdb.sql(f"select sum(qt_aptos), sum(qt_comparecimento), sum(qt_abstencoes), sum(qt_total_votos_validos), "
-                     f"sum(qt_votos_brancos), sum(qt_total_votos_nulos) from {d} where {f.format(t=t)}").fetchall())
+    print(
+        duckdb.sql(
+            f"select nm_urna_candidato, sg_partido, sum(qt_votos_nominais_validos) v from {v} "
+            f"where {f.format(t=t)} group by 1,2 order by v desc"
+        ).fetchall()
+    )
+    print(
+        duckdb.sql(
+            f"select sum(qt_aptos), sum(qt_comparecimento), sum(qt_abstencoes), sum(qt_total_votos_validos), "
+            f"sum(qt_votos_brancos), sum(qt_total_votos_nulos) from {d} where {f.format(t=t)}"
+        ).fetchall()
+    )
 ```
