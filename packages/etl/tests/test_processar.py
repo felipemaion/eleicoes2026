@@ -103,6 +103,18 @@ def test_consulta_cand_sem_pii_e_com_pessoa_id(raiz: tuple[Path, Path]) -> None:
     assert df["pessoa_id"].n_unique() == df.height  # CPFs sintéticos distintos
 
 
+def test_consulta_cand_traz_foi_as_urnas_e_apto_sempre_foi(raiz: tuple[Path, Path]) -> None:
+    processar_fonte("consulta_cand", 2022, *raiz, sal=SAL)
+    df = _ler(raiz[1], "consulta_cand")
+    validar(df, CONTRATOS["consulta_cand"])
+    assert df["foi_as_urnas"].dtype == pl.Boolean
+    assert df["foi_as_urnas"].null_count() == 0
+    apto = df.filter(pl.col("ds_situacao_candidatura") == "APTO")
+    assert apto["foi_as_urnas"].all()
+    # coerência com o resultado: sem ds_sit_tot_turno, nunca foi às urnas
+    assert df.filter(pl.col("ds_sit_tot_turno").is_null())["foi_as_urnas"].not_().all()
+
+
 def test_pessoa_id_ver_adr_0004() -> None:
     import hashlib
 

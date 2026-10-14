@@ -113,6 +113,18 @@ Armadilhas descobertas nos arquivos reais (2022 e 2026, layout idêntico):
 - Nulos: `#NULO`/`#NE`/`#NI` em qualquer coluna; `-1`/`-3`/`-4` só em colunas inteiras.
   CPF/título `-4` = não divulgável → `pessoa_id` nulo.
 
+### Situação da candidatura e `foi_as_urnas` (T-D11)
+- O CSV `consulta_cand` **não** traz `DS_DETALHE_SITUACAO_CAND` (nem situação "no dia da eleição") — o leiaute
+  vigente só tem `CD/DS_SITUACAO_CANDIDATURA`. Em **2026** essa coluna vem `#NE`/`-3` em 100% dos registros
+  (→ nula); em 2022 vem `APTO`/`INAPTO`. Logo a situação cadastral **não** distingue o registro substituído
+  do que concorreu (Guto Schiavetto/SP, Senado: sq 250002554075 com 392.916 votos × sq 250002553928 com 0).
+- `foi_as_urnas: bool` (derivada, `etl/situacao.py`, única fonte da regra) = a candidatura tem **resultado no
+  turno** (`CD_SIT_TOT_TURNO` ≠ `-1`/`#NULO`): o TSE só atribui `ELEITO/NÃO ELEITO/SUPLENTE/2º TURNO` a quem
+  constou na urna (apto ou sub judice). Coerente nos dois anos: em 2022 todo `APTO` tem resultado e os
+  `INAPTO` sem urna ficam sem. Vice e suplentes herdam o resultado da chapa/titular.
+- `votacao_candidato_munzona` **não** serve de critério: vices/suplentes não aparecem nela e ~1,2 mil
+  candidatos a deputado que foram à urna têm 0 linhas.
+
 ## Prestação de contas e IPCA (T-D03)
 `uv run etl baixar --ano 2022 --fonte prestacao_contas --fonte ipca` e
 `uv run etl processar --ano 2022|2026 --dataset contas` / `uv run etl processar --dataset ipca`

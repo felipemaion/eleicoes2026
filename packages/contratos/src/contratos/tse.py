@@ -40,11 +40,12 @@ CONSULTA_CAND = Contrato(
         "nr_partido": I16, "sg_partido": TXT, "nm_partido": TXT, "nr_federacao": I16,
         "sg_federacao": TXT, "sq_coligacao": I64, "dt_nascimento": DATA, "ds_genero": TXT,
         "ds_grau_instrucao": TXT, "ds_cor_raca": TXT, "ds_ocupacao": TXT,
-        "cd_sit_tot_turno": I8, "ds_sit_tot_turno": TXT, "pessoa_id": TXT, "dt_geracao": DATA,
+        "cd_sit_tot_turno": I8, "ds_sit_tot_turno": TXT, "pessoa_id": TXT,
+        "foi_as_urnas": pl.Boolean, "dt_geracao": DATA,
     },
     chave=("ano_eleicao", "cd_eleicao", "nr_turno", "sq_candidato"),
-    nao_nulas=(*_OBRIG_ELEICAO, "sq_candidato", "cd_cargo", "nr_partido"),
-    derivadas=frozenset({"pessoa_id"}),
+    nao_nulas=(*_OBRIG_ELEICAO, "sq_candidato", "cd_cargo", "nr_partido", "foi_as_urnas"),
+    derivadas=frozenset({"pessoa_id", "foi_as_urnas"}),
 )  # fmt: skip
 
 VOTACAO_CANDIDATO_MUNZONA = Contrato(

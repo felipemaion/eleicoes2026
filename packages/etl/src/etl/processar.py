@@ -22,6 +22,7 @@ from contratos import CONTRATOS, Contrato, validar
 
 from etl.fontes.catalogo import alvos
 from etl.manifesto import Manifesto
+from etl.situacao import foi_as_urnas
 from etl.tse_csv import ler_csv, membros_dados, scan_texto, transcodificar
 
 LOG = logging.getLogger(__name__)
@@ -116,6 +117,10 @@ def _pessoa_id(lf: pl.LazyFrame, ctx: Contexto) -> pl.LazyFrame:
         .with_columns(pessoa_id=pl.Series(ids, dtype=pl.Utf8))
         .lazy()
     )
+
+
+def _consulta_cand(lf: pl.LazyFrame, ctx: Contexto) -> pl.LazyFrame:
+    return _pessoa_id(lf, ctx).with_columns(foi_as_urnas())
 
 
 def _primeiro(coluna: str) -> pl.Expr:
@@ -258,7 +263,7 @@ FONTES: dict[str, Fonte] = {
     "consulta_cand": Fonte(
         CONTRATOS["consulta_cand"],
         extras=("nr_cpf_candidato", "nr_titulo_eleitoral_candidato"),
-        regra=_pessoa_id,
+        regra=_consulta_cand,
     ),
     "consulta_vagas": Fonte(CONTRATOS["consulta_vagas"], controle=("qt_vaga",)),
     "votacao_candidato_munzona": Fonte(
