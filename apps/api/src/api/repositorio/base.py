@@ -15,6 +15,7 @@ from api.repositorio.modelos import (
     ReceitaBruta,
     RedeDeclarada,
     RedesMeta,
+    RedesStatus,
     SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
@@ -198,6 +199,10 @@ class Repositorio(Protocol):
 
     def redes_meta(self) -> RedesMeta | None:
         """Procedência das redes; `None` = dado de redes não publicado (ou nenhuma coleta)."""
+        ...
+
+    def redes_status(self) -> RedesStatus | None:
+        """Última tentativa de coleta (`status.json`); `None` se ausente ou ilegível."""
         ...
 
     def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:

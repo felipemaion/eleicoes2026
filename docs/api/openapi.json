@@ -12,7 +12,7 @@
           "saude"
         ],
         "summary": "Saúde da API e DT_GERACAO dos dados",
-        "description": "200 quando os dados abrem; 503 caso contrário.",
+        "description": "200 quando os dados abrem; 503 caso contrário. `redes` mostra a última coleta (opcional).",
         "operationId": "health_api_health_get",
         "responses": {
           "200": {
@@ -1816,6 +1816,75 @@
         ],
         "title": "Cargo",
         "description": "`ds_cargo` em maiúsculas; o ETL grava em caixa de título e as views aplicam `upper`."
+      },
+      "ColetaRedes": {
+        "properties": {
+          "coletado_em": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coletado Em",
+            "description": "Última coleta que entrou nos dados (UTC); nula se nunca houve."
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado",
+            "description": "Tentativa mais recente: `ok`, `limite` ou `erro`; nulo sem `status.json`."
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo",
+            "description": "Motivo informado quando o resultado não é `ok`."
+          },
+          "dias_desde_ultima_coleta_ok": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Desde Ultima Coleta Ok",
+            "description": "Dias inteiros desde `coletado_em`; nulo se nunca houve coleta bem-sucedida."
+          }
+        },
+        "type": "object",
+        "required": [
+          "coletado_em",
+          "resultado",
+          "motivo",
+          "dias_desde_ultima_coleta_ok"
+        ],
+        "title": "ColetaRedes",
+        "description": "Última coleta de redes sociais e o resultado da tentativa mais recente.",
+        "examples": [
+          {
+            "coletado_em": "2026-10-13T09:00:00Z",
+            "dias_desde_ultima_coleta_ok": 1,
+            "resultado": "ok"
+          }
+        ]
       },
       "ComparacaoResumo": {
         "properties": {
@@ -5809,6 +5878,16 @@
           "dt_geracao": {
             "type": "string",
             "title": "Dt Geracao"
+          },
+          "redes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ColetaRedes"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

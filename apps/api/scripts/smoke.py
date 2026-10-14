@@ -79,6 +79,12 @@ def verificar(base: str) -> dict[str, Callable[[], None]]:
     def saude() -> None:
         c = _ok(base, "/api/health")
         _exigir(c["status"] == "ok" and bool(c["dt_geracao"]), f"health: {c}")
+        redes = c.get("redes")  # opcional: a API sobe sem dados de redes (T-B19)
+        if redes is not None:
+            _exigir(
+                {"coletado_em", "resultado", "motivo", "dias_desde_ultima_coleta_ok"} <= set(redes),
+                f"health.redes: {redes}",
+            )
 
     def meta() -> None:
         c = _ok(base, "/api/meta")

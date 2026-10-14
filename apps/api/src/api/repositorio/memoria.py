@@ -16,6 +16,7 @@ from api.repositorio.modelos import (
     ReceitaBruta,
     RedeDeclarada,
     RedesMeta,
+    RedesStatus,
     SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
@@ -63,6 +64,7 @@ class DadosMemoria:
     redes_snapshots: list[tuple[int, SnapshotPerfil]] = field(default_factory=list)  # (ano, …)
     redes_posts: list[PostRede] = field(default_factory=list)
     redes_meta: RedesMeta | None = None
+    redes_status: RedesStatus | None = None
 
 
 class RepositorioMemoria:
@@ -105,6 +107,10 @@ class RepositorioMemoria:
     def redes_meta(self) -> RedesMeta | None:
         """Meta informada na construção."""
         return self._d.redes_meta
+
+    def redes_status(self) -> RedesStatus | None:
+        """Status informado na construção."""
+        return self._d.redes_status
 
     def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
         """Declarados dos `sqs`, por (sq, ordem, username)."""

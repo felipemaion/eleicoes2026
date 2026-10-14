@@ -18,10 +18,13 @@ services:
     mem_limit: 2g
     environment:
       ELEICOES_THREADS: "2"
+      # Série de redes (insubstituível): volume próprio, dentro do backup (ADR 0008).
+      ELEICOES_REDES_DIR: /redes
       ELEICOES_CORS_ORIGINS: '["https://eleicoes2026.maionesys.com"]'
     volumes:
       # Parquet rsyncados do ETL local (fora de `data/`, que entra no backup).
       - ${DATASETS_DIR:-../datasets}:/datasets:ro
+      - ${REDES_DIR:-../data/redes}:/redes:ro
     networks: [proxy]
     read_only: true
     working_dir: /tmp # DuckDB pode derramar para ./.tmp em consultas grandes

@@ -173,3 +173,12 @@ class RedesMeta:
 
     coletado_em: datetime  # coleta mais recente (UTC)
     dt_geracao_tse: str  # DT_GERACAO do cadastro de redes do TSE
+
+
+@dataclass(frozen=True)
+class RedesStatus:
+    """Última tentativa de coleta, como o ETL a registra em `status.json` (T-D09)."""
+
+    resultado: str | None  # ok | limite | erro
+    motivo: str | None
+    coletado_em: datetime | None  # UTC
