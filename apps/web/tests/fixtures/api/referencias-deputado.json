@@ -1,0 +1,804 @@
+{
+ "ano": 2026,
+ "cargo": "DEPUTADO ESTADUAL",
+ "uf": "SP",
+ "rotulo": "Missão · Dep. estadual · SP × 5 eleitos mais votados de outros partidos em SP",
+ "destaque": null,
+ "nossos": {
+  "rotulo": "Missão · Dep. estadual · SP",
+  "grupo_id": "missao_2026",
+  "candidatos": [
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/300",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 300,
+    "nm_urna": "ANA SOUZA 0",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Suplente",
+    "votos": 42000,
+    "destacado": true,
+    "indicadores": {
+     "votos": 42000,
+     "pct_validos": 2.1,
+     "penetracao": 1.11,
+     "n_municipios": 60,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 2.5,
+     "receita_total": 105000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 95.0,
+     "receita_por_voto": 2.5,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.1615,
+     "pct_validos": 1.6154,
+     "penetracao": 0.1586,
+     "n_municipios": 0.4,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.8519,
+     "receita_total": 0.0656,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 6.3333,
+     "receita_por_voto": 0.4766,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/301",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 301,
+    "nm_urna": "BRUNO LIMA 1",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 31000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 31000,
+     "pct_validos": 1.55,
+     "penetracao": 0.82,
+     "n_municipios": 61,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": null,
+     "receita_total": null,
+     "pct_publico": null,
+     "pct_pessoa_fisica": null,
+     "receita_por_voto": null,
+     "despesa_sobre_receita": null
+    },
+    "motivos": {
+     "custo_voto_pago": "sem prestação de contas publicada",
+     "receita_total": "sem prestação de contas publicada",
+     "pct_publico": "sem prestação de contas publicada",
+     "pct_pessoa_fisica": "sem prestação de contas publicada",
+     "receita_por_voto": "sem prestação de contas publicada",
+     "despesa_sobre_receita": "sem prestação de contas publicada"
+    },
+    "indices": {
+     "votos": 0.1192,
+     "pct_validos": 1.1923,
+     "penetracao": 0.1171,
+     "n_municipios": 0.4067,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": null,
+     "receita_total": null,
+     "pct_publico": null,
+     "pct_pessoa_fisica": null,
+     "receita_por_voto": null,
+     "despesa_sobre_receita": null
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/302",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 302,
+    "nm_urna": "CARLA DIAS 2",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 12000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 12000,
+     "pct_validos": 0.6,
+     "penetracao": 0.32,
+     "n_municipios": 62,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 3.1,
+     "receita_total": 37000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 100.0,
+     "receita_por_voto": 3.08,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0462,
+     "pct_validos": 0.4615,
+     "penetracao": 0.0457,
+     "n_municipios": 0.4133,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 2.2963,
+     "receita_total": 0.0231,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 6.6667,
+     "receita_por_voto": 0.5872,
+     "despesa_sobre_receita": 1.0
+    },
+    "alerta_declaracao": true
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/303",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 303,
+    "nm_urna": "DIEGO ROCHA 3",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 9000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 9000,
+     "pct_validos": 0.45,
+     "penetracao": 0.24,
+     "n_municipios": 63,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 1.8,
+     "receita_total": 16000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 90.0,
+     "receita_por_voto": 1.78,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0346,
+     "pct_validos": 0.3462,
+     "penetracao": 0.0343,
+     "n_municipios": 0.42,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.3333,
+     "receita_total": 0.01,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 6.0,
+     "receita_por_voto": 0.3394,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/304",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 304,
+    "nm_urna": "ELISA MENDES 4",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 7000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 7000,
+     "pct_validos": 0.35,
+     "penetracao": 0.18,
+     "n_municipios": 64,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 2.0,
+     "receita_total": 14000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 80.0,
+     "receita_por_voto": 2.0,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0269,
+     "pct_validos": 0.2692,
+     "penetracao": 0.0257,
+     "n_municipios": 0.4267,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.4815,
+     "receita_total": 0.0088,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 5.3333,
+     "receita_por_voto": 0.3813,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/305",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 305,
+    "nm_urna": "FÁBIO NUNES 5",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 6500,
+    "destacado": false,
+    "indicadores": {
+     "votos": 6500,
+     "pct_validos": 0.33,
+     "penetracao": 0.17,
+     "n_municipios": 65,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 2.2,
+     "receita_total": 14300.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 85.0,
+     "receita_por_voto": 2.2,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.025,
+     "pct_validos": 0.2538,
+     "penetracao": 0.0243,
+     "n_municipios": 0.4333,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.6296,
+     "receita_total": 0.0089,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 5.6667,
+     "receita_por_voto": 0.4194,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/306",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 306,
+    "nm_urna": "GISELE PIRES 6",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 5000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 5000,
+     "pct_validos": 0.25,
+     "penetracao": 0.13,
+     "n_municipios": 66,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 1.7,
+     "receita_total": 8500.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 70.0,
+     "receita_por_voto": 1.7,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0192,
+     "pct_validos": 0.1923,
+     "penetracao": 0.0186,
+     "n_municipios": 0.44,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.2593,
+     "receita_total": 0.0053,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 4.6667,
+     "receita_por_voto": 0.3241,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/307",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 307,
+    "nm_urna": "HUGO ALVES 7",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 4000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 4000,
+     "pct_validos": 0.2,
+     "penetracao": 0.11,
+     "n_municipios": 67,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 2.9,
+     "receita_total": 11600.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 60.0,
+     "receita_por_voto": 2.9,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0154,
+     "pct_validos": 0.1538,
+     "penetracao": 0.0157,
+     "n_municipios": 0.4467,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 2.1481,
+     "receita_total": 0.0073,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 4.0,
+     "receita_por_voto": 0.5529,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/308",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 308,
+    "nm_urna": "IRIS COSTA 8",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 3000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 3000,
+     "pct_validos": 0.15,
+     "penetracao": 0.08,
+     "n_municipios": 68,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 3.5,
+     "receita_total": 10500.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 75.0,
+     "receita_por_voto": 3.5,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0115,
+     "pct_validos": 0.1154,
+     "penetracao": 0.0114,
+     "n_municipios": 0.4533,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 2.5926,
+     "receita_total": 0.0066,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 5.0,
+     "receita_por_voto": 0.6673,
+     "despesa_sobre_receita": 1.0
+    }
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/309",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 309,
+    "nm_urna": "JOSÉ DA SILVA 9",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 2500,
+    "destacado": false,
+    "indicadores": {
+     "votos": 2500,
+     "pct_validos": 0.12,
+     "penetracao": 0.07,
+     "n_municipios": 69,
+     "hhi": 0.15,
+     "n_efetivo_municipios": 6.7,
+     "custo_voto_pago": 2.4,
+     "receita_total": 6000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 100.0,
+     "receita_por_voto": 2.4,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 0.0096,
+     "pct_validos": 0.0923,
+     "penetracao": 0.01,
+     "n_municipios": 0.46,
+     "hhi": 2.5,
+     "n_efetivo_municipios": 0.4012,
+     "custo_voto_pago": 1.7778,
+     "receita_total": 0.0037,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 6.6667,
+     "receita_por_voto": 0.4576,
+     "despesa_sobre_receita": 1.0
+    }
+   }
+  ],
+  "mediana": {
+   "votos": 6750.0,
+   "pct_validos": 0.33999999999999997,
+   "penetracao": 0.175,
+   "n_municipios": 64.5,
+   "hhi": 0.15,
+   "n_efetivo_municipios": 6.7,
+   "custo_voto_pago": 2.4,
+   "receita_total": 14000.0,
+   "pct_publico": 0.0,
+   "pct_pessoa_fisica": 85.0,
+   "receita_por_voto": null,
+   "despesa_sobre_receita": null
+  },
+  "n_mediana": {
+   "votos": 10,
+   "pct_validos": 10,
+   "penetracao": 10,
+   "n_municipios": 10,
+   "hhi": 10,
+   "n_efetivo_municipios": 10,
+   "custo_voto_pago": 9,
+   "receita_total": 9,
+   "pct_publico": 9,
+   "pct_pessoa_fisica": 9,
+   "receita_por_voto": 0,
+   "despesa_sobre_receita": 0
+  },
+  "motivo_vazio": null
+ },
+ "referencia": {
+  "rotulo": "5 eleitos mais votados de outros partidos em SP",
+  "grupo_id": "ref_dep_estadual",
+  "candidatos": [
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/201",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 201,
+    "nm_urna": "ANDRÉ DO PRADO",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 22,
+     "sigla": "PL"
+    },
+    "resultado": "Eleito",
+    "votos": 380000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 380000,
+     "pct_validos": 1.9,
+     "penetracao": 11.0,
+     "n_municipios": 150,
+     "hhi": 0.06,
+     "n_efetivo_municipios": 16.7,
+     "custo_voto_pago": 1.2,
+     "receita_total": 1500000.0,
+     "pct_publico": 60.0,
+     "pct_pessoa_fisica": 20.0,
+     "receita_por_voto": 3.95,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/202",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 202,
+    "nm_urna": "TIRIRICA JR",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 55,
+     "sigla": "PSD"
+    },
+    "resultado": "Eleito",
+    "votos": 320000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 320000,
+     "pct_validos": 1.6,
+     "penetracao": 9.0,
+     "n_municipios": 200,
+     "hhi": 0.05,
+     "n_efetivo_municipios": 20.0,
+     "custo_voto_pago": 0.9,
+     "receita_total": 1100000.0,
+     "pct_publico": 65.0,
+     "pct_pessoa_fisica": 10.0,
+     "receita_por_voto": 3.44,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/203",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 203,
+    "nm_urna": "CARLOS GIANNAZI",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 50,
+     "sigla": "PSOL"
+    },
+    "resultado": "Eleito",
+    "votos": 260000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 260000,
+     "pct_validos": 1.3,
+     "penetracao": 7.0,
+     "n_municipios": 100,
+     "hhi": 0.1,
+     "n_efetivo_municipios": 10.0,
+     "custo_voto_pago": 1.5,
+     "receita_total": 1700000.0,
+     "pct_publico": 80.0,
+     "pct_pessoa_fisica": 5.0,
+     "receita_por_voto": 6.54,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/204",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 204,
+    "nm_urna": "RODRIGO GAMBALE",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 28,
+     "sigla": "PRTB"
+    },
+    "resultado": "Eleito",
+    "votos": 240000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 240000,
+     "pct_validos": 1.2,
+     "penetracao": 6.0,
+     "n_municipios": 300,
+     "hhi": 0.04,
+     "n_efetivo_municipios": 25.0,
+     "custo_voto_pago": null,
+     "receita_total": null,
+     "pct_publico": null,
+     "pct_pessoa_fisica": null,
+     "receita_por_voto": null,
+     "despesa_sobre_receita": null
+    },
+    "motivos": {
+     "custo_voto_pago": "sem prestação de contas publicada",
+     "receita_total": "sem prestação de contas publicada",
+     "pct_publico": "sem prestação de contas publicada",
+     "pct_pessoa_fisica": "sem prestação de contas publicada",
+     "receita_por_voto": "sem prestação de contas publicada",
+     "despesa_sobre_receita": "sem prestação de contas publicada"
+    },
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/205",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 205,
+    "nm_urna": "MARINA HELOU",
+    "sg_uf": "SP",
+    "cargo": "DEPUTADO ESTADUAL",
+    "partido": {
+     "numero": 18,
+     "sigla": "REDE"
+    },
+    "resultado": "Eleito",
+    "votos": 210000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 210000,
+     "pct_validos": 1.1,
+     "penetracao": 5.5,
+     "n_municipios": 120,
+     "hhi": 0.07,
+     "n_efetivo_municipios": 14.3,
+     "custo_voto_pago": 2.1,
+     "receita_total": 2300000.0,
+     "pct_publico": 30.0,
+     "pct_pessoa_fisica": 50.0,
+     "receita_por_voto": 10.95,
+     "despesa_sobre_receita": 0.85
+    },
+    "motivos": {},
+    "indices": null
+   }
+  ],
+  "mediana": {
+   "votos": 260000,
+   "pct_validos": 1.3,
+   "penetracao": 7.0,
+   "n_municipios": 150,
+   "hhi": 0.06,
+   "n_efetivo_municipios": 16.7,
+   "custo_voto_pago": 1.35,
+   "receita_total": 1600000.0,
+   "pct_publico": 62.5,
+   "pct_pessoa_fisica": 15.0,
+   "receita_por_voto": 5.245,
+   "despesa_sobre_receita": 0.85
+  },
+  "n_mediana": {
+   "votos": 5,
+   "pct_validos": 5,
+   "penetracao": 5,
+   "n_municipios": 5,
+   "hhi": 5,
+   "n_efetivo_municipios": 5,
+   "custo_voto_pago": 4,
+   "receita_total": 4,
+   "pct_publico": 4,
+   "pct_pessoa_fisica": 4,
+   "receita_por_voto": 4,
+   "despesa_sobre_receita": 4
+  },
+  "motivo_vazio": null
+ },
+ "contas_parciais": true,
+ "base_ipca": "2026-09",
+ "dt_geracao": "2026-10-06",
+ "fontes": [
+  {
+   "dataset": "votacao_candidato_munzona",
+   "arquivo_oficial_url": "https://dadosabertos.tse.jus.br/",
+   "dt_geracao": "2026-10-06",
+   "coluna_regra": "QT_VOTOS_NOMINAIS_VALIDOS",
+   "metodologia_url": "https://github.com/felipemaion/Eleicoes2026/blob/main/docs/metodologia/indicadores.md"
+  }
+ ]
+}
