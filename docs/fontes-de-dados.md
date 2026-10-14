@@ -140,6 +140,11 @@ Armadilhas descobertas (2022 e 2026, layout idêntico):
 - Rótulos nulos (`#NULO`) são linhas **de valor R$ 0,00** (sem movimento): receitas com fonte/origem nulas
   (2022: 2.979; 2026: 2.421) e despesas contratadas com origem nula (2022: 4.946; 2026: 4.544). Ficam no
   Parquet (o total de linhas bate), mas `classificar_receitas` rejeita `None`: **filtrar `vr = 0`/nulos antes**.
+- **Todos os candidatos**, sem filtro de grupo (T-D10): 2026 = 14 presidentes, 201 governadores … 11.295 dep.
+  estaduais; só vice e suplente ficam sem contas. **Quem foi ao 2º turno tem uma única prestação (cumulativa)
+  marcada `nr_turno=2`**, sem linhas de turno 1 (2026: 2 presidentes + 14 governadores; 2022: 4 + 48; nenhum
+  candidato tem os dois turnos, então não há dupla contagem). Consumidor que filtra `nr_turno = 1` perde Lula e
+  Flávio Bolsonaro — para contas, **não filtrar por turno**.
 - Valores são decimais com vírgula, podem ser negativos (estorno); somados com sinal.
 - Rótulos `ds_*` seguem **brutos**: o ETL só apara e colapsa espaços (caixa e acento intactos); a classificação
   é de `indicadores.financeiro`.
