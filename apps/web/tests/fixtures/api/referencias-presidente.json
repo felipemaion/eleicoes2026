@@ -1,0 +1,305 @@
+{
+ "ano": 2026,
+ "cargo": "PRESIDENTE",
+ "uf": null,
+ "rotulo": "Renan Santos (Missão) × 5 presidenciáveis",
+ "destaque": null,
+ "nossos": {
+  "rotulo": "Renan Santos (Missão)",
+  "grupo_id": "missao_2026",
+  "candidatos": [
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/1",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 1,
+    "nm_urna": "RENAN SANTOS",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 14,
+     "sigla": "MISSÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 3000000,
+    "destacado": true,
+    "indicadores": {
+     "votos": 3000000,
+     "pct_validos": 2.7,
+     "penetracao": 20.0,
+     "n_municipios": 5450,
+     "hhi": 0.025,
+     "n_efetivo_municipios": 40.0,
+     "custo_voto_pago": 1.5,
+     "receita_total": 4500000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 90.0
+    },
+    "motivos": {},
+    "indices": {
+     "votos": 1.2,
+     "pct_validos": 1.2273,
+     "penetracao": 1.1765,
+     "n_municipios": 1.0093,
+     "hhi": 1.25,
+     "n_efetivo_municipios": 0.8,
+     "custo_voto_pago": 0.9677,
+     "receita_total": 0.156,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 5.1429
+    }
+   }
+  ],
+  "mediana": {
+   "votos": null,
+   "pct_validos": null,
+   "penetracao": null,
+   "n_municipios": null,
+   "hhi": null,
+   "n_efetivo_municipios": null,
+   "custo_voto_pago": null,
+   "receita_total": null,
+   "pct_publico": null,
+   "pct_pessoa_fisica": null
+  },
+  "n_mediana": {
+   "votos": 1,
+   "pct_validos": 1,
+   "penetracao": 1,
+   "n_municipios": 1,
+   "hhi": 1,
+   "n_efetivo_municipios": 1,
+   "custo_voto_pago": 1,
+   "receita_total": 1,
+   "pct_publico": 1,
+   "pct_pessoa_fisica": 1
+  },
+  "motivo_vazio": null
+ },
+ "referencia": {
+  "rotulo": "5 presidenciáveis",
+  "grupo_id": "ref_presidente",
+  "candidatos": [
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/101",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 101,
+    "nm_urna": "LULA",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 13,
+     "sigla": "PT"
+    },
+    "resultado": "Eleito",
+    "votos": 57000000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 57000000,
+     "pct_validos": 48.4,
+     "penetracao": 380.0,
+     "n_municipios": 5570,
+     "hhi": 0.012,
+     "n_efetivo_municipios": 83.3,
+     "custo_voto_pago": 0.9,
+     "receita_total": 52000000.0,
+     "pct_publico": 80.0,
+     "pct_pessoa_fisica": 10.0
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/102",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 102,
+    "nm_urna": "FLÁVIO BOLSONARO",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 22,
+     "sigla": "PL"
+    },
+    "resultado": "Não eleito",
+    "votos": 50000000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 50000000,
+     "pct_validos": 43.0,
+     "penetracao": 330.0,
+     "n_municipios": 5560,
+     "hhi": 0.011,
+     "n_efetivo_municipios": 90.9,
+     "custo_voto_pago": 1.1,
+     "receita_total": 60000000.0,
+     "pct_publico": 70.0,
+     "pct_pessoa_fisica": 15.0
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/103",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 103,
+    "nm_urna": "AUGUSTO CURY",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 70,
+     "sigla": "AVANTE"
+    },
+    "resultado": "Não eleito",
+    "votos": 900000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 900000,
+     "pct_validos": 0.8,
+     "penetracao": 6.0,
+     "n_municipios": 5400,
+     "hhi": 0.02,
+     "n_efetivo_municipios": 50.0,
+     "custo_voto_pago": null,
+     "receita_total": null,
+     "pct_publico": null,
+     "pct_pessoa_fisica": null
+    },
+    "motivos": {
+     "custo_voto_pago": "sem prestação de contas publicada",
+     "receita_total": "sem prestação de contas publicada",
+     "pct_publico": "sem prestação de contas publicada",
+     "pct_pessoa_fisica": "sem prestação de contas publicada"
+    },
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/104",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 104,
+    "nm_urna": "RONALDO CAIADO",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 44,
+     "sigla": "UNIÃO"
+    },
+    "resultado": "Não eleito",
+    "votos": 1800000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 1800000,
+     "pct_validos": 1.6,
+     "penetracao": 12.0,
+     "n_municipios": 5300,
+     "hhi": 0.03,
+     "n_efetivo_municipios": 33.3,
+     "custo_voto_pago": 3.2,
+     "receita_total": 5700000.0,
+     "pct_publico": 65.0,
+     "pct_pessoa_fisica": 20.0
+    },
+    "motivos": {},
+    "indices": null
+   },
+   {
+    "foto_url": null,
+    "link_tse_candidato": {
+     "tipo": "divulgacand_candidato",
+     "rotulo": "Página no TSE",
+     "url": "https://divulgacandcontas.tse.jus.br/divulga/#/candidato/2026/BR/105",
+     "verificado": true,
+     "nota": null
+    },
+    "ano": 2026,
+    "sq_candidato": 105,
+    "nm_urna": "ROMEU ZEMA",
+    "sg_uf": "BR",
+    "cargo": "PRESIDENTE",
+    "partido": {
+     "numero": 30,
+     "sigla": "NOVO"
+    },
+    "resultado": "Não eleito",
+    "votos": 2500000,
+    "destacado": false,
+    "indicadores": {
+     "votos": 2500000,
+     "pct_validos": 2.2,
+     "penetracao": 17.0,
+     "n_municipios": 5200,
+     "hhi": 0.04,
+     "n_efetivo_municipios": 25.0,
+     "custo_voto_pago": 2.0,
+     "receita_total": 5000000.0,
+     "pct_publico": 0.0,
+     "pct_pessoa_fisica": 70.0
+    },
+    "motivos": {},
+    "indices": null
+   }
+  ],
+  "mediana": {
+   "votos": 2500000,
+   "pct_validos": 2.2,
+   "penetracao": 17.0,
+   "n_municipios": 5400,
+   "hhi": 0.02,
+   "n_efetivo_municipios": 50.0,
+   "custo_voto_pago": 1.55,
+   "receita_total": 28850000.0,
+   "pct_publico": 67.5,
+   "pct_pessoa_fisica": 17.5
+  },
+  "n_mediana": {
+   "votos": 5,
+   "pct_validos": 5,
+   "penetracao": 5,
+   "n_municipios": 5,
+   "hhi": 5,
+   "n_efetivo_municipios": 5,
+   "custo_voto_pago": 4,
+   "receita_total": 4,
+   "pct_publico": 4,
+   "pct_pessoa_fisica": 4
+  },
+  "motivo_vazio": null
+ },
+ "contas_parciais": true,
+ "base_ipca": "2026-09",
+ "dt_geracao": "2026-10-06",
+ "fontes": []
+}

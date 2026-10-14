@@ -19,8 +19,10 @@ import redes from "../fixtures/api/redes.json";
 import redesCorrelacoes from "../fixtures/api/redes-correlacoes.json";
 import redesSerie from "../fixtures/api/redes-serie.json";
 import redesSerie2 from "../fixtures/api/redes-serie-2pontos.json";
-import { redesTipadas, fichaTipada, gastosTipados, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
-import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos, RespostaPessoas, RespostaUfs, RespostaRedes, RespostaCorrelacoes, RespostaSerieRedes } from "../../src/dados/contrato";
+import refPresidente from "../fixtures/api/referencias-presidente.json";
+import refDeputado from "../fixtures/api/referencias-deputado.json";
+import { referenciasTipadas, redesTipadas, fichaTipada, gastosTipados, listaTipada, pessoasTipadas } from "../fixtures/api/tipado";
+import type { Meta, Ficha, RespostaBusca, RespostaCandidatos, RespostaComparativo, RespostaGastos, RespostaGrupos, RespostaMapa, RespostaMunicipio, RespostaPontos, RespostaPessoas, RespostaUfs, RespostaRedes, RespostaCorrelacoes, RespostaSerieRedes, RespostaReferencias } from "../../src/dados/contrato";
 
 describe("fixtures seguem o OpenAPI gerado", () => {
   it("tipam contra components['schemas']", () => {
@@ -41,7 +43,9 @@ describe("fixtures seguem o OpenAPI gerado", () => {
       redesCorrelacoes satisfies RespostaCorrelacoes,
       redesSerie satisfies RespostaSerieRedes,
       redesSerie2 satisfies RespostaSerieRedes,
+      referenciasTipadas(refPresidente) satisfies RespostaReferencias,
+      referenciasTipadas(refDeputado) satisfies RespostaReferencias,
     ];
-    expect(todas).toHaveLength(16);
+    expect(todas).toHaveLength(18);
   });
 });

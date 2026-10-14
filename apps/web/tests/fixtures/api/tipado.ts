@@ -49,3 +49,10 @@ export const redesTipadas = <R extends { candidatos: CandidatoRedeJson[] }>(r: R
     janelas: c.janelas.map((j) => ({ ...j, janela: dentro(JANELAS_REDE, j.janela, "janela") })),
   })),
 }) as ReturnType<typeof redesTipadas<R>>;
+
+/** `/referencias`: os dois lados trazem candidatos com link do TSE (enum que o JSON alarga). */
+type LadoJson = { candidatos: { link_tse_candidato: { tipo: string } }[] };
+type LadoTipado<L extends LadoJson> = Omit<L, "candidatos"> & { candidatos: (Omit<L["candidatos"][number], "link_tse_candidato"> & { link_tse_candidato: ReturnType<typeof estreitarLink<L["candidatos"][number]["link_tse_candidato"]>> })[] };
+const ladoTipado = <L extends LadoJson>(l: L): LadoTipado<L> => ({ ...l, candidatos: l.candidatos.map((c) => ({ ...c, link_tse_candidato: estreitarLink(c.link_tse_candidato) })) }) as LadoTipado<L>;
+export const referenciasTipadas = <R extends { nossos: LadoJson; referencia: LadoJson }>(r: R): Omit<R, "nossos" | "referencia"> & { nossos: LadoTipado<R["nossos"]>; referencia: LadoTipado<R["referencia"]> } =>
+  ({ ...r, nossos: ladoTipado(r.nossos), referencia: ladoTipado(r.referencia) });
