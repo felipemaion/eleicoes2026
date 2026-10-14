@@ -112,6 +112,42 @@ def concentracao(tabela: pl.DataFrame, entidade: str = "sq_candidato") -> pl.Dat
     )
 
 
+K_MAIORES_MUNICIPIOS = 10
+"""Municípios somados em `pct_maiores` (spec §10.2)."""
+
+
+def participacao_maiores(
+    tabela: pl.DataFrame,
+    entidade: str = "sq_candidato",
+    k: int = K_MAIORES_MUNICIPIOS,
+    unidade: str = "cd_mun_ibge",
+) -> pl.DataFrame:
+    """% dos votos vindos dos `k` maiores municípios do candidato e nº de municípios com voto.
+
+    `pct_maiores = 100 × Σ_{k maiores} v_ci / V_c` (spec §10.2; leitura de reduto de Ames 1995 e
+    Avelino, Biderman & Silva 2011); `n_municipios_com_voto = #{i : v_ci > 0}`. `V_c = 0` →
+    `pct_maiores` nulo. Saída `entidade, votos, n_municipios_com_voto, pct_maiores`.
+
+    Raises:
+        ValueError: `k < 1`, coluna ausente ou (entidade, unidade) repetida.
+    """
+    if k < 1:
+        raise ValueError(f"participacao_maiores: k deve ser ≥ 1 (recebido {k})")
+    exigir_colunas(tabela, [entidade, unidade, "votos"], "participacao_maiores")
+    exigir_unicidade(tabela, [entidade, unidade], "participacao_maiores")
+    return (
+        tabela.group_by(entidade)
+        .agg(
+            pl.col("votos").sum(),
+            (pl.col("votos") > 0).sum().cast(pl.Int64).alias("n_municipios_com_voto"),
+            pl.col("votos").sort(descending=True).head(k).sum().alias("_maiores"),
+        )
+        .with_columns((100 * razao(pl.col("_maiores"), pl.col("votos"))).alias("pct_maiores"))
+        .select(entidade, "votos", "n_municipios_com_voto", "pct_maiores")
+        .sort(entidade)
+    )
+
+
 def tipologia_ames(
     candidatos: pl.DataFrame, quociente_eleitoral: int, entidade: str = "sq_candidato"
 ) -> pl.DataFrame:

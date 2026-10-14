@@ -24,3 +24,5 @@ QT_VOTOS_NOMINAIS_VALIDOS = _de(VOTACAO_CANDIDATO_MUNZONA, "qt_votos_nominais_va
 QT_VOTOS_LEGENDA_VALIDOS = _de(VOTACAO_PARTIDO_MUNZONA, "qt_votos_legenda_validos")
 QT_VOTOS_NOM_CONVR_LEG_VALIDOS = _de(VOTACAO_PARTIDO_MUNZONA, "qt_votos_nom_convr_leg_validos")
 DS_SITUACAO_CANDIDATURA = _de(CONSULTA_CAND, "ds_situacao_candidatura")
+DS_SIT_TOT_TURNO = _de(CONSULTA_CAND, "ds_sit_tot_turno")
+NR_PARTIDO = _de(CONSULTA_CAND, "nr_partido")
