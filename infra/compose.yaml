@@ -1,6 +1,8 @@
 # Eleicoes2026 API — contêiner único atrás do Caddy (docs/deploy.md, ADR 0002).
 # Sem `ports:`: o Caddy alcança `eleicoes2026-api:8000` pela rede externa `proxy`.
-# Local/espelho: em produção o compose é do Oracle e a imagem vem do GitHub Actions (ghcr.io).
+# SÓ DESENVOLVIMENTO/ESPELHO — NÃO é o que roda em produção. Produção usa /opt/deploy/eleicoes2026/docker-compose.yml
+# (root, do agente Oracle; decisão de 08/10 reafirmada em 14/10): mounts e limites são decididos lá.
+# A imagem vem do GitHub Actions (ghcr.io).
 # Local:  docker compose -f infra/compose.yaml up -d --build
 name: eleicoes2026
 
@@ -20,7 +22,6 @@ services:
       ELEICOES_THREADS: "2"
       # Série de redes (insubstituível): volume próprio, dentro do backup (ADR 0008).
       ELEICOES_REDES_DIR: /redes
-      ELEICOES_CORS_ORIGINS: '["https://eleicoes2026.maionesys.com"]'
     volumes:
       # Parquet rsyncados do ETL local (fora de `data/`, que entra no backup).
       - ${DATASETS_DIR:-../datasets}:/datasets:ro
