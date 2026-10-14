@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ELEICOES_", env_file=".env", extra="ignore")
 
     dir_dados: Path = RAIZ / "data" / "processed"
+    # Série de redes (perfis/posts + manifesto.json + status.json). Vazio = `<dir_dados>/redes`.
+    # No servidor mora fora de `datasets/` (insubstituível; ver ADR 0008): `ELEICOES_REDES_DIR`.
+    redes_dir: Path | None = None
+    # Intervalo mínimo entre checagens de mtime da série de redes (recarga sem restart).
+    redes_recarga_s: float = 60.0
     arquivo_grupos: Path = RAIZ / "config" / "grupos.yaml"
     # Base dos caminhos relativos de `criterio.lista.arquivo` em grupos.yaml.
     raiz_repositorio: Path = RAIZ

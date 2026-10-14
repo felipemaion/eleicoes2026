@@ -51,6 +51,8 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
                 memory_limit=cfg.duck_memory_limit,
                 max_temp_directory_size=cfg.duck_max_temp_directory_size,
                 temp_directory=cfg.duck_temp_directory,
+                dir_redes=cfg.redes_dir,
+                intervalo_redes_s=cfg.redes_recarga_s,
             )
             # `uvicorn.error` tem handler em INFO; o logger do módulo não aparece em produção.
             logging.getLogger("uvicorn.error").info(

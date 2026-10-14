@@ -51,6 +51,11 @@ def _api(dir_redes: Path, **extra: object) -> TestClient:
     return TestClient(criar_app(cfg))
 
 
+def _dias_desde_dado_de_08_10() -> int:
+    """Dias inteiros desde a coleta das fixtures (2026-10-08 12:00 UTC)."""
+    return (datetime.now(UTC) - datetime(2026, 10, 8, 12, tzinfo=UTC)).days
+
+
 class Relogio:
     """Relógio manual: o teste controla o intervalo de 1 verificação por minuto."""
 
@@ -68,7 +73,7 @@ def test_le_perfis_e_posts_do_diretorio_configurado(tmp_path: Path) -> None:
     repo = RepositorioDuckDB(FIXTURES, dir_redes=_copiar_redes(tmp_path / "redes"))
     meta = repo.redes_meta()
     assert meta is not None
-    assert meta.coletado_em == datetime(2026, 10, 8, 12, tzinfo=UTC)
+    assert meta.coletado_em == datetime(2026, 10, 8, 12)  # o banco devolve UTC sem fuso
 
 
 def test_diretorio_vazio_nao_cai_na_fixture_de_dir_dados(tmp_path: Path) -> None:
@@ -129,7 +134,7 @@ def test_nova_coleta_muda_a_versao_e_so_depois_do_intervalo(tmp_path: Path) -> N
     assert repo.versao_dados() != antes
     meta = repo.redes_meta()
     assert meta is not None
-    assert meta.coletado_em == datetime(2026, 10, 9, 12, tzinfo=UTC)
+    assert meta.coletado_em == datetime(2026, 10, 9, 12)
 
 
 def test_sem_mudanca_de_mtime_nao_reabre(tmp_path: Path) -> None:
@@ -197,7 +202,7 @@ def test_health_sem_status_json_usa_a_coleta_dos_dados(tmp_path: Path) -> None:
     assert redes["coletado_em"].startswith("2026-10-08T12:00")
     assert redes["resultado"] is None
     assert redes["motivo"] is None
-    assert redes["dias_desde_ultima_coleta_ok"] >= 6  # dado de 08/10, hoje é ≥ 14/10
+    assert redes["dias_desde_ultima_coleta_ok"] == _dias_desde_dado_de_08_10()
 
 
 def test_health_status_ok(tmp_path: Path) -> None:
@@ -237,7 +242,7 @@ def test_health_status_erro_conta_dias_da_ultima_coleta_boa(tmp_path: Path) -> N
     assert redes["resultado"] == "erro"
     assert redes["motivo"] == "token vencido"
     # a tentativa falhou: os dias contam desde a última coleta que entrou nos dados (08/10)
-    assert redes["dias_desde_ultima_coleta_ok"] >= 6
+    assert redes["dias_desde_ultima_coleta_ok"] == _dias_desde_dado_de_08_10()
     assert redes["coletado_em"].startswith("2026-10-08T12:00")
 
 

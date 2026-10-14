@@ -1,7 +1,11 @@
 """Repositorio sobre DuckDB lendo Parquet; conexão em memória, arquivos só lidos."""
 
 import json
-from collections.abc import Sequence
+import logging
+import threading
+import time
+from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
@@ -21,12 +25,15 @@ from api.repositorio.modelos import (
     ReceitaBruta,
     RedeDeclarada,
     RedesMeta,
+    RedesStatus,
     SnapshotPerfil,
     VariacaoIpca,
     VotosSemCoordenada,
     VotosTerritorio,
 )
 from api.texto import SQL_NORMALIZA, escapar_like
+
+logger = logging.getLogger(__name__)
 
 # Datasets com contrato (packages/contratos/tse.py), em `<dir>/<dataset>/ano=AAAA/*.parquet`.
 # A API lê só `consulta_cand` como obrigatório; os demais viram view se existirem e, se faltarem,
@@ -50,9 +57,12 @@ PROVISORIOS = (
     "ipca",
 )
 # Redes sociais (contratos em `packages/contratos/redes.py`): `redes_candidatos` é hive por ano;
-# `redes_perfis` e `redes_posts` ficam em `<dir>/redes/` (um arquivo cada, sem partição).
+# `redes_perfis` e `redes_posts` ficam no diretório de redes (`<dir>/redes/` por padrão; no servidor
+# um volume próprio, ADR 0008): um arquivo cada, sem partição.
 REDES = ("redes_candidatos", "redes_perfis", "redes_posts")
-_SUBPASTA = {"redes_perfis": "redes", "redes_posts": "redes"}
+_NO_DIR_REDES = frozenset({"redes_perfis", "redes_posts"})
+# O que a coleta promove: a assinatura de mtime desses arquivos dispara a recarga das views.
+_ARQUIVOS_SERIE_REDES = ("manifesto.json", "redes_perfis.parquet", "redes_posts.parquet")
 # Colunas que a API lê de cada fonte: validadas na abertura (falha clara, sem `SELECT *`).
 COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "consulta_cand": (
@@ -215,9 +225,20 @@ class RepositorioDuckDB:
         memory_limit: str = "1200MB",
         max_temp_directory_size: str = "400MB",
         temp_directory: Path = Path("/tmp/duck"),  # noqa: S108 - tmpfs do contêiner
+        dir_redes: Path | None = None,
+        intervalo_redes_s: float = 60.0,
+        relogio: Callable[[], float] = time.monotonic,
     ) -> None:
         if not any((dir_dados / "consulta_cand").glob("ano=*/*.parquet")):
             raise DadosIndisponiveis(f"consulta_cand ausente em {dir_dados}")
+        self._dir_dados = dir_dados
+        self._dir_redes = dir_redes or dir_dados / "redes"
+        self._intervalo_redes_s = intervalo_redes_s
+        self._relogio = relogio
+        self._lock_redes = threading.Lock()
+        self._ultima_checagem_redes = relogio()
+        self._assinatura_redes = self._ler_assinatura_redes()
+        self.recargas_redes = 0  # recargas bem-sucedidas desde a abertura (observabilidade/testes)
         try:
             self._prestacao = self._ler_prestacao(dir_dados / "manifesto.json")
             self._prestacao_dados: dict[int, str] = {}
@@ -231,7 +252,8 @@ class RepositorioDuckDB:
             self._con.execute("SET memory_limit = ?", [memory_limit])
             self._con.execute("SET max_temp_directory_size = ?", [max_temp_directory_size])
             self._con.execute("SET temp_directory = ?", [str(temp_directory)])
-            fontes = {n: self._fonte(dir_dados, n) for n in (*CONTRATADOS, *PROVISORIOS, *REDES)}
+            nomes = (*CONTRATADOS, *PROVISORIOS, *REDES)
+            fontes = {n: self._fonte(dir_dados, n, self._dir_redes) for n in nomes}
             self._validar_colunas(fontes)
             for nome, (dataset, sql) in _VIEWS.items():
                 if fontes.get(dataset):
@@ -273,7 +295,7 @@ class RepositorioDuckDB:
         return {int(a): str(t) for a, t in bruto.get("tp_prestacao_contas", {}).items()}
 
     @staticmethod
-    def _fonte(dir_dados: Path, nome: str) -> str | None:
+    def _fonte(dir_dados: Path, nome: str, dir_redes: Path) -> str | None:
         """Expressão `read_parquet` do dataset (hive ou flat) ou `None` se ausente."""
         # O caminho vem da configuração, nunca do usuário; aspas simples escapadas por garantia.
         if any((dir_dados / nome).glob("ano=*/*.parquet")):
@@ -282,14 +304,15 @@ class RepositorioDuckDB:
         if any((dir_dados / nome).glob("*.parquet")):  # ex.: ipca/ipca.parquet
             pasta = str(dir_dados / nome / "*.parquet").replace("'", "''")
             return f"read_parquet('{pasta}')"
-        flat = dir_dados / _SUBPASTA.get(nome, "") / f"{nome}.parquet"
+        flat = (dir_redes if nome in _NO_DIR_REDES else dir_dados) / f"{nome}.parquet"
         if flat.is_file():
             return f"read_parquet('{str(flat).replace(chr(39), chr(39) * 2)}')"
         return None
 
-    def _view(self, nome: str, select: str) -> None:
+    def _view(self, nome: str, select: str, *, substituir: bool = False) -> None:
         # DDL não aceita parâmetros: nome vem de listas fixas e fontes da configuração.
-        self._con.execute(f"CREATE VIEW {nome} AS {select}")
+        criar = "CREATE OR REPLACE VIEW" if substituir else "CREATE VIEW"
+        self._con.execute(f"{criar} {nome} AS {select}")
 
     def _criar_views_compostas(self, fontes: dict[str, str | None]) -> None:
         """`municipios` (IBGE + área/AMC) e `locais_votacao` (local + célula H3)."""
@@ -324,7 +347,9 @@ class RepositorioDuckDB:
             )
             self._view("locais_votacao", select)
 
-    def _criar_views_redes(self, fontes: dict[str, str | None]) -> RedesMeta | None:
+    def _criar_views_redes(
+        self, fontes: dict[str, str | None], *, substituir: bool = False
+    ) -> RedesMeta | None:
         """Views de redes, se os três datasets existem e há ao menos uma coleta; senão `None`.
 
         Dado de redes é opcional na abertura (a API sobe sem ele), mas `/api/redes*` falha alto
@@ -333,7 +358,7 @@ class RepositorioDuckDB:
         if not all(fontes[n] for n in REDES):
             return None
         for nome, (dataset, sql) in _VIEWS_REDES.items():
-            self._view(nome, sql.format(fonte=fontes[dataset]))
+            self._view(nome, sql.format(fonte=fontes[dataset]), substituir=substituir)
         linha = self._con.execute(
             "SELECT (SELECT max(coletado_em) FROM redes_snapshots),"
             " (SELECT max(dt_geracao) FROM redes_declaradas)"
@@ -459,15 +484,81 @@ class RepositorioDuckDB:
         """DT_GERACAO do manifesto."""
         return self._dt
 
+    def _ler_assinatura_redes(self) -> tuple[int | None, ...]:
+        """`mtime` (ns) do manifesto e dos Parquet da série; `None` = arquivo ausente."""
+        assinatura: list[int | None] = []
+        for nome in _ARQUIVOS_SERIE_REDES:
+            try:
+                assinatura.append((self._dir_redes / nome).stat().st_mtime_ns)
+            except FileNotFoundError:
+                assinatura.append(None)
+        return tuple(assinatura)
+
+    def _recarregar_redes_se_mudou(self) -> None:
+        """Reabre as views de redes quando a coleta promoveu arquivos novos (sem restart).
+
+        No máximo uma checagem por intervalo (barato: três `stat`). Se a série nova não abre
+        (arquivo no meio da cópia, coluna faltando), loga o erro, segue servindo o último estado
+        bom e tenta de novo na próxima checagem — a assinatura só avança quando a recarga dá certo.
+        """
+        if self._relogio() - self._ultima_checagem_redes < self._intervalo_redes_s:
+            return
+        with self._lock_redes:
+            agora = self._relogio()
+            if agora - self._ultima_checagem_redes < self._intervalo_redes_s:
+                return  # outra thread acabou de checar
+            self._ultima_checagem_redes = agora
+            assinatura = self._ler_assinatura_redes()
+            if assinatura == self._assinatura_redes:
+                return
+            try:
+                fontes = {n: self._fonte(self._dir_dados, n, self._dir_redes) for n in REDES}
+                self._validar_colunas(fontes)
+                self._redes = self._criar_views_redes(fontes, substituir=True)
+            except (duckdb.Error, DadosIndisponiveis) as erro:
+                logger.error("recarga das redes falhou; mantendo o estado anterior: %s", erro)
+                return
+            self._assinatura_redes = assinatura
+            self.recargas_redes += 1
+            logger.info("redes recarregadas de %s", self._dir_redes)
+
     def versao_dados(self) -> str:
         """`dt_geracao` + última coleta de redes (quando há): muda a cada coleta diária."""
+        self._recarregar_redes_se_mudou()
         if self._redes is None:
             return self._dt
         return f"{self._dt}|{self._redes.coletado_em.isoformat()}"
 
     def redes_meta(self) -> RedesMeta | None:
         """Coleta mais recente e DT_GERACAO do cadastro de redes; `None` se não publicado."""
+        self._recarregar_redes_se_mudou()
         return self._redes
+
+    def redes_status(self) -> RedesStatus | None:
+        """`status.json` da última tentativa de coleta; `None` se ausente ou ilegível.
+
+        Lido a cada chamada (arquivo minúsculo, e é o que o `/api/health` mostra ao vivo).
+        """
+        arquivo = self._dir_redes / "status.json"
+        try:
+            bruto = json.loads(arquivo.read_text())
+            if not isinstance(bruto, dict):
+                raise ValueError("status.json não é um objeto")
+            coletado = bruto.get("coletado_em")
+            instante = datetime.fromisoformat(coletado) if coletado else None
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError) as erro:
+            logger.error("status.json das redes ilegível em %s: %s", arquivo, erro)
+            return None
+        if instante is not None and instante.tzinfo is None:
+            instante = instante.replace(tzinfo=UTC)
+        motivo, resultado = bruto.get("motivo"), bruto.get("resultado")
+        return RedesStatus(
+            resultado=str(resultado) if resultado else None,
+            motivo=str(motivo) if motivo else None,
+            coletado_em=instante,
+        )
 
     def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
         """Perfis declarados ao TSE, na ordem de declaração."""
