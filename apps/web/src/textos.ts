@@ -19,6 +19,7 @@ interface Textos {
   telas: Record<string, TelaTexto>;
   glossario: Record<string, Termo>;
   comparador: { ui: Record<string, string>; nota_grupo: Record<string, string> };
+  referencias: { blocos: Record<string, { titulo: string; rotulo: string; quem: string }>; ui: Record<string, string> };
 }
 const T = bruto as unknown as Textos;
 
@@ -64,7 +65,8 @@ export function preencher(texto: string, c: Contexto): string {
     .replaceAll("{mes_base_ipca}", c.mes_base_ipca === undefined ? INDISPONIVEL : formatarMesBase(c.mes_base_ipca));
 }
 
-const chaveDaTela = (t: TelaComTextos): string => t.replace(/-/g, "_");
+/** A aba `#/comparar` tem os textos da seção `referencias`. */
+const chaveDaTela = (t: TelaComTextos): string => (t === "comparar" ? "referencias" : t.replace(/-/g, "_"));
 function daTela(t: TelaComTextos): TelaTexto {
   const x = T.telas[chaveDaTela(t)];
   if (!x) throw new Error(`Sem textos públicos para a tela "${t}"`);
@@ -91,6 +93,8 @@ export interface ContextoAvisos extends Contexto {
   contas_parciais?: boolean;
   /** Ids de aviso que a API de redes mandou; sem a lista, todos os avisos de redes valem. */
   avisos_redes?: readonly string[] | undefined;
+  /** A aba Comparar está no bloco Presidente (só então vale o aviso dos presidenciáveis; nos outros vale o do topo dos eleitos). */
+  referencia_presidente?: boolean;
   /** O cargo tem 2º turno (presidente, governador): só então o aviso do 2º turno vale. */
   segundo_turno?: boolean;
 }
@@ -104,6 +108,8 @@ export function avisosDaTela(t: TelaComTextos, c: ContextoAvisos): Aviso[] {
     .filter((k) => {
       if (k === "contas_parciais") return c.contas_parciais === true;
       if (k === "ipca") return c.mes_base_ipca !== undefined;
+      if (k === "referencias_presidenciaveis") return c.referencia_presidente === true;
+      if (k === "referencias_topo_dos_eleitos") return c.referencia_presidente !== true;
       if (k === "redes_segundo_turno") return c.segundo_turno === true;
       if (AVISO_REDES_DA_API(k)) return c.avisos_redes === undefined || c.avisos_redes.includes(k);
       return true;
@@ -154,3 +160,26 @@ export const TEXTOS_COMPARADOR = {
   notasDados: ui("notas_dados"),
   tabelaTitulo: ui("tabela_titulo"),
 } as const;
+
+/** Troca `{chave}` pelos valores dados; chave sem valor é erro (texto público nunca sai com chave crua). */
+function preencherChaves(texto: string, v: Readonly<Record<string, string>>): string {
+  return texto.replace(/\{(\w+)\}/g, (_, k: string) => {
+    const x = v[k];
+    if (x === undefined) throw new Error(`Placeholder sem valor: {${k}}`);
+    return x;
+  });
+}
+
+/** Título e frases de um bloco da aba Comparar (`presidente`, `deputado_federal`, `deputado_estadual`). */
+export function blocoReferencia(id: string, v: Readonly<Record<string, string>>): { titulo: string; rotulo: string; quem: string } {
+  const b = T.referencias.blocos[id];
+  if (!b) throw new Error(`Bloco de referência sem texto: "${id}"`);
+  return { titulo: b.titulo, rotulo: preencherChaves(b.rotulo, v), quem: preencherChaves(b.quem, v) };
+}
+
+/** Mensagens da aba Comparar (`sem_mediana`, `sem_referencia`, `menos_de_cinco`, …). */
+export function textoReferencia(chave: string, v: Readonly<Record<string, string>> = {}): string {
+  const t = T.referencias.ui[chave];
+  if (t === undefined) throw new Error(`Texto da aba Comparar sem entrada: "${chave}"`);
+  return preencherChaves(t, v);
+}

@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Saúde da API e DT_GERACAO dos dados
-         * @description 200 quando os dados abrem; 503 caso contrário.
+         * @description 200 quando os dados abrem; 503 caso contrário. `redes` mostra a última coleta (opcional).
          */
         get: operations["health_api_health_get"];
         put?: never;
@@ -337,6 +337,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/referencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Nossos candidatos × candidatos de referência
+         * @description Dois lados nomeados: `nossos` (Missão no cargo/UF) e `referencia`.
+         *
+         *     Presidente: os presidenciáveis do grupo de referência. Deputados: os 5 eleitos mais votados
+         *     de outros partidos na UF. Cada candidato traz indicadores em taxa; `indices` (nossos) é o
+         *     valor ÷ mediana da referência. Descritivo: candidaturas de estruturas muito diferentes.
+         *     Finanças ausentes vêm nulas com motivo, nunca zero.
+         */
+        get: operations["referencias_api_referencias_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -417,6 +442,52 @@ export interface components {
             coletado_em: string;
             /** Fontes */
             fontes: components["schemas"]["FonteRede"][];
+        };
+        /**
+         * CandidatoComparado
+         * @description Candidato com identificação, resultado e indicadores comparáveis.
+         */
+        CandidatoComparado: {
+            /**
+             * Foto Url
+             * @description Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura.
+             */
+            foto_url: string | null;
+            /** @description Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026. */
+            link_tse_candidato: components["schemas"]["Link"];
+            /** Ano */
+            ano: number;
+            /** Sq Candidato */
+            sq_candidato: number;
+            /** Nm Urna */
+            nm_urna: string;
+            /** Sg Uf */
+            sg_uf: string;
+            /** Cargo */
+            cargo: string;
+            partido: components["schemas"]["Partido"];
+            /**
+             * Resultado
+             * @description `ds_sit_tot_turno`; null se sem apuração.
+             */
+            resultado: string | null;
+            /** Votos */
+            votos: number;
+            /**
+             * Destacado
+             * @description É o candidato pedido em `sq`.
+             */
+            destacado: boolean;
+            indicadores: components["schemas"]["Perfil"];
+            /**
+             * Motivos
+             * @description Para cada indicador nulo, por que não há valor (ex.: sem prestação de contas).
+             */
+            motivos: {
+                [key: string]: string;
+            };
+            /** @description Só nos nossos: indicador ÷ mediana da referência (1 = igual à mediana). Nulo se um dos dois falta ou a mediana é zero. */
+            indices: components["schemas"]["Perfil"] | null;
         };
         /**
          * CandidatoResumo
@@ -537,6 +608,37 @@ export interface components {
          * @enum {string}
          */
         Cargo: "PRESIDENTE" | "GOVERNADOR" | "SENADOR" | "DEPUTADO FEDERAL" | "DEPUTADO ESTADUAL" | "DEPUTADO DISTRITAL";
+        /**
+         * ColetaRedes
+         * @description Última coleta de redes sociais e o resultado da tentativa mais recente.
+         * @example {
+         *       "coletado_em": "2026-10-13T09:00:00Z",
+         *       "dias_desde_ultima_coleta_ok": 1,
+         *       "resultado": "ok"
+         *     }
+         */
+        ColetaRedes: {
+            /**
+             * Coletado Em
+             * @description Última coleta que entrou nos dados (UTC); nula se nunca houve.
+             */
+            coletado_em: string | null;
+            /**
+             * Resultado
+             * @description Tentativa mais recente: `ok`, `limite` ou `erro`; nulo sem `status.json`.
+             */
+            resultado: string | null;
+            /**
+             * Motivo
+             * @description Motivo informado quando o resultado não é `ok`.
+             */
+            motivo: string | null;
+            /**
+             * Dias Desde Ultima Coleta Ok
+             * @description Dias inteiros desde `coletado_em`; nulo se nunca houve coleta bem-sucedida.
+             */
+            dias_desde_ultima_coleta_ok: number | null;
+        };
         /**
          * ComparacaoResumo
          * @description Comparação configurada entre dois grupos.
@@ -1436,6 +1538,32 @@ export interface components {
             penetracao: number | null;
         };
         /**
+         * Lado
+         * @description Um dos dois lados da comparação.
+         */
+        Lado: {
+            /** Rotulo */
+            rotulo: string;
+            /** Grupo Id */
+            grupo_id: string;
+            /** Candidatos */
+            candidatos: components["schemas"]["CandidatoComparado"][];
+            /** @description Mediana dos candidatos do lado, ignorando nulos. */
+            mediana: components["schemas"]["Perfil"];
+            /**
+             * N Mediana
+             * @description Candidatos que entraram na mediana, por campo.
+             */
+            n_mediana: {
+                [key: string]: number;
+            };
+            /**
+             * Motivo Vazio
+             * @description Por que não há candidatos neste lado.
+             */
+            motivo_vazio: string | null;
+        };
+        /**
          * Link
          * @description Um link oficial, com a honestidade de dizer se foi conferido.
          */
@@ -1694,6 +1822,62 @@ export interface components {
             numero: number;
             /** Sigla */
             sigla: string;
+        };
+        /**
+         * Perfil
+         * @description Indicadores comparáveis (taxas ou normalizados). Nulo = ausente, nunca zero.
+         */
+        Perfil: {
+            /**
+             * Votos
+             * @description Votos nominais válidos (§2.1).
+             */
+            votos: number | null;
+            /**
+             * Pct Validos
+             * @description % dos válidos do cargo na circunscrição (§2.2).
+             */
+            pct_validos: number | null;
+            /**
+             * Penetracao
+             * @description ‰ dos aptos do cargo na circunscrição (§2.3).
+             */
+            penetracao: number | null;
+            /**
+             * N Municipios
+             * @description Municípios com ao menos um voto.
+             */
+            n_municipios: number | null;
+            /**
+             * Hhi
+             * @description Concentração geográfica (HHI entre municípios, §3.2).
+             */
+            hhi: number | null;
+            /**
+             * N Efetivo Municipios
+             * @description 1 / HHI: municípios equivalentes.
+             */
+            n_efetivo_municipios: number | null;
+            /**
+             * Custo Voto Pago
+             * @description R$/voto pago, sem repasses (§4.2).
+             */
+            custo_voto_pago: number | null;
+            /**
+             * Receita Total
+             * @description Receita bruta em R$ (IPCA em 2022).
+             */
+            receita_total: number | null;
+            /**
+             * Pct Publico
+             * @description FEFC + Fundo Partidário, % da receita.
+             */
+            pct_publico: number | null;
+            /**
+             * Pct Pessoa Fisica
+             * @description Doações de pessoas físicas e financiamento coletivo, % da receita.
+             */
+            pct_pessoa_fisica: number | null;
         };
         /**
          * PerfilRede
@@ -2055,6 +2239,51 @@ export interface components {
             fontes: components["schemas"]["FonteRede"][];
         };
         /**
+         * Referencias
+         * @description Corpo de GET /referencias.
+         * @example {
+         *       "ano": 2026,
+         *       "cargo": "DEPUTADO ESTADUAL",
+         *       "nossos": {
+         *         "candidatos": "…",
+         *         "rotulo": "Missão · Dep. estadual · SP"
+         *       },
+         *       "referencia": {
+         *         "rotulo": "5 eleitos mais votados de outros partidos em SP"
+         *       },
+         *       "rotulo": "Missão · Dep. estadual · SP × 5 eleitos mais votados de outros partidos em SP",
+         *       "uf": "SP"
+         *     }
+         */
+        Referencias: {
+            /** Ano */
+            ano: number;
+            /** Cargo */
+            cargo: string;
+            /**
+             * Uf
+             * @description UF do recorte; null para presidente (nacional).
+             */
+            uf: string | null;
+            /**
+             * Rotulo
+             * @description Frase pronta: quem está sendo comparado com quem.
+             */
+            rotulo: string;
+            /** Destaque */
+            destaque: number | null;
+            nossos: components["schemas"]["Lado"];
+            referencia: components["schemas"]["Lado"];
+            /** Contas Parciais */
+            contas_parciais: boolean;
+            /** Base Ipca */
+            base_ipca: string | null;
+            /** Dt Geracao */
+            dt_geracao: string;
+            /** Fontes */
+            fontes: components["schemas"]["Fonte"][];
+        };
+        /**
          * ResultadoBusca
          * @description Corpo de GET /busca.
          * @example {
@@ -2366,6 +2595,7 @@ export interface components {
             versao: string;
             /** Dt Geracao */
             dt_geracao: string;
+            redes?: components["schemas"]["ColetaRedes"] | null;
         };
         /**
          * SerieConta
@@ -3091,6 +3321,39 @@ export interface operations {
             };
             /** @description Dados de redes sociais ainda não publicados. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    referencias_api_referencias_get: {
+        parameters: {
+            query: {
+                cargo: components["schemas"]["Cargo"];
+                /** @description Obrigatória para deputados; ignorada para presidente (nacional). */
+                uf?: components["schemas"]["UF"] | null;
+                /** @description Candidato nosso a destacar (`destacado = true`). */
+                sq?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Referencias"];
+                };
+            };
+            /** @description Cargo sem grupo de referência, UF ausente (deputados) ou `sq` que não é candidato nosso no recorte. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -56,3 +56,7 @@ export type NivelApi = S["Nivel"];
 
 /** Query de um endpoint, tirada do OpenAPI — o compilador acusa parâmetro renomeado. */
 export type QueryDe<C extends keyof paths> = paths[C] extends { get: { parameters: { query?: infer Q } } } ? Q : never;
+export type RespostaReferencias = S["Referencias"];
+export type LadoReferencias = S["Lado"];
+export type CandidatoRef = S["CandidatoComparado"];
+export type PerfilRef = S["Perfil"];

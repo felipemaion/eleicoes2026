@@ -386,3 +386,41 @@ circle.marca.com-link { cursor: pointer; }
     border-bottom: 2px solid var(--cor-acento); box-shadow: 0 12px 24px rgb(0 0 0 / 0.35); max-height: 75dvh; overflow-y: auto;
   }
 }
+
+/* ---- Comparar com outros partidos (T-W26) ---- */
+.comparar-seletor { display: flex; flex-wrap: wrap; align-items: end; gap: var(--esp-3); margin-block: var(--esp-3); }
+.bloco-grupo { display: inline-flex; border: 1px solid var(--cor-borda); border-radius: 999px; overflow: hidden; }
+.bloco-botao { font: inherit; font-weight: 600; padding: 0.5rem 1rem; border: 0; background: var(--cor-fundo); color: var(--cor-texto); cursor: pointer; }
+.bloco-botao + .bloco-botao { border-left: 1px solid var(--cor-borda); }
+.bloco-botao[aria-pressed="true"] { background: var(--cor-acento); color: var(--cor-texto-acento); }
+.comparar-cabecalho { padding: var(--esp-2) var(--esp-3); border-left: 4px solid var(--cor-acento); background: var(--cor-superficie); margin-block: var(--esp-3); }
+.comparar-cabecalho h2 { margin: 0 0 var(--esp-1); font-size: 1.1rem; }
+.lado { font-weight: 700; white-space: nowrap; }
+.lado-nosso { color: #009e73; }
+.lado-ref { color: #cc79a7; }
+.tabela-comparar-rolagem { overflow-x: auto; max-width: 100%; }
+.tabela-comparar { border-collapse: collapse; width: 100%; font-size: var(--texto-pequeno); }
+.tabela-comparar th, .tabela-comparar td { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--cor-borda); text-align: right; vertical-align: top; }
+.tabela-comparar thead th { text-align: center; vertical-align: bottom; }
+.tabela-comparar thead th > * { display: block; margin-inline: auto; }
+.tabela-comparar tbody th { text-align: left; font-weight: 600; }
+.tabela-comparar .col-nosso, .tabela-comparar td.nosso { border-left: 3px solid #009e73; background: var(--cor-superficie); }
+.tabela-comparar .col-ref { border-top: 3px solid #cc79a7; }
+.tabela-comparar .col-nosso { border-top: 3px solid #009e73; }
+.tabela-comparar td.mediana { font-weight: 700; }
+.tabela-comparar .linha-contexto td, .tabela-comparar .linha-contexto th { color: var(--cor-texto-suave); }
+.tabela-comparar .sem-dado span { font-style: italic; color: var(--cor-texto-suave); border-bottom: 1px dotted currentColor; cursor: help; }
+.selo-alerta { margin-top: 0.2rem; padding: 0.1rem 0.4rem; border: 1px solid var(--cor-destaque); border-radius: 0.3rem; font-size: 0.7rem; font-weight: 700; }
+.grafico-indice { max-width: 42rem; }
+@media (max-width: 40rem) {
+  .tabela-comparar-rolagem { overflow-x: visible; }
+  .tabela-comparar, .tabela-comparar tbody, .tabela-comparar tr, .tabela-comparar td, .tabela-comparar tbody th { display: block; width: 100%; box-sizing: border-box; }
+  .tabela-comparar thead { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+  .tabela-comparar thead tr { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+  .tabela-comparar thead th:first-child { display: none; }
+  .tabela-comparar thead th { flex: 1 1 7rem; }
+  .tabela-comparar tbody tr { margin-block: var(--esp-3); border: 1px solid var(--cor-borda); border-radius: var(--raio); }
+  .tabela-comparar td { display: flex; justify-content: space-between; gap: var(--esp-2); border-bottom: 0; }
+  .tabela-comparar td::before { content: attr(data-rotulo); font-weight: 600; text-align: left; }
+  .bloco-grupo { flex-wrap: wrap; border-radius: var(--raio); }
+}
