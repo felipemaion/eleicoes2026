@@ -1,0 +1,8 @@
+.git
+.worktrees
+.venv
+**/__pycache__
+**/node_modules
+data/raw
+data/processed
+apps/web
