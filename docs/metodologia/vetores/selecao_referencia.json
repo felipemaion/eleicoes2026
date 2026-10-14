@@ -1,0 +1,681 @@
+{
+  "indicador": "selecao_referencia",
+  "spec": "docs/metodologia/indicadores.md#selecao-referencia",
+  "versao": 1,
+  "descricao": "5 eleitos mais votados de outros partidos por (cargo, UF): ds_sit_tot_turno normalizado ∈ {ELEITO, ELEITO POR QP, ELEITO POR MEDIA}, nr_partido ∉ excluir_partidos (padrão [14]), sq ∉ excluir_sq; ordem votos desc, empate sq asc; posicao 1..n.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "parâmetros omitidos = padrão (n=5, excluir_partidos=[14], excluir_sq=[]); saída ordenada por cd_cargo, sg_uf, posicao",
+  "casos": [
+    {
+      "nome": "cinco_eleitos_de_outros_partidos",
+      "descricao": "Missão eleito fica fora; suplente com mais votos fica fora; eleito por média entra; o 6º sai.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 101,
+            "nr_partido": 14,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 900000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 102,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 800000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 103,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 700000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 104,
+            "nr_partido": 45,
+            "ds_sit_tot_turno": "ELEITO POR MÉDIA",
+            "votos": 600000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 105,
+            "nr_partido": 10,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 650000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 106,
+            "nr_partido": 15,
+            "ds_sit_tot_turno": "SUPLENTE",
+            "votos": 690000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 107,
+            "nr_partido": 44,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 500000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 108,
+            "nr_partido": 12,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 450000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 109,
+            "nr_partido": 50,
+            "ds_sit_tot_turno": "NÃO ELEITO",
+            "votos": 10
+          }
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 1,
+          "sq_candidato": 102,
+          "nr_partido": 13,
+          "votos": 800000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 2,
+          "sq_candidato": 103,
+          "nr_partido": 22,
+          "votos": 700000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 3,
+          "sq_candidato": 105,
+          "nr_partido": 10,
+          "votos": 650000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 4,
+          "sq_candidato": 104,
+          "nr_partido": 45,
+          "votos": 600000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 5,
+          "sq_candidato": 107,
+          "nr_partido": 44,
+          "votos": 500000
+        }
+      ]
+    },
+    {
+      "nome": "empate_desempata_por_sq",
+      "descricao": "Empate de votos na 5ª posição: fica o menor sq_candidato (205).",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 201,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 5000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 202,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 4000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 203,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 3000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 204,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 2000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 210,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 1000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 205,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 1000
+          }
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "posicao": 1,
+          "sq_candidato": 201,
+          "nr_partido": 13,
+          "votos": 5000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "posicao": 2,
+          "sq_candidato": 202,
+          "nr_partido": 13,
+          "votos": 4000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "posicao": 3,
+          "sq_candidato": 203,
+          "nr_partido": 13,
+          "votos": 3000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "posicao": 4,
+          "sq_candidato": 204,
+          "nr_partido": 13,
+          "votos": 2000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "posicao": 5,
+          "sq_candidato": 205,
+          "nr_partido": 13,
+          "votos": 1000
+        }
+      ]
+    },
+    {
+      "nome": "menos_de_cinco_disponiveis",
+      "descricao": "DF só tem 3 eleitos de outros partidos: ficam os 3.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "DF",
+            "sq_candidato": 301,
+            "nr_partido": 14,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 90000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "DF",
+            "sq_candidato": 302,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 80000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "DF",
+            "sq_candidato": 303,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "ELEITO POR MÉDIA",
+            "votos": 70000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "DF",
+            "sq_candidato": 304,
+            "nr_partido": 55,
+            "ds_sit_tot_turno": "ELEITO",
+            "votos": 60000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "DF",
+            "sq_candidato": 305,
+            "nr_partido": 10,
+            "ds_sit_tot_turno": "SUPLENTE",
+            "votos": 75000
+          }
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "DF",
+          "posicao": 1,
+          "sq_candidato": 302,
+          "nr_partido": 13,
+          "votos": 80000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "DF",
+          "posicao": 2,
+          "sq_candidato": 303,
+          "nr_partido": 22,
+          "votos": 70000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "DF",
+          "posicao": 3,
+          "sq_candidato": 304,
+          "nr_partido": 55,
+          "votos": 60000
+        }
+      ]
+    },
+    {
+      "nome": "uf_sem_eleito_de_outro_partido",
+      "descricao": "Só o Missão elegeu no AC: a UF não aparece na saída.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "AC",
+            "sq_candidato": 401,
+            "nr_partido": 14,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 30000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "AC",
+            "sq_candidato": 402,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "SUPLENTE",
+            "votos": 20000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "AC",
+            "sq_candidato": 403,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "NÃO ELEITO",
+            "votos": 100
+          }
+        ]
+      },
+      "saida": []
+    },
+    {
+      "nome": "varios_cargos_e_ufs",
+      "descricao": "Cada (cargo, UF) tem o seu ranking; saída ordenada por cargo, UF, posição.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 7,
+            "sg_uf": "SP",
+            "sq_candidato": 501,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 100
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 502,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 300
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 503,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 200
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "AC",
+            "sq_candidato": 504,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 50
+          }
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "AC",
+          "posicao": 1,
+          "sq_candidato": 504,
+          "nr_partido": 22,
+          "votos": 50
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 1,
+          "sq_candidato": 502,
+          "nr_partido": 13,
+          "votos": 300
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 2,
+          "sq_candidato": 503,
+          "nr_partido": 22,
+          "votos": 200
+        },
+        {
+          "cd_cargo": 7,
+          "sg_uf": "SP",
+          "posicao": 1,
+          "sq_candidato": 501,
+          "nr_partido": 13,
+          "votos": 100
+        }
+      ]
+    },
+    {
+      "nome": "situacao_nula_e_rotulos_variantes",
+      "descricao": "Situação nula (não totalizado) e 2º TURNO não são eleito; rótulo sem acento ou em minúsculas é normalizado.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "MG",
+            "sq_candidato": 601,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": null,
+            "votos": 99999
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "MG",
+            "sq_candidato": 602,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "eleito por media",
+            "votos": 10
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "MG",
+            "sq_candidato": 603,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "2º TURNO",
+            "votos": 50000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "MG",
+            "sq_candidato": 604,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "Eleito",
+            "votos": 20
+          }
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "MG",
+          "posicao": 1,
+          "sq_candidato": 604,
+          "nr_partido": 22,
+          "votos": 20
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "MG",
+          "posicao": 2,
+          "sq_candidato": 602,
+          "nr_partido": 13,
+          "votos": 10
+        }
+      ]
+    },
+    {
+      "nome": "n_parametrizavel",
+      "descricao": "n = 2 devolve só os dois primeiros.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 101,
+            "nr_partido": 14,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 900000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 102,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 800000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 103,
+            "nr_partido": 22,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 700000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 104,
+            "nr_partido": 45,
+            "ds_sit_tot_turno": "ELEITO POR MÉDIA",
+            "votos": 600000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 105,
+            "nr_partido": 10,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 650000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 106,
+            "nr_partido": 15,
+            "ds_sit_tot_turno": "SUPLENTE",
+            "votos": 690000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 107,
+            "nr_partido": 44,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 500000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 108,
+            "nr_partido": 12,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 450000
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 109,
+            "nr_partido": 50,
+            "ds_sit_tot_turno": "NÃO ELEITO",
+            "votos": 10
+          }
+        ],
+        "n": 2
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 1,
+          "sq_candidato": 102,
+          "nr_partido": 13,
+          "votos": 800000
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "posicao": 2,
+          "sq_candidato": 103,
+          "nr_partido": 22,
+          "votos": 700000
+        }
+      ]
+    },
+    {
+      "nome": "excluir_por_ano_e_por_membro",
+      "descricao": "2022: excluir_partidos vazio (14 era o PTB) e exclusão por sq de um membro do grupo.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "BA",
+            "sq_candidato": 701,
+            "nr_partido": 14,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 500
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "BA",
+            "sq_candidato": 702,
+            "nr_partido": 44,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 400
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "BA",
+            "sq_candidato": 703,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 300
+          }
+        ],
+        "excluir_partidos": [],
+        "excluir_sq": [
+          702
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "BA",
+          "posicao": 1,
+          "sq_candidato": 701,
+          "nr_partido": 14,
+          "votos": 500
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "BA",
+          "posicao": 2,
+          "sq_candidato": 703,
+          "nr_partido": 13,
+          "votos": 300
+        }
+      ]
+    },
+    {
+      "nome": "situacao_desconhecida",
+      "descricao": "Rótulo novo do TSE falha alto.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 801,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR SORTEIO",
+            "votos": 10
+          }
+        ]
+      },
+      "erro": "ValueError: situação desconhecida"
+    },
+    {
+      "nome": "candidatura_repetida",
+      "descricao": "Mesmo sq duas vezes no recorte.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 802,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 10
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 802,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": 10
+          }
+        ]
+      },
+      "erro": "ValueError: linhas duplicadas"
+    },
+    {
+      "nome": "eleito_sem_votos",
+      "descricao": "Eleito com votos nulos é dado faltante.",
+      "entrada": {
+        "candidatos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 803,
+            "nr_partido": 13,
+            "ds_sit_tot_turno": "ELEITO POR QP",
+            "votos": null
+          }
+        ]
+      },
+      "erro": "ValueError: sem votos"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "versao": 1,
-  "atualizado_em": "2026-10-08",
+  "atualizado_em": "2026-10-14",
   "fonte_metodologica": "docs/metodologia/indicadores.md",
   "limites": {
     "titulo": 60,
@@ -468,6 +468,39 @@
       "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE; TSE — votação nominal",
       "vetor": "residuo_seguidores",
       "spec": "residuo-seguidores"
+    },
+    "selecao_referencia": {
+      "titulo": "Os 5 eleitos mais votados de outros partidos",
+      "resumo": "Em cada UF e cargo de deputado, os 5 eleitos com mais votos que não são do Missão: a régua contra a qual os nossos são comparados.",
+      "como_ler": "Entram só eleitos (por quociente partidário ou por média), de partidos diferentes do Missão, do maior para o menor número de votos. Empate de votos é decidido pelo número de registro no TSE. Se a UF tem menos de 5 eleitos de outros partidos, aparecem os que houver.",
+      "unidade": "candidaturas (posição 1 a 5)",
+      "denominador": "eleitos do mesmo cargo na mesma UF, exceto os do Missão",
+      "cuidado": "São os mais votados entre os vencedores: o topo da disputa, não candidatos parecidos com os nossos. É esperado que os nossos fiquem abaixo deles em votos.",
+      "fonte": "TSE — consulta de candidatos (situação de totalização) e votação nominal por município e zona",
+      "vetor": "selecao_referencia",
+      "spec": "selecao-referencia"
+    },
+    "participacao_maiores": {
+      "titulo": "Votos dos 10 maiores municípios",
+      "resumo": "Quanto dos votos do candidato veio dos 10 municípios onde ele foi mais votado, e em quantos municípios teve pelo menos um voto.",
+      "como_ler": "Perto de 100 %, o voto está concentrado em poucos lugares (um reduto). Mais baixo, o voto está espalhado pela UF. O número de municípios com voto cresce com o total de votos, por isso serve só de contexto.",
+      "unidade": "% dos votos do candidato; número de municípios",
+      "denominador": "votos nominais válidos do candidato no cargo e na UF",
+      "cuidado": "Compare só dentro da mesma UF: São Paulo tem 645 municípios e Roraima 15 — em Roraima quase todo candidato tem perto de 100 %.",
+      "fonte": "TSE — votação nominal por município e zona; IBGE — códigos de município",
+      "vetor": "participacao_maiores",
+      "spec": "participacao-maiores"
+    },
+    "perfil_relativo": {
+      "titulo": "Comparado com a mediana dos 5",
+      "resumo": "Cada indicador do nosso candidato ao lado da mediana dos 5 de referência do mesmo cargo e UF: em vezes, ou em pontos percentuais.",
+      "como_ler": "Em taxas como custo por voto, 0,4× quer dizer 40 % da mediana deles e 1× quer dizer igual. Em fatias como % de fundo público, mostramos a diferença: +40 p.p. é 40 pontos acima. Votos e receita total aparecem só como contexto, porque medem o tamanho da campanha.",
+      "unidade": "vezes a mediana (×) ou pontos percentuais (p.p.)",
+      "denominador": "mediana dos 5 de referência com o dado (pelo menos 3)",
+      "cuidado": "Com 5 candidatos a mediana muda muito com um só nome: veja os 5 valores, não só o índice. Se menos de 3 dos 5 têm o dado (ex.: contas ainda não entregues), não há mediana.",
+      "fonte": "TSE — votação, candidaturas e prestação de contas; BCB — IPCA (série 433)",
+      "vetor": "perfil_relativo",
+      "spec": "perfil-relativo"
     }
   },
   "telas": {
@@ -603,6 +636,33 @@
         "redes_seguidores_sem_historico",
         "redes_segundo_turno"
       ]
+    },
+    "referencias": {
+      "titulo": "Comparar com outros partidos",
+      "subtitulo": "Os candidatos do Partido Missão ao lado dos 5 eleitos mais votados de outros partidos na mesma UF e, para presidente, dos 5 principais adversários.",
+      "nota_rodape": "Fonte: TSE (candidaturas, votação nominal e prestação de contas), gerado em {dt_geracao}; BCB (IPCA). Votos do 1º turno. Comparação sempre no mesmo cargo e na mesma UF.",
+      "indicadores": [
+        "selecao_referencia",
+        "perfil_relativo",
+        "votos_nominais",
+        "pct_validos",
+        "penetracao",
+        "participacao_maiores",
+        "concentracao",
+        "custo_por_voto",
+        "receitas",
+        "receita_por_voto",
+        "pct_publico",
+        "pct_pessoa_fisica",
+        "pct_autofinanciamento"
+      ],
+      "avisos": [
+        "referencias_nao_causalidade",
+        "referencias_topo_dos_eleitos",
+        "referencias_presidenciaveis",
+        "referencias_financas_ausentes",
+        "contas_parciais"
+      ]
     }
   },
   "avisos": {
@@ -675,6 +735,26 @@
       "titulo": "Segundo turno",
       "nivel": "info",
       "texto": "Para quem disputa o 2º turno (25/10), o período depois da eleição inclui a campanha do segundo turno."
+    },
+    "referencias_nao_causalidade": {
+      "titulo": "Diferença não é causa",
+      "nivel": "atencao",
+      "texto": "A diferença entre os lados não mostra causa: não diz que um jeito de fazer campanha funciona melhor. São candidaturas com estrutura muito diferente: mandato anterior, tempo de TV, máquina partidária e fundo público distribuído pela direção de cada partido."
+    },
+    "referencias_topo_dos_eleitos": {
+      "titulo": "A régua é o topo",
+      "nivel": "info",
+      "texto": "Os 5 de referência são os mais votados entre os eleitos de outros partidos. Ficar abaixo deles em votos é o esperado; o que a comparação mostra é a distância e o perfil: onde vieram os votos, de onde veio o dinheiro e quanto custou cada voto."
+    },
+    "referencias_presidenciaveis": {
+      "titulo": "Presidente: escolha editorial",
+      "nivel": "info",
+      "texto": "Para presidente, os 5 de referência (Lula, Flávio Bolsonaro, Augusto Cury, Ronaldo Caiado e Romeu Zema) foram escolhidos pelo autor do painel como os principais adversários; não saem de uma regra. Votos do 1º turno."
+    },
+    "referencias_financas_ausentes": {
+      "titulo": "Contas que faltam",
+      "nivel": "info",
+      "texto": "Candidato sem prestação de contas publicada aparece com “sem dado”, nunca com zero. Se menos de 3 dos 5 de referência têm o dado, não calculamos a mediana."
     }
   },
   "glossario": {
@@ -817,6 +897,18 @@
     "pre_campanha": {
       "termo": "Pré-campanha e campanha",
       "definicao": "Pré-campanha: de 1/1 a 15/8/2026. Campanha: de 16/8 (quando a propaganda eleitoral passa a ser permitida) até o 1º turno, em 4/10. Pós-eleição: de 5/10 em diante."
+    },
+    "candidatos_de_referencia": {
+      "termo": "Candidatos de referência",
+      "definicao": "Quem serve de régua para os nossos: em cada UF e cargo de deputado, os 5 eleitos mais votados de outros partidos; para presidente, Lula, Flávio Bolsonaro, Augusto Cury, Ronaldo Caiado e Romeu Zema."
+    },
+    "indice_relativo": {
+      "termo": "Índice relativo",
+      "definicao": "O valor do nosso candidato dividido pela mediana dos 5 de referência (0,4× = 40 % da mediana) ou, para fatias em %, a diferença em pontos percentuais."
+    },
+    "mediana": {
+      "termo": "Mediana",
+      "definicao": "O valor do meio quando os números são postos em ordem: com 5 candidatos, o 3º. Diferente da média, não é puxada por um único valor muito alto."
     }
   },
   "comparador": {
@@ -858,6 +950,43 @@
       "mbl_2022": "Grupo MBL 2022: os 4 indicados (Kim Kataguiri, Guto Zacarias, Renato Battista e Cristiano Beraldo) mais 14 candidatos do Missão em 2026 que também disputaram 2022, por qualquer partido. Vários destes 14 não eram do MBL em 2022.",
       "mbl_2026": "Grupo MBL 2026: todas as candidaturas do Partido Missão em 2026 mais Cristiano Beraldo, indicado do MBL em 2022 que em 2026 concorreu pelo PP.",
       "missao_2026": "Partido Missão 2026: todas as candidaturas do Missão (número 14) em 2026."
+    }
+  },
+  "referencias": {
+    "placeholders": {
+      "nome": "nome de urna do nosso candidato a presidente",
+      "uf": "sigla da UF escolhida, ex. SP",
+      "n": "quantos de referência existem no recorte",
+      "indice": "valor do índice já formatado, ex. 0,4",
+      "mediana": "mediana dos 5 já formatada com a unidade"
+    },
+    "blocos": {
+      "presidente": {
+        "titulo": "Presidente",
+        "rotulo": "{nome} (Missão) × 5 presidenciáveis",
+        "quem": "Renan Santos, candidato do Missão, comparado com Lula, Flávio Bolsonaro, Augusto Cury, Ronaldo Caiado e Romeu Zema, no Brasil todo e no 1º turno."
+      },
+      "deputado_federal": {
+        "titulo": "Deputado federal",
+        "rotulo": "Missão · Dep. federal · {uf} × 5 eleitos mais votados de outros partidos em {uf}",
+        "quem": "Cada candidato do Missão a deputado federal em {uf} comparado com os 5 eleitos mais votados de outros partidos na mesma UF. Nunca com outra UF nem com outro cargo."
+      },
+      "deputado_estadual": {
+        "titulo": "Deputado estadual ou distrital",
+        "rotulo": "Missão · Dep. estadual · {uf} × 5 eleitos mais votados de outros partidos em {uf}",
+        "quem": "Cada candidato do Missão a deputado estadual (distrital, no DF) em {uf} comparado com os 5 eleitos mais votados de outros partidos na mesma UF."
+      }
+    },
+    "leitura_indice": {
+      "razao": "{indice}× a mediana dos 5 de referência",
+      "diferenca_pp": "{indice} p.p. em relação à mediana dos 5 de referência",
+      "contexto": "Mediana dos 5 de referência: {mediana}"
+    },
+    "ui": {
+      "sem_mediana": "Menos de 3 dos 5 de referência têm este dado: sem mediana para comparar.",
+      "sem_referencia": "Nenhum eleito de outro partido em {uf} neste cargo: não há com quem comparar.",
+      "menos_de_cinco": "Só {n} eleitos de outros partidos em {uf} neste cargo; a mediana usa esses {n}.",
+      "presidente_x_deputado": "Presidente e deputado não se comparam: eleitorado, regra de eleição e tamanho da disputa são diferentes."
     }
   }
 }

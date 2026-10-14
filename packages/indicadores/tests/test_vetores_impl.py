@@ -13,7 +13,7 @@ from typing import Any
 
 import polars as pl
 import pytest
-from indicadores import desempenho, espacial, evolucao, financeiro, grupos, redes
+from indicadores import desempenho, espacial, evolucao, financeiro, grupos, redes, referencias
 
 RAIZ = Path(__file__).resolve().parents[3]
 VETORES = RAIZ / "docs" / "metodologia" / "vetores"
@@ -343,6 +343,45 @@ def _redes_residuo(entrada: dict[str, Any]) -> list[dict[str, Any]]:
     return _linhas(redes.residuo_log(pl.DataFrame(entrada["linhas"], schema=_SCHEMA_LINHAS)))
 
 
+_SCHEMA_CANDIDATOS = {
+    "cd_cargo": pl.Int64,
+    "sg_uf": pl.String,
+    "sq_candidato": pl.Int64,
+    "nr_partido": pl.Int64,
+    "ds_sit_tot_turno": pl.String,
+    "votos": pl.Int64,
+}
+
+
+def _selecao_referencia(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    candidatos = pl.DataFrame(entrada["candidatos"], schema=_SCHEMA_CANDIDATOS)
+    opcionais = {k: entrada[k] for k in ("n", "excluir_partidos", "excluir_sq") if k in entrada}
+    return _linhas(referencias.selecionar_eleitos(candidatos, **opcionais))
+
+
+def _participacao_maiores(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    tabela = pl.DataFrame(entrada["linhas"])
+    opcionais = {"k": entrada["k"]} if "k" in entrada else {}
+    return _linhas(espacial.participacao_maiores(tabela, **opcionais))
+
+
+def _quadro_perfil(linhas: list[dict[str, Any]], indicadores: list[str]) -> pl.DataFrame:
+    schema: dict[str, Any] = {"cd_cargo": pl.Int64, "sg_uf": pl.String}
+    if any("sq_candidato" in linha for linha in linhas):
+        schema["sq_candidato"] = pl.Int64
+    schema |= {i: pl.Float64 for i in indicadores if i in referencias.PERFIL}
+    return pl.DataFrame(linhas, schema=schema)
+
+
+def _perfil_relativo(entrada: dict[str, Any]) -> list[dict[str, Any]]:
+    indicadores = entrada["indicadores"]
+    nossos = _quadro_perfil(entrada["nossos"], indicadores)
+    referencia = _quadro_perfil(entrada["referencia"], indicadores)
+    opcionais = {"por": entrada["por"]} if "por" in entrada else {}
+    df = referencias.perfil_relativo(nossos, referencia, indicadores, **opcionais)
+    return _linhas(df)
+
+
 ADAPTADORES: dict[str, Adaptador] = {
     "votos_nominais": _votos_nominais,
     "pct_validos": _municipal_e_uf,
@@ -374,6 +413,9 @@ ADAPTADORES: dict[str, Adaptador] = {
     "serie_seguidores": _redes_serie,
     "correlacao_redes": _redes_correlacao,
     "residuo_seguidores": _redes_residuo,
+    "selecao_referencia": _selecao_referencia,
+    "participacao_maiores": _participacao_maiores,
+    "perfil_relativo": _perfil_relativo,
 }
 
 

@@ -1,0 +1,614 @@
+{
+  "indicador": "perfil_relativo",
+  "spec": "docs/metodologia/indicadores.md#perfil-relativo",
+  "versao": 1,
+  "descricao": "Por (cargo, UF) e indicador do catálogo: mediana dos valores não nulos da referência (exige n ≥ 3); índice razao = valor/mediana (mediana 0 → null), diferenca_pp = valor − mediana, contexto = null.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "por omitido = [cd_cargo, sg_uf]; entidade = sq_candidato; saída ordenada por cd_cargo, sg_uf, sq_candidato e ordem do catálogo",
+  "casos": [
+    {
+      "nome": "razao_diferenca_e_contexto",
+      "descricao": "Custo 4 contra mediana 10 → 0,4×; % público 90 contra 50 → +40 p.p.; votos é contexto (sem índice).",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "votos": 50000,
+            "penetracao": 2.0,
+            "custo_voto_pago": 4.0,
+            "pct_publico": 90.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 600000,
+            "penetracao": 20.0,
+            "custo_voto_pago": 8.0,
+            "pct_publico": 40.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 750000,
+            "penetracao": 25.0,
+            "custo_voto_pago": 10.0,
+            "pct_publico": 45.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 900000,
+            "penetracao": 30.0,
+            "custo_voto_pago": 12.0,
+            "pct_publico": 50.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1050000,
+            "penetracao": 35.0,
+            "custo_voto_pago": 9.0,
+            "pct_publico": 60.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1200000,
+            "penetracao": 40.0,
+            "custo_voto_pago": 11.0,
+            "pct_publico": 70.0
+          }
+        ],
+        "indicadores": [
+          "votos",
+          "penetracao",
+          "custo_voto_pago",
+          "pct_publico"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "votos",
+          "tipo": "contexto",
+          "valor": 50000,
+          "mediana_referencia": 900000,
+          "n_referencia": 5,
+          "indice": null
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "penetracao",
+          "tipo": "razao",
+          "valor": 2.0,
+          "mediana_referencia": 30.0,
+          "n_referencia": 5,
+          "indice": 0.06666666666666667
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "custo_voto_pago",
+          "tipo": "razao",
+          "valor": 4.0,
+          "mediana_referencia": 10.0,
+          "n_referencia": 5,
+          "indice": 0.4
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "pct_publico",
+          "tipo": "diferenca_pp",
+          "valor": 90.0,
+          "mediana_referencia": 50.0,
+          "n_referencia": 5,
+          "indice": 40.0
+        }
+      ]
+    },
+    {
+      "nome": "mediana_par_ignora_nulos",
+      "descricao": "Um da referência sem contas: mediana dos 4 restantes = (9 + 11) / 2 = 10.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "custo_voto_pago": 5.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 8.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": null
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 12.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 9.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 11.0
+          }
+        ],
+        "indicadores": [
+          "custo_voto_pago"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "custo_voto_pago",
+          "tipo": "razao",
+          "valor": 5.0,
+          "mediana_referencia": 10.0,
+          "n_referencia": 4,
+          "indice": 0.5
+        }
+      ]
+    },
+    {
+      "nome": "poucos_valores_na_referencia",
+      "descricao": "Só 2 de 5 com contas (< 3): mediana e índice nulos, n_referencia = 2.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "custo_voto_pago": 5.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 8.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": null
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": null
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": null
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 12.0
+          }
+        ],
+        "indicadores": [
+          "custo_voto_pago"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "custo_voto_pago",
+          "tipo": "razao",
+          "valor": 5.0,
+          "mediana_referencia": null,
+          "n_referencia": 2,
+          "indice": null
+        }
+      ]
+    },
+    {
+      "nome": "mediana_zero",
+      "descricao": "Mediana 0: razão nula (indefinida), diferença em p.p. definida (+10).",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "custo_voto_pago": 3.0,
+            "pct_autofinanciamento": 10.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 0.0,
+            "pct_autofinanciamento": 0.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 0.0,
+            "pct_autofinanciamento": 0.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 0.0,
+            "pct_autofinanciamento": 0.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 5.0,
+            "pct_autofinanciamento": 1.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 6.0,
+            "pct_autofinanciamento": 2.0
+          }
+        ],
+        "indicadores": [
+          "custo_voto_pago",
+          "pct_autofinanciamento"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "custo_voto_pago",
+          "tipo": "razao",
+          "valor": 3.0,
+          "mediana_referencia": 0.0,
+          "n_referencia": 5,
+          "indice": null
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "pct_autofinanciamento",
+          "tipo": "diferenca_pp",
+          "valor": 10.0,
+          "mediana_referencia": 0.0,
+          "n_referencia": 5,
+          "indice": 10.0
+        }
+      ]
+    },
+    {
+      "nome": "nosso_valor_nulo",
+      "descricao": "Nosso candidato sem contas: índice nulo, mediana da referência continua informada.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "custo_voto_pago": null
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 8.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": null
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 12.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 9.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "custo_voto_pago": 11.0
+          }
+        ],
+        "indicadores": [
+          "custo_voto_pago"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "custo_voto_pago",
+          "tipo": "razao",
+          "valor": null,
+          "mediana_referencia": 10.0,
+          "n_referencia": 4,
+          "indice": null
+        }
+      ]
+    },
+    {
+      "nome": "varios_nossos_e_uf_sem_referencia",
+      "descricao": "Cada UF contra a sua mediana (SP 30, RJ 11); AC sem referência: n_referencia 0, mediana nula.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1402,
+            "penetracao": 3.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "penetracao": 1.5
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "sq_candidato": 1403,
+            "penetracao": 2.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "AC",
+            "sq_candidato": 1404,
+            "penetracao": 9.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "penetracao": 20.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "penetracao": 30.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "penetracao": 40.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "penetracao": 10.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "penetracao": 12.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "penetracao": 8.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "RJ",
+            "penetracao": 50.0
+          }
+        ],
+        "indicadores": [
+          "penetracao"
+        ]
+      },
+      "saida": [
+        {
+          "cd_cargo": 6,
+          "sg_uf": "AC",
+          "sq_candidato": 1404,
+          "indicador": "penetracao",
+          "tipo": "razao",
+          "valor": 9.0,
+          "mediana_referencia": null,
+          "n_referencia": 0,
+          "indice": null
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "RJ",
+          "sq_candidato": 1403,
+          "indicador": "penetracao",
+          "tipo": "razao",
+          "valor": 2.0,
+          "mediana_referencia": 11.0,
+          "n_referencia": 4,
+          "indice": 0.18181818181818182
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1401,
+          "indicador": "penetracao",
+          "tipo": "razao",
+          "valor": 1.5,
+          "mediana_referencia": 30.0,
+          "n_referencia": 3,
+          "indice": 0.05
+        },
+        {
+          "cd_cargo": 6,
+          "sg_uf": "SP",
+          "sq_candidato": 1402,
+          "indicador": "penetracao",
+          "tipo": "razao",
+          "valor": 3.0,
+          "mediana_referencia": 30.0,
+          "n_referencia": 3,
+          "indice": 0.1
+        }
+      ]
+    },
+    {
+      "nome": "indicador_fora_do_perfil",
+      "descricao": "Só indicadores do catálogo.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "votos": 50000,
+            "penetracao": 2.0,
+            "custo_voto_pago": 4.0,
+            "pct_publico": 90.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 600000,
+            "penetracao": 20.0,
+            "custo_voto_pago": 8.0,
+            "pct_publico": 40.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 750000,
+            "penetracao": 25.0,
+            "custo_voto_pago": 10.0,
+            "pct_publico": 45.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 900000,
+            "penetracao": 30.0,
+            "custo_voto_pago": 12.0,
+            "pct_publico": 50.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1050000,
+            "penetracao": 35.0,
+            "custo_voto_pago": 9.0,
+            "pct_publico": 60.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1200000,
+            "penetracao": 40.0,
+            "custo_voto_pago": 11.0,
+            "pct_publico": 70.0
+          }
+        ],
+        "indicadores": [
+          "hhi"
+        ]
+      },
+      "erro": "ValueError: indicador fora do perfil"
+    },
+    {
+      "nome": "recorte_sem_cargo",
+      "descricao": "Comparar sem fixar o cargo misturaria presidente e deputado.",
+      "entrada": {
+        "nossos": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "sq_candidato": 1401,
+            "votos": 50000,
+            "penetracao": 2.0,
+            "custo_voto_pago": 4.0,
+            "pct_publico": 90.0
+          }
+        ],
+        "referencia": [
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 600000,
+            "penetracao": 20.0,
+            "custo_voto_pago": 8.0,
+            "pct_publico": 40.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 750000,
+            "penetracao": 25.0,
+            "custo_voto_pago": 10.0,
+            "pct_publico": 45.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 900000,
+            "penetracao": 30.0,
+            "custo_voto_pago": 12.0,
+            "pct_publico": 50.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1050000,
+            "penetracao": 35.0,
+            "custo_voto_pago": 9.0,
+            "pct_publico": 60.0
+          },
+          {
+            "cd_cargo": 6,
+            "sg_uf": "SP",
+            "votos": 1200000,
+            "penetracao": 40.0,
+            "custo_voto_pago": 11.0,
+            "pct_publico": 70.0
+          }
+        ],
+        "indicadores": [
+          "penetracao"
+        ],
+        "por": [
+          "sg_uf"
+        ]
+      },
+      "erro": "ValueError: um cargo por vez"
+    }
+  ]
+}

@@ -89,6 +89,38 @@ Em 2022 o número 14 pertencia ao **PTB** (Partido Trabalhista Brasileiro), sem 
 Missão; o PTB foi extinto em 2023, ao se fundir com o Patriota no PRD. **Votos no 14 em 2022 não
 são votos do Missão.** O painel compara pessoas e grupos, nunca o número do partido.
 
+## Comparar com candidatos de outros partidos
+
+A aba **Comparar com outros partidos** põe os candidatos do Missão ao lado de candidatos de
+referência. São três blocos, sempre no **mesmo cargo** e, para deputado, na **mesma UF**:
+
+- **Presidente:** Renan Santos (Missão) × **Lula, Flávio Bolsonaro, Augusto Cury, Ronaldo Caiado
+  e Romeu Zema**, no Brasil todo e no 1º turno. Esses cinco foram escolhidos pelo autor do painel
+  como os principais adversários; não saem de uma regra.
+- **Deputado federal** e **deputado estadual** (distrital, no DF): cada candidato do Missão na UF
+  × os **5 eleitos mais votados de outros partidos na mesma UF**. Entram só eleitos (por
+  quociente partidário ou por média), do maior para o menor número de votos.
+- **Presidente e deputado nunca se comparam**, nem uma UF com outra: o eleitorado, a regra de
+  eleição e o tamanho da disputa são diferentes.
+
+Como os de referência têm de 10 a 50 vezes mais votos, comparamos **taxas**, não totais:
+penetração, concentração do voto (quanto veio dos 10 maiores municípios), custo por voto,
+receita por voto e de onde veio o dinheiro (fundo público, doações de pessoas, recursos
+próprios). Cada número nosso aparece ao lado da **mediana** dos 5 (o valor do meio):
+
+- em taxas, como **vezes a mediana** — 0,4× é 40 % da mediana deles, 1× é igual;
+- em fatias em %, como **diferença em pontos percentuais** — +40 p.p. é 40 pontos acima;
+- votos e receita total aparecem só como contexto, porque medem o tamanho da campanha.
+
+Se menos de 3 dos 5 têm o dado (contas ainda não entregues, por exemplo), não há mediana e o
+painel diz isso; dado que falta nunca vira zero.
+
+**A régua é o topo.** Os 5 de referência são os mais votados entre os eleitos; ficar abaixo deles
+em votos é o esperado. **E diferença não é causa:** são candidaturas com **estrutura** muito
+diferente — mandato anterior, tempo de TV, máquina partidária e fundo público repartido pela
+direção de cada partido. Um custo por voto menor não prova que um jeito de fazer campanha
+funciona melhor.
+
 ## Dinheiro de campanha
 
 - As **receitas** são separadas por fonte: **Fundo Eleitoral (FEFC)** e **Fundo Partidário**
