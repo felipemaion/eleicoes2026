@@ -1,0 +1,229 @@
+{
+  "indicador": "participacao_maiores",
+  "spec": "docs/metodologia/indicadores.md#participacao-maiores",
+  "versao": 1,
+  "descricao": "pct_maiores = 100 × Σ dos k (padrão 10) municípios com mais votos do candidato / votos totais; n_municipios_com_voto = #{v > 0}; votos 0 → pct nulo.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = indefinido; saída ordenada por entidade",
+  "casos": [
+    {
+      "nome": "doze_municipios",
+      "descricao": "12 municípios com 1..12 votos: os 10 maiores somam 75 de 78.",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500001,
+            "votos": 1
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500002,
+            "votos": 2
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500003,
+            "votos": 3
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500004,
+            "votos": 4
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500005,
+            "votos": 5
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500006,
+            "votos": 6
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500007,
+            "votos": 7
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500008,
+            "votos": 8
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500009,
+            "votos": 9
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500010,
+            "votos": 10
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500011,
+            "votos": 11
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500012,
+            "votos": 12
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "votos": 78,
+          "n_municipios_com_voto": 12,
+          "pct_maiores": 96.15384615384616
+        }
+      ]
+    },
+    {
+      "nome": "ate_dez_municipios_e_zero",
+      "descricao": "c2: 2 municípios com voto (o de 0 não conta) → 100 %; c3 sem votos → pct nulo, n = 0.",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 3500001,
+            "votos": 70
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 3500002,
+            "votos": 30
+          },
+          {
+            "sq_candidato": "c2",
+            "cd_mun_ibge": 3500003,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c3",
+            "cd_mun_ibge": 3500001,
+            "votos": 0
+          },
+          {
+            "sq_candidato": "c3",
+            "cd_mun_ibge": 3500002,
+            "votos": 0
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": "c2",
+          "votos": 100,
+          "n_municipios_com_voto": 2,
+          "pct_maiores": 100.0
+        },
+        {
+          "sq_candidato": "c3",
+          "votos": 0,
+          "n_municipios_com_voto": 0,
+          "pct_maiores": null
+        }
+      ]
+    },
+    {
+      "nome": "k_parametrizavel",
+      "descricao": "k = 2: 23 de 78.",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500001,
+            "votos": 1
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500002,
+            "votos": 2
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500003,
+            "votos": 3
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500004,
+            "votos": 4
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500005,
+            "votos": 5
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500006,
+            "votos": 6
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500007,
+            "votos": 7
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500008,
+            "votos": 8
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500009,
+            "votos": 9
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500010,
+            "votos": 10
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500011,
+            "votos": 11
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 3500012,
+            "votos": 12
+          }
+        ],
+        "k": 2
+      },
+      "saida": [
+        {
+          "sq_candidato": "c1",
+          "votos": 78,
+          "n_municipios_com_voto": 12,
+          "pct_maiores": 29.487179487179485
+        }
+      ]
+    },
+    {
+      "nome": "linha_repetida",
+      "descricao": "Mesmo (entidade, município) duas vezes.",
+      "entrada": {
+        "linhas": [
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1,
+            "votos": 1
+          },
+          {
+            "sq_candidato": "c1",
+            "cd_mun_ibge": 1,
+            "votos": 2
+          }
+        ]
+      },
+      "erro": "ValueError: linhas duplicadas"
+    }
+  ]
+}

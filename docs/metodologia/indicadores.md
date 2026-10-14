@@ -10,7 +10,8 @@
 0. [Convenções](#convencoes) · 1. [Decisões](#decisoes) · 2. [Desempenho](#desempenho) ·
 3. [Espaciais](#espaciais) · 4. [Financeiros](#financeiros) · 5. [Evolução](#evolucao) ·
 6. [Descartados](#descartados) · 7. [Colunas × fontes](#colunas) · 8. [KPIs e cores](#kpis) ·
-9. [Redes sociais](#redes-sociais) · 10. [Referências](#referencias)
+9. [Redes sociais](#redes-sociais) · 10. [Candidatos de referência](#comparacao-referencia) ·
+11. [Referências](#referencias)
 
 ---
 
@@ -818,8 +819,120 @@ oculto —, `comments_count, coletado_em`).
   não só o ranking. Mesmo cuidado de UF do §9.5.
 - Vetor: `vetores/residuo_seguidores.json`
 
+<a id="comparacao-referencia"></a>
+## 10. Comparação com candidatos de referência — T-A11
+
+Pedido (14/10): pôr os indicadores do Missão **lado a lado** com os de candidatos de outros
+partidos, com a divisão de comparação explícita. Implementação: `indicadores.referencias` e
+`espacial.participacao_maiores`; resolução dos grupos e endpoint: backend (T-B20); finanças de
+todos os candidatos: dados (T-D10).
+
+<a id="blocos-referencia"></a>
+### 10.0 Quem é comparado com quem (três blocos, nunca misturados)
+
+| bloco | nossos | referência | como a referência é escolhida |
+|---|---|---|---|
+| Presidente (cd_cargo 1) | Renan Santos (Missão) | Lula, Flávio Bolsonaro, Augusto Cury, Ronaldo Caiado, Romeu Zema | **lista editorial** fixa em `config/grupos.yaml` (`presidenciaveis_2026`) — os nomes mais citados da disputa, não uma regra |
+| Dep. federal (6), por UF | candidatos do Missão na UF | 5 eleitos mais votados de outros partidos **na mesma UF** | regra do §10.1 |
+| Dep. estadual (7) / distrital (8, DF), por UF | idem | idem | regra do §10.1 |
+
+- **Uma comparação = um cargo × uma UF (× um ano).** Presidente × deputado nunca (eleitorado,
+  regra de eleição e escala diferentes); dep. de SP × eleitos do RJ nunca (eleitorado e oferta de
+  candidatos diferentes); 2022 × 2026 só na tela de evolução, não neste bloco. A função falha alto
+  se o recorte não contiver o cargo.
+- **Presidente:** recorte Brasil (aptos e válidos nacionais; exterior entra nos votos e fica fora
+  da concentração municipal). Votos do **1º turno** para todos (decisão 1.3) — o 2º turno tem
+  só dois candidatos e não se compara com quem saiu no 1º.
+- **Viés de seleção, declarado:** a referência de deputados é, por construção, o topo dos
+  vencedores. Índice < 1 em penetração é o esperado, não uma surpresa; o bloco mostra **o
+  tamanho da distância** e o **perfil** (concentração, fontes de receita, custo), não um "par".
+- **Não é causalidade.** Diferença de custo por voto ou de % de fundo público não diz que um
+  modelo de campanha "funciona": incumbência, tempo de TV, estrutura partidária e fundo
+  distribuído pela direção nacional diferem muito entre os lados.
+
+<a id="selecao-referencia"></a>
+### 10.1 Regra dos "5 eleitos mais votados de outros partidos"
+- **Universo:** candidaturas do cargo proporcional na UF (`cd_cargo, sg_uf`), com `votos` =
+  nominais válidos totais na UF no 1º turno (§2.1) e `ds_sit_tot_turno` da totalização.
+- **Filtro:** resultado **eleito** — `ds_sit_tot_turno` normalizado (maiúsculas, sem acento) ∈
+  {`ELEITO`, `ELEITO POR QP`, `ELEITO POR MEDIA`}; `nr_partido ∉ excluir_partidos` (padrão
+  `{14}`); `sq_candidato ∉ excluir_sq` (padrão vazio). Suplente, não eleito, `2º TURNO` e
+  situação nula (ainda não totalizado) **não** entram; rótulo fora da lista conhecida
+  ({eleitos} ∪ {`NAO ELEITO`, `SUPLENTE`, `2O TURNO`/`2º TURNO`}) → **erro** (rótulo novo do TSE
+  não pode sumir em silêncio).
+- **Ordem:** `votos` decrescente; empate → `sq_candidato` crescente (determinístico, reproduzível
+  em SQL). `posicao` = 1..n dentro de `(cd_cargo, sg_uf)`; ficam as `n = 5` primeiras.
+- **Menos de 5 disponíveis** (UF pequena, ou totalização incompleta): ficam os que houver;
+  nenhum → o recorte não aparece (o backend devolve a referência vazia com motivo, não zero).
+- **Federações:** o filtro é pelo **partido** do candidato (`nr_partido`), não pela federação —
+  um eleito do PCdoB numa federação com o PT conta como "outro partido".
+- **2022:** o número 14 era do PTB (aviso `numero_14_em_2022`); excluir 14 em 2022 tiraria o
+  PTB, não o Missão. Para 2022 passa-se `excluir_partidos = ()` e, se for o caso, exclui-se a
+  lista de membros do grupo comparado (`excluir_sq`).
+- **Erros (falha alto):** candidatura repetida no recorte; eleito com `votos` nulo; situação
+  desconhecida.
+- **Saída:** `cd_cargo, sg_uf, posicao, sq_candidato, nr_partido, votos`, ordenada por
+  `cd_cargo, sg_uf, posicao`.
+- Vetor: `vetores/selecao_referencia.json`
+
+<a id="participacao-maiores"></a>
+### 10.2 Participação dos 10 maiores municípios e nº de municípios com voto
+- **Fórmulas** por entidade (candidato ou grupo) sobre a tabela municipal do recorte:
+  `pct_maiores = 100 × Σ_{10 maiores} v_ci / V_c` (os `k = 10` municípios com mais votos do
+  próprio candidato; empate não muda a soma); `n_municipios_com_voto = #{i : v_ci > 0}`.
+  `V_c = 0` → `pct_maiores` nulo e `n = 0`; até 10 municípios com voto → 100.
+- **Por que estes dois:** o HHI (§3.2) é a medida formal, mas "quanto dos votos veio dos 10
+  maiores municípios" se lê sem glossário e acompanha a ideia de reduto (Ames 1995; Avelino,
+  Biderman & Silva 2011). O nº de municípios é **contexto**: cresce mecanicamente com o volume
+  de votos (quem tem 300 mil votos aparece em quase todos), por isso não tem índice.
+- **Unidade:** % e contagem. **Limitações:** compara-se só dentro da mesma UF (SP tem 645
+  municípios, RR tem 15 — em RR quase todos têm `pct_maiores` perto de 100).
+- Vetor: `vetores/participacao_maiores.json`
+
+<a id="perfil-relativo"></a>
+### 10.3 Perfil comparável: índice relativo à mediana da referência
+- **Catálogo** (uma fonte de verdade: `referencias.PERFIL`), todos já especificados, só taxas
+  ou normalizados — a referência tem 10–50× mais votos e um total cru só mediria escala:
+
+  | indicador | spec | tipo do índice | por quê |
+  |---|---|---|---|
+  | `votos` | §2.1 | contexto (sem índice) | escala, mostra a distância |
+  | `pct_validos` | §2.2 | contexto | no mesmo cargo e UF, a razão é a mesma da penetração |
+  | `penetracao` | §2.3 | razão | métrica-âncora |
+  | `n_municipios_com_voto` | §10.2 | contexto | cresce com o volume |
+  | `pct_maiores` | §10.2 | diferença (p.p.) | composição (0–100) |
+  | `n_efetivo_municipios` | §3.2 | razão | espalhamento do voto |
+  | `custo_voto_pago` | §4.2 | razão | R$/voto, 2022 corrigido pelo IPCA |
+  | `receita_total` | §4.1 | contexto | escala |
+  | `receita_por_voto` | §4.7 | razão | dinheiro normalizado pelo voto |
+  | `pct_publico` | §4.1 | diferença (p.p.) | FEFC + Fundo Partidário |
+  | `pct_pessoa_fisica` | §4.5 | diferença (p.p.) | doação de pessoas (inclui vaquinha) |
+  | `pct_autofinanciamento` | §4.1 | diferença (p.p.) | recursos próprios |
+
+- **Mediana da referência** por `(cd_cargo, sg_uf)` e indicador, sobre os valores **não nulos**
+  (mediana usual: média dos dois centrais com n par). Exige **n ≥ 3** valores (maioria dos 5);
+  abaixo disso → `null` com `n_referencia` informado (2 contas entregues de 5 não são "a
+  referência"). Mediana, não média: custo por voto e receita têm cauda pesada (§4.2).
+- **Índice:** `razao`: `indice = valor / mediana` (0,4 = 40 % da mediana; 1 = igual), mediana 0
+  ou nula → `null`; `diferenca_pp`: `indice = valor − mediana` em p.p. (razão de percentuais
+  confunde: 90 % × 45 % viraria "2×"); `contexto`: `indice = null`, a mediana é mostrada.
+  Valor nulo → índice nulo. Escala: razão em log, divergente centrada em 1; diferença
+  divergente centrada em 0.
+- **Nossos:** o índice é calculado **por candidato** (cada um contra a mesma mediana). Para um
+  número-resumo do Missão no recorte usa-se a **mediana dos nossos** (`mediana_referencia`
+  com `minimo = 1`) contra a mediana deles — nunca a soma do grupo contra 5 indivíduos.
+- **Recorte:** `por` deve conter `cd_cargo` (senão erro: "um cargo por vez"); recorte dos nossos
+  sem referência → mediana `null`, `n_referencia = 0`. `ano_eleicao` presente fora de `por` com
+  mais de um valor → erro.
+- **Limitações:** contas de 2026 parciais dos dois lados (`tp_prestacao_contas` exibido);
+  finança ausente é `null` com motivo, nunca zero; com 5 pontos a mediana é instável — mostrar
+  os 5 valores, não só o índice.
+- **Saída (longa):** `por…, entidade, indicador, tipo, valor, mediana_referencia, n_referencia,
+  indice`, na ordem do catálogo.
+- Vetor: `vetores/perfil_relativo.json`
+
 <a id="referencias"></a>
-## 10. Referências
+## 11. Referências
 - Ames, B. (1995). Electoral strategy under open-list proportional representation. *American
   Journal of Political Science* 39(2): 406–433.
 - Anselin, L. (1995). Local indicators of spatial association — LISA. *Geographical Analysis*
