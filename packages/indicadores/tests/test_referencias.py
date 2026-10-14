@@ -11,7 +11,7 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from indicadores import referencias
+from indicadores import espacial, referencias
 
 SPEC = Path(__file__).resolve().parents[3] / "docs" / "metodologia" / "indicadores.md"
 TIPOS_DA_SPEC = {"razão": "razao", "diferença (p.p.)": "diferenca_pp"}
@@ -124,3 +124,13 @@ def test_indice_confere_com_statistics_median(semente: int) -> None:
     else:
         assert linha["mediana_referencia"] == pytest.approx(esperado)
         assert linha["indice"] == pytest.approx(nosso / esperado)
+
+
+def test_lista_de_indicadores_vazia() -> None:
+    with pytest.raises(ValueError, match="nenhum indicador"):
+        referencias.mediana_referencia(_ref([1.0]), [])
+
+
+def test_participacao_maiores_k_invalido() -> None:
+    with pytest.raises(ValueError, match="k deve"):
+        espacial.participacao_maiores(pl.DataFrame(), k=0)

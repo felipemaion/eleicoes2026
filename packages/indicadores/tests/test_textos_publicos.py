@@ -22,7 +22,7 @@ VETORES = sorted((METODOLOGIA / "vetores").glob("*.json"))
 REFERENCIA_MBL = RAIZ / "data" / "reference" / "mbl_2022.csv"
 
 CAMPOS_INDICADOR = ("titulo", "resumo", "como_ler", "unidade", "denominador", "cuidado", "fonte")
-TELAS = ("visao_geral", "mapa", "gastos", "evolucao", "candidato", "redes")
+TELAS = ("visao_geral", "mapa", "gastos", "evolucao", "candidato", "redes", "referencias")
 CAMPOS_TELA = ("titulo", "subtitulo", "nota_rodape")
 AVISOS_OBRIGATORIOS = (
     "contas_parciais",
@@ -32,6 +32,7 @@ AVISOS_OBRIGATORIOS = (
     "numero_14_em_2022",
 )
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
+SECOES_COM_PLACEHOLDERS_LOCAIS = ("comparador", "referencias")
 
 
 def _carregar() -> dict[str, Any]:
@@ -130,13 +131,17 @@ def test_placeholders_declarados(textos: dict[str, Any]) -> None:
     # Placeholders globais valem em todo o arquivo; os do comparador ({busca}, {n}…) são
     # preenchidos só pela tela do comparador e não podem vazar para outras seções.
     globais = set(textos["placeholders"])
-    fora = {k: v for k, v in textos.items() if k != "comparador"}
+    fora = {k: v for k, v in textos.items() if k not in SECOES_COM_PLACEHOLDERS_LOCAIS}
     usados = {p for s in _textos_de(fora) for p in PLACEHOLDER.findall(s)}
     assert usados <= globais, f"placeholders não declarados: {sorted(usados - globais)}"
     comp = textos["comparador"]
     locais = globais | set(comp["placeholders"])
     usados_comp = {p for s in _textos_de(comp["ui"]) for p in PLACEHOLDER.findall(s)}
     assert usados_comp <= locais, f"comparador: placeholders {sorted(usados_comp - locais)}"
+    ref = textos["referencias"]
+    locais_ref = globais | set(ref["placeholders"])
+    usados_ref = {p for s in _textos_de(ref) for p in PLACEHOLDER.findall(s)}
+    assert usados_ref <= locais_ref, f"referencias: placeholders {sorted(usados_ref - locais_ref)}"
 
 
 def _referencia_mbl() -> list[dict[str, str]]:
@@ -236,3 +241,50 @@ def test_como_ler_tem_redes_sociais() -> None:
     secao = texto.split("## Redes sociais", 1)[1].split("\n## ", 1)[0].lower()
     for termo in ("causa", "seguidores", "curtidas", "pré-campanha", "por semana", "esperado"):
         assert termo in secao, f"seção Redes sociais não menciona {termo}"
+
+
+PRESIDENCIAVEIS = ("Lula", "Flávio Bolsonaro", "Augusto Cury", "Ronaldo Caiado", "Romeu Zema")
+BLOCOS_REFERENCIA = ("presidente", "deputado_federal", "deputado_estadual")
+INDICADORES_REFERENCIA = ("selecao_referencia", "participacao_maiores", "perfil_relativo")
+
+
+def test_tela_de_referencias(textos: dict[str, Any]) -> None:
+    tela = textos["telas"]["referencias"]
+    assert set(INDICADORES_REFERENCIA) <= set(tela["indicadores"])
+    for aviso in ("referencias_nao_causalidade", "referencias_topo_dos_eleitos", "contas_parciais"):
+        assert aviso in tela["avisos"], f"tela referencias sem aviso {aviso}"
+    assert "causa" in textos["avisos"]["referencias_nao_causalidade"]["texto"]
+    assert "estrutura" in textos["avisos"]["referencias_nao_causalidade"]["texto"]
+    for chave in ("candidatos_de_referencia", "indice_relativo", "mediana"):
+        assert chave in textos["glossario"], f"glossário sem {chave!r}"
+
+
+def test_blocos_dizem_quem_e_comparado_com_quem(textos: dict[str, Any]) -> None:
+    ref = textos["referencias"]
+    limites: dict[str, int] = textos["limites"]
+    assert set(ref["blocos"]) == set(BLOCOS_REFERENCIA)
+    for chave, bloco in ref["blocos"].items():
+        assert set(bloco) == {"titulo", "rotulo", "quem"}, f"bloco {chave}"
+        assert len(bloco["titulo"]) <= limites["titulo"]
+        assert "×" in bloco["rotulo"], f"bloco {chave}: rótulo sem '×'"
+        assert len(bloco["quem"]) <= limites["aviso"], f"bloco {chave}.quem acima do limite"
+    for nome in (*PRESIDENCIAVEIS, "Renan Santos"):
+        assert nome in ref["blocos"]["presidente"]["quem"], f"bloco presidente não cita {nome}"
+    for chave in ("deputado_federal", "deputado_estadual"):
+        quem = ref["blocos"][chave]["quem"]
+        assert "{uf}" in ref["blocos"][chave]["rotulo"]
+        for termo in ("5", "eleitos", "outros partidos"):
+            assert termo in quem, f"bloco {chave} não explica {termo!r}"
+    for tipo in ("razao", "diferenca_pp", "contexto"):
+        assert tipo in ref["leitura_indice"], f"sem leitura para o índice {tipo}"
+    for chave, texto in {**ref["leitura_indice"], **ref["ui"]}.items():
+        assert 0 < len(texto) <= limites["aviso"], f"referencias.{chave}"
+
+
+def test_como_ler_tem_referencias() -> None:
+    texto = COMO_LER.read_text(encoding="utf-8")
+    titulo = "## Comparar com candidatos de outros partidos"
+    assert titulo in texto
+    secao = texto.split(titulo, 1)[1].split("\n## ", 1)[0].lower()
+    for termo in ("causa", "mediana", "eleitos", "mesmo cargo", "presidente", "estrutura"):
+        assert termo in secao, f"seção de referências não menciona {termo}"
