@@ -2,14 +2,15 @@
 
 Nenhuma fórmula eleitoral aqui: votos, taxas, concentração e finanças vêm de
 `packages/indicadores` (via `candidatos.taxas`, `desempenho`, `espacial` e `contas_de`).
-A mediana da referência e o índice relativo (nosso ÷ mediana) são aritmética de apresentação.
-TODO(T-A11): trocar `_mediana`/`_indice` pelas funções da spec quando entrarem na biblioteca.
+A mediana da referência e o índice relativo (nosso ÷ mediana) vêm de
+`indicadores.referencias` (spec §10.3, T-A11); a API só traduz nomes e monta o JSON.
 """
-
-from statistics import median
 
 import polars as pl
 from indicadores import desempenho, espacial
+from indicadores._colunas import CD_CARGO
+from indicadores._comum import razao
+from indicadores.referencias import PERFIL, mediana_referencia, perfil_relativo
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.dominio import Cargo
@@ -29,14 +30,25 @@ CAMPOS = (
     "pct_validos",
     "penetracao",
     "n_municipios",
+    "pct_maiores",
     "hhi",
     "n_efetivo_municipios",
     "custo_voto_pago",
     "receita_total",
+    "receita_por_voto",
     "pct_publico",
     "pct_pessoa_fisica",
+    "pct_autofinanciamento",
 )
-_FINANCAS = ("custo_voto_pago", "receita_total", "pct_publico", "pct_pessoa_fisica")
+_FINANCAS = (
+    "custo_voto_pago", "receita_total", "receita_por_voto", "pct_publico", "pct_pessoa_fisica",
+    "pct_autofinanciamento",
+)  # fmt: skip
+# Nome na API → nome no catálogo `PERFIL` da biblioteca (só `n_municipios` difere). Campo fora do
+# catálogo (hhi: o catálogo usa o seu inverso `n_efetivo_municipios`) não tem
+# mediana nem índice: ficam nulos, com `n_mediana` 0.
+_NO_CATALOGO = {"n_municipios": "n_municipios_com_voto"}
+_COMPARAVEIS = tuple(c for c in CAMPOS if _NO_CATALOGO.get(c, c) in PERFIL)
 _CARGO_CURTO = {
     "PRESIDENTE": "Presidente",
     "GOVERNADOR": "Governador",
@@ -54,11 +66,16 @@ class Perfil(BaseModel):
     pct_validos: float | None = Field(description="% dos válidos do cargo na circunscrição (§2.2).")
     penetracao: float | None = Field(description="‰ dos aptos do cargo na circunscrição (§2.3).")
     n_municipios: float | None = Field(description="Municípios com ao menos um voto.")
+    pct_maiores: float | None = Field(
+        description="% dos votos vindos dos 10 maiores municípios do candidato (§10.2)."
+    )
     hhi: float | None = Field(description="Concentração geográfica (HHI entre municípios, §3.2).")
     n_efetivo_municipios: float | None = Field(description="1 / HHI: municípios equivalentes.")
     custo_voto_pago: float | None = Field(description="R$/voto pago, sem repasses (§4.2).")
     receita_total: float | None = Field(description="Receita bruta em R$ (IPCA em 2022).")
+    receita_por_voto: float | None = Field(description="R$ de receita por voto (§4.7).")
     pct_publico: float | None = Field(description="FEFC + Fundo Partidário, % da receita.")
+    pct_autofinanciamento: float | None = Field(description="Recursos próprios, % da receita.")
     pct_pessoa_fisica: float | None = Field(
         description="Doações de pessoas físicas e financiamento coletivo, % da receita."
     )
@@ -130,16 +147,6 @@ class Referencias(BaseModel):
     )
 
 
-def _mediana(valores: list[float]) -> float | None:
-    return float(median(valores)) if valores else None
-
-
-def _indice(nosso: float | None, mediana: float | None) -> float | None:
-    if nosso is None or not mediana:
-        return None
-    return nosso / mediana
-
-
 def _grupo_aplicavel(
     repo: Repositorio, catalogo: Catalogo, cargo: str
 ) -> tuple[DefinicaoGrupo, DefinicaoGrupo]:
@@ -180,13 +187,15 @@ class _Contexto:
         return self._eleitorado[uf]
 
 
-def _geografia(ctx: _Contexto, c: Candidatura) -> tuple[int, float | None, float | None]:
-    """(n_municipios, hhi, n_efetivo) pela biblioteca; voto no exterior não tem município."""
+def _geografia(
+    ctx: _Contexto, c: Candidatura
+) -> tuple[int, float | None, float | None, float | None]:
+    """(n_municipios, pct_maiores, hhi, n_efetivo) pela biblioteca; exterior não tem município."""
     todos = ctx.repo.votos_territorio(ctx.ano, [c.sq_candidato], por_zona=False)
     por_mun = [(v.cd_mun_ibge, v.votos) for v in todos if v.cd_mun_ibge is not None]
     com_voto = [(cd, n) for cd, n in por_mun if n > 0]
     if not com_voto:
-        return 0, None, None
+        return 0, None, None, None
     votos = pl.DataFrame(
         [(c.sq_candidato, cd, n) for cd, n in com_voto],
         schema={"sq_candidato": pl.Int64, "cd_mun_ibge": pl.Int64, "votos": pl.Int64},
@@ -194,7 +203,13 @@ def _geografia(ctx: _Contexto, c: Candidatura) -> tuple[int, float | None, float
     )
     tabela = desempenho.montar_tabela(votos, ctx.eleitorado(uf_da_base(c.sg_uf)))
     linha = espacial.concentracao(tabela).row(0, named=True)
-    return len(com_voto), linha["hhi"], linha["n_efetivo_municipios"]
+    maiores = espacial.participacao_maiores(votos).row(0, named=True)
+    return (
+        maiores["n_municipios_com_voto"],
+        maiores["pct_maiores"],
+        linha["hhi"],
+        linha["n_efetivo_municipios"],
+    )
 
 
 def _financas(cc: ContasCand | None, votos: int) -> tuple[dict[str, float | None], dict[str, str]]:
@@ -205,8 +220,10 @@ def _financas(cc: ContasCand | None, votos: int) -> tuple[dict[str, float | None
     valores: dict[str, float | None] = {
         "custo_voto_pago": cc.custo.custo_voto_pago,
         "receita_total": cc.receita_total,
+        "receita_por_voto": cc.receita_por_voto,
         "pct_publico": cc.pct_publico,
         "pct_pessoa_fisica": cc.resumo.get("pct_pessoa_fisica"),
+        "pct_autofinanciamento": cc.pct_autofinanciamento,
     }
     motivos: dict[str, str] = {}
     if valores["custo_voto_pago"] is None:
@@ -216,7 +233,10 @@ def _financas(cc: ContasCand | None, votos: int) -> tuple[dict[str, float | None
             else ("sem despesa lançada na prestação de contas")
         )
     sem_receita = "sem receita lançada na prestação de contas"
-    for campo in ("receita_total", "pct_publico", "pct_pessoa_fisica"):
+    for campo in (
+        "receita_total", "receita_por_voto", "pct_publico", "pct_pessoa_fisica",
+        "pct_autofinanciamento",
+    ):  # fmt: skip
         if valores[campo] is None:
             motivos[campo] = sem_receita if cc.receita_total is None else "receita total zero"
     return valores, motivos
@@ -234,15 +254,16 @@ def _comparar(
     entradas = [(votos, *ctx.bases.de(c)) for c, votos in pares]
     out = []
     for (c, votos), (pct, pen) in zip(pares, taxas(entradas), strict=True):
-        n_mun, hhi, n_ef = _geografia(ctx, c)
+        n_mun, pct_maiores, hhi, n_ef = _geografia(ctx, c)
         fin, motivos = _financas(por_sq.get(c.sq_candidato), votos)
         motivos_geo = "sem votos em municípios"
         valores: dict[str, float | None] = {
             "votos": votos, "pct_validos": pct, "penetracao": pen,
-            "n_municipios": n_mun, "hhi": hhi, "n_efetivo_municipios": n_ef, **fin,
+            "n_municipios": n_mun, "pct_maiores": pct_maiores, "hhi": hhi,
+            "n_efetivo_municipios": n_ef, **fin,
         }  # fmt: skip
         if hhi is None:
-            motivos |= {"hhi": motivos_geo, "n_efetivo_municipios": motivos_geo}
+            motivos |= {k: motivos_geo for k in ("pct_maiores", "hhi", "n_efetivo_municipios")}
         if pct is None or pen is None:
             motivos |= {k: "sem eleitorado ou votos válidos na circunscrição"
                         for k in ("pct_validos", "penetracao") if valores[k] is None}  # fmt: skip
@@ -266,13 +287,72 @@ def _comparar(
     return out
 
 
-def _mediana_do_lado(candidatos: list[CandidatoComparado]) -> tuple[Perfil, dict[str, int]]:
-    medianas: dict[str, float | None] = {}
-    contagem: dict[str, int] = {}
-    for campo in CAMPOS:
-        valores = [v for c in candidatos if (v := getattr(c.indicadores, campo)) is not None]
-        medianas[campo], contagem[campo] = _mediana(valores), len(valores)
+def _quadro(candidatos: list[CandidatoComparado], cargo: str) -> pl.DataFrame:
+    """Um lado como tabela da biblioteca: `cd_cargo`, `sq_candidato` e os campos do catálogo.
+
+    O recorte já é um cargo × UF; `cd_cargo` constante só satisfaz `perfil_relativo`.
+    """
+    linhas = [
+        {
+            CD_CARGO: cargo,
+            "sq_candidato": c.sq_candidato,
+            **{_NO_CATALOGO.get(k, k): getattr(c.indicadores, k) for k in _COMPARAVEIS},
+        }
+        for c in candidatos
+    ]
+    esquema = {CD_CARGO: pl.String, "sq_candidato": pl.Int64} | {
+        _NO_CATALOGO.get(k, k): pl.Float64 for k in _COMPARAVEIS
+    }
+    return pl.DataFrame(linhas, schema=esquema)
+
+
+def _mediana_do_lado(
+    candidatos: list[CandidatoComparado], cargo: str
+) -> tuple[Perfil, dict[str, int]]:
+    """Mediana por campo (`mediana_referencia`, `minimo=1`) e quantos valores a formaram.
+
+    `minimo=1` mostra a mediana mesmo com poucos valores (os vetores da T-B20 exigem); `n_mediana`
+    diz quantos foram. A spec §10.3 pede ≥ 3 valores na referência: decisão da análise.
+    """
+    medianas: dict[str, float | None] = dict.fromkeys(CAMPOS)
+    contagem: dict[str, int] = dict.fromkeys(CAMPOS, 0)
+    if candidatos:
+        nomes = [_NO_CATALOGO.get(k, k) for k in _COMPARAVEIS]
+        tabela = mediana_referencia(_quadro(candidatos, cargo), nomes, [CD_CARGO], minimo=1)
+        por_nome = {linha["indicador"]: linha for linha in tabela.iter_rows(named=True)}
+        for campo in _COMPARAVEIS:
+            linha = por_nome[_NO_CATALOGO.get(campo, campo)]
+            medianas[campo], contagem[campo] = linha["mediana"], linha["n"]
     return Perfil(**medianas), contagem
+
+
+def _indices(
+    nossos: list[CandidatoComparado], referencia: list[CandidatoComparado], cargo: str
+) -> None:
+    """Preenche `indices` dos nossos com `perfil_relativo` (razão, diferença em p.p. ou nulo)."""
+    sem = Perfil(**dict.fromkeys(CAMPOS))
+    if not nossos:
+        return
+    nomes = [_NO_CATALOGO.get(k, k) for k in _COMPARAVEIS]
+    relativo = perfil_relativo(
+        _quadro(nossos, cargo), _quadro(referencia, cargo), nomes, [CD_CARGO], minimo=1
+    )
+    # Campos "contexto" (votos, receita_total…) saem sem índice na spec; a API já os expõe como
+    # razão nosso ÷ mediana (contrato da T-B20, usado pelo web): `razao` da biblioteca.
+    relativo = relativo.with_columns(
+        pl.when(pl.col("tipo") == "contexto")
+        .then(razao(pl.col("valor"), pl.col("mediana_referencia")))
+        .otherwise(pl.col("indice"))
+        .alias("indice")
+    )
+    indice: dict[int, dict[str, float | None]] = {c.sq_candidato: {} for c in nossos}
+    inverso = {v: k for k, v in _NO_CATALOGO.items()}
+    for linha in relativo.iter_rows(named=True):
+        indice[linha["sq_candidato"]][inverso.get(linha["indicador"], linha["indicador"])] = linha[
+            "indice"
+        ]
+    for c in nossos:
+        c.indices = sem.model_copy(update=indice[c.sq_candidato])
 
 
 def _por_votos(pares: list[tuple[Candidatura, int]]) -> list[tuple[Candidatura, int]]:
@@ -314,12 +394,9 @@ def montar_referencias(
     nossos = _comparar(ctx, pares_n, contas_n, sq, fotos)
     referencia = _comparar(ctx, pares_r, contas_r, sq, fotos)
 
-    med_ref, n_ref = _mediana_do_lado(referencia)
-    med_nossos, n_nossos = _mediana_do_lado(nossos)
-    for c in nossos:
-        c.indices = Perfil(
-            **{k: _indice(getattr(c.indicadores, k), getattr(med_ref, k)) for k in CAMPOS}
-        )
+    med_ref, n_ref = _mediana_do_lado(referencia, cargo.value)
+    med_nossos, n_nossos = _mediana_do_lado(nossos, cargo.value)
+    _indices(nossos, referencia, cargo.value)
 
     rotulo_n = _rotulo_nossos(nossos_def, nossos, cargo.value, uf_recorte)
     rotulo_r = _rotulo_referencia(ref_def, len(referencia), uf_recorte)

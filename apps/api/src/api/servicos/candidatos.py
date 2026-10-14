@@ -56,7 +56,13 @@ class CandidatoResumo(ComFotoELink):
     cargo: str
     partido: Partido
     situacao: str | None = Field(
-        description="`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou."
+        description="`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou. "
+        'Registro que não foi às urnas sem situação na fonte vem como "Não foi às urnas".'
+    )
+    foi_as_urnas: bool = Field(
+        description="Registro que disputou a eleição (tem resultado de turno). "
+        "false = substituído, "
+        "cancelado, renunciado…: fora de contagens, listas e médias; só a ficha o mostra."
     )
     resultado: str | None = Field(
         description="`ds_sit_tot_turno` (ELEITO, SUPLENTE…); null se sem apuração."
@@ -110,6 +116,7 @@ class ListaCandidatos(BaseModel):
                             "cargo": "DEPUTADO FEDERAL",
                             "partido": {"numero": 14, "sigla": "MISSÃO"},
                             "situacao": "APTO",
+                            "foi_as_urnas": True,
                             "resultado": "SUPLENTE",
                             "votos": 1000,
                             "pct_validos": 8.06,
@@ -176,6 +183,13 @@ def _resumos(
     ]
 
 
+def _situacao(c: Candidatura) -> str | None:
+    """Situação da fonte; a de 2026 vem nula (`#NE`), então quem ficou fora da urna é rotulado."""
+    if c.ds_situacao_candidatura is None and not c.foi_as_urnas:
+        return "Não foi às urnas"
+    return c.ds_situacao_candidatura
+
+
 def _montar_resumo(
     c: Candidatura,
     votos: int,
@@ -191,7 +205,8 @@ def _montar_resumo(
         sg_uf=c.sg_uf,
         cargo=c.ds_cargo,
         partido=Partido(numero=c.nr_partido, sigla=c.sg_partido),
-        situacao=c.ds_situacao_candidatura,
+        situacao=_situacao(c),
+        foi_as_urnas=c.foi_as_urnas,
         resultado=c.ds_sit_tot_turno,
         votos=votos,
         pct_validos=pct,

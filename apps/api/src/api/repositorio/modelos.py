@@ -22,6 +22,9 @@ class Candidatura:
     ds_sit_tot_turno: str | None
     nr_candidato: int | None = None  # número de urna (busca)
     nm_civil: str | None = None  # nome civil (busca); nunca documento
+    # Foi às urnas (tem resultado de turno): registro substituído/cancelado fica de fora de
+    # contagens e listas, mas a ficha por sq continua acessível (T-B21).
+    foi_as_urnas: bool = True
 
     def nivel(self, termo: str) -> int:
         """Nível de relevância (0 = melhor) para o termo normalizado; ver `nivel_relevancia`."""

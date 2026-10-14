@@ -169,6 +169,7 @@ class RepositorioMemoria:
             c
             for c in self._d.candidaturas
             if c.ano == ano
+            and c.foi_as_urnas
             and (uf is None or c.sg_uf == uf)
             and (cargo is None or c.ds_cargo == cargo)
             and (
@@ -201,7 +202,8 @@ class RepositorioMemoria:
         achadas = [
             c
             for c in self._d.candidaturas
-            if (ano is None or c.ano == ano)
+            if c.foi_as_urnas
+            and (ano is None or c.ano == ano)
             and (cargo is None or c.ds_cargo == cargo)
             and (uf is None or c.sg_uf in ((uf, "BR") if cargo == "PRESIDENTE" else (uf,)))
             and (
@@ -217,7 +219,9 @@ class RepositorioMemoria:
     def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
         """Candidaturas do ano cujo `id_publico(pessoa_id)` está em `publicos`."""
         achadas = [
-            c for c in self._d.candidaturas if c.ano == ano and id_publico(c.pessoa_id) in publicos
+            c
+            for c in self._d.candidaturas
+            if c.ano == ano and c.foi_as_urnas and id_publico(c.pessoa_id) in publicos
         ]
         return sorted(achadas, key=lambda c: (c.sg_uf, c.ds_cargo, c.nm_urna, c.sq_candidato))
 
@@ -236,9 +240,9 @@ class RepositorioMemoria:
         pares = [
             ParDePessoa(a, b)
             for a in self._d.candidaturas
-            if a.ano == ano_de
+            if a.ano == ano_de and a.foi_as_urnas
             for b in self._d.candidaturas
-            if b.ano == ano_para and b.pessoa_id == a.pessoa_id
+            if b.ano == ano_para and b.foi_as_urnas and b.pessoa_id == a.pessoa_id
             if (cargo is None or (a.ds_cargo == cargo and b.ds_cargo == cargo))
             and (uf is None or uf in (a.sg_uf, b.sg_uf))
             and (publicos is None or id_publico(a.pessoa_id) in publicos)

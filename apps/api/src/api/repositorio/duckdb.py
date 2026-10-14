@@ -68,7 +68,7 @@ COLUNAS_MINIMAS: dict[str, tuple[str, ...]] = {
     "consulta_cand": (
         "nr_turno", "sg_uf", "ds_cargo", "sq_candidato", "nm_urna_candidato", "nr_partido",
         "sg_partido", "ds_situacao_candidatura", "ds_sit_tot_turno", "pessoa_id", "dt_geracao",
-        "nr_candidato", "nm_candidato",
+        "nr_candidato", "nm_candidato", "foi_as_urnas",
     ),
     "votacao_candidato_munzona": (
         "nr_turno", "sg_uf", "cd_mun_ibge", "nr_zona", "sq_candidato",
@@ -120,7 +120,7 @@ _VIEWS = {
         "consulta_cand",
         "SELECT ano, sq_candidato, pessoa_id, nm_urna_candidato AS nm_urna, sg_uf,"  # noqa: S608
         " upper(ds_cargo) AS ds_cargo, nr_partido, sg_partido, ds_situacao_candidatura,"
-        " ds_sit_tot_turno, nr_candidato, nm_candidato AS nm_civil,"
+        " ds_sit_tot_turno, nr_candidato, nm_candidato AS nm_civil, foi_as_urnas,"
         f" {SQL_ID_PUBLICO} AS pessoa_pub"
         " FROM {fonte} WHERE nr_turno = 1",
     ),
@@ -166,6 +166,7 @@ _VIEWS_REDES = {
 _CAMPOS_CANDIDATURA = (
     "ano", "sq_candidato", "pessoa_id", "nm_urna", "sg_uf", "ds_cargo", "nr_partido",
     "sg_partido", "ds_situacao_candidatura", "ds_sit_tot_turno", "nr_candidato", "nm_civil",
+    "foi_as_urnas",
 )  # fmt: skip
 _COLUNAS_CANDIDATURA = ", ".join(_CAMPOS_CANDIDATURA)
 _ESCAPE = "ESCAPE '\\'"  # o LIKE do DuckDB não tem escape padrão
@@ -645,7 +646,7 @@ class RepositorioDuckDB:
         sqs: Sequence[int] | None = None,
     ) -> list[Candidatura]:
         """Candidaturas do ano, com os filtros de grupo em união."""
-        condicoes = ["ano = ?"]
+        condicoes = ["ano = ?", "foi_as_urnas"]  # só quem foi às urnas (T-B21)
         params: list[object] = [ano]
         if uf is not None:
             # Presidente é gravado só com sg_uf = BR (BR.parquet): filtrar pela UF zeraria o cargo.
@@ -691,7 +692,7 @@ class RepositorioDuckDB:
         limite: int,
     ) -> tuple[int, list[Candidatura]]:
         """Busca por nome de urna/civil, número ou partido (termo já normalizado)."""
-        condicoes: list[str] = []
+        condicoes: list[str] = ["foi_as_urnas"]
         params: list[object] = []
         for coluna, valor in (("ano", ano), ("ds_cargo", cargo)):
             if valor is not None:
@@ -732,7 +733,7 @@ class RepositorioDuckDB:
         limite: int,
     ) -> tuple[int, list[ParDePessoa]]:
         """Pessoas com candidatura nos dois anos, ligadas por `pessoa_id`."""
-        condicoes = ["a.ano = ?", "b.ano = ?"]
+        condicoes = ["a.ano = ?", "b.ano = ?", "a.foi_as_urnas", "b.foi_as_urnas"]
         params: list[object] = [ano_de, ano_para]
         if cargo is not None:
             condicoes.append("a.ds_cargo = ? AND b.ds_cargo = ?")
@@ -770,7 +771,7 @@ class RepositorioDuckDB:
     def candidaturas_de_pessoas(self, ano: int, publicos: Sequence[str]) -> list[Candidatura]:
         """Candidaturas do ano das pessoas pelo identificador público."""
         sql = (
-            f"SELECT {_COLUNAS_CANDIDATURA} FROM candidatos WHERE ano = ? "  # noqa: S608
+            f"SELECT {_COLUNAS_CANDIDATURA} FROM candidatos WHERE ano = ? AND foi_as_urnas "  # noqa: S608
             "AND pessoa_pub IN (SELECT unnest(?::VARCHAR[])) "
             "ORDER BY sg_uf, ds_cargo, nm_urna, sq_candidato"
         )

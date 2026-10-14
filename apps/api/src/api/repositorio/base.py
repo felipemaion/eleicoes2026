@@ -74,7 +74,12 @@ class Repositorio(Protocol):
         partido: int | None = None,
         sqs: Sequence[int] | None = None,
     ) -> list[Candidatura]:
-        """Candidaturas do ano, ordenadas por (uf, cargo, nome, sq)."""
+        """Candidaturas do ano que foram às urnas, ordenadas por (uf, cargo, nome, sq).
+
+        Listas, buscas e pares só trazem `foi_as_urnas` (T-B21); `candidatura(ano, sq)` traz
+        qualquer
+        registro, para a ficha.
+        """
         ...
 
     def candidatura(self, ano: int, sq_candidato: int) -> Candidatura | None:
