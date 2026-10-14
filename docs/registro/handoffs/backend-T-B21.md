@@ -35,3 +35,7 @@ Branch `fix/backend-candidaturas-urna` (a partir de origin/main, depois de T-D11
 
 ## Verificar
 `uv run pytest apps/api -q`; `uv run ruff check apps/api`; `uv run mypy apps/api/src`; `make openapi` sem diff.
+
+## Commits
+`test:` (fixture sq 40 + test_b21_urnas, visto falhar: 4 testes novos + 16 antigos) → `fix:` (implementação, OpenAPI, handoff).
+Suíte completa verde, cobertura 98%, ruff e mypy limpos.
