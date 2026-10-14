@@ -208,3 +208,75 @@ def test_cli_dataset_ipca_sem_ano(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert cod == 0
     assert "ipca.parquet" in capsys.readouterr().out
     assert main(["processar", "--raiz-raw", str(raw), "--raiz-processed", str(tmp_path / "p")]) == 2
+
+
+# --- T-D10: todos os candidatos, não só os dos grupos -------------------------------------
+
+
+def test_todos_os_partidos_e_cargos_entram_sem_filtro_de_grupo(pastas: tuple[Path, Path]) -> None:
+    """Totais por partido × cargo da saída = os do arquivo oficial (inclui presidente, BR)."""
+    # despesas pagas não trazem partido/cargo no CSV (só o prestador): ficam pelo total de controle.
+    for nome in ("receitas_candidatos", "despesas_contratadas_candidatos"):
+        csv_col, col = VALOR[nome]
+        esperado: dict[tuple[str, str], int] = {}
+        for r in oraculo(nome):
+            k = (r["SG_PARTIDO"], r["CD_CARGO"])
+            esperado[k] = esperado.get(k, 0) + centavos(r[csv_col])
+        df = _ler(pastas[1], nome)
+        obtido = {
+            (p, str(c)): round(v * 100)
+            for p, c, v in df.group_by("sg_partido", "cd_cargo").agg(pl.col(col).sum()).iter_rows()
+        }
+        assert obtido == esperado
+        assert len({p for p, _ in esperado}) >= 3  # fixture realmente tem partidos variados
+        assert any(c == "1" for _, c in esperado)  # presidente presente
+
+
+def _com_turno_2(origem: Path, destino: Path, prestador: str) -> None:
+    """Cópia do ZIP em que as linhas do prestador viram prestação de 2º turno (ST_TURNO=2)."""
+    with zipfile.ZipFile(origem) as z, zipfile.ZipFile(destino, "w") as saida:
+        for n in z.namelist():
+            dados = z.read(n)
+            if n.endswith("_AC.csv") or n.endswith("_BR.csv"):
+                linhas = list(
+                    csv.reader(
+                        io.TextIOWrapper(io.BytesIO(dados), encoding="latin-1"), delimiter=";"
+                    )
+                )
+                i, k = linhas[0].index("ST_TURNO"), linhas[0].index("SQ_PRESTADOR_CONTAS")
+                for linha in linhas[1:]:
+                    if linha[k] == prestador:
+                        linha[i] = "2"
+                buf = io.StringIO()
+                csv.writer(buf, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n"
+                           ).writerows(linhas)  # fmt: skip
+                dados = buf.getvalue().encode("latin-1")
+            saida.writestr(n, dados)
+
+
+def test_prestacao_de_segundo_turno_e_preservada_com_nr_turno_2(tmp_path: Path) -> None:
+    """TSE grava a prestação cumulativa de quem foi ao 2º turno só com ST_TURNO=2 (Lula, 2022).
+
+    O ETL não pode descartá-la nem duplicá-la; filtrar `nr_turno = 1` é erro de quem consome.
+    """
+    receitas = oraculo("receitas_candidatos")
+    alvo_csv = next(r for r in receitas if r["CD_CARGO"] == "1")
+    sq, prestador = alvo_csv["SQ_CANDIDATO"], alvo_csv["SQ_PRESTADOR_CONTAS"]
+    zip2 = tmp_path / ZIP
+    _com_turno_2(FIX / ZIP, zip2, prestador)
+    raw, proc = _raw(tmp_path, zip2), tmp_path / "proc"
+    for nome in CONTAS:
+        processar_fonte(nome, 2022, raw, proc)
+        df = _ler(proc, nome)
+        validar(df, CONTRATOS[nome])
+        csv_col, col = VALOR[nome]
+        alvo = df.filter(pl.col("sq_candidato") == int(sq))
+        assert alvo.height > 0
+        assert set(alvo["nr_turno"].to_list()) == {2}
+        esperado = sum(
+            centavos(r[csv_col])
+            for r in oraculo(nome, zip2)
+            if r["SQ_PRESTADOR_CONTAS"] == prestador
+        )
+        assert round(alvo[col].sum() * 100) == esperado
+        assert round(df[col].sum() * 100) == sum(centavos(r[csv_col]) for r in oraculo(nome, zip2))
