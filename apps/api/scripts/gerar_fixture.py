@@ -45,6 +45,9 @@ TABELAS: dict[str, tuple[str, list[tuple[object, ...]]]] = {
             (2026, 7, "pD", "D", "SP", DF, 11, "PP", "APTO", "ELEITO POR QP"),
             # Presidente: o TSE grava a candidatura com sg_uf = BR (arquivo BR.parquet).
             (2026, 11, "pP", "P", "BR", PR, 30, "NOVO", "APTO", "2º TURNO"),
+            # T-B21: registro substituído da pessoa B (sq 5) — sem situação na fonte, sem resultado,
+            # fora da urna (0 votos). Nenhuma contagem pública pode incluí-lo.
+            (2026, 40, "pB", "B (substituído)", "SP", DF, 14, "MISSÃO", None, None),
         ],
     ),
     "municipios": (
@@ -198,9 +201,10 @@ NOME_CIVIL = {
     1: "ANA ALVES DA SILVA", 2: "CARLOS CÉSAR RAMOS", 3: "ANA ALVES DA SILVA",
     4: "CARLOS CÉSAR RAMOS", 5: "BRUNO BARBOSA LIMA", 6: "FÁBIO FERREIRA", 7: "DANIEL DIAS",
     8: "EDUARDO ESTÊVÃO", 9: "DANIEL DIAS", 10: "GUSTAVO GOMES", 11: "PAULO PEREIRA",
+    40: "BRUNO BARBOSA LIMA",
 }  # fmt: skip
 NUMERO = {1: 1414, 2: 33123, 3: 1415, 4: 14001, 5: 14002, 6: 1500, 7: 1100, 8: 4400,
-          9: 4401, 10: 1416, 11: 30}  # fmt: skip
+          9: 4401, 10: 1416, 11: 30, 40: 14003}  # fmt: skip
 
 
 DESTINO_REFERENCIAS = DESTINO.parent / "fixtures_referencias"
@@ -292,6 +296,7 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
             sit,
             res,
             pessoa,
+            res is not None,  # foi_as_urnas: mesma regra do ETL (tem resultado de turno)
             DT,
         )
         for (a, sq, pessoa, nm, uf, cargo, parte, sg, sit, res) in TABELAS["candidatos"][1]
@@ -325,7 +330,7 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 ano_eleicao=INT, nr_turno=INT, cd_eleicao=INT, sg_uf=TXT, ds_cargo=TXT,
                 sq_candidato=INT, nr_candidato=INT, nm_candidato=TXT, nm_urna_candidato=TXT,
                 nr_partido=INT, sg_partido=TXT, ds_situacao_candidatura=TXT,
-                ds_sit_tot_turno=TXT, pessoa_id=TXT, dt_geracao=DAT,
+                ds_sit_tot_turno=TXT, pessoa_id=TXT, foi_as_urnas="BOOLEAN", dt_geracao=DAT,
             ),
             cands,
         ),
