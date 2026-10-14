@@ -3,6 +3,7 @@
 grupos:
   missao_2026:
     rotulo: "Partido Missão 2026"
+    rotulo_curto: "Missão"
     ano: 2026
     criterio:
       partido: 14
@@ -22,6 +23,24 @@ grupos:
     ano: 2022
     criterio:
       lista: {arquivo: data/reference/mbl_2022.csv, coluna: sq_candidato, filtro: {origem: indicado}}
+  # Grupos de referência (T-B20): só servem a GET /api/referencias; ficam fora dos filtros.
+  presidenciaveis_2026:
+    rotulo: "Presidenciáveis 2026"
+    ano: 2026
+    rotulo_lado: "{n} presidenciáveis"
+    criterio:
+      sqs: [280002542548, 280002551544, 280002551547, 280002551932, 280002539826]
+      # Lula, Flávio Bolsonaro, Augusto Cury, Caiado, Zema
+  top5_eleitos_outros_2026:
+    rotulo: "5 eleitos mais votados de outros partidos (2026)"
+    ano: 2026
+    rotulo_lado: "{n} eleitos mais votados de outros partidos em {uf}"
+    criterio:
+      # Declarativo: serve a qualquer ano/partido sem código novo (ADR 0005).
+      ranking: {cargos: [DEPUTADO FEDERAL, DEPUTADO ESTADUAL], resultado: eleito, n: 5, por: uf, excluir_partido: 14}
+referencias:
+  nossos: missao_2026
+  contra: [presidenciaveis_2026, top5_eleitos_outros_2026]
 comparacoes:
   evolucao_mbl:
     rotulo: "MBL 2022 → MBL 2026"

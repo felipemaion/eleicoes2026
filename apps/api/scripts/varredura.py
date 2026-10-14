@@ -140,6 +140,10 @@ def pedidos(
     yield "/api/evolucao/pessoas", {}
     for cargo in CARGOS:
         yield "/api/evolucao/pessoas", {"cargo": cargo}
+    for cargo in CARGOS:  # referências: 422 esperado em cargo sem grupo e em deputado sem UF
+        yield "/api/referencias", {"cargo": cargo}
+        for uf in ufs:
+            yield "/api/referencias", {"cargo": cargo, "uf": uf}
 
 
 def _por_candidato(

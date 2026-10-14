@@ -395,7 +395,8 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 vr_pagto_despesa=DBL, dt_geracao=DAT,
             ),
             [
-                (a, TURNO_CONTAS.get(sq, 1), uf_de_cand[sq], "Final", sq, "Fundo Especial de Financiamento de Campanha",
+                (a, TURNO_CONTAS.get(sq, 1), uf_de_cand[sq], "Final", sq,
+                 "Fundo Especial de Financiamento de Campanha",
                  o, p, DT)
                 for a, sq, o, _c, p in TABELAS["despesas"][1]
             ],
@@ -541,7 +542,8 @@ def main(destino: Path = DESTINO, *, extras: bool = False) -> None:
         arquivo = destino / "fotos" / "manifesto.json"
         manifesto = json.loads(arquivo.read_text())
         manifesto["fotos"]["2026/22"] = {  # só a referência com contas tem foto
-            "arquivo": "2026/22.webp", "origem": "x.zip:F22.jpg", "sha256": "e", "sha256_origem": "f",
+            "arquivo": "2026/22.webp", "origem": "x.zip:F22.jpg",
+            "sha256": "e", "sha256_origem": "f",
         }  # fmt: skip
         arquivo.write_text(json.dumps(manifesto))
     (destino / "manifesto.json").write_text(

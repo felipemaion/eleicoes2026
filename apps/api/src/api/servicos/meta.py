@@ -29,7 +29,13 @@ class Meta(BaseModel):
 def carregar_grupos(arquivo: Path) -> list[Grupo]:
     """Lê os grupos do YAML; arquivo ausente falha alto."""
     bruto = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
-    return [Grupo(id=gid, rotulo=g["rotulo"], ano=g["ano"]) for gid, g in bruto["grupos"].items()]
+    # Grupos de referência só servem a /referencias: não entram nos filtros do front.
+    so_referencia = set((bruto.get("referencias") or {}).get("contra", []))
+    return [
+        Grupo(id=gid, rotulo=g["rotulo"], ano=g["ano"])
+        for gid, g in bruto["grupos"].items()
+        if gid not in so_referencia
+    ]
 
 
 def montar_meta(repo: Repositorio, grupos: list[Grupo]) -> Meta:
