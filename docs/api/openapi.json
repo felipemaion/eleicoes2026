@@ -1380,6 +1380,77 @@
           }
         }
       }
+    },
+    "/api/referencias": {
+      "get": {
+        "tags": [
+          "referencias"
+        ],
+        "summary": "Nossos candidatos × candidatos de referência",
+        "description": "Dois lados nomeados: `nossos` (Missão no cargo/UF) e `referencia`.\n\nPresidente: os presidenciáveis do grupo de referência. Deputados: os 5 eleitos mais votados\nde outros partidos na UF. Cada candidato traz indicadores em taxa; `indices` (nossos) é o\nvalor ÷ mediana da referência. Descritivo: candidaturas de estruturas muito diferentes.\nFinanças ausentes vêm nulas com motivo, nunca zero.",
+        "operationId": "referencias_api_referencias_get",
+        "parameters": [
+          {
+            "name": "cargo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Cargo"
+            }
+          },
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UF"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Obrigatória para deputados; ignorada para presidente (nacional).",
+              "title": "Uf"
+            },
+            "description": "Obrigatória para deputados; ignorada para presidente (nacional)."
+          },
+          {
+            "name": "sq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Candidato nosso a destacar (`destacado = true`).",
+              "title": "Sq"
+            },
+            "description": "Candidato nosso a destacar (`destacado = true`)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Referencias"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Cargo sem grupo de referência, UF ausente (deputados) ou `sq` que não é candidato nosso no recorte."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1561,6 +1632,111 @@
         ],
         "title": "BlocoRedes",
         "description": "Bloco `redes` da ficha: perfis e última coleta."
+      },
+      "CandidatoComparado": {
+        "properties": {
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url",
+            "description": "Foto oficial (WebP 160×200), relativa à raiz do site; null se o TSE não publicou a foto dessa candidatura."
+          },
+          "link_tse_candidato": {
+            "$ref": "#/components/schemas/Link",
+            "description": "Página do candidato no DivulgaCandContas (perfil, bens, contas); `verificado = true`: padrão aberto no navegador para 2022 e 2026."
+          },
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "sq_candidato": {
+            "type": "integer",
+            "title": "Sq Candidato"
+          },
+          "nm_urna": {
+            "type": "string",
+            "title": "Nm Urna"
+          },
+          "sg_uf": {
+            "type": "string",
+            "title": "Sg Uf"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "partido": {
+            "$ref": "#/components/schemas/Partido"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado",
+            "description": "`ds_sit_tot_turno`; null se sem apuração."
+          },
+          "votos": {
+            "type": "integer",
+            "title": "Votos"
+          },
+          "destacado": {
+            "type": "boolean",
+            "title": "Destacado",
+            "description": "É o candidato pedido em `sq`."
+          },
+          "indicadores": {
+            "$ref": "#/components/schemas/Perfil"
+          },
+          "motivos": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Motivos",
+            "description": "Para cada indicador nulo, por que não há valor (ex.: sem prestação de contas)."
+          },
+          "indices": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Perfil"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só nos nossos: indicador ÷ mediana da referência (1 = igual à mediana). Nulo se um dos dois falta ou a mediana é zero."
+          }
+        },
+        "type": "object",
+        "required": [
+          "foto_url",
+          "link_tse_candidato",
+          "ano",
+          "sq_candidato",
+          "nm_urna",
+          "sg_uf",
+          "cargo",
+          "partido",
+          "resultado",
+          "votos",
+          "destacado",
+          "indicadores",
+          "motivos",
+          "indices"
+        ],
+        "title": "CandidatoComparado",
+        "description": "Candidato com identificação, resultado e indicadores comparáveis."
       },
       "CandidatoResumo": {
         "properties": {
@@ -3857,6 +4033,60 @@
         "title": "KpisGrupo",
         "description": "Grupo como candidato coletivo no recorte (cargo × UF): soma única, nunca de cargos."
       },
+      "Lado": {
+        "properties": {
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo"
+          },
+          "grupo_id": {
+            "type": "string",
+            "title": "Grupo Id"
+          },
+          "candidatos": {
+            "items": {
+              "$ref": "#/components/schemas/CandidatoComparado"
+            },
+            "type": "array",
+            "title": "Candidatos"
+          },
+          "mediana": {
+            "$ref": "#/components/schemas/Perfil",
+            "description": "Mediana dos candidatos do lado, ignorando nulos."
+          },
+          "n_mediana": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "N Mediana",
+            "description": "Candidatos que entraram na mediana, por campo."
+          },
+          "motivo_vazio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo Vazio",
+            "description": "Por que não há candidatos neste lado."
+          }
+        },
+        "type": "object",
+        "required": [
+          "rotulo",
+          "grupo_id",
+          "candidatos",
+          "mediana",
+          "n_mediana",
+          "motivo_vazio"
+        ],
+        "title": "Lado",
+        "description": "Um dos dois lados da comparação."
+      },
       "Link": {
         "properties": {
           "tipo": {
@@ -4365,6 +4595,145 @@
         ],
         "title": "Partido",
         "description": "Partido da candidatura."
+      },
+      "Perfil": {
+        "properties": {
+          "votos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Votos",
+            "description": "Votos nominais válidos (§2.1)."
+          },
+          "pct_validos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Validos",
+            "description": "% dos válidos do cargo na circunscrição (§2.2)."
+          },
+          "penetracao": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penetracao",
+            "description": "‰ dos aptos do cargo na circunscrição (§2.3)."
+          },
+          "n_municipios": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Municipios",
+            "description": "Municípios com ao menos um voto."
+          },
+          "hhi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hhi",
+            "description": "Concentração geográfica (HHI entre municípios, §3.2)."
+          },
+          "n_efetivo_municipios": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Efetivo Municipios",
+            "description": "1 / HHI: municípios equivalentes."
+          },
+          "custo_voto_pago": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custo Voto Pago",
+            "description": "R$/voto pago, sem repasses (§4.2)."
+          },
+          "receita_total": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Total",
+            "description": "Receita bruta em R$ (IPCA em 2022)."
+          },
+          "pct_publico": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Publico",
+            "description": "FEFC + Fundo Partidário, % da receita."
+          },
+          "pct_pessoa_fisica": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Pessoa Fisica",
+            "description": "Doações de pessoas físicas e financiamento coletivo, % da receita."
+          }
+        },
+        "type": "object",
+        "required": [
+          "votos",
+          "pct_validos",
+          "penetracao",
+          "n_municipios",
+          "hhi",
+          "n_efetivo_municipios",
+          "custo_voto_pago",
+          "receita_total",
+          "pct_publico",
+          "pct_pessoa_fisica"
+        ],
+        "title": "Perfil",
+        "description": "Indicadores comparáveis (taxas ou normalizados). Nulo = ausente, nunca zero."
       },
       "PerfilRede": {
         "properties": {
@@ -5189,6 +5558,109 @@
             },
             "fontes": [],
             "grupo": "missao_2026",
+            "uf": "SP"
+          }
+        ]
+      },
+      "Referencias": {
+        "properties": {
+          "ano": {
+            "type": "integer",
+            "title": "Ano"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "uf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uf",
+            "description": "UF do recorte; null para presidente (nacional)."
+          },
+          "rotulo": {
+            "type": "string",
+            "title": "Rotulo",
+            "description": "Frase pronta: quem está sendo comparado com quem."
+          },
+          "destaque": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destaque"
+          },
+          "nossos": {
+            "$ref": "#/components/schemas/Lado"
+          },
+          "referencia": {
+            "$ref": "#/components/schemas/Lado"
+          },
+          "contas_parciais": {
+            "type": "boolean",
+            "title": "Contas Parciais"
+          },
+          "base_ipca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Ipca"
+          },
+          "dt_geracao": {
+            "type": "string",
+            "title": "Dt Geracao"
+          },
+          "fontes": {
+            "items": {
+              "$ref": "#/components/schemas/Fonte"
+            },
+            "type": "array",
+            "title": "Fontes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ano",
+          "cargo",
+          "uf",
+          "rotulo",
+          "destaque",
+          "nossos",
+          "referencia",
+          "contas_parciais",
+          "base_ipca",
+          "dt_geracao",
+          "fontes"
+        ],
+        "title": "Referencias",
+        "description": "Corpo de GET /referencias.",
+        "examples": [
+          {
+            "ano": 2026,
+            "cargo": "DEPUTADO ESTADUAL",
+            "nossos": {
+              "candidatos": "…",
+              "rotulo": "Missão · Dep. estadual · SP"
+            },
+            "referencia": {
+              "rotulo": "5 eleitos mais votados de outros partidos em SP"
+            },
+            "rotulo": "Missão · Dep. estadual · SP × 5 eleitos mais votados de outros partidos em SP",
             "uf": "SP"
           }
         ]

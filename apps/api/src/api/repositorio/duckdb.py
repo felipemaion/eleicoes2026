@@ -385,7 +385,9 @@ class RepositorioDuckDB:
                 "SELECT ano, sq_candidato, ds_fonte_receita, ds_origem_receita,"  # noqa: S608
                 " ds_natureza_receita, vr_receita,"
                 f" {doador} AS sq_candidato_doador"
-                f" FROM {receitas} WHERE nr_turno = 1"
+                f" FROM {receitas} WHERE TRUE"
+                # Contas não filtram turno: quem foi ao 2º turno tem a prestação cumulativa só
+                # com nr_turno=2, e nenhum candidato tem os dois (sem dupla contagem; T-D10).
                 # "Sem movimento": fonte e origem nulas com valor 0 (não é receita).
                 " AND NOT (ds_fonte_receita IS NULL AND ds_origem_receita IS NULL"
                 " AND vr_receita = 0)",
@@ -403,10 +405,10 @@ class RepositorioDuckDB:
                 f" SUM(vr_despesa_contratada) AS contratada FROM {contratadas}"
                 # "Sem movimento" (origem nula, valor 0) não é despesa; origem nula com valor
                 # continua passando e a biblioteca de indicadores falha alto.
-                " WHERE nr_turno = 1 AND NOT (ds_origem_despesa IS NULL"
+                " WHERE NOT (ds_origem_despesa IS NULL"
                 " AND vr_despesa_contratada = 0) GROUP BY ALL),"
                 " p AS (SELECT ano, sq_candidato, ds_origem_despesa,"
-                f" SUM(vr_pagto_despesa) AS paga FROM {pagas} WHERE nr_turno = 1 GROUP BY ALL)"
+                f" SUM(vr_pagto_despesa) AS paga FROM {pagas} GROUP BY ALL)"
                 " SELECT ano, sq_candidato, ds_origem_despesa,"
                 " COALESCE(c.contratada, 0) AS vr_despesa_contratada,"
                 " COALESCE(p.paga, 0) AS vr_despesa_paga"
@@ -421,7 +423,7 @@ class RepositorioDuckDB:
         """
         linhas = self._con.execute(
             "SELECT ano, avg((upper(tp_prestacao_contas) = 'FINAL')::INT)"  # noqa: S608
-            f" FROM {receitas} WHERE nr_turno = 1 GROUP BY ano"
+            f" FROM {receitas} GROUP BY ano"
         ).fetchall()
         return {int(a): "FINAL" if float(f) >= 0.95 else "PARCIAL" for a, f in linhas}
 

@@ -151,6 +151,17 @@ def verificar(base: str) -> dict[str, Callable[[], None]]:
         c = _ok(base, "/api/comparativo", comparacao="evolucao_mbl", cargo=DF)
         _exigir(len(c["municipios"]) > 1000, f"Brasil: {len(c['municipios'])} AMCs")
 
+    def referencias() -> None:
+        c = _ok(base, "/api/referencias", cargo="PRESIDENTE")
+        _exigir(bool(c["nossos"]["candidatos"]), "presidente: sem candidato nosso")
+        _exigir(len(c["referencia"]["candidatos"]) <= 5, "presidente: referência > 5")
+        d = _ok(base, "/api/referencias", cargo="DEPUTADO FEDERAL", uf="SP")
+        _exigir(len(d["referencia"]["candidatos"]) == 5, "dep. federal SP: não são 5 eleitos")
+        _exigir(
+            all(x["partido"]["numero"] != 14 for x in d["referencia"]["candidatos"]),
+            "referência contém o Missão",
+        )
+
     def municipio() -> None:
         c = _ok(base, "/api/municipios/3550308")
         _exigir("São Paulo" in json.dumps(c, ensure_ascii=False), "3550308 ≠ São Paulo")
@@ -160,7 +171,7 @@ def verificar(base: str) -> dict[str, Callable[[], None]]:
         "kim 2026 = 520.071": kim_2026, "ficha 2022 e 2026": ficha, "mapa missão SP": mapa_missao,
         "mapa quebras comuns": mapa_comum, "mapa zona/h3": mapa_zona_e_h3, "pontos": pontos,
         "gastos": gastos, "comparativo SP": comparativo, "comparativo BR": comparativo_brasil,
-        "município SP": municipio,
+        "município SP": municipio, "referências": referencias,
     }  # fmt: skip
 
 

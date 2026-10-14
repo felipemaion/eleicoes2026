@@ -203,6 +203,72 @@ NUMERO = {1: 1414, 2: 33123, 3: 1415, 4: 14001, 5: 14002, 6: 1500, 7: 1100, 8: 4
           9: 4401, 10: 1416, 11: 30}  # fmt: skip
 
 
+DESTINO_REFERENCIAS = DESTINO.parent / "fixtures_referencias"
+# T-B20 — mundo à parte (não mexe nos totais dos testes antigos): presidenciáveis (12 = Missão;
+# 13, 14 = referência) e Dep. Estadual SP (20/21 = Missão; 22–29 = outros partidos). Em SP-DE, 22 e
+# 23 empatam (1500) → desempate por sq; 27 é o 6º eleito (corta); 28 mais votado mas NÃO ELEITO;
+# 21 é Missão eleito (excluído da referência); 22 é a única com contas (T-D10 ainda não publicou).
+EXTRAS: dict[str, list[tuple[object, ...]]] = {
+    "candidatos": [
+        (2026, 12, "pQ", "Q", "BR", PR, 14, "MISSÃO", "APTO", "NÃO ELEITO"),
+        (2026, 13, "pR", "R", "BR", PR, 22, "PL", "APTO", "ELEITO"),
+        (2026, 14, "pS", "S", "BR", PR, 13, "PT", "APTO", "2º TURNO"),
+        (2026, 20, "pM1", "M1", "SP", DE, 14, "MISSÃO", "APTO", "SUPLENTE"),
+        (2026, 21, "pM2", "M2", "SP", DE, 14, "MISSÃO", "APTO", "ELEITO POR QP"),
+        (2026, 22, "pX1", "X1", "SP", DE, 22, "PL", "APTO", "ELEITO POR QP"),
+        (2026, 23, "pX2", "X2", "SP", DE, 13, "PT", "APTO", "ELEITO POR MÉDIA"),
+        (2026, 24, "pX3", "X3", "SP", DE, 55, "PSD", "APTO", "ELEITO POR QP"),
+        (2026, 25, "pX4", "X4", "SP", DE, 30, "NOVO", "APTO", "ELEITO POR QP"),
+        (2026, 26, "pX5", "X5", "SP", DE, 11, "PP", "APTO", "ELEITO POR QP"),
+        (2026, 27, "pX6", "X6", "SP", DE, 50, "PSOL", "APTO", "ELEITO POR QP"),
+        (2026, 28, "pX7", "X7", "SP", DE, 22, "PL", "APTO", "NÃO ELEITO"),
+        (2026, 29, "pX8", "X8", "SP", DE, 12, "PDT", "APTO", "SUPLENTE"),
+    ],
+    "eleitorado_munzona": [
+        (2026, "SP", DE, SP, 1, 10000, 7000),
+        (2026, "SP", DE, SP, 2, 5000, 3500),
+        (2026, "SP", DE, CAMP, 1, 2000, 1500),
+        (2026, "SP", DE, SANTOS, 1, 500, 400),
+    ],
+    "votos_munzona": [
+        (2026, 12, SP, 1, 400), (2026, 12, CAMP, 1, 100),
+        (2026, 13, SP, 1, 2500), (2026, 13, CAMP, 1, 1000), (2026, 13, SANTOS, 1, 100),
+        (2026, 14, SP, 1, 3000), (2026, 14, CAMP, 1, 800),
+        (2026, 20, SP, 1, 300),
+        (2026, 21, SP, 1, 2000), (2026, 21, SP, 2, 1000),
+        (2026, 22, SP, 1, 1000), (2026, 22, CAMP, 1, 500),
+        (2026, 23, SP, 1, 1500),
+        (2026, 24, SP, 1, 900),
+        (2026, 25, SP, 1, 500), (2026, 25, CAMP, 1, 300),
+        (2026, 26, SP, 1, 700),
+        (2026, 27, SP, 1, 650),
+        (2026, 28, SP, 1, 3000), (2026, 28, SP, 2, 1000),
+        (2026, 29, SP, 1, 3500),
+    ],
+    "receitas": [
+        (2026, 22, "FUNDO ESPECIAL", "Recursos de partido político", "FINANCEIRO", 30000.0),
+        (2026, 22, "OUTROS RECURSOS", "Recursos de pessoas físicas", "FINANCEIRO", 10000.0),
+        (2026, 21, "OUTROS RECURSOS", "Recursos próprios", "FINANCEIRO", 4000.0),
+        (2026, 14, "FUNDO ESPECIAL", "Recursos de partido político", "FINANCEIRO", 90000.0),
+    ],
+    "despesas": [
+        (2026, 22, "Publicidade por materiais impressos", 40000.0, 36000.0),
+        (2026, 21, "Serviços de terceiros", 4000.0, 4000.0),
+        (2026, 14, "Publicidade por materiais impressos", 76000.0, 76000.0),
+    ],
+}  # fmt: skip
+# Quem foi ao 2º turno tem a prestação cumulativa só com nr_turno=2 (achado da T-D10).
+TURNO_CONTAS = {14: 2}
+EXTRA_NOME_CIVIL = {
+    12: "QUITÉRIA QUEIROZ", 13: "RAUL ROCHA", 14: "SÉRGIO SOUZA", 20: "MARCOS UM",
+    21: "MARCOS DOIS", 22: "XAVIER UM", 23: "XAVIER DOIS", 24: "XAVIER TRÊS",
+    25: "XAVIER QUATRO", 26: "XAVIER CINCO", 27: "XAVIER SEIS", 28: "XAVIER SETE",
+    29: "XAVIER OITO",
+}  # fmt: skip
+EXTRA_NUMERO = {12: 14, 13: 22, 14: 13, 20: 14100, 21: 14101, 22: 22100, 23: 13100, 24: 55100,
+                25: 30100, 26: 11100, 27: 50100, 28: 22101, 29: 12100}  # fmt: skip
+
+
 def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
     """Expande o mundo simplificado nos datasets com contrato (nomes reais do TSE)."""
     cand = {c[1]: c for c in TABELAS["candidatos"][1] if c[0] in (2022, 2026)}
@@ -303,7 +369,7 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 ds_natureza_receita=TXT, vr_receita=DBL, sq_candidato_doador=INT, dt_geracao=DAT,
             ),
             [
-                (a, 1, uf_de_cand[sq], "FINAL", sq, f, o, n, v,
+                (a, TURNO_CONTAS.get(sq, 1), uf_de_cand[sq], "FINAL", sq, f, o, n, v,
                  5 if o == "Recursos de outros candidatos" else None, DT)
                 for a, sq, f, o, n, v in TABELAS["receitas"][1]
             ]
@@ -316,7 +382,7 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 sq_candidato=INT, ds_origem_despesa=TXT, vr_despesa_contratada=DBL, dt_geracao=DAT,
             ),
             [
-                (a, 1, uf_de_cand[sq], "Final", sq, o, c, DT)
+                (a, TURNO_CONTAS.get(sq, 1), uf_de_cand[sq], "Final", sq, o, c, DT)
                 for a, sq, o, c, _p in TABELAS["despesas"][1]
             ]
             # O ETL real traz linhas "sem movimento": origem nula e valor 0 (≈ 5 mil por ano).
@@ -329,7 +395,8 @@ def _real() -> dict[str, tuple[dict[str, str], list[tuple[object, ...]]]]:
                 vr_pagto_despesa=DBL, dt_geracao=DAT,
             ),
             [
-                (a, 1, uf_de_cand[sq], "Final", sq, "Fundo Especial de Financiamento de Campanha",
+                (a, TURNO_CONTAS.get(sq, 1), uf_de_cand[sq], "Final", sq,
+                 "Fundo Especial de Financiamento de Campanha",
                  o, p, DT)
                 for a, sq, o, _c, p in TABELAS["despesas"][1]
             ],
@@ -404,7 +471,7 @@ REDES_POSTS = [(u, m, _ts(t), mt, pt, lk, cm, f"https://instagram.com/p/{m}", CO
                for u, m, t, mt, pt, lk, cm in _POSTS]  # fmt: skip
 
 
-def _redes(con: duckdb.DuckDBPyConnection) -> None:
+def _redes(con: duckdb.DuckDBPyConnection, destino: Path) -> None:
     """Escreve `redes_candidatos` (hive) e `redes/redes_perfis|redes_posts` (contratos `redes`)."""
     ts = "TIMESTAMPTZ"
     _escrever(
@@ -412,28 +479,44 @@ def _redes(con: duckdb.DuckDBPyConnection) -> None:
         dict(ano_eleicao="SMALLINT", sq_candidato=INT, rede=TXT, username=TXT, url_tse=TXT,
              nr_ordem="INTEGER", principal="BOOLEAN", dt_geracao=DAT),
         REDES_CANDIDATOS,
-        DESTINO / "redes_candidatos" / "ano=2026" / "redes_candidatos.parquet",
+        destino / "redes_candidatos" / "ano=2026" / "redes_candidatos.parquet",
     )  # fmt: skip
     _escrever(
         con, "redes_perfis",
         dict(sq_candidato=INT, ano_eleicao="SMALLINT", rede=TXT, username=TXT, status=TXT,
              followers_count=INT, follows_count=INT, media_count=INT, coletado_em=ts),
         REDES_PERFIS,
-        DESTINO / "redes" / "redes_perfis.parquet",
+        destino / "redes" / "redes_perfis.parquet",
     )  # fmt: skip
     _escrever(
         con, "redes_posts",
         dict(username=TXT, media_id=TXT, timestamp=ts, media_type=TXT, media_product_type=TXT,
              like_count=INT, comments_count=INT, permalink=TXT, coletado_em=ts),
         REDES_POSTS,
-        DESTINO / "redes" / "redes_posts.parquet",
+        destino / "redes" / "redes_posts.parquet",
     )  # fmt: skip
 
 
-def main() -> None:
-    """Recria tests/fixtures: datasets em hive, provisórios flat e manifesto."""
-    if DESTINO.exists():
-        for item in DESTINO.iterdir():
+def _com_extras() -> None:
+    """Acrescenta ao mundo o recorte da T-B20 (`EXTRAS`); outros testes seguem no mundo base."""
+    for nome, linhas in EXTRAS.items():
+        colunas, base = TABELAS[nome]
+        TABELAS[nome] = (colunas, [*base, *linhas])
+    NOME_CIVIL.update(EXTRA_NOME_CIVIL)
+    NUMERO.update(EXTRA_NUMERO)
+
+
+def main(destino: Path = DESTINO, *, extras: bool = False) -> None:
+    """Recria as fixtures em `destino`: datasets em hive, provisórios flat e manifesto.
+
+    `extras=True` gera o mundo da T-B20 (referências) em vez do mundo base.
+    """
+    if extras:
+        _com_extras()
+    if destino.exists():
+        for item in destino.iterdir():
+            if item.name == "fotos":  # manifesto de fotos é escrito à mão (T-D07), não gerado
+                continue
             if item.suffix == ".parquet":
                 item.unlink()
             elif item.is_dir():
@@ -446,19 +529,28 @@ def main() -> None:
         for linha in linhas:
             grupos.setdefault(linha[posicao] if posicao is not None else 2026, []).append(linha)
         for ano, parte in grupos.items():
-            destino = DESTINO / nome / f"ano={ano}" / f"{nome}.parquet"
-            _escrever(con, nome, colunas, parte, destino)
+            _escrever(con, nome, colunas, parte, destino / nome / f"ano={ano}" / f"{nome}.parquet")
     for nome, (colunas, linhas) in _provisorio().items():
         # IPCA: o ETL grava `ipca/ipca.parquet` (diretório, sem partição de ano).
-        destino = (
-            DESTINO / nome / f"{nome}.parquet" if nome == "ipca" else DESTINO / f"{nome}.parquet"
+        arquivo = (
+            destino / nome / f"{nome}.parquet" if nome == "ipca" else destino / f"{nome}.parquet"
         )
-        _escrever(con, nome, colunas, linhas, destino)
-    _redes(con)
-    (DESTINO / "manifesto.json").write_text(
+        _escrever(con, nome, colunas, linhas, arquivo)
+    _redes(con, destino)
+    if destino != DESTINO:  # o mundo extra reaproveita o manifesto de fotos do base
+        shutil.copytree(DESTINO / "fotos", destino / "fotos", dirs_exist_ok=True)
+        arquivo = destino / "fotos" / "manifesto.json"
+        manifesto = json.loads(arquivo.read_text())
+        manifesto["fotos"]["2026/22"] = {  # só a referência com contas tem foto
+            "arquivo": "2026/22.webp", "origem": "x.zip:F22.jpg",
+            "sha256": "e", "sha256_origem": "f",
+        }  # fmt: skip
+        arquivo.write_text(json.dumps(manifesto))
+    (destino / "manifesto.json").write_text(
         json.dumps({"tp_prestacao_contas": {"2022": "FINAL", "2026": "PARCIAL"}}, indent=2) + "\n"
     )
 
 
 if __name__ == "__main__":
     main()
+    main(DESTINO_REFERENCIAS, extras=True)
