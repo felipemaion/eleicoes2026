@@ -161,6 +161,33 @@ Armadilhas descobertas (2022 e 2026, layout idêntico):
 - Rótulos `ds_*` seguem **brutos**: o ETL só apara e colapsa espaços (caixa e acento intactos); a classificação
   é de `indicadores.financeiro`.
 
+### Receita × despesa: o que o dado oficial permite (T-D12, conferido em 14/10/2026)
+- **O ETL não perde dinheiro**: receitas, despesas contratadas e pagas dos presidentes batem **ao centavo** com a
+  soma direta do CSV (`*_BR.csv`). O que explicava razões estranhas era (a) **defasagem**: o ZIP muda diariamente
+  (`Last-Modified` 14/10 07:29; nosso cache era de 07/10) — Cury saltou de R$ 0,55 mi para R$ 1,41 mi de despesa;
+  (b) o que a declaração contém.
+- **Despesa estimável não existe nos arquivos de despesas.** As doações estimáveis (bens/serviços cedidos, em 2026
+  quase todas "Recursos de partido político", espécie "Estimado") aparecem **só na receita**
+  (`DS_NATUREZA_RECEITA = ESTIMÁVEL`, com a categoria em `DS_NATUREZA_RECURSO_ESTIMAVEL`, hoje descartada pelo ETL).
+  Prova: nas contas finais de 2022, a mediana de despesa contratada ÷ receita **financeira** é 100% em todos os
+  quartis de parcela estimável, enquanto ÷ receita **total** cai de 100% para 45% no quartil mais estimável.
+  Razão correta = despesa ÷ receita **financeira** (`ds_natureza_receita = FINANCEIRO`).
+- **Contratada ≠ paga.** Caiado: contratada R$ 22,1 mi > receita R$ 13,4 mi, mas **paga** R$ 13,11 mi = 100% da
+  receita financeira (R$ 13,11 mi); ~R$ 9 mi estão contratados (ex.: R$ 10 mi + R$ 7 mi a uma agência) e não pagos.
+  `SQ_DESPESA` repetido (112 linhas/80 ids) são itens da mesma nota, não duplicata.
+- **Contas parciais**: em 14/10 só 549 de 16.900 candidaturas têm prestação FINAL; o resto é PARCIAL (8.246) ou
+  RELATÓRIO FINANCEIRO (8.105). Renan (R$ 2,82 mi de receita, R$ 1,29 mi de despesa = 46%, contratada = paga) é
+  declaração incompleta/saldo em caixa, não erro de leitura.
+- **Gasto do partido a favor do candidato**: existe `prestacao_de_contas_eleitorais_orgaos_partidarios_{ano}.zip`
+  (mesmo CDN; 2026 gerado 14/10), com receitas/despesas contratadas/pagas **do órgão partidário**, **sem** vínculo
+  ao candidato beneficiário (só `SQ_CANDIDATO_FORNECEDOR` quando o candidato é o *fornecedor*). O benefício ao
+  candidato já entra na conta dele como receita estimável ou transferência financeira; **somar o arquivo do partido
+  contaria em dobro**. Não ingerido.
+- Universo 2026 (14/10, receita>0, N=16.900): despesa contratada ÷ receita total fora de 70–110%: 10.154 abaixo,
+  759 acima (paga: 12.732 / 47). Mediana por cargo (contratada): DE 56% · DF 60% · Gov 81% · Sen 74% · Pres 92%.
+  Missão (N=490): mediana 83% (contratada) e 83% (paga); 202 abaixo de 70% e 14 acima de 110%. Referência 2022
+  (contas finais): 18.315 de 24.979 dentro de 70–110%.
+
 ### Valores distintos (lançamentos por rótulo; insumo para fechar a tabela de classificação)
 `ds_fonte_receita` — 2022: OUTROS RECURSOS 567.864 · FUNDO ESPECIAL 88.228 · FUNDO PARTIDARIO 15.873 · nulo 2.979.
 2026: OUTROS RECURSOS 116.940 · FUNDO ESPECIAL 37.663 · FUNDO PARTIDARIO 14.330 · nulo 2.421.
