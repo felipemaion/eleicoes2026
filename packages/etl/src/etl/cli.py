@@ -28,6 +28,7 @@ from etl.redes.coleta import coletar
 from etl.redes.divergencias import baixar_site, comparar, extrair_do_site
 from etl.redes.execucao import carregar_env, conferir_token
 from etl.redes.meta import ClienteMeta, ErroLimite, ErroMeta
+from etl.redes.servidor import ConfigServidor, executar
 from etl.redes.tse import ErroRedes, processar_redes_tse
 from etl.secao import ALERTA_SEM_COORDENADA, processar_secao
 
@@ -87,6 +88,15 @@ def _parser() -> argparse.ArgumentParser:
     k.add_argument("--hoje", type=date.fromisoformat, default=None, help=argparse.SUPPRESS)
     k.add_argument("--raiz-raw", type=Path, default=Path("data/raw"))
     k.add_argument("--raiz-processed", type=Path, default=Path("data/processed"))
+    v = sub.add_parser(
+        "redes-servidor",
+        help="coleta diária no servidor: lê /datasets, acumula a série em /saida (T-D09)",
+        description="Caminhos e política vêm do ambiente: ELEICOES_DIR_DATASETS (/datasets), "
+        "ELEICOES_DIR_SAIDA (/saida), REDES_ANO, REDES_TENTATIVAS, REDES_ESPERA_S, "
+        "REDES_AVISO_DIAS, META_TOKEN, META_APP_ID, META_APP_SECRET. "
+        "Saída: 0 ok · 1 erro · 3 limite persistente · 4 ok com token perto de vencer.",
+    )
+    v.add_argument("--simular", action="store_true", help="confere ambiente e entrada; sem rede")
     d = sub.add_parser("redes-divergencias", help="TSE × candidatos.missao.org.br (só relatório)")
     d.add_argument("--ano", type=int, default=2026)
     d.add_argument("--html", type=Path, help="HTML já baixado (padrão: baixa do site)")
@@ -183,6 +193,21 @@ def _redes_coletar(args: argparse.Namespace) -> int:
         return 1
     print(json.dumps(stats, ensure_ascii=False, indent=2))
     return 0
+
+
+def _redes_servidor(args: argparse.Namespace) -> int:
+    env = dict(os.environ)
+    cfg = ConfigServidor.de_ambiente(env)
+    if args.simular:
+        entrada = cfg.datasets / "redes_candidatos" / f"ano={cfg.ano}" / "redes_candidatos.parquet"
+        faltam = [k for k in ("META_TOKEN", "META_APP_ID", "META_APP_SECRET") if not env.get(k)]
+        print(f"entrada: {entrada} ({'ok' if entrada.exists() else 'AUSENTE'})")
+        print(
+            f"saida: {cfg.saida} (série existente: {(cfg.saida / 'redes_perfis.parquet').exists()})"
+        )
+        print(f"variáveis META_* ausentes: {', '.join(faltam) or 'nenhuma'}")
+        return 0 if entrada.exists() and not faltam else 1
+    return executar(cfg, env)
 
 
 def _fotos(args: argparse.Namespace) -> int:
@@ -288,6 +313,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _redes_divergencias(args)
     if args.comando == "redes-coletar":
         return _redes_coletar(args)
+    if args.comando == "redes-servidor":
+        return _redes_servidor(args)
     if args.comando == "secao":
         return _secao(args)
     if args.comando == "processar":
