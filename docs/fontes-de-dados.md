@@ -281,3 +281,12 @@ faltante/repetido na série **falha** o processamento. Última observação baix
 - **Token**: vence em 07/12/2026. A cada coleta, `debug_token` confere; ≤15 dias avisa no stderr, vencido falha.
 - **Rodar**: `make redes` (TSE + coleta). Diário: `scripts/redes-diario.sh` + `scripts/com.eleicoes2026.redes.plist`
   (instruções no próprio arquivo; **não instalar sem o orquestrador**).
+- **No servidor (T-D09)**: imagem `ghcr.io/felipemaion/eleicoes2026-etl` (`packages/etl/Dockerfile`), comando
+  `etl redes-servidor`. Lê `redes_candidatos` de `/datasets` (:ro, publicado do Mac) e **acumula a série em
+  `/saida`** (= `data/redes/` no servidor). Trabalha em `/saida/.novo/` sobre uma cópia da série e só promove
+  (`os.replace` por arquivo, manifesto por último) sem erro; falha deixa a série anterior intacta. Limite de
+  chamadas (código 3) retoma de hora em hora até 10 tentativas; o que foi gravado antes do corte é promovido.
+  `/saida/status.json` = `{inicio, fim, resultado: ok|limite|erro, motivo, perfis_coletados, coletado_em}`.
+  Token: falha se vencido/inválido; **a ≤14 dias do vencimento a coleta roda e a saída é 4** (aviso ao alerta).
+  A série é **insubstituível** → `data/redes/` (entra no backup, fora do alcance do rsync); o que se reconstrói
+  das fontes oficiais mora em `datasets/`.

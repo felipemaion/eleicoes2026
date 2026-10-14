@@ -34,6 +34,10 @@ User `eleicoes01`, `/home/eleicoes2026.maionesys.com/{repo,data,secrets}`, deplo
   environment `production` restrito à `main`; `deploy.sh` (forced-command) faz pull + up com gate de health.
 - Compose do Oracle: `ELEICOES_DIR_DADOS=/datasets` (:ro), `ELEICOES_REDES_DIR=/redes` (volume `data/redes` :ro, fora do rsync; a API recarrega por mtime a cada ≤60 s e `/api/health` mostra a última coleta), `ELEICOES_DUCKDB_THREADS=2`, `cpus 1.0`, `mem 2g`.
   DuckDB: `memory_limit 1200MB`, `max_temp_directory_size 400MB`, `/tmp/duck`.
+- Coleta de redes: imagem `ghcr.io/felipemaion/eleicoes2026-etl:latest` (workflow `imagem-etl.yml`; pacote GHCR
+  nasce privado → tornar público). Serviço `collector` (`profiles: ["jobs"]`) + systemd timer 06:00 UTC
+  (`Persistent=true`): `/datasets` :ro, `/saida` = `data/redes/` (dono uid 10001), `env_file` com `META_*`.
+  Regra: reconstruível → `datasets/`; insubstituível (série de seguidores) → `data/`. Detalhe: `etl redes-servidor --help`.
 - Estáticos por container Caddy próprio (`eleicoes2026-static`) em `public/`: bundle (rsync do Actions, preserva
   `tiles/` e `fotos/`), `tiles/` e `fotos/` (rsync do Mac por `publicar-dados.sh`).
 - Chaves (Mac): `eleicoes-deploy` (dispara deploy), `eleicoes-rsync-public` (public/), `eleicoes-rsync-datasets`

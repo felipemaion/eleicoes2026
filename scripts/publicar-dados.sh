@@ -5,6 +5,8 @@
 #   public/tiles/ ← PMTiles + manifesto      (chave ~/.ssh/eleicoes-rsync-public, rrsync preso a public/)
 #
 # O destino é imposto pelo servidor; por isso os caminhos remotos são relativos à raiz de cada chave.
+# redes/ (série de seguidores, insubstituível) é do servidor — fica FORA do rsync (T-D09; 2ª camada:
+# a chave rrsync só alcança datasets/, e a série mora em data/redes/).
 # --delete é seguro: tudo aqui é reprodutível a partir das fontes oficiais.
 #
 # Uso: publicar-dados.sh [dir_processed]   (padrão: data/processed)
@@ -28,6 +30,7 @@ fi
 echo "== datasets"
 # Fotos: só o manifesto vai para datasets/ (a API consulta quais existem); as imagens vão para public/fotos/.
 "$RSYNC" -az --delete --exclude 'tiles/' --exclude 'fotos/20*/' \
+  --exclude 'redes/' \
   -e "ssh -i $HOME/.ssh/eleicoes-rsync-datasets -o IdentitiesOnly=yes" \
   "$ORIGEM/" "$DESTINO:"
 
