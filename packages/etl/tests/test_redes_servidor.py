@@ -159,6 +159,22 @@ def test_excecao_nao_prevista_grava_status_erro_preserva_serie_e_relanca(
     assert not (cfg.saida / ".novo").exists()
 
 
+def test_falha_ao_gravar_status_de_erro_relanca_a_excecao_original(
+    cfg: ConfigServidor, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def quebra(*_: Any, **__: Any) -> None:
+        raise KeyError("followers_count")
+
+    def gravar_falha(*_: Any, **__: Any) -> None:
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr("etl.redes.servidor._gravar_status", gravar_falha)
+    with pytest.raises(KeyError):
+        executar(cfg, ENV, cliente=ClienteFalso(), coletar_fn=quebra, agora=lambda: AGORA)
+    assert "disco cheio" in capsys.readouterr().err
+    assert not (cfg.saida / ".novo").exists()
+
+
 def test_limite_retoma_e_depois_conclui(cfg: ConfigServidor) -> None:
     chamadas = {"n": 0}
     boa = _coleta_que_acrescenta(15)

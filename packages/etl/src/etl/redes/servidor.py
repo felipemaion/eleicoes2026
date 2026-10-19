@@ -6,7 +6,8 @@ terminar sem erro — falha no meio nunca toca a série anterior (insubstituíve
 dado perdido). Cada tentativa deixa ``status.json`` para a API e para o alerta.
 
 Códigos de saída: 0 ok · 1 erro (token, app bloqueado, dados) · 3 limite de chamadas persistente
-· 4 coleta ok, mas o token vence em breve (aviso para o alerta do agendador).
+· 4 coleta ok, mas o token vence em breve (aviso para o alerta do agendador). Exceção não
+prevista grava ``status.json`` de erro e é relançada (traceback, saída ≠ 0).
 """
 
 from __future__ import annotations
@@ -72,6 +73,12 @@ def _gravar_status(
     tmp = saida / "status.json.tmp"
     tmp.write_text(json.dumps(corpo, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, saida / "status.json")
+
+
+def _motivo_curto(e: BaseException, limite: int = 300) -> str:
+    """Tipo + mensagem, truncada: o status.json é lido pela API e não deve carregar traceback."""
+    texto = f"{type(e).__name__}: {e}"
+    return texto if len(texto) <= limite else texto[: limite - 1] + "…"
 
 
 def _preparar_area(saida: Path) -> Path:
@@ -177,6 +184,18 @@ def executar(
     except (ErroMeta, ContratoViolado, OSError) as e:
         shutil.rmtree(area, ignore_errors=True)
         return encerrar(EXIT_ERRO, "erro", str(e))
+    except Exception as e:
+        # Erro não previsto (ComputeError, KeyError, JSON malformado…): sem isto o processo
+        # morre sem status.json e a API não distingue "falhou" de "ainda rodando". Registra e
+        # relança — o código de saída ≠ 0 aciona o OnFailure do agendador.
+        shutil.rmtree(area, ignore_errors=True)
+        try:
+            encerrar(EXIT_ERRO, "erro", _motivo_curto(e))
+        except Exception as falha_status:
+            # Gravar o status é o recurso de último caso; se ele também falhar, a causa que
+            # importa é a original — registra a segunda falha e deixa a primeira propagar.
+            print(f"FALHA ao gravar status.json: {falha_status!r}", file=sys.stderr)
+        raise
     # Limite persistente: o que foi gravado antes do corte é válido (contrato conferido em
     # `coletar`) e é promovido; a próxima execução continua de onde parou.
     _promover(area, cfg.saida)
