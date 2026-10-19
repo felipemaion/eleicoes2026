@@ -323,9 +323,10 @@ def test_razao_gasto_exige_colunas() -> None:
 
 def test_razao_gasto_tipos_estaveis_mesmo_tudo_nulo() -> None:
     """Sem nenhuma conta avaliável, as colunas saem tipadas (o backend serializa pelo schema)."""
+    colunas = ("receita_financeira", "despesa_contratada", "despesa_paga")
     df = pl.DataFrame(
         {"receita_financeira": [0.0], "despesa_contratada": [None], "despesa_paga": [None]},
-        schema={c: pl.Float64 for c in ("receita_financeira", "despesa_contratada", "despesa_paga")},
+        schema=dict.fromkeys(colunas, pl.Float64),
     )
     saida = financeiro.razao_gasto(df)
     assert saida.schema["razao_gasto_contratada"] == pl.Float64
