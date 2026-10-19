@@ -76,7 +76,7 @@ class Aquecimento(threading.Thread):
     def _plano(self) -> Iterator[tuple[str, Consulta]]:
         """Brasil primeiro (o mais pedido), depois cada UF; candidatos/gastos por grupo."""
         repo, catalogo, cache = self._repo, self._catalogo, self._cache
-        for grupo in catalogo.grupos.values():
+        for grupo in catalogo.grupos_por_lista():
             for uf, cargo in self._recortes(grupo):
                 uf_v, cargo_v = (uf.value if uf else None), cargo.value
                 yield (

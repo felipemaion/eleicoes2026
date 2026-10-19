@@ -85,6 +85,14 @@ class Catalogo:
             raise parametro_invalido("grupo_desconhecido", f"grupo '{grupo_id}' não existe")
         return self.grupos[grupo_id]
 
+    def grupos_por_lista(self) -> list[DefinicaoGrupo]:
+        """Grupos que se resolvem sem cargo/UF (partido ou lista de `sq`).
+
+        Os de `ranking` dependem de cargo e UF e só existem em `/api/referencias`; qualquer laço
+        sobre "todos os grupos" deve usar este filtro, não `grupos.values()`.
+        """
+        return [g for g in self.grupos.values() if g.ranking is None]
+
     def comparacao(self, comparacao_id: str) -> Comparacao:
         """Comparação pelo id; desconhecida → 422."""
         if comparacao_id not in self.comparacoes:
@@ -255,7 +263,7 @@ def listar_grupos(repo: Repositorio, catalogo: Catalogo) -> GruposResposta:
                 ano=g.ano,
                 n_candidaturas=len(candidaturas_do_grupo(repo, g)),
             )
-            for g in catalogo.grupos.values()
+            for g in catalogo.grupos_por_lista()
             if g.id not in catalogo.ids_de_referencia()
         ],
         comparacoes=[
