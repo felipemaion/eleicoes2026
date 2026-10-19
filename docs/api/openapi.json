@@ -1789,7 +1789,12 @@
               }
             ],
             "title": "Situacao",
-            "description": "`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou."
+            "description": "`ds_situacao_candidatura` (APTO, INDEFERIDO…); null = TSE ainda não publicou. Registro que não foi às urnas sem situação na fonte vem como \"Não foi às urnas\"."
+          },
+          "foi_as_urnas": {
+            "type": "boolean",
+            "title": "Foi As Urnas",
+            "description": "Registro que disputou a eleição (tem resultado de turno). false = substituído, cancelado, renunciado…: fora de contagens, listas e médias; só a ficha o mostra."
           },
           "resultado": {
             "anyOf": [
@@ -1852,6 +1857,7 @@
           "cargo",
           "partido",
           "situacao",
+          "foi_as_urnas",
           "resultado",
           "votos",
           "pct_validos",
@@ -4209,6 +4215,7 @@
                 },
                 "ano": 2026,
                 "cargo": "DEPUTADO FEDERAL",
+                "foi_as_urnas": true,
                 "indicado": false,
                 "nm_urna": "A",
                 "partido": {
@@ -4646,6 +4653,18 @@
             "title": "N Municipios",
             "description": "Municípios com ao menos um voto."
           },
+          "pct_maiores": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Maiores",
+            "description": "% dos votos vindos dos 10 maiores municípios do candidato (§10.2)."
+          },
           "hhi": {
             "anyOf": [
               {
@@ -4694,6 +4713,18 @@
             "title": "Receita Total",
             "description": "Receita bruta em R$ (IPCA em 2022)."
           },
+          "receita_por_voto": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receita Por Voto",
+            "description": "R$ de receita por voto (§4.7)."
+          },
           "pct_publico": {
             "anyOf": [
               {
@@ -4705,6 +4736,18 @@
             ],
             "title": "Pct Publico",
             "description": "FEFC + Fundo Partidário, % da receita."
+          },
+          "pct_autofinanciamento": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Autofinanciamento",
+            "description": "Recursos próprios, % da receita."
           },
           "pct_pessoa_fisica": {
             "anyOf": [
@@ -4725,11 +4768,14 @@
           "pct_validos",
           "penetracao",
           "n_municipios",
+          "pct_maiores",
           "hhi",
           "n_efetivo_municipios",
           "custo_voto_pago",
           "receita_total",
+          "receita_por_voto",
           "pct_publico",
+          "pct_autofinanciamento",
           "pct_pessoa_fisica"
         ],
         "title": "Perfil",
