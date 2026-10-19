@@ -72,7 +72,8 @@ test("redes: ranking compacto (10 por lista) e busca acha quem está fora dele",
   await expect(ranking.locator("rect.marca")).toHaveCount(10);
   await expect(page.locator(".rankings-redes svg.grafico")).toHaveCount(3);
   await page.getByLabel("Escolher candidato em foco").fill("hugo");
-  await page.getByRole("button", { name: /Hugo Alves/ }).click();
+  // Escopo na lista: os pontos da nuvem também são botões com o nome do candidato (T-W27).
+  await page.locator(".busca-redes-resultados").getByRole("button", { name: /Hugo Alves/ }).click();
   await expect(page.locator(".foco-cartao")).toContainText("Hugo Alves");
   await expect(page.locator(".grafico-redes-ritmo rect.marca[data-serie=candidato]").first()).toBeVisible();
 });

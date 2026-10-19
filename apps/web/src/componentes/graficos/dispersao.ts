@@ -2,7 +2,7 @@ import { axisBottom, axisLeft, scaleLog, select, type ScaleLogarithmic } from "d
 import { PALETAS } from "../../paletas";
 import { formatarCompacto, formatarMoeda, formatarNumero } from "../../formato";
 import { abrirNoTse, avisoLinkTse, type LinkTse } from "../ui/foto-candidato";
-import { corpoRico, criarFlutuante, ligarMarca } from "../ui/tooltip";
+import { corpoRico, criarFlutuante, ligarMarca, type Flutuante } from "../ui/tooltip";
 import { COR, criarSvg, marcaAcessivel, mensagemVazia, no, tabelaAlternativa, textoSvg, type Grafico, substituir } from "./base";
 
 export interface PontoCustoVoto {
@@ -16,8 +16,11 @@ export interface PontoCustoVoto {
   foto?: string | null;
   /** Página do candidato no TSE: clique/Enter no círculo abre em nova aba. */
   linkTse?: LinkTse;
-  /** Outro destino externo (ex.: perfil no Instagram); `convite` é a linha do tooltip que avisa do clique. */
-  linkExterno?: { url: string; convite: string };
+  /**
+   * Outro destino externo (ex.: perfil no Instagram); `convite` é a linha do tooltip que avisa do clique.
+   * Com `aoSelecionar`, o clique não abre o destino: ele vira o link `texto` dentro do tooltip fixo.
+   */
+  linkExterno?: { url: string; convite: string; texto?: string };
   /** Posição em relação ao esperado: muda a cor do círculo (o texto do tooltip diz o mesmo). */
   classe?: "acima" | "abaixo" | "neutro";
 }
@@ -40,6 +43,11 @@ export interface OpcoesDispersao {
   reta?: { intercepto: number; inclinacao: number; rotulo: string };
   /** Nota de rodapé sobre a linha de referência (padrão fala de custo por voto). */
   notaReferencia?: string;
+  /**
+   * Opt-in (tela de Redes): clique/Enter/Espaço no ponto chama `aoSelecionar(id)` e fixa o tooltip,
+   * com o `linkExterno` como link de nova aba. Sem esta opção o clique abre o link direto (Gastos, Receitas).
+   */
+  aoSelecionar?: (id: string) => void;
 }
 
 export interface GraficoDispersao extends Grafico<readonly PontoCustoVoto[]> {
@@ -47,10 +55,124 @@ export interface GraficoDispersao extends Grafico<readonly PontoCustoVoto[]> {
   destacar(ids: ReadonlySet<string>): void;
 }
 
-let balao: ReturnType<typeof criarFlutuante> | null = null;
-function tooltipDispersao(): ReturnType<typeof criarFlutuante> {
+let balao: Flutuante | null = null;
+function tooltipDispersao(): Flutuante {
   if (!balao || !balao.elemento.isConnected) balao = criarFlutuante();
   return balao;
+}
+
+/**
+ * Ponto cujo tooltip está fixo (modo de seleção). Um só por página porque o balão é compartilhado;
+ * mesmo comportamento de `ligarPainel`: segundo clique, Esc ou clique fora fecham.
+ */
+let fixo: SVGElement | null = null;
+/** Devolver o foco ao ponto depois do Esc não deve reabrir o balão de hover. */
+let devolvendoFoco = false;
+
+function soltar(devolverFoco = false): void {
+  if (fixo === null) return;
+  const marca = fixo;
+  fixo = null;
+  marca.setAttribute("aria-expanded", "false");
+  const b = tooltipDispersao();
+  b.elemento.classList.remove("fixo");
+  b.elemento.setAttribute("role", "tooltip");
+  b.elemento.removeAttribute("aria-label");
+  b.esconder();
+  if (devolverFoco) {
+    devolvendoFoco = true;
+    marca.focus();
+    devolvendoFoco = false;
+  }
+}
+
+function fixar(marca: SVGElement, rotulo: string, conteudo: Node): void {
+  const b = tooltipDispersao();
+  const r = marca.getBoundingClientRect();
+  b.mostrar(conteudo, { x: r.left, y: r.top, largura: r.width, altura: r.height });
+  b.elemento.classList.add("fixo");
+  // Com link dentro, o balão deixa de ser só descrição: vira um diálogo não modal.
+  b.elemento.setAttribute("role", "dialog");
+  b.elemento.setAttribute("aria-label", rotulo);
+  marca.setAttribute("aria-expanded", "true");
+  fixo = marca;
+}
+
+let globaisLigados = false;
+function ligarGlobais(): void {
+  if (globaisLigados) return;
+  globaisLigados = true;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || fixo === null) return;
+    const ativo = document.activeElement;
+    const focoNele = ativo === fixo || (ativo !== null && tooltipDispersao().elemento.contains(ativo));
+    soltar(focoNele);
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (fixo === null || !(e.target instanceof Node)) return;
+    if (e.target === fixo || tooltipDispersao().elemento.contains(e.target)) return;
+    soltar();
+  });
+}
+
+/** Balão para `ligarMarca`: hover e foco não mexem nele enquanto há um tooltip fixo. */
+const balaoDeHover: Flutuante = {
+  get elemento() { return tooltipDispersao().elemento; },
+  mostrar(conteudo, ancora) { if (fixo === null && !devolvendoFoco) tooltipDispersao().mostrar(conteudo, ancora); },
+  mover(ancora) { if (fixo === null) tooltipDispersao().mover(ancora); },
+  esconder() { if (fixo === null) tooltipDispersao().esconder(); },
+};
+
+/** Liga clique/teclado de seleção a um ponto: seleciona, fixa o tooltip e põe o link externo dentro dele. */
+function ligarSelecao(c: SVGElement, d: PontoCustoVoto, conteudoBase: () => DocumentFragment, aoSelecionar: (id: string) => void): void {
+  ligarGlobais();
+  const externo = d.linkExterno;
+  const url = externo?.url.startsWith("https://") ? externo.url : null;
+  let ancora: HTMLAnchorElement | null = null;
+  const conteudo = (): Node => {
+    const f = conteudoBase();
+    if (url !== null) {
+      ancora = Object.assign(document.createElement("a"), { href: url, target: "_blank", rel: "noopener noreferrer", textContent: externo?.texto ?? "Abrir link (nova aba)" });
+      ancora.addEventListener("keydown", (e) => {
+        if (e.key !== "Tab") return;
+        e.preventDefault();
+        if (e.shiftKey) { c.focus(); return; }
+        // Tab adiante: fecha o balão e segue para o próximo ponto, como se o link estivesse logo depois dele.
+        const proximo = c.nextElementSibling instanceof SVGElement && c.nextElementSibling.matches("circle.marca") ? c.nextElementSibling : c;
+        soltar();
+        proximo.focus();
+      });
+      const p = h("p", "tooltip-rodape tooltip-link");
+      p.append(ancora);
+      f.append(p);
+    }
+    f.append(h("p", "tooltip-rodape", "Esc ou clique fora para fechar."));
+    return f;
+  };
+  const alternar = (): void => {
+    if (fixo === c) { soltar(); return; }
+    soltar();
+    aoSelecionar(d.id);
+    fixar(c, d.rotulo, conteudo());
+  };
+  c.setAttribute("role", "button");
+  c.setAttribute("aria-expanded", "false");
+  c.setAttribute("aria-controls", tooltipDispersao().elemento.id);
+  c.classList.add("com-link");
+  c.addEventListener("click", alternar);
+  // Foco chegando a outro ponto (Shift+Tab, clique) solta o balão fixo do anterior.
+  c.addEventListener("focus", () => { if (fixo !== null && fixo !== c && !devolvendoFoco) soltar(); });
+  c.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); alternar(); return; }
+    if (e.key === "Tab" && !e.shiftKey && fixo === c && ancora?.isConnected) { e.preventDefault(); ancora.focus(); }
+  });
+}
+
+function h(tag: "p", classe: string, texto?: string): HTMLElement {
+  const el = document.createElement(tag);
+  el.className = classe;
+  if (texto !== undefined) el.textContent = texto;
+  return el;
 }
 
 function aplicarDestaque(raiz: ParentNode, ids: ReadonlySet<string>): void {
@@ -116,6 +238,8 @@ function desenharReta(svg: SVGSVGElement, x: ScaleLogarithmic<number, number>, y
 const COR_CLASSE = { acima: PALETAS.categorica[5], abaixo: PALETAS.categorica[6], neutro: "var(--cor-texto-suave)" } as const;
 
 function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: OpcoesDispersao): void {
+  // Redesenho apaga o ponto fixado: o balão não pode ficar apontando para um elemento que saiu do DOM.
+  if (fixo !== null && container.contains(fixo)) soltar();
   if (dados.length === 0) { mensagemVazia(container); return; }
   const w = o.largura ?? 640;
   const h = o.altura ?? 420;
@@ -171,13 +295,17 @@ function desenhar(container: HTMLElement, dados: readonly PontoCustoVoto[], o: O
     c.dataset["tooltip"] = [d.rotulo, ...linhas.map(([a, b]) => `${a}: ${b}`)].join(" · ");
     const link = d.linkTse;
     const externo = d.linkExterno;
-    ligarMarca(c, tooltipDispersao(), () => corpoRico({
+    const base = (rodape: boolean): DocumentFragment => corpoRico({
       titulo: d.rotulo, linhas,
       ...(d.foto !== undefined ? { foto: { nome: d.rotulo, url: d.foto } } : {}),
-      ...(link ? { rodape: avisoLinkTse(link) } : externo ? { rodape: [externo.convite] } : {}),
-    }));
+      ...(!rodape ? {} : link ? { rodape: avisoLinkTse(link) } : externo ? { rodape: [externo.convite] } : {}),
+    });
+    const aoSelecionar = o.aoSelecionar;
+    // A seleção liga seus ouvintes de foco antes de `ligarMarca`, para soltar o balão fixo antes do hover reagir.
+    if (aoSelecionar) ligarSelecao(c, d, () => base(false), aoSelecionar);
+    ligarMarca(c, balaoDeHover, () => base(true));
     const destino = link?.url ?? externo?.url;
-    if (destino !== undefined) {
+    if (destino !== undefined && !aoSelecionar) {
       c.setAttribute("role", "link");
       c.classList.add("com-link");
       c.addEventListener("click", () => { abrirNoTse(destino); });
