@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PALETAS } from "../../src/paletas";
 import { formatarMoeda, formatarNumero } from "../../src/formato";
 import * as kpi from "../../src/componentes/graficos/kpi";
@@ -228,6 +228,108 @@ describe("dispersão: hover, destaque e referência", () => {
     expect(l).not.toBeNull();
     expect(Number.isFinite(Number(l.getAttribute("x1")))).toBe(true);
     expect(el.querySelector(".referencia-rotulo")?.textContent).toContain("Mediana");
+  });
+});
+
+describe("dispersão: clique seleciona e fixa o tooltip (opt-in, T-W27)", () => {
+  const pts = [
+    { id: "1", rotulo: "Ana", custo: 1000, votos: 500, linkExterno: { url: "https://www.instagram.com/ana/", convite: "Clique para selecionar.", texto: "Abrir perfil no Instagram" } },
+    { id: "2", rotulo: "Beto", custo: 100000, votos: 20000, linkExterno: { url: "https://www.instagram.com/beto/", convite: "Clique para selecionar.", texto: "Abrir perfil no Instagram" } },
+  ];
+  const balao = (): HTMLElement | null => document.querySelector(".tooltip-flutuante:not([hidden])");
+  const ponto = (id: string): SVGElement => el.querySelector(`circle[data-id="${id}"]`) as SVGElement;
+  const clicar = (alvo: Element): void => {
+    alvo.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    alvo.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 100, clientY: 100 }));
+  };
+  let abertos: unknown[][];
+  beforeEach(() => {
+    abertos = [];
+    vi.stubGlobal("open", (...a: unknown[]) => { abertos.push(a); return null; });
+  });
+  afterEach(() => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    vi.unstubAllGlobals();
+  });
+
+  it("clique chama aoSelecionar com o id, fixa o tooltip com o link (nova aba) e não abre o link direto", () => {
+    const sel: string[] = [];
+    dispersao.render(el, pts, { titulo: "t", aoSelecionar: (id) => { sel.push(id); } });
+    clicar(ponto("1"));
+    expect(sel).toEqual(["1"]);
+    expect(abertos).toHaveLength(0);
+    const b = balao();
+    expect(b?.classList.contains("fixo")).toBe(true);
+    expect(b?.textContent).toContain("Ana");
+    const a = b?.querySelector("a") as HTMLAnchorElement;
+    expect(a.getAttribute("href")).toBe("https://www.instagram.com/ana/");
+    expect(a.getAttribute("target")).toBe("_blank");
+    expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(a.textContent).toBe("Abrir perfil no Instagram");
+    expect(ponto("1").getAttribute("role")).toBe("button");
+    expect(ponto("1").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("tooltip fixo: mover/sair/hover em outro ponto não fecha; novo clique no mesmo ponto fecha", () => {
+    dispersao.render(el, pts, { titulo: "t", aoSelecionar: () => undefined });
+    clicar(ponto("1"));
+    ponto("1").dispatchEvent(new MouseEvent("mousemove", { clientX: 140, clientY: 140 }));
+    ponto("1").dispatchEvent(new MouseEvent("mouseleave"));
+    ponto("1").dispatchEvent(new FocusEvent("blur"));
+    ponto("2").dispatchEvent(new MouseEvent("mouseenter", { clientX: 200, clientY: 200 }));
+    expect(balao()?.textContent).toContain("Ana");
+    expect(balao()?.textContent).not.toContain("Beto");
+    clicar(ponto("1"));
+    expect(balao()).toBeNull();
+    expect(ponto("1").getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("clique em outro ponto troca seleção e tooltip; clique fora e Esc fecham", () => {
+    const sel: string[] = [];
+    dispersao.render(el, pts, { titulo: "t", aoSelecionar: (id) => { sel.push(id); } });
+    clicar(ponto("1"));
+    clicar(ponto("2"));
+    expect(sel).toEqual(["1", "2"]);
+    expect(balao()?.textContent).toContain("Beto");
+    expect(balao()?.querySelector("a")?.getAttribute("href")).toBe("https://www.instagram.com/beto/");
+    // Clicar dentro do balão não fecha (o link precisa ser clicável).
+    (balao() as HTMLElement).dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    expect(balao()).not.toBeNull();
+    document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    expect(balao()).toBeNull();
+    clicar(ponto("1"));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(balao()).toBeNull();
+  });
+
+  it("teclado: Enter e Espaço selecionam; Tab leva ao link; Esc fecha e devolve o foco ao ponto", () => {
+    const sel: string[] = [];
+    dispersao.render(el, pts, { titulo: "t", aoSelecionar: (id) => { sel.push(id); } });
+    const p = ponto("1");
+    p.focus();
+    p.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(sel).toEqual(["1"]);
+    expect(balao()?.classList.contains("fixo")).toBe(true);
+    p.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    const a = balao()?.querySelector("a") as HTMLAnchorElement;
+    expect(document.activeElement).toBe(a);
+    a.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(balao()).toBeNull();
+    expect(document.activeElement).toBe(p);
+    p.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    expect(sel).toEqual(["1", "1"]);
+    expect(balao()).not.toBeNull();
+  });
+
+  it("regressão (Gastos/Receitas): sem aoSelecionar o clique continua abrindo o link do TSE e nada fica fixo", () => {
+    dispersao.render(el, [{ id: "1", rotulo: "Ana", custo: 1000, votos: 500, linkTse: { url: "https://divulgacandcontas.tse.jus.br/x", verificado: true, nota: null } }], { titulo: "t" });
+    const p = ponto("1");
+    expect(p.getAttribute("role")).toBe("link");
+    clicar(p);
+    expect(abertos[0]?.[0]).toBe("https://divulgacandcontas.tse.jus.br/x");
+    expect(document.querySelector(".tooltip-flutuante.fixo")).toBeNull();
+    p.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(balao()).toBeNull();
   });
 });
 
