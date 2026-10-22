@@ -2,7 +2,7 @@ import { criarCliente, ErroApi, type ClienteApi } from "../dados/cliente";
 import { cargoDaApi, paramsDeFiltros, receitaEmpilhada } from "../dados/adaptadores";
 import { paramsComparativo, parseLado, resolverLados } from "../dados/comparador-logica";
 import type { RespostaComparativo, RespostaGastos } from "../dados/contrato";
-import { idsQueCasam, medianaCustoVoto, pontosDeGastos } from "../dados/gastos-logica";
+import { idsQueCasam, medianaCustoVoto, pontosDeGastos, pontosDespesaReceitaPorVoto } from "../dados/gastos-logica";
 import { kpisDeReceita, linhasDoComparativoReceitas, notaFaixaReceita, pontosDeReceita } from "../dados/receitas-logica";
 import { formatarMoeda } from "../formato";
 import { formatarMesBase } from "../textos";
@@ -80,6 +80,8 @@ export const tela: Tela = {
         const areaKpiDespesa = h("div");
         const areaDispersaoReceita = h("div", { className: "grafico-receita" });
         const areaDispersaoDespesa = h("div", { className: "grafico-despesa" });
+        const areaDispersaoPorVoto = h("div", { className: "grafico-despesa-receita-voto" });
+        const notaPorVoto = nota("");
         const areaFonte = h("div");
         const areaComparativo = h("div");
         const kr = renderKpi(areaKpiReceita, kpisDeReceita(g), kpiOpcoes);
@@ -98,7 +100,19 @@ export const tela: Tela = {
           const ref = m === null ? {} : { referencia: { custoPorVoto: m, rotulo: `mediana ${formatarMoeda(m)} de receita por voto` } };
           return renderDispersao(areaDispersaoReceita, pontosReceita, { titulo: "Receita de campanha × votos por candidato", grandeza: "receita de campanha", destaque: idsQueCasam(pontosReceita, consulta), ...ref });
         };
+        const montarPorVoto = (): ReturnType<typeof renderDispersao> => {
+          const { pontos, semDados } = pontosDespesaReceitaPorVoto(g, base);
+          notaPorVoto.textContent = "Cada círculo é um candidato; passe o mouse (ou foque com Tab) para ver os dados. Escala logarítmica nos dois eixos; o eixo vertical segue a base escolhida (" + base + "). " +
+            (semDados > 0 ? `${String(semDados)} ${semDados === 1 ? "candidato sem dados" : "candidatos sem dados"} de receita, despesa ou votos ficam de fora. ` : "") +
+            (g.contas_parciais ? "As contas de 2026 ainda são parciais: abaixo da diagonal, a despesa declarada é menor que a receita (declaração possivelmente incompleta); acima, gastou mais do que arrecadou." : "Abaixo da diagonal, a despesa declarada é menor que a receita (declaração possivelmente incompleta); acima, gastou mais do que arrecadou.");
+          return renderDispersao(areaDispersaoPorVoto, pontos, {
+            titulo: "Despesa por voto × receita por voto por candidato", grandeza: "receita por voto", formatoX: formatarMoeda, rotuloEixoX: "Receita por voto (R$, escala log)",
+            eixoY: { rotulo: `Despesa por voto, ${base} (R$, escala log)`, coluna: `Despesa por voto (${base})`, formato: formatarMoeda, descricao: "despesa por voto" },
+            diagonal: { rotulo: "gastou o que arrecadou" }, destaque: idsQueCasam(pontos, consulta),
+          });
+        };
         let dd = montarDespesa();
+        let dv = montarPorVoto();
         const dr = montarReceita();
         const e = renderEmpilhado(areaFonte, receitaEmpilhada(g), { titulo: "Receita por fonte" });
         const seletor = campoSelect("Base do custo", "base", [{ valor: "contratado", texto: "Contratado" }, { valor: "pago", texto: "Pago" }], base, (v) => {
@@ -106,15 +120,18 @@ export const tela: Tela = {
           // A linha de referência muda com a base; o destaque da busca é reaplicado em `montarDespesa`.
           dd.destruir();
           dd = montarDespesa();
+          dv.destruir();
+          dv = montarPorVoto();
         });
         const estado = h("p", { className: "nota busca-gastos-estado" });
         estado.setAttribute("aria-live", "polite");
         const campo = h("input", { type: "search", name: "busca-gastos", placeholder: "Nome do candidato", maxLength: 80 });
         campo.addEventListener("input", () => {
           consulta = campo.value;
-          const ids = new Set([...idsQueCasam(pontosDespesa(), consulta), ...idsQueCasam(pontosReceita, consulta)]);
+          const ids = new Set([...idsQueCasam(pontosDespesa(), consulta), ...idsQueCasam(pontosReceita, consulta), ...idsQueCasam(pontosDespesaReceitaPorVoto(g, base).pontos, consulta)]);
           dd.destacar(idsQueCasam(pontosDespesa(), consulta));
           dr.destacar(idsQueCasam(pontosReceita, consulta));
+          dv.destacar(idsQueCasam(pontosDespesaReceitaPorVoto(g, base).pontos, consulta));
           estado.textContent = consulta.trim() === "" ? "" : ids.size === 0 ? "Nenhum candidato com esse nome neste recorte." : `${String(ids.size)} ${ids.size === 1 ? "candidato realçado" : "candidatos realçados"} nos gráficos.`;
         });
         const busca = h("label", {}, "Realçar candidato nos gráficos", campo);
@@ -136,6 +153,7 @@ export const tela: Tela = {
           areaKpiDespesa,
           h("h3", {}, "Custo × votos"), areaDispersaoDespesa,
           nota("Passe o mouse (ou foque com Tab) sobre um círculo para ver o candidato. Escala logarítmica nos dois eixos; candidatos com custo ou votos zero ficam na faixa “0”. O saldo de cada candidato (receita − despesa contratada) está no balão do gráfico. Custo por voto não é mostrado em mapa."),
+          h("h3", {}, "Despesa por voto × receita por voto"), areaDispersaoPorVoto, notaPorVoto,
           h("h2", {}, "2022 × 2026, com 2022 corrigido pela inflação"), areaComparativo,
           rodapeUi("gastos", ctx),
         );
@@ -147,7 +165,7 @@ export const tela: Tela = {
           (c) => { if (ativo) areaComparativo.replaceChildren(c === null ? nota("Sem comparação: um dos lados não tem candidaturas neste cargo e UF.") : tabelaComparativo(c, ctx)); },
           (erro: unknown) => { console.error("Comparação de receitas indisponível:", erro); if (ativo) areaComparativo.replaceChildren(nota("Não foi possível carregar a comparação agora.")); },
         );
-        return () => { ativo = false; kr.destruir(); kd.destruir(); dd.destruir(); dr.destruir(); e.destruir(); };
+        return () => { ativo = false; kr.destruir(); kd.destruir(); dd.destruir(); dv.destruir(); dr.destruir(); e.destruir(); };
       },
     );
     return () => { parar(); container.replaceChildren(); };

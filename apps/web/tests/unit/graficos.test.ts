@@ -508,10 +508,10 @@ describe("dispersão com eixo vertical próprio e diagonal y = x (T-W28)", () =>
     expect(el.textContent).not.toContain("Votos (escala log)");
     expect(el.querySelector("svg")?.getAttribute("aria-label")).toContain("despesa por voto (eixo vertical)");
     expect(a?.getAttribute("aria-label")).toBe(`Ana: ${formatarMoeda(10)}, ${formatarMoeda(12)} (despesa por voto)`);
-    expect([...tabela(el).querySelectorAll("th")].map((t) => t.textContent)).toEqual(["Candidato", "Receita", "Despesa por voto", "Observação"]);
+    expect([...tabela(el).querySelectorAll("thead th")].map((t) => t.textContent)).toEqual(["Candidato", "Receita", "Despesa por voto", "Observação"]);
   });
   it("y independe de votos: inverter os votos não muda a posição", () => {
-    dispersao.render(el, [{ ...pts[0]!, votos: 1 }, { ...pts[1]!, votos: 99999 }], opc);
+    dispersao.render(el, pts.map((p, i) => ({ ...p, votos: i === 0 ? 1 : 99999 })), opc);
     const [a, b] = [...el.querySelectorAll("circle.marca")];
     expect(Number(a?.getAttribute("cy"))).toBeLessThan(Number(b?.getAttribute("cy")));
   });
@@ -521,8 +521,8 @@ describe("dispersão com eixo vertical próprio e diagonal y = x (T-W28)", () =>
     expect(l).not.toBeNull();
     const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((k) => Number(l?.getAttribute(k)));
     // escalas log com o mesmo domínio nos dois eixos: Δx e Δy (em módulo) proporcionais à razão das faixas
-    expect(x2! - x1!).toBeGreaterThan(0);
-    expect(y2!).toBeLessThan(y1!);
+    expect((x2 ?? 0) - (x1 ?? 0)).toBeGreaterThan(0);
+    expect(y2 ?? 0).toBeLessThan(y1 ?? 0);
     expect(el.querySelector(".referencia-rotulo")?.textContent).toBe("gastou o que arrecadou");
   });
   it("sem `diagonal` nada é desenhado; sem `eixoY` o gráfico segue custo × votos", () => {

@@ -55,9 +55,10 @@ describe("idsQueCasam", () => {
 });
 
 describe("pontosDespesaReceitaPorVoto (T-W28)", () => {
+  const base0 = G.por_candidato[0] as RespostaGastos["por_candidato"][number];
   const cand = (id: number, rec: number | null, rpv: number | null, cc: number | null, cp: number | null, votos = 100) => ({
-    ...G.por_candidato[0]!, sq_candidato: id, nm_urna: `C${String(id)}`, receita_total: rec, receita_por_voto: rpv,
-    custo: { ...G.por_candidato[0]!.custo, votos, despesa_contratada: 500, despesa_paga: 300, custo_voto_contratado: cc, custo_voto_pago: cp },
+    ...base0, sq_candidato: id, nm_urna: `C${String(id)}`, receita_total: rec, receita_por_voto: rpv,
+    custo: { ...base0.custo, votos, despesa_contratada: 500, despesa_paga: 300, custo_voto_contratado: cc, custo_voto_pago: cp },
   });
   const g = { ...G, por_candidato: [cand(1, 1000, 10, 5, 3), cand(2, 2000, 20, null, 4), cand(3, 0, 0, 6, 6), cand(4, null, null, 7, 7), cand(5, 900, 9, 0, 0, 0)] };
 
@@ -77,7 +78,7 @@ describe("pontosDespesaReceitaPorVoto (T-W28)", () => {
   it("tooltip traz os dados pedidos, incluindo despesa ÷ receita", () => {
     const d = Object.fromEntries(pontosDespesaReceitaPorVoto(g, "contratado").pontos[0]?.detalhe ?? []);
     for (const k of ["Partido", "UF", "Cargo", "Votos", "Receita total", "Despesa contratada", "Despesa paga", "Receita por voto", "Despesa por voto (contratado)", "Despesa ÷ receita"]) expect(d).toHaveProperty(k);
-    expect(d["Despesa ÷ receita"]).toMatch(/50,0/); // 500 ÷ 1000
+    expect(d["Despesa ÷ receita"]).toBe("50%"); // 500 ÷ 1000
   });
   it("traz foto e link do TSE para o tooltip rico", () => {
     const [p] = pontosDespesaReceitaPorVoto(g, "contratado").pontos;

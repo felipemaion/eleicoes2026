@@ -210,3 +210,13 @@ test("gastos (T-W23): balão das duas dispersões nunca é cortado nos pontos ma
     await page.screenshot({ path: `${CAPTURAS}/T-W23-balao-${String(largura)}.png`, fullPage: false });
   }
 });
+
+test("gastos: dispersão despesa/voto × receita/voto mostra pontos, diagonal e tooltip no hover (T-W28)", async ({ page }) => {
+  await page.goto("/#/gastos");
+  const ponto = page.locator('.grafico-despesa-receita-voto circle.marca[data-id="1"]');
+  await expect(ponto).toBeVisible();
+  await expect(page.locator(".grafico-despesa-receita-voto line.referencia")).toHaveCount(1);
+  await ponto.hover();
+  const balao = page.locator(".tooltip-flutuante:not([hidden])");
+  for (const t of ["Ana Souza", "MISSÃO (14)", "Receita total", "Despesa contratada", "Receita por voto", "Despesa ÷ receita"]) await expect(balao).toContainText(t);
+});
