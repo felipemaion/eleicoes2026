@@ -80,7 +80,7 @@ def montar_resumo(repo: Repositorio, catalogo: Catalogo, cd_mun_ibge: int) -> Re
         raise nao_encontrado("municipio_nao_encontrado", f"município {cd_mun_ibge}")
     m = achados[0]
     grupos = []
-    for grupo in catalogo.grupos.values():
+    for grupo in catalogo.grupos_por_lista():
         por_cargo: dict[str, list[int]] = {}
         for c in candidaturas_do_grupo(repo, grupo, uf=m.uf):
             por_cargo.setdefault(c.ds_cargo, []).append(c.sq_candidato)
