@@ -138,6 +138,43 @@ def test_falha_no_meio_preserva_a_serie_anterior(cfg: ConfigServidor) -> None:
     assert not (cfg.saida / ".novo").exists()
 
 
+def test_excecao_nao_prevista_grava_status_erro_preserva_serie_e_relanca(
+    cfg: ConfigServidor,
+) -> None:
+    _serie(cfg.saida, [10, 11])
+    antes = (cfg.saida / "redes_perfis.parquet").read_bytes()
+
+    def quebra(*_: Any, raiz_processed: Path, **__: Any) -> None:
+        (raiz_processed / "redes").mkdir(parents=True, exist_ok=True)
+        (raiz_processed / "redes/redes_perfis.parquet").write_bytes(b"lixo parcial")
+        raise KeyError("followers_count")
+
+    with pytest.raises(KeyError):
+        executar(cfg, ENV, cliente=ClienteFalso(), coletar_fn=quebra, agora=lambda: AGORA)
+    assert (cfg.saida / "redes_perfis.parquet").read_bytes() == antes
+    st = _status(cfg)
+    assert st["resultado"] == "erro"
+    assert st["motivo"].startswith("KeyError")
+    assert "followers_count" in st["motivo"]
+    assert not (cfg.saida / ".novo").exists()
+
+
+def test_falha_ao_gravar_status_de_erro_relanca_a_excecao_original(
+    cfg: ConfigServidor, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def quebra(*_: Any, **__: Any) -> None:
+        raise KeyError("followers_count")
+
+    def gravar_falha(*_: Any, **__: Any) -> None:
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr("etl.redes.servidor._gravar_status", gravar_falha)
+    with pytest.raises(KeyError):
+        executar(cfg, ENV, cliente=ClienteFalso(), coletar_fn=quebra, agora=lambda: AGORA)
+    assert "disco cheio" in capsys.readouterr().err
+    assert not (cfg.saida / ".novo").exists()
+
+
 def test_limite_retoma_e_depois_conclui(cfg: ConfigServidor) -> None:
     chamadas = {"n": 0}
     boa = _coleta_que_acrescenta(15)
