@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import gastos from "../fixtures/api/gastos.json";
 import { gastosTipados } from "../fixtures/api/tipado";
-import { idsQueCasam, medianaCustoVoto, pontosDeGastos } from "../../src/dados/gastos-logica";
+import { idsQueCasam, medianaCustoVoto, pontosDeGastos, pontosDespesaReceitaPorVoto } from "../../src/dados/gastos-logica";
 import type { RespostaGastos } from "../../src/dados/contrato";
 
 const G: RespostaGastos = gastosTipados(gastos);
@@ -52,4 +52,36 @@ describe("idsQueCasam", () => {
   const p = [{ id: "1", rotulo: "Ana Souza", custo: 1, votos: 1 }, { id: "2", rotulo: "JOÃO da Silva", custo: 1, votos: 1 }];
   it("ignora acento e caixa", () => { expect([...idsQueCasam(p, "joao")]).toEqual(["2"]); });
   it("consulta vazia ou curta não destaca nada", () => { expect(idsQueCasam(p, " ").size).toBe(0); });
+});
+
+describe("pontosDespesaReceitaPorVoto (T-W28)", () => {
+  const cand = (id: number, rec: number | null, rpv: number | null, cc: number | null, cp: number | null, votos = 100) => ({
+    ...G.por_candidato[0]!, sq_candidato: id, nm_urna: `C${String(id)}`, receita_total: rec, receita_por_voto: rpv,
+    custo: { ...G.por_candidato[0]!.custo, votos, despesa_contratada: 500, despesa_paga: 300, custo_voto_contratado: cc, custo_voto_pago: cp },
+  });
+  const g = { ...G, por_candidato: [cand(1, 1000, 10, 5, 3), cand(2, 2000, 20, null, 4), cand(3, 0, 0, 6, 6), cand(4, null, null, 7, 7), cand(5, 900, 9, 0, 0, 0)] };
+
+  it("x = receita por voto, y = despesa por voto da base; carrega votos e id", () => {
+    const { pontos } = pontosDespesaReceitaPorVoto(g, "contratado");
+    expect(pontos[0]).toMatchObject({ id: "1", rotulo: "C1", custo: 10, y: 5, votos: 100 });
+    expect(pontosDespesaReceitaPorVoto(g, "pago").pontos[0]?.y).toBe(3);
+  });
+  it("descarta e conta quem tem null ou zero em qualquer eixo", () => {
+    const c = pontosDespesaReceitaPorVoto(g, "contratado");
+    expect(c.pontos.map((p) => p.id)).toEqual(["1"]); // 2: sem despesa/voto; 3: receita 0; 4: sem receita; 5: sem votos
+    expect(c.semDados).toBe(4);
+    const p = pontosDespesaReceitaPorVoto(g, "pago");
+    expect(p.pontos.map((q) => q.id)).toEqual(["1", "2"]); // 2 tem custo_voto_pago
+    expect(p.semDados).toBe(3);
+  });
+  it("tooltip traz os dados pedidos, incluindo despesa ÷ receita", () => {
+    const d = Object.fromEntries(pontosDespesaReceitaPorVoto(g, "contratado").pontos[0]?.detalhe ?? []);
+    for (const k of ["Partido", "UF", "Cargo", "Votos", "Receita total", "Despesa contratada", "Despesa paga", "Receita por voto", "Despesa por voto (contratado)", "Despesa ÷ receita"]) expect(d).toHaveProperty(k);
+    expect(d["Despesa ÷ receita"]).toMatch(/50,0/); // 500 ÷ 1000
+  });
+  it("traz foto e link do TSE para o tooltip rico", () => {
+    const [p] = pontosDespesaReceitaPorVoto(g, "contratado").pontos;
+    expect(p?.foto).toBe(G.por_candidato[0]?.foto_url);
+    expect(p?.linkTse?.url).toContain("divulgacandcontas");
+  });
 });

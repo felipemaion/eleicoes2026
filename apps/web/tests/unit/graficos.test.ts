@@ -489,3 +489,79 @@ describe("ranking: nomes completos (T-W10)", () => {
     expect(c.querySelector(".marca")?.getAttribute("data-tooltip")).toContain("Partido");
   });
 });
+
+describe("dispersão com eixo vertical próprio e diagonal y = x (T-W28)", () => {
+  const pts = [
+    { id: "1", rotulo: "Ana", custo: 10, y: 12, votos: 500 },
+    { id: "2", rotulo: "Beto", custo: 6, y: 5, votos: 300 },
+  ];
+  const opc = {
+    titulo: "Despesa por voto × receita por voto", grandeza: "receita por voto", formatoX: formatarMoeda, rotuloEixoX: "Receita por voto (R$, escala log)",
+    eixoY: { rotulo: "Despesa por voto (R$, escala log)", coluna: "Despesa por voto", formato: formatarMoeda, descricao: "despesa por voto" },
+  };
+  it("posiciona pelo `y` do ponto (não pelos votos), rotula o eixo e a tabela", () => {
+    dispersao.render(el, pts, opc);
+    const [a, b] = [...el.querySelectorAll("circle.marca")];
+    // Ana tem y maior que Beto → cy menor (mais alto); com votos 500 > 300 também, então confira o oposto abaixo
+    expect(Number(a?.getAttribute("cy"))).toBeLessThan(Number(b?.getAttribute("cy")));
+    expect(el.textContent).toContain("Despesa por voto (R$, escala log)");
+    expect(el.textContent).not.toContain("Votos (escala log)");
+    expect(el.querySelector("svg")?.getAttribute("aria-label")).toContain("despesa por voto (eixo vertical)");
+    expect(a?.getAttribute("aria-label")).toBe(`Ana: ${formatarMoeda(10)}, ${formatarMoeda(12)} (despesa por voto)`);
+    expect([...tabela(el).querySelectorAll("th")].map((t) => t.textContent)).toEqual(["Candidato", "Receita", "Despesa por voto", "Observação"]);
+  });
+  it("y independe de votos: inverter os votos não muda a posição", () => {
+    dispersao.render(el, [{ ...pts[0]!, votos: 1 }, { ...pts[1]!, votos: 99999 }], opc);
+    const [a, b] = [...el.querySelectorAll("circle.marca")];
+    expect(Number(a?.getAttribute("cy"))).toBeLessThan(Number(b?.getAttribute("cy")));
+  });
+  it("diagonal: linha tracejada y = x (inclinação 1 em log-log) com rótulo e nota", () => {
+    dispersao.render(el, pts, { ...opc, diagonal: { rotulo: "gastou o que arrecadou" } });
+    const l = el.querySelector("line.referencia");
+    expect(l).not.toBeNull();
+    const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((k) => Number(l?.getAttribute(k)));
+    // escalas log com o mesmo domínio nos dois eixos: Δx e Δy (em módulo) proporcionais à razão das faixas
+    expect(x2! - x1!).toBeGreaterThan(0);
+    expect(y2!).toBeLessThan(y1!);
+    expect(el.querySelector(".referencia-rotulo")?.textContent).toBe("gastou o que arrecadou");
+  });
+  it("sem `diagonal` nada é desenhado; sem `eixoY` o gráfico segue custo × votos", () => {
+    dispersao.render(el, pts, opc);
+    expect(el.querySelector("line.referencia")).toBeNull();
+    dispersao.render(el, pts, { titulo: "t" });
+    expect(el.textContent).toContain("Votos (escala log)");
+  });
+});
+
+describe("dispersão: saída da tela com tooltip fixo e aria-label do ponto (T-W28)", () => {
+  const pts = [{ id: "1", rotulo: "Ana", custo: 1000, votos: 500, linkExterno: { url: "https://www.instagram.com/ana/", convite: "c", texto: "Abrir perfil no Instagram" } }];
+  afterEach(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); });
+  it("destruir() com tooltip fixo solta o balão: some e volta a ser tooltip de hover", () => {
+    const g = dispersao.render(el, pts, { titulo: "t", aoSelecionar: () => undefined });
+    el.querySelector("circle")?.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 10, clientY: 10 }));
+    const b = document.querySelector(".tooltip-flutuante") as HTMLElement;
+    expect(b.classList.contains("fixo")).toBe(true);
+    g.destruir();
+    expect(b.classList.contains("fixo")).toBe(false);
+    expect(b.hidden).toBe(true);
+    expect(b.getAttribute("role")).toBe("tooltip");
+    // e o hover de outro gráfico volta a funcionar
+    const el2 = document.createElement("div");
+    document.body.append(el2);
+    dispersao.render(el2, [{ id: "9", rotulo: "Zé", custo: 10, votos: 10 }], { titulo: "t2" });
+    el2.querySelector("circle")?.dispatchEvent(new MouseEvent("pointerenter", { bubbles: true, clientX: 10, clientY: 10 }));
+    el2.querySelector("circle")?.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, clientX: 10, clientY: 10 }));
+    expect(b.hidden).toBe(false);
+    expect(b.textContent).toContain("Zé");
+  });
+  it("com aoSelecionar o aria-label do ponto diz que abre os dados e o link do perfil", () => {
+    dispersao.render(el, pts, { titulo: "t", aoSelecionar: () => undefined });
+    const rotulo = el.querySelector("circle")?.getAttribute("aria-label") ?? "";
+    expect(rotulo).toContain("Ana");
+    expect(rotulo).toMatch(/abre os dados e o link do perfil/);
+  });
+  it("sem aoSelecionar o aria-label não promete link do perfil", () => {
+    dispersao.render(el, pts, { titulo: "t" });
+    expect(el.querySelector("circle")?.getAttribute("aria-label")).not.toMatch(/link do perfil/);
+  });
+});
