@@ -314,3 +314,46 @@ def test_despesa_sem_agrupamento_e_origem_nula() -> None:
     )
     with pytest.raises(ValueError, match="ds_origem_despesa nula"):
         financeiro.despesa_campanha(nula, "vr_despesa_contratada", por=())
+
+
+def test_razao_gasto_exige_colunas() -> None:
+    with pytest.raises(ValueError, match="razao_gasto"):
+        financeiro.razao_gasto(pl.DataFrame({"receita_financeira": [1.0]}))
+
+
+def test_razao_gasto_tipos_estaveis_mesmo_tudo_nulo() -> None:
+    """Sem nenhuma conta avaliável, as colunas saem tipadas (o backend serializa pelo schema)."""
+    colunas = ("receita_financeira", "despesa_contratada", "despesa_paga")
+    df = pl.DataFrame(
+        {"receita_financeira": [0.0], "despesa_contratada": [None], "despesa_paga": [None]},
+        schema=dict.fromkeys(colunas, pl.Float64),
+    )
+    saida = financeiro.razao_gasto(df)
+    assert saida.schema["razao_gasto_contratada"] == pl.Float64
+    assert saida.schema["razao_gasto_paga"] == pl.Float64
+    assert saida.schema["alerta_declaracao"] == pl.Boolean
+    assert saida.schema["sentido_alerta"] == pl.String
+    assert saida.row(0, named=True)["alerta_declaracao"] is None
+
+
+def test_razao_gasto_aceita_valores_inteiros() -> None:
+    df = pl.DataFrame({"receita_financeira": [10], "despesa_contratada": [7], "despesa_paga": [12]})
+    linha = financeiro.razao_gasto(df).row(0, named=True)
+    assert linha["razao_gasto_contratada"] == pytest.approx(0.7)
+    assert linha["alerta_declaracao"] is False
+    assert linha["razao_gasto_paga"] == pytest.approx(1.2)
+
+
+def test_razao_gasto_preserva_pct_receita_gasta() -> None:
+    """A razão nova não substitui o `pct_receita_gasta` da §4.8 (outro denominador)."""
+    df = pl.DataFrame(
+        {
+            "receita_total": [200.0],
+            "receita_financeira": [100.0],
+            "despesa_contratada": [100.0],
+            "despesa_paga": [100.0],
+        }
+    )
+    saida = financeiro.razao_gasto(financeiro.saldo_campanha(df)).row(0, named=True)
+    assert saida["pct_receita_gasta"] == pytest.approx(50.0)
+    assert saida["razao_gasto_contratada"] == pytest.approx(1.0)

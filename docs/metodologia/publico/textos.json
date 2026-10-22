@@ -1,6 +1,6 @@
 {
   "versao": 1,
-  "atualizado_em": "2026-10-14",
+  "atualizado_em": "2026-10-19",
   "fonte_metodologica": "docs/metodologia/indicadores.md",
   "limites": {
     "titulo": 60,
@@ -370,6 +370,17 @@
       "vetor": "saldo_campanha",
       "spec": "saldo-campanha"
     },
+    "razao_gasto": {
+      "titulo": "Despesa sobre o dinheiro arrecadado",
+      "resumo": "Quanto da receita em dinheiro a campanha declarou ter gastado — contratado e já pago.",
+      "como_ler": "Numa prestação de contas completa, a despesa fica perto de 100% do dinheiro recebido. Abaixo de 70% pode haver despesa ainda não declarada; acima de 110%, a campanha contratou mais do que arrecadou e parte ainda não foi paga. Doações em bens e serviços (estimáveis) ficam fora da conta, porque não geram despesa.",
+      "unidade": "% da receita em dinheiro",
+      "denominador": "receita financeira (dinheiro; sem doações estimáveis)",
+      "cuidado": "O alerta é um sinal para conferir, não acusação de irregularidade. Com contas parciais, despesa abaixo de 70% costuma ser só lançamento atrasado.",
+      "fonte": "TSE — receitas, despesas contratadas e pagas de candidatos",
+      "vetor": "razao_gasto",
+      "spec": "razao-gasto"
+    },
     "pct_receita_gasta": {
       "titulo": "% da receita gasta",
       "resumo": "Despesa contratada como fatia da receita da campanha.",
@@ -565,6 +576,7 @@
         "receita_por_mil_aptos",
         "saldo_campanha",
         "pct_receita_gasta",
+        "razao_gasto",
         "custo_por_voto",
         "divida",
         "deflacao_ipca",

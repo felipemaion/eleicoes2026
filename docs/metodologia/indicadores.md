@@ -378,6 +378,7 @@ concentração espacial, §3.2) e a deflação da §4.3.
 | `saldo_contratado`, `saldo_financeiro`, `pct_receita_gasta` | receita − despesa; `100 × contratada / total` | 4.8 · `saldo_campanha` |
 | média, mediana, p25, p75, máximo por candidato | sobre candidatos com contas | 4.9 · `distribuicao_receita` |
 | Δ e var. % 2022→2026 | 2022 deflacionado antes da diferença | 4.10 · `comparacao_receitas` |
+| `razao_gasto_contratada`, `razao_gasto_paga`, `alerta_declaracao` | despesa / receita **financeira**; alerta fora de [0,70; 1,10] | 4.11 · `razao_gasto` |
 
 Valem para todos: **2026 é parcial** (selo + `dt_geracao`; ver §4); a receita é a da prestação
 mais recente por prestador; **sem contas ≠ receita zero** (candidato sem nenhuma linha de receita
@@ -462,6 +463,10 @@ valores monetários de 2022 sempre em R$ do mês-base (§4.3), com o mês declar
 - **Limitações:** em 2026 parcial, saldo positivo é sobretudo **atraso de lançamento** de
   despesa, não sobra — mostrar só com o selo "contas parciais". Sobra de FEFC é devolvida ao
   Tesouro na prestação final (Res. TSE 23.607/2019).
+- **`pct_receita_gasta` × razão de gasto (§4.11).** `pct_receita_gasta` fica (a ficha atual o usa)
+  mas mede outra coisa: contratada sobre a receita **total**, estimáveis inclusos no denominador sem
+  despesa correspondente no arquivo (T-D12). Para conferir a declaração use a razão de gasto, cujo
+  denominador é a receita **financeira**. Exemplo real: Cury (2026, 14/10) tem 36 % aqui e 99,9 % lá.
 - Vetor: `vetores/saldo_campanha.json`
 
 <a id="distribuicao-receita"></a>
@@ -495,6 +500,56 @@ valores monetários de 2022 sempre em R$ do mês-base (§4.3), com o mês declar
   data". O montante do FEFC muda entre ciclos (2022: R$ 4,96 bi), o que mexe no `pct_publico` de
   todos os grupos.
 - Vetor: `vetores/comparacao_receitas.json`
+
+<a id="razao-gasto"></a>
+### 4.11 Razão de gasto sobre a receita financeira e alerta de declaração (T-A12)
+- **Pergunta.** A despesa declarada é compatível com o dinheiro que entrou? Pedido de 14/10:
+  "Receita / voto … pode ser alguma falha na declaração das despesas". A razão abaixo isola isso.
+- **Fórmulas** (por candidatura; razões em **fração**, a interface mostra × 100):
+  `razao_gasto_contratada = despesa_contratada / receita_financeira`;
+  `razao_gasto_paga = despesa_paga / receita_financeira`;
+  `alerta_declaracao = razao_gasto_contratada < 0,70 ou > 1,10`;
+  `sentido_alerta = "abaixo"` (< 0,70), `"acima"` (> 1,10) ou `null` (sem alerta / não avaliável).
+- **Denominador: receita financeira, não total.** A receita estimável (bem ou serviço doado) não
+  gera linha nos arquivos de despesa do TSE — ela só existe na receita (T-D12, provado com 2022
+  final). Dividir pela receita total acusaria "gastou pouco" quem recebeu muito estimável.
+- **Numerador inclui os repasses** a outros candidatos/partidos, como o saldo (§4.8):
+  `despesa_campanha(…, incluir_transferencias=True)`. Repassar é saída de caixa; para conferir a
+  declaração o que importa é o dinheiro que saiu da conta, não o custo da própria campanha.
+- **Limites inclusivos 0,70 e 1,10** (exatamente 70 % ou 110 % **não** alertam). Por que esses:
+  na prestação **final** de 2022 (N = 23.157 candidaturas com receita financeira > 0; Parquet
+  processado do TSE) a mediana da razão contratada é **1,000** e 88,7 % ficam entre 0,95 e 1,05 —
+  a regra contábil (despesa = recurso arrecadado; sobra de FEFC devolvida, Res. TSE 23.607/2019)
+  faz a razão grudar em 1. Só **3,2 %** ficam abaixo de 0,70 e **3,7 %** acima de 1,10: a faixa
+  marca ~7 % das contas finais, i.e. o que é atípico numa declaração completa. Folga assimétrica:
+  abaixo de 1 cabe sobra legítima (devolução de FEFC, saldo a transferir ao partido); acima, a
+  contratação além do arrecadado só se fecha com receita ainda não lançada ou dívida assumida.
+- **Leitura do alerta.** "abaixo": possível declaração **incompleta** de despesas (ou caixa
+  parado). "acima": contratou mais do que arrecadou — despesa ainda **não paga** (dívida) ou
+  receita não lançada; olhar `razao_gasto_paga` ao lado (paga ≈ 1 com contratada > 1,10 é dívida
+  de campanha, não erro). Texto público sugerido: "possível declaração incompleta ou despesa ainda
+  não paga". É **sinal para conferir**, não acusação: não afirma irregularidade.
+- **Nulos.** Receita financeira 0 ou nula → razões `null` e alerta `null` (não avaliável — sem
+  alerta). Despesa contratada nula (sem contas de despesa) → tudo `null`. Despesa paga nula com
+  contratada não nula → 0 (como §4.2: nenhum pagamento lançado), razão paga 0.
+- **Recorte:** candidatura. Grupo: Σ despesa / Σ receita financeira, se precisar (não é média de
+  razões). **Unidade:** fração (adimensional).
+- **Limitações.** Em 2026 as contas são **parciais** (em 14/10, 549 de 16.900 com prestação
+  final): a mediana parcial é 0,67 e 53 % ficam abaixo de 0,70 — no parcial o alerta "abaixo" é
+  sobretudo **atraso de lançamento**. Mostrar sempre com o selo "contas parciais"; o alerta só
+  tem o peso descrito acima na prestação final. Não cobre gasto do partido em benefício do
+  candidato (sem vínculo no arquivo, T-D12).
+- **Casos reais (2026, ZIP de 14/10, R$):**
+
+  | Candidato | Receita financeira | Contratada | Paga | Razão contr. | Razão paga | Alerta |
+  |---|---|---|---|---|---|---|
+  | Renan (…0694) | 2.815.477,53 | 1.288.625,19 | 1.288.625,19 | 0,4577 | 0,4577 | abaixo |
+  | Cury (…1547) | 1.408.579,84 | 1.407.030,76 | 1.307.030,76 | 0,9989 | 0,9279 | — |
+  | Caiado (…1932) | 13.107.970,74 | 22.107.406,50 | 13.107.406,50 | 1,6866 | 1,0000 | acima |
+
+  Caiado: paga = receita financeira e ~R$ 9 mi contratados sem pagamento — dívida, não erro de
+  leitura (T-D12).
+- Vetor: `vetores/razao_gasto.json`
 
 ---
 

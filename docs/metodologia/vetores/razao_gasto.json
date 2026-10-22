@@ -1,0 +1,223 @@
+{
+  "indicador": "razao_gasto",
+  "spec": "docs/metodologia/indicadores.md#razao-gasto",
+  "versao": 1,
+  "descricao": "razao_gasto_contratada = despesa_contratada / receita_financeira; razao_gasto_paga = despesa_paga / receita_financeira (frações). alerta_declaracao = razão contratada < 0,70 ou > 1,10 (limites inclusivos: 0,70 e 1,10 não alertam); sentido_alerta 'abaixo'/'acima'/null. Despesas INCLUEM repasses. Receita financeira 0/nula ou despesa contratada nula → razões e alerta null; despesa paga nula com contratada não nula = 0.",
+  "tolerancia_absoluta": 1e-09,
+  "convencoes": "null = não avaliável (denominador zero/ausente ou sem contas); nunca 0, nunca inf",
+  "casos": [
+    {
+      "nome": "limites_inclusivos",
+      "entrada": [
+        {
+          "sq_candidato": "dentro",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 90000.0,
+          "despesa_paga": 80000.0
+        },
+        {
+          "sq_candidato": "limite_inferior",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 70000.0,
+          "despesa_paga": 70000.0
+        },
+        {
+          "sq_candidato": "limite_superior",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 110000.0,
+          "despesa_paga": 100000.0
+        },
+        {
+          "sq_candidato": "abaixo",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 69999.0,
+          "despesa_paga": 60000.0
+        },
+        {
+          "sq_candidato": "acima",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 110001.0,
+          "despesa_paga": 100000.0
+        }
+      ],
+      "saida": [
+        {
+          "sq_candidato": "dentro",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 90000.0,
+          "despesa_paga": 80000.0,
+          "razao_gasto_contratada": 0.9,
+          "razao_gasto_paga": 0.8,
+          "alerta_declaracao": false,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "limite_inferior",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 70000.0,
+          "despesa_paga": 70000.0,
+          "razao_gasto_contratada": 0.7,
+          "razao_gasto_paga": 0.7,
+          "alerta_declaracao": false,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "limite_superior",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 110000.0,
+          "despesa_paga": 100000.0,
+          "razao_gasto_contratada": 1.1,
+          "razao_gasto_paga": 1.0,
+          "alerta_declaracao": false,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "abaixo",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 69999.0,
+          "despesa_paga": 60000.0,
+          "razao_gasto_contratada": 0.69999,
+          "razao_gasto_paga": 0.6,
+          "alerta_declaracao": true,
+          "sentido_alerta": "abaixo"
+        },
+        {
+          "sq_candidato": "acima",
+          "receita_financeira": 100000.0,
+          "despesa_contratada": 110001.0,
+          "despesa_paga": 100000.0,
+          "razao_gasto_contratada": 1.10001,
+          "razao_gasto_paga": 1.0,
+          "alerta_declaracao": true,
+          "sentido_alerta": "acima"
+        }
+      ]
+    },
+    {
+      "nome": "nulos",
+      "entrada": [
+        {
+          "sq_candidato": "receita_zero",
+          "receita_financeira": 0.0,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0
+        },
+        {
+          "sq_candidato": "receita_nula",
+          "receita_financeira": null,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0
+        },
+        {
+          "sq_candidato": "despesa_nula",
+          "receita_financeira": 1000.0,
+          "despesa_contratada": null,
+          "despesa_paga": null
+        },
+        {
+          "sq_candidato": "paga_nula",
+          "receita_financeira": 1000.0,
+          "despesa_contratada": 900.0,
+          "despesa_paga": null
+        }
+      ],
+      "saida": [
+        {
+          "sq_candidato": "receita_zero",
+          "receita_financeira": 0.0,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0,
+          "razao_gasto_contratada": null,
+          "razao_gasto_paga": null,
+          "alerta_declaracao": null,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "receita_nula",
+          "receita_financeira": null,
+          "despesa_contratada": 300.0,
+          "despesa_paga": 300.0,
+          "razao_gasto_contratada": null,
+          "razao_gasto_paga": null,
+          "alerta_declaracao": null,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "despesa_nula",
+          "receita_financeira": 1000.0,
+          "despesa_contratada": null,
+          "despesa_paga": null,
+          "razao_gasto_contratada": null,
+          "razao_gasto_paga": null,
+          "alerta_declaracao": null,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "paga_nula",
+          "receita_financeira": 1000.0,
+          "despesa_contratada": 900.0,
+          "despesa_paga": 0.0,
+          "razao_gasto_contratada": 0.9,
+          "razao_gasto_paga": 0.0,
+          "alerta_declaracao": false,
+          "sentido_alerta": null
+        }
+      ]
+    },
+    {
+      "nome": "casos_reais_2026_14out",
+      "entrada": [
+        {
+          "sq_candidato": "renan_0694",
+          "receita_financeira": 2815477.53,
+          "despesa_contratada": 1288625.19,
+          "despesa_paga": 1288625.19
+        },
+        {
+          "sq_candidato": "cury_1547",
+          "receita_financeira": 1408579.84,
+          "despesa_contratada": 1407030.76,
+          "despesa_paga": 1307030.76
+        },
+        {
+          "sq_candidato": "caiado_1932",
+          "receita_financeira": 13107970.74,
+          "despesa_contratada": 22107406.5,
+          "despesa_paga": 13107406.5
+        }
+      ],
+      "saida": [
+        {
+          "sq_candidato": "renan_0694",
+          "receita_financeira": 2815477.53,
+          "despesa_contratada": 1288625.19,
+          "despesa_paga": 1288625.19,
+          "razao_gasto_contratada": 0.457693296,
+          "razao_gasto_paga": 0.457693296,
+          "alerta_declaracao": true,
+          "sentido_alerta": "abaixo"
+        },
+        {
+          "sq_candidato": "cury_1547",
+          "receita_financeira": 1408579.84,
+          "despesa_contratada": 1407030.76,
+          "despesa_paga": 1307030.76,
+          "razao_gasto_contratada": 0.998900254,
+          "razao_gasto_paga": 0.927906763,
+          "alerta_declaracao": false,
+          "sentido_alerta": null
+        },
+        {
+          "sq_candidato": "caiado_1932",
+          "receita_financeira": 13107970.74,
+          "despesa_contratada": 22107406.5,
+          "despesa_paga": 13107406.5,
+          "razao_gasto_contratada": 1.686562088,
+          "razao_gasto_paga": 0.999956954,
+          "alerta_declaracao": true,
+          "sentido_alerta": "acima"
+        }
+      ]
+    }
+  ]
+}

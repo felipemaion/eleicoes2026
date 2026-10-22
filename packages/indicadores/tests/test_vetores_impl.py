@@ -166,6 +166,13 @@ def _saldo(entrada: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return _linhas(financeiro.saldo_campanha(df))
 
 
+def _razao_gasto(entrada: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    df = pl.DataFrame(
+        entrada, schema_overrides={c: pl.Float64 for c in entrada[0] if c != "sq_candidato"}
+    )
+    return _linhas(financeiro.razao_gasto(df))
+
+
 def _distribuicao(entrada: list[dict[str, Any]]) -> dict[str, Any]:
     df = pl.DataFrame(entrada, schema_overrides={"receita_total": pl.Float64})
     return _linhas(financeiro.distribuicao_receita(df))[0]
@@ -400,6 +407,7 @@ ADAPTADORES: dict[str, Adaptador] = {
     "receitas_grupo": _receitas_grupo,
     "receita_por_voto": _receita_por_voto,
     "saldo_campanha": _saldo,
+    "razao_gasto": _razao_gasto,
     "distribuicao_receita": _distribuicao,
     "comparacao_receitas": _comparacao,
     "deflacao_ipca": _ipca,

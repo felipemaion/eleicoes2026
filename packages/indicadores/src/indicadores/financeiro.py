@@ -360,6 +360,58 @@ def saldo_campanha(df: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+LIMITE_INFERIOR_GASTO = 0.70
+LIMITE_SUPERIOR_GASTO = 1.10
+"""Faixa sem alerta da razão de gasto contratada, inclusiva (spec §4.11): em 2022 final, ~7 %
+das contas ficam fora dela (mediana 1,000)."""
+
+
+def razao_gasto(df: pl.DataFrame) -> pl.DataFrame:
+    """Acrescenta a razão de gasto sobre a receita financeira e o alerta de declaração (§4.11).
+
+    `razao_gasto_contratada = despesa_contratada / receita_financeira` e
+    `razao_gasto_paga = despesa_paga / receita_financeira`, em fração. O denominador é a receita
+    **financeira** porque a estimável não gera despesa nos arquivos do TSE (T-D12); as despesas
+    devem **incluir** repasses (`despesa_campanha(…, incluir_transferencias=True)`), como no saldo.
+    `alerta_declaracao` = razão contratada fora de [0,70; 1,10] (limites não alertam);
+    `sentido_alerta` = "abaixo" | "acima" | `null`. Receita financeira 0/nula ou despesa
+    contratada nula → razões e alerta `null` (não avaliável). `despesa_paga` nula com contratada
+    não nula vira 0. Não substitui `pct_receita_gasta` (§4.8, denominador receita total).
+    """
+    exigir_colunas(df, ["receita_financeira", "despesa_contratada", "despesa_paga"], "razao_gasto")
+    receita = pl.col("receita_financeira")
+    com_contas = pl.col("despesa_contratada").is_not_null()
+
+    def _sobre_receita(despesa: str, nome: str) -> pl.Expr:
+        # Sem despesa contratada a conta de despesas não foi entregue: nada a avaliar.
+        valor = razao(pl.col(despesa), receita)
+        return pl.when(com_contas).then(valor).otherwise(None).alias(nome)
+
+    contratada = pl.col("razao_gasto_contratada")
+    sentido = (
+        pl.when(contratada < LIMITE_INFERIOR_GASTO)
+        .then(pl.lit("abaixo"))
+        .when(contratada > LIMITE_SUPERIOR_GASTO)
+        .then(pl.lit("acima"))
+        .otherwise(pl.lit(None, dtype=pl.String))
+    )
+    return (
+        df.with_columns(_despesa_paga())
+        .with_columns(
+            _sobre_receita("despesa_contratada", "razao_gasto_contratada"),
+            _sobre_receita("despesa_paga", "razao_gasto_paga"),
+        )
+        .with_columns(
+            # `null` só quando a razão é indefinida; dentro da faixa é `False`, não `null`.
+            pl.when(contratada.is_null())
+            .then(pl.lit(None, dtype=pl.Boolean))
+            .otherwise(sentido.is_not_null())
+            .alias("alerta_declaracao"),
+            sentido.alias("sentido_alerta"),
+        )
+    )
+
+
 def distribuicao_receita(df: pl.DataFrame, coluna: str = "receita_total") -> pl.DataFrame:
     """Distribuição por candidato do grupo: média, mediana, quartis e máximo (spec §4.9).
 
