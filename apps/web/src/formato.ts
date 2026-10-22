@@ -41,3 +41,17 @@ export function formatadorDaUnidade(unidade: string): (v: number) => string {
   if (unidade === "%") return formatarPontos;
   throw new Error(`Unidade de taxa desconhecida: "${unidade}"`);
 }
+
+const pct1 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const comSinal = (n: number, texto: string): string => `${n > 0 ? "+" : n < 0 ? "−" : ""}${texto}`;
+
+/**
+ * Variação entre duas coletas, ex.: `+1.234 (+2,1%)`. Os números vêm prontos da API (`delta_abs`, `delta_pct`, `dias`);
+ * aqui só se formata. `null` = primeiro ponto (sem trecho anterior). Intervalo > 1 dia é declarado, nunca interpolado.
+ */
+export function formatarVariacao(v: { abs: number | null; pct: number | null; dias: number | null }): string | null {
+  if (v.abs === null) return null;
+  const pct = v.pct === null ? "" : ` (${comSinal(v.pct, pct1.format(Math.abs(v.pct)))}%)`;
+  const n = v.dias === null ? 1 : Math.round(v.dias);
+  return `${comSinal(v.abs, formatarInteiro(Math.abs(v.abs)))}${pct}${n > 1 ? ` em ${String(n)} dias` : ""}`;
+}

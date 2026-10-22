@@ -151,7 +151,7 @@ export const tela: Tela = {
             }
             const grafico = h("div", { className: "grafico-redes-serie" });
             areaSerie.replaceChildren(h("p", { className: "serie-resumo" }, h("strong", { textContent: sit.resumo }), " em ", link(sit.link, `@${sit.username}`)), grafico, nota("A série começa na primeira coleta; antes dela o Instagram não informa o histórico."));
-            serie = renderSerie(grafico, sit.pontos.map((p) => ({ quando: p.coletado_em, valor: p.seguidores })), { titulo: `Seguidores de @${sit.username}`, medida: "Seguidores" });
+            serie = renderSerie(grafico, sit.pontos.map((p) => ({ quando: p.coletado_em, valor: p.seguidores, variacao: { abs: p.delta_abs, pct: p.delta_pct, dias: p.dias } })), { titulo: `Seguidores de @${sit.username}`, medida: "Seguidores" });
           }, (erro: unknown) => {
             if (!ativo || ctrl.signal.aborted) return;
             const semSerie = erro instanceof ErroApi && erro.status === 404;
