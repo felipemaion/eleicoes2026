@@ -21,12 +21,12 @@ command -v tmux >/dev/null || { echo "tmux nao encontrado" >&2; exit 1; }
 
 tmux has-session -t "$SESSAO" 2>/dev/null || tmux new-session -d -s "$SESSAO" -n orq -c "$RAIZ"
 
-# Titulo do painel = papel · modelo · tarefa. Fica na propria janela, nao em -g: a opcao global e
+# Titulo do painel = #numero · projeto · papel (modelo) · tarefa. Fica na propria janela, nao em -g: a opcao global e
 # compartilhada com os scripts tmux de outros projetos e ja se perdeu (paineis sem titulo).
 bordas() {
   tmux setw -t "$SESSAO:agentes" pane-border-status top
   tmux setw -t "$SESSAO:agentes" pane-border-format \
-    ' #{?@papel,#{@papel},#{pane_title}}#{?@modelo, · #{@modelo},}#{?@tarefa, · #{@tarefa},} '
+    ' ###{pane_index} · #{session_name} · #{?@papel,#{@papel},#{pane_title}}#{?@modelo, (#{@modelo}),}#{?@tarefa, · #{@tarefa},} '
 }
 
 if tmux list-windows -t "$SESSAO" -F '#{window_name}' | grep -qx agentes; then
