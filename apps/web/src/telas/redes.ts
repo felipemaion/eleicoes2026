@@ -100,10 +100,14 @@ export const tela: Tela = {
         const areaDispersao = h("div", { className: "grafico-redes-dispersao" });
         const pontosDisp: PontoCustoVoto[] = recorte === null ? [] : pontosSeguidoresVotos(recorte).map((p) => ({
           id: p.id, rotulo: p.rotulo, custo: p.seguidores, votos: p.votos, detalhe: p.detalhe, foto: p.foto, classe: p.classe,
-          linkExterno: { url: p.linkPerfil, convite: "Clique para abrir o perfil no Instagram (nova aba)." },
+          linkExterno: { url: p.linkPerfil, convite: "Clique para escolher este candidato em foco e ver o link do perfil.", texto: "Abrir perfil no Instagram" },
         }));
         const disp = renderDispersao(areaDispersao, pontosDisp, {
           titulo: "Seguidores × votos por candidato", grandeza: "seguidores", formatoX: formatarNumero, rotuloEixoX: "Seguidores no Instagram (escala log)",
+          aoSelecionar: (id) => {
+            const c = redes.candidatos.find((x) => String(x.sq_candidato) === id);
+            if (c) selecionarFoco(c);
+          },
           ...(recorte?.ajuste ? { reta: { intercepto: recorte.ajuste.intercepto, inclinacao: recorte.ajuste.inclinacao, rotulo: "tendência do grupo" } } : {}),
           destaque: new Set(foco ? [String(foco.sq_candidato)] : []),
         });
@@ -178,12 +182,20 @@ export const tela: Tela = {
         estadoBusca.setAttribute("aria-live", "polite");
         const resultados = h("ul", { className: "busca-redes-resultados" });
         const campo = h("input", { type: "search", name: "busca-redes", placeholder: "Nome do candidato", maxLength: 80, autocomplete: "off" });
+        /** Um só caminho para pôr alguém em foco: a busca e o clique na nuvem chegam ao mesmo estado. */
+        function selecionarFoco(c: RedeCandidato): void {
+          foco = c;
+          campo.value = c.nm_urna;
+          resultados.replaceChildren();
+          estadoBusca.textContent = "";
+          desenharFoco();
+        }
         campo.addEventListener("input", () => {
           const achados = buscarCandidatos(redes.candidatos, campo.value);
           resultados.replaceChildren(...achados.map((a) => {
             const b = h("button", { type: "button", textContent: a.nm_urna });
             b.append(h("span", { className: "nota", textContent: ` · ${a.sg_uf}${a.tem_dados ? "" : " · perfil indisponível"}` }));
-            b.addEventListener("click", () => { foco = a; campo.value = a.nm_urna; resultados.replaceChildren(); estadoBusca.textContent = ""; desenharFoco(); });
+            b.addEventListener("click", () => { selecionarFoco(a); });
             return h("li", {}, b);
           }));
           const q = campo.value.trim();
@@ -206,7 +218,7 @@ export const tela: Tela = {
           ...(exclusao === "" ? [] : [nota(`Fora dos números: ${exclusao}.`)]),
           kpis,
           h("h2", {}, "Seguidores × votos ", ajuda("seguidores_votos", ctx), fonte()),
-          nota("Cada círculo é um candidato; clique para abrir o perfil dele no Instagram. Escala logarítmica nos dois eixos. A linha tracejada é a tendência do grupo: quem está acima dela teve mais votos do que o tamanho da conta faria esperar."),
+          nota("Cada círculo é um candidato; clique para escolhê-lo como candidato em foco (ritmo de posts e série de seguidores abaixo) e ver os dados com o link do perfil no Instagram. Escala logarítmica nos dois eixos. A linha tracejada é a tendência do grupo: quem está acima dela teve mais votos do que o tamanho da conta faria esperar."),
           legenda, areaDispersao,
           ...(parPrincipal ? [h("h3", {}, "A relação, em palavras ", ajuda("correlacao_redes", ctx)), leitura(interpretarCorrelacao(parPrincipal))] : [nota("Sem recorte de correlação para este cargo e UF.")]),
           ...(outrosPares.length > 0 ? [h("details", { className: "outras-relacoes" }, h("summary", { textContent: "Engajamento e ritmo de posts também andam com o voto?" }), ...outrosPares.flatMap((p) => [h("h4", { textContent: p.rotulo }), leitura(interpretarCorrelacao(p))]))] : []),

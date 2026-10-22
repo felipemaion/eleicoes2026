@@ -300,6 +300,10 @@ rect.marca:hover, rect.marca:focus-visible { stroke: var(--cor-destaque); stroke
 .foto-candidato img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tooltip-rodape { clear: both; margin: 0.4rem 0 0; color: var(--cor-texto-suave); font-size: 0.85rem; }
 circle.marca.com-link { cursor: pointer; }
+/* Balão fixado por clique (seleção na nuvem de Redes): borda mais grossa diz que ele fica até Esc/clique fora. */
+.tooltip-flutuante.fixo { border-width: 2px; }
+.tooltip-link a { color: var(--cor-destaque); font-weight: 600; }
+.tooltip-link a:focus-visible { outline: 2px solid var(--cor-destaque); outline-offset: 2px; }
 
 /* Comparador 2022 → 2026 (Evolução) */
 .frase-resumo { font-size: 1.15rem; margin-block: var(--esp-3); }

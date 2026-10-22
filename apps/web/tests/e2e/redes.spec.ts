@@ -7,7 +7,7 @@ const SERIE_2 = '{"sq_candidato":1,"nm_urna":"Ana Souza","series":[{"username":"
 
 test.beforeEach(async ({ page }) => { await simularApi(page); });
 
-test("redes: frase-resumo, KPIs com fonte e dispersão com reta; clique abre o Instagram", async ({ page }) => {
+test("redes: frase-resumo, KPIs com fonte e dispersão com reta; clique seleciona e fixa tooltip com link", async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __abertos: unknown[][] }).__abertos = [];
     window.open = ((...a: unknown[]) => { (window as unknown as { __abertos: unknown[][] }).__abertos.push(a); return null; });
@@ -23,9 +23,24 @@ test("redes: frase-resumo, KPIs com fonte e dispersão com reta; clique abre o I
   await expect(pontos).toHaveCount(10);
   await expect(page.locator(".grafico-redes-dispersao polyline.reta-ajuste")).toHaveCount(1);
   await pontos.first().scrollIntoViewIfNeeded();
-  await page.locator('.grafico-redes-dispersao circle.marca[data-id="6"]').click();
+  const ponto = page.locator('.grafico-redes-dispersao circle.marca[data-id="6"]');
+  await ponto.click();
   const abertos = await page.evaluate(() => (window as unknown as { __abertos: unknown[][] }).__abertos);
-  expect(abertos[0]?.[0]).toBe("https://www.instagram.com/fabionunes_14/");
+  expect(abertos).toHaveLength(0);
+  await expect(page.getByLabel("Escolher candidato em foco")).toHaveValue("Fábio Nunes");
+  await expect(page.locator(".foco-cartao")).toContainText("Fábio Nunes");
+  await expect(ponto).toHaveClass(/destaque/);
+  const balao = page.locator(".tooltip-flutuante.fixo:not([hidden])");
+  await expect(balao).toContainText("Fábio Nunes");
+  const link = balao.getByRole("link", { name: "Abrir perfil no Instagram" });
+  await expect(link).toHaveAttribute("href", "https://www.instagram.com/fabionunes_14/");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  // O mouse indo do ponto até o link não fecha o balão fixo.
+  await link.hover();
+  await expect(balao).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(balao).toHaveCount(0);
   await page.screenshot({ path: `${CAPTURAS}/T-W24-redes-desktop.png`, fullPage: true });
 });
 
@@ -57,7 +72,8 @@ test("redes: ranking compacto (10 por lista) e busca acha quem está fora dele",
   await expect(ranking.locator("rect.marca")).toHaveCount(10);
   await expect(page.locator(".rankings-redes svg.grafico")).toHaveCount(3);
   await page.getByLabel("Escolher candidato em foco").fill("hugo");
-  await page.getByRole("button", { name: /Hugo Alves/ }).click();
+  // Escopo na lista: os pontos da nuvem também são botões com o nome do candidato (T-W27).
+  await page.locator(".busca-redes-resultados").getByRole("button", { name: /Hugo Alves/ }).click();
   await expect(page.locator(".foco-cartao")).toContainText("Hugo Alves");
   await expect(page.locator(".grafico-redes-ritmo rect.marca[data-serie=candidato]").first()).toBeVisible();
 });

@@ -43,7 +43,7 @@ describe("tela Redes sociais", () => {
     expect(el.querySelector("dl.kpis")?.querySelectorAll(".kpi")).toHaveLength(6);
     expect(el.querySelectorAll(".grafico-redes-dispersao circle.marca")).toHaveLength(10);
     expect(el.querySelector(".grafico-redes-dispersao polyline.reta-ajuste")).not.toBeNull();
-    expect(el.querySelector(".grafico-redes-dispersao circle.marca.com-link")).not.toBeNull();
+    expect(el.querySelector('.grafico-redes-dispersao circle.marca.com-link[role="button"]')).not.toBeNull();
     for (const t of ["Relação moderada", "não prova causa", "Fora dos números"]) expect(el.textContent).toContain(t);
     expect(el.querySelectorAll(".rankings-redes svg.grafico")).toHaveLength(3);
     expect(el.querySelectorAll(".ranking-Seguidores rect.marca")).toHaveLength(10);
@@ -83,6 +83,33 @@ describe("tela Redes sociais", () => {
     expect(cartao.querySelector("a[href*=divulgacandcontas]")).not.toBeNull();
     expect(el.querySelector(".serie-seguidores")?.textContent).toMatch(/Sem série/);
     expect(chamadas.filter((c) => c.startsWith("/api/redes/serie")).length).toBe(antes);
+  });
+
+  it("clique num ponto da nuvem seleciona o candidato como a busca e fixa o tooltip com link do perfil (T-W27)", async () => {
+    const abertos: unknown[][] = [];
+    simular(padrao());
+    vi.stubGlobal("open", (...a: unknown[]) => { abertos.push(a); return null; });
+    await desenhar();
+    await vi.waitFor(() => { expect(el.querySelector('.grafico-redes-dispersao circle.marca[data-id="6"]')).not.toBeNull(); });
+    const antes = chamadas.filter((c) => c.startsWith("/api/redes/serie")).length;
+    const p = el.querySelector('.grafico-redes-dispersao circle.marca[data-id="6"]') as SVGElement;
+    p.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 100, clientY: 100 }));
+    expect(abertos).toHaveLength(0);
+    expect((el.querySelector("input[name=busca-redes]") as HTMLInputElement).value).toBe("Fábio Nunes");
+    expect(el.querySelector(".foco-cartao")?.textContent).toContain("Fábio Nunes");
+    expect(p.classList.contains("destaque")).toBe(true);
+    expect(chamadas.filter((c) => c.startsWith("/api/redes/serie")).at(-1)).toContain("sq=6");
+    expect(chamadas.filter((c) => c.startsWith("/api/redes/serie")).length).toBe(antes + 1);
+    expect(el.querySelector(".grafico-redes-ritmo")?.textContent).toContain("Fábio Nunes");
+    const balao = document.querySelector(".tooltip-flutuante.fixo:not([hidden])") as HTMLElement;
+    expect(balao.textContent).toContain("Fábio Nunes");
+    const a = balao.querySelector("a") as HTMLAnchorElement;
+    expect(a.href).toBe("https://www.instagram.com/fabionunes_14/");
+    expect(a.target).toBe("_blank");
+    expect(a.rel).toBe("noopener noreferrer");
+    expect(el.textContent).not.toContain("clique para abrir o perfil dele no Instagram");
+    expect(el.textContent).toContain("clique para escolhê-lo como candidato em foco");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
   });
 
   it("503 (dado ainda não publicado) vira aviso claro, não erro genérico", async () => {
