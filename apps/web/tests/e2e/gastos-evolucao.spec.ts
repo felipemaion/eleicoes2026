@@ -107,7 +107,7 @@ test("gastos (T-W21): resposta antiga em cache não esconde foto e link — a AP
 
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {
   await page.goto("/#/gastos");
-  await expect(page.locator("line.referencia")).toHaveCount(2);
+  await expect(page.locator("line.referencia")).toHaveCount(3);
   await page.getByLabel("Realçar candidato nos gráficos").fill("bruno");
   await expect(page.locator('.grafico-despesa circle.marca[data-id="2"]')).toHaveClass(/destaque/);
   await expect(page.locator('.grafico-despesa circle.marca[data-id="1"]')).toHaveClass(/atenuado/);
