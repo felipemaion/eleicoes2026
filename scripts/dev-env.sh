@@ -21,15 +21,21 @@ command -v tmux >/dev/null || { echo "tmux nao encontrado" >&2; exit 1; }
 
 tmux has-session -t "$SESSAO" 2>/dev/null || tmux new-session -d -s "$SESSAO" -n orq -c "$RAIZ"
 
+# Titulo do painel = papel · modelo · tarefa. Fica na propria janela, nao em -g: a opcao global e
+# compartilhada com os scripts tmux de outros projetos e ja se perdeu (paineis sem titulo).
+bordas() {
+  tmux setw -t "$SESSAO:agentes" pane-border-status top
+  tmux setw -t "$SESSAO:agentes" pane-border-format \
+    ' #{?@papel,#{@papel},#{pane_title}}#{?@modelo, · #{@modelo},}#{?@tarefa, · #{@tarefa},} '
+}
+
 if tmux list-windows -t "$SESSAO" -F '#{window_name}' | grep -qx agentes; then
-  echo "janela 'agentes' ja existe em '$SESSAO' — nada a fazer"
+  bordas
+  echo "janela 'agentes' ja existe em '$SESSAO' — titulos reaplicados, nada mais a fazer"
   exit 0
 fi
 
-tmux set -t "$SESSAO" -g mouse on
-tmux setw -t "$SESSAO" -g pane-border-status top
-tmux setw -t "$SESSAO" -g pane-border-format \
-  ' #{?@papel,#{@papel},#{pane_title}}#{?@modelo, · #{@modelo},}#{?@tarefa, · #{@tarefa},} '
+tmux set -t "$SESSAO" mouse on
 
 modelo_de() { awk -F': *' '/^model:/ {print $2; exit}' "$RAIZ/.claude/agents/$1.md"; }
 
@@ -57,6 +63,7 @@ for papel in $PAPEIS; do
     painel=$(tmux split-window -P -F '#{pane_id}' -t "$SESSAO:agentes" -c "$arvore")
     tmux select-layout -t "$SESSAO:agentes" tiled >/dev/null
   fi
+  bordas
   # Papel e modelo vivem em opcoes do painel: o Claude Code sobrescreve o titulo.
   tmux set -p -t "$painel" @papel "$papel"
   tmux set -p -t "$painel" @modelo "$modelo"
