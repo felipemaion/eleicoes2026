@@ -16,6 +16,13 @@ describe("formatarVariacao (T-W29)", () => {
     expect(formatarVariacao({ abs: null, pct: null, dias: null })).toBeNull();
     expect(formatarVariacao({ abs: 50, pct: null, dias: 1 })).toBe("+50");
   });
+  it("pct que arredonda para 0,0 não leva sinal (T-W30)", () => {
+    expect(formatarVariacao({ abs: 5, pct: 0.04, dias: 1 })).toBe("+5 (0,0%)");
+    expect(formatarVariacao({ abs: -5, pct: -0.04, dias: 1 })).toBe("−5 (0,0%)");
+  });
+  it("dias null não vira '1 dia' em silêncio: declara o intervalo desconhecido (T-W30)", () => {
+    expect(formatarVariacao({ abs: 7, pct: 1, dias: null })).toBe("+7 (+1,0%) em intervalo não informado");
+  });
   it("dias > 1 diz o intervalo (coleta faltou), nunca interpola", () => {
     expect(formatarVariacao({ abs: 2010, pct: 3.4, dias: 3 })).toBe("+2.010 (+3,4%) em 3 dias");
     expect(formatarVariacao({ abs: 2010, pct: 3.4, dias: 2.96 })).toBe("+2.010 (+3,4%) em 3 dias");
