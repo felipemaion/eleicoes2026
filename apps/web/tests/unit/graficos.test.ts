@@ -520,10 +520,30 @@ describe("dispersão com eixo vertical próprio e diagonal y = x (T-W28)", () =>
     const l = el.querySelector("line.referencia");
     expect(l).not.toBeNull();
     const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((k) => Number(l?.getAttribute(k)));
-    // escalas log com o mesmo domínio nos dois eixos: Δx e Δy (em módulo) proporcionais à razão das faixas
     expect((x2 ?? 0) - (x1 ?? 0)).toBeGreaterThan(0);
     expect(y2 ?? 0).toBeLessThan(y1 ?? 0);
     expect(el.querySelector(".referencia-rotulo")?.textContent).toBe("gastou o que arrecadou");
+  });
+  it("diagonal passa por y = x: ponto com custo == y cai sobre a reta; custo ≠ y cai fora", () => {
+    const iguais = [...pts, { id: "3", rotulo: "Caio", custo: 8, y: 8, votos: 400 }];
+    dispersao.render(el, iguais, { ...opc, diagonal: { rotulo: "gastou o que arrecadou" } });
+    const l = el.querySelector("line.referencia");
+    const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((k) => Number(l?.getAttribute(k)));
+    const yNaReta = (cx: number): number => (y1 ?? 0) + (((cx - (x1 ?? 0)) / ((x2 ?? 0) - (x1 ?? 0))) * ((y2 ?? 0) - (y1 ?? 0)));
+    const marca = (rotulo: string): Element | undefined => [...el.querySelectorAll("circle.marca")].find((c) => c.getAttribute("aria-label")?.startsWith(`${rotulo}:`));
+    const caio = marca("Caio");
+    expect(Number(caio?.getAttribute("cy"))).toBeCloseTo(yNaReta(Number(caio?.getAttribute("cx"))), 3);
+    const ana = marca("Ana");
+    expect(Math.abs(Number(ana?.getAttribute("cy")) - yNaReta(Number(ana?.getAttribute("cx"))))).toBeGreaterThan(1);
+  });
+  it("aria-label só promete o link do perfil quando há linkExterno (T-W30)", () => {
+    const sem = [{ id: "1", rotulo: "Ana", custo: 10, votos: 500 }];
+    dispersao.render(el, sem, { titulo: "t", grandeza: "g", formatoX: formatarMoeda, rotuloEixoX: "x", aoSelecionar: () => undefined });
+    expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).not.toMatch(/link/);
+    expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).toContain("Ao ativar, abre os dados");
+    const com = [{ id: "1", rotulo: "Ana", custo: 10, votos: 500, linkExterno: { url: "https://exemplo.org/p", convite: "Abrir" } }];
+    dispersao.render(el, com, { titulo: "t", grandeza: "g", formatoX: formatarMoeda, rotuloEixoX: "x", aoSelecionar: () => undefined });
+    expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).toContain("link do perfil");
   });
   it("sem `diagonal` nada é desenhado; sem `eixoY` o gráfico segue custo × votos", () => {
     dispersao.render(el, pts, opc);

@@ -51,7 +51,9 @@ const comSinal = (n: number, texto: string): string => `${n > 0 ? "+" : n < 0 ? 
  */
 export function formatarVariacao(v: { abs: number | null; pct: number | null; dias: number | null }): string | null {
   if (v.abs === null) return null;
-  const pct = v.pct === null ? "" : ` (${comSinal(v.pct, pct1.format(Math.abs(v.pct)))}%)`;
-  const n = v.dias === null ? 1 : Math.round(v.dias);
-  return `${comSinal(v.abs, formatarInteiro(Math.abs(v.abs)))}${pct}${n > 1 ? ` em ${String(n)} dias` : ""}`;
+  // O sinal segue o valor arredondado: -0,04 vira "0,0%", não "−0,0%".
+  const pct = v.pct === null ? "" : ` (${comSinal(Number(pct1.format(Math.abs(v.pct)).replace(",", ".")) === 0 ? 0 : v.pct, pct1.format(Math.abs(v.pct)))}%)`;
+  const n = v.dias === null ? null : Math.round(v.dias);
+  const intervalo = n === null ? " em intervalo não informado" : n > 1 ? ` em ${String(n)} dias` : "";
+  return `${comSinal(v.abs, formatarInteiro(Math.abs(v.abs)))}${pct}${intervalo}`;
 }

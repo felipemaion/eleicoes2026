@@ -162,7 +162,7 @@ function ligarSelecao(c: SVGElement, d: PontoCustoVoto, conteudoBase: () => Docu
     fixar(c, d.rotulo, conteudo());
   };
   c.setAttribute("role", "button");
-  c.setAttribute("aria-label", `${c.getAttribute("aria-label") ?? d.rotulo}. Ao ativar, abre os dados e o link do perfil.`);
+  c.setAttribute("aria-label", `${c.getAttribute("aria-label") ?? d.rotulo}. Ao ativar, abre os dados${url !== null ? " e o link do perfil" : ""}.`);
   c.setAttribute("aria-expanded", "false");
   c.setAttribute("aria-controls", tooltipDispersao().elemento.id);
   c.classList.add("com-link");
@@ -223,7 +223,6 @@ function desenharReferencia(svg: SVGSVGElement, x: ScaleLogarithmic<number, numb
   );
 }
 
-/** Reta do ajuste log-log: amostrada, porque o "1 +" a deixa levemente curva nos eixos logarítmicos. */
 /** Diagonal y = x recortada ao retângulo comum dos dois domínios (inclinação 1 em log-log). */
 function desenharDiagonal(svg: SVGSVGElement, x: ScaleLogarithmic<number, number>, y: ScaleLogarithmic<number, number>, rotulo: string): void {
   const [x0, x1] = x.domain() as [number, number];
@@ -237,6 +236,7 @@ function desenharDiagonal(svg: SVGSVGElement, x: ScaleLogarithmic<number, number
   );
 }
 
+/** Reta do ajuste log-log: amostrada, porque o "1 +" a deixa levemente curva nos eixos logarítmicos. */
 function desenharReta(svg: SVGSVGElement, x: ScaleLogarithmic<number, number>, y: ScaleLogarithmic<number, number>, r: { intercepto: number; inclinacao: number; rotulo: string }): void {
   const [x0, x1] = x.domain() as [number, number];
   const pontos: string[] = [];
