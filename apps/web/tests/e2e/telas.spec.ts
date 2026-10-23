@@ -35,7 +35,9 @@ test("mapa: coroplético, troca de indicador sem recarregar geometria e painel d
 test("gastos: avisos, dispersão e receita por fonte, com tabela alternativa", async ({ page }) => {
   await simularApi(page);
   await page.goto("/#/gastos");
-  await expect(page.locator("svg.grafico")).toHaveCount(3);
+  // 4 gráficos: receita por fonte, receita × votos, custo × votos e o novo despesa/voto × receita/voto
+  await expect(page.locator("svg.grafico")).toHaveCount(4);
+  await expect(page.locator(".grafico-despesa-receita-voto svg.grafico")).toHaveCount(1);
   await page.locator("aside.avisos summary").click();
   await expect(page.getByText(/reais de set\/2026/)).toBeVisible();
   await expect(page.locator("aside.avisos").getByText("Contas de 2026 parciais.")).toBeVisible();
@@ -80,7 +82,9 @@ test("erro da API mostra alerta e 'Tentar novamente' recupera", async ({ page })
   await page.unroute("**/api/**");
   await simularApi(page);
   await page.getByRole("button", { name: "Tentar novamente" }).click();
-  await expect(page.locator("svg.grafico")).toHaveCount(3);
+  // 4 gráficos: receita por fonte, receita × votos, custo × votos e o novo despesa/voto × receita/voto
+  await expect(page.locator("svg.grafico")).toHaveCount(4);
+  await expect(page.locator(".grafico-despesa-receita-voto svg.grafico")).toHaveCount(1);
 });
 
 test("sem rolagem horizontal em 360 px com dados", async ({ page }) => {
