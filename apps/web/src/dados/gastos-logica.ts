@@ -42,3 +42,34 @@ export function idsQueCasam(pontos: readonly PontoCustoVoto[], consulta: string)
   if (q === "") return new Set();
   return new Set(pontos.filter((p) => semAcento(p.rotulo).includes(q)).map((p) => p.id));
 }
+
+/**
+ * Pontos da dispersão despesa/voto × receita/voto: x = receita por voto, y = despesa por voto da `base`.
+ * Escala log exige os dois positivos; o resto fica de fora e é contado (`semDados`) para a nota da tela,
+ * porque candidato sem receita ou sem votos não é o mesmo que zero.
+ */
+export function pontosDespesaReceitaPorVoto(g: RespostaGastos, base: "contratado" | "pago"): { pontos: PontoCustoVoto[]; semDados: number } {
+  const pontos: PontoCustoVoto[] = [];
+  for (const c of g.por_candidato) {
+    const dpv = base === "contratado" ? c.custo.custo_voto_contratado : c.custo.custo_voto_pago;
+    const rpv = c.receita_por_voto;
+    if (rpv === null || rpv <= 0 || dpv === null || dpv <= 0 || c.receita_total === null || c.receita_total <= 0) continue;
+    pontos.push({
+      id: String(c.sq_candidato), rotulo: c.nm_urna, custo: rpv, y: dpv, votos: c.custo.votos,
+      foto: c.foto_url, linkTse: c.link_tse_candidato,
+      detalhe: [
+        ["Partido", `${c.partido.sigla} (${String(c.partido.numero)})`],
+        ["UF", c.sg_uf],
+        ["Cargo", c.cargo.toLowerCase()],
+        ["Votos", formatarNumero(c.custo.votos)],
+        ["Receita total", formatarMoeda(c.receita_total)],
+        ["Despesa contratada", formatarMoeda(c.custo.despesa_contratada)],
+        ["Despesa paga", formatarMoeda(c.custo.despesa_paga)],
+        ["Receita por voto", formatarMoeda(rpv)],
+        [`Despesa por voto (${base})`, formatarMoeda(dpv)],
+        ["Despesa ÷ receita", formatarPontos(((base === "contratado" ? c.custo.despesa_contratada : c.custo.despesa_paga) / c.receita_total) * 100)],
+      ],
+    });
+  }
+  return { pontos, semDados: g.por_candidato.length - pontos.length };
+}

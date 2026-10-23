@@ -107,7 +107,7 @@ test("gastos (T-W21): resposta antiga em cache não esconde foto e link — a AP
 
 test("gastos: a busca realça o candidato e a linha tracejada mostra a mediana", async ({ page }) => {
   await page.goto("/#/gastos");
-  await expect(page.locator("line.referencia")).toHaveCount(2);
+  await expect(page.locator("line.referencia")).toHaveCount(3);
   await page.getByLabel("Realçar candidato nos gráficos").fill("bruno");
   await expect(page.locator('.grafico-despesa circle.marca[data-id="2"]')).toHaveClass(/destaque/);
   await expect(page.locator('.grafico-despesa circle.marca[data-id="1"]')).toHaveClass(/atenuado/);
@@ -209,4 +209,14 @@ test("gastos (T-W23): balão das duas dispersões nunca é cortado nos pontos ma
     }
     await page.screenshot({ path: `${CAPTURAS}/T-W23-balao-${String(largura)}.png`, fullPage: false });
   }
+});
+
+test("gastos: dispersão despesa/voto × receita/voto mostra pontos, diagonal e tooltip no hover (T-W28)", async ({ page }) => {
+  await page.goto("/#/gastos");
+  const ponto = page.locator('.grafico-despesa-receita-voto circle.marca[data-id="1"]');
+  await expect(ponto).toBeVisible();
+  await expect(page.locator(".grafico-despesa-receita-voto line.referencia")).toHaveCount(1);
+  await ponto.hover();
+  const balao = page.locator(".tooltip-flutuante:not([hidden])");
+  for (const t of ["Ana Souza", "MISSÃO (14)", "Receita total", "Despesa contratada", "Receita por voto", "Despesa ÷ receita"]) await expect(balao).toContainText(t);
 });

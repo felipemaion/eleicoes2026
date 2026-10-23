@@ -222,7 +222,7 @@ describe("mapa", () => {
 describe("gastos", () => {
   it("KPIs, dispersão, empilhado e avisos de contas parciais e deflator", async () => {
     await desenhar("gastos");
-    await vi.waitFor(() => { expect(el.querySelectorAll("svg.grafico")).toHaveLength(3); });
+    await vi.waitFor(() => { expect(el.querySelectorAll("svg.grafico")).toHaveLength(4); });
     expect(el.textContent).toMatch(/Contas de 2026 parciais/);
     expect(el.textContent).toMatch(/set\/2026/);
     expect(el.querySelector("dl.kpis")?.textContent).toMatch(/R\$/);
@@ -235,6 +235,31 @@ describe("gastos", () => {
     sel.value = "pago";
     sel.dispatchEvent(new Event("change"));
     await vi.waitFor(() => { expect(el.querySelector(".grafico-despesa circle.marca")?.getAttribute("aria-label")).not.toBe(antes); });
+  });
+});
+
+describe("gastos — despesa por voto × receita por voto (T-W28)", () => {
+  const alvo = ".grafico-despesa-receita-voto";
+  it("mostra o gráfico com os pontos, diagonal, título h3 e a nota", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelectorAll(`${alvo} circle.marca`).length).toBeGreaterThan(0); });
+    expect([...el.querySelectorAll("h3")].map((x) => x.textContent)).toContain("Despesa por voto × receita por voto");
+    expect(el.querySelector(`${alvo} line.referencia`)).not.toBeNull();
+    expect(el.textContent).toContain("gastou o que arrecadou");
+  });
+  it("trocar contratado/pago redesenha o eixo Y e a busca realça aqui também", async () => {
+    await desenhar("gastos");
+    await vi.waitFor(() => { expect(el.querySelector(`${alvo} circle.marca`)).not.toBeNull(); });
+    const antes = el.querySelector(`${alvo} circle.marca`)?.getAttribute("aria-label");
+    const sel = el.querySelector<HTMLSelectElement>("select[name=base]") as HTMLSelectElement;
+    sel.value = "pago";
+    sel.dispatchEvent(new Event("change"));
+    await vi.waitFor(() => { expect(el.querySelector(`${alvo} circle.marca`)?.getAttribute("aria-label")).not.toBe(antes); });
+    expect(el.querySelector(alvo)?.textContent).toContain("pago");
+    const q = el.querySelector<HTMLInputElement>("input[name=busca-gastos]") as HTMLInputElement;
+    q.value = "ana";
+    q.dispatchEvent(new Event("input"));
+    expect(el.querySelector(`${alvo} circle[data-id="1"]`)?.classList.contains("destaque")).toBe(true);
   });
 });
 
