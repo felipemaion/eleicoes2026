@@ -38,41 +38,49 @@ const ponto = (i: number, valor: number, abs: number | null, pct: number | null,
 });
 const tres = [ponto(0, 1000, null, null, null), ponto(1, 1100, 100, 10, 1), ponto(2, 1050, -50, -4.5, 1)];
 
-describe("série de tempo: rótulo de variação por trecho (T-W29)", () => {
-  it("um rótulo por trecho com delta_abs, no ponto médio do trecho e acima da linha", () => {
+const hover = (seg: Element | undefined): string => {
+  seg?.dispatchEvent(new MouseEvent("mouseenter", { clientX: 100, clientY: 100 }));
+  return document.body.textContent;
+};
+
+describe("série de tempo: variação só no hover do segmento (T-W30)", () => {
+  it("nenhum rótulo fixo: nem texto de variação no SVG sem hover", () => {
     serie.render(el, tres, { titulo: "S", medida: "Seguidores" });
-    const rot = [...el.querySelectorAll("text.variacao-trecho")];
-    expect(rot.map((t) => t.textContent)).toEqual(["+100 (+10,0%)", "−50 (−4,5%)"]);
-    const m = [...el.querySelectorAll("circle.marca")].map((c) => ({ x: Number(c.getAttribute("cx")), y: Number(c.getAttribute("cy")) }));
-    const [a, b, c] = m as [typeof m[0], typeof m[0], typeof m[0]];
-    expect(Number(rot[0]?.getAttribute("x"))).toBeCloseTo((a.x + b.x) / 2, 1);
-    expect(Number(rot[0]?.getAttribute("y"))).toBeLessThan((a.y + b.y) / 2);
-    expect(Number(rot[1]?.getAttribute("x"))).toBeCloseTo((b.x + c.x) / 2, 1);
-    expect(rot[0]?.getAttribute("text-anchor")).toBe("middle");
+    expect(el.querySelectorAll("text.variacao-trecho")).toHaveLength(0);
+    expect(el.querySelector("svg")?.textContent).not.toContain("+100 (+10,0%)");
   });
-  it("cor semântica por direção, e o sinal está no texto (não só na cor)", () => {
+  it("todo trecho tem área de captura invisível e mais grossa, entre os dois pontos", () => {
     serie.render(el, tres, { titulo: "S", medida: "Seguidores" });
-    const [alta, queda] = [...el.querySelectorAll("text.variacao-trecho")];
-    expect(alta?.classList.contains("alta")).toBe(true);
-    expect(queda?.classList.contains("queda")).toBe(true);
-    expect(alta?.getAttribute("fill")).not.toBe(queda?.getAttribute("fill"));
+    const caps = [...el.querySelectorAll("line.trecho-captura")];
+    expect(caps).toHaveLength(2);
+    const m = [...el.querySelectorAll("circle.marca")].map((c) => Number(c.getAttribute("cx")));
+    expect(Number(caps[0]?.getAttribute("x1"))).toBeCloseTo(m[0] ?? 0, 1);
+    expect(Number(caps[0]?.getAttribute("x2"))).toBeCloseTo(m[1] ?? 0, 1);
+    expect(Number(caps[1]?.getAttribute("x2"))).toBeCloseTo(m[2] ?? 0, 1);
+    expect(Number(caps[0]?.getAttribute("stroke-width"))).toBeGreaterThanOrEqual(12);
+    expect(caps[0]?.getAttribute("stroke")).toBe("transparent");
   });
-  it("trechos estreitos omitem o rótulo; os mantidos não se sobrepõem nem saem da área", () => {
+  it("hover em cada segmento mostra a variação certa com as duas datas; sair esconde e desrealça", () => {
+    serie.render(el, tres, { titulo: "S", medida: "Seguidores" });
+    const caps = [...el.querySelectorAll("line.trecho-captura")];
+    expect(hover(caps[0])).toContain("01/10 → 02/10");
+    expect(document.body.textContent).toContain("+100 (+10,0%)");
+    expect(el.querySelectorAll("line.trecho-realce.ativo")).toHaveLength(1);
+    caps[0]?.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(el.querySelectorAll("line.trecho-realce.ativo")).toHaveLength(0);
+    expect(hover(caps[1])).toContain("02/10 → 03/10");
+    expect(document.body.textContent).toContain("−50 (−4,5%)");
+  });
+  it("sem regra de omitir: série densa também tem todos os trechos", () => {
     const muitos = Array.from({ length: 40 }, (_, i) => ponto(i, 1000 + i * 7, i === 0 ? null : 7, i === 0 ? null : 0.7, i === 0 ? null : 1));
     serie.render(el, muitos, { titulo: "S", medida: "Seguidores", largura: 400 });
-    expect(el.querySelectorAll("text.variacao-trecho")).toHaveLength(0);
-    expect(el.querySelectorAll("circle.marca")).toHaveLength(40); // pontos continuam
-    // largura confortável: 6 pontos
-    serie.render(el, muitos.slice(0, 6), { titulo: "S", medida: "Seguidores", largura: 900 });
-    const rot = [...el.querySelectorAll("text.variacao-trecho")];
-    expect(rot.length).toBe(5);
-    const xs = rot.map((t) => Number(t.getAttribute("x")));
-    for (let i = 1; i < xs.length; i++) expect((xs[i] ?? 0) - (xs[i - 1] ?? 0)).toBeGreaterThan(60);
-    xs.forEach((x) => { expect(x).toBeGreaterThan(70); expect(x).toBeLessThan(900 - 24); });
+    expect(el.querySelectorAll("line.trecho-captura")).toHaveLength(39);
+    expect(el.querySelectorAll("circle.marca")).toHaveLength(40);
   });
-  it("trecho com dias > 1 diz o intervalo no rótulo", () => {
-    serie.render(el, [ponto(0, 1000, null, null, null), ponto(3, 3010, 2010, 3.4, 3)], { titulo: "S", medida: "Seguidores", largura: 900 });
-    expect(el.querySelector("text.variacao-trecho")?.textContent).toBe("+2.010 (+3,4%) em 3 dias");
+  it("trecho com dias > 1 diz o intervalo no balão", () => {
+    serie.render(el, [ponto(0, 1000, null, null, null), ponto(3, 3010, 2010, 3.4, 3)], { titulo: "S", medida: "Seguidores" });
+    hover(el.querySelector("line.trecho-captura") ?? undefined);
+    expect(document.body.textContent).toContain("+2.010 (+3,4%) em 3 dias");
   });
   it("tooltip do ponto e tabela alternativa mostram a variação", () => {
     serie.render(el, tres, { titulo: "S", medida: "Seguidores" });
@@ -84,9 +92,9 @@ describe("série de tempo: rótulo de variação por trecho (T-W29)", () => {
     const linhas = [...el.querySelectorAll("details tbody tr")].map((r) => r.lastElementChild?.textContent);
     expect(linhas).toEqual(["—", "+100 (+10,0%)", "−50 (−4,5%)"]);
   });
-  it("sem `variacao` nos pontos (outros usos) nada muda: sem rótulos nem coluna extra", () => {
+  it("sem `variacao` nos pontos (outros usos) nada muda: sem trechos nem coluna extra", () => {
     serie.render(el, tres.map(({ quando, valor }) => ({ quando, valor })), { titulo: "S", medida: "Seguidores" });
-    expect(el.querySelectorAll("text.variacao-trecho")).toHaveLength(0);
+    expect(el.querySelectorAll("line.trecho-captura")).toHaveLength(0);
     expect([...el.querySelectorAll("details thead th")].map((t) => t.textContent)).toEqual(["Coleta", "Seguidores"]);
   });
 });

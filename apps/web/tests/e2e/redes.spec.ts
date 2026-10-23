@@ -91,7 +91,9 @@ test("redes: série com 1 ponto mostra o número e a nota; com 2 pontos, a linha
   await expect(page.locator(".grafico-redes-serie path.linha-serie")).toBeVisible();
   await expect(page.locator(".serie-resumo")).toContainText("+340 seguidores (+0,65 %) em 1 dia");
   await expect(page.locator(".grafico-redes-serie circle.marca")).toHaveCount(2);
-  await expect(page.locator(".grafico-redes-serie text.variacao-trecho")).toHaveText("+340 (+0,7%)");
+  await expect(page.locator(".grafico-redes-serie text.variacao-trecho")).toHaveCount(0);
+  await page.locator(".grafico-redes-serie line.trecho-captura").hover();
+  await expect(page.locator(".tooltip-flutuante, [role=tooltip]").filter({ hasText: "+340 (+0,7%)" }).first()).toBeVisible();
 });
 
 test("redes: perfil indisponível aparece como indisponível, com link do TSE, nunca como zero", async ({ page }) => {

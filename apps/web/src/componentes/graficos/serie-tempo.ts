@@ -8,7 +8,7 @@ export interface PontoTempo {
   /** ISO 8601 (UTC). */
   quando: string;
   valor: number;
-  /** Mudança desde a coleta anterior (campos da API; `abs: null` no 1º ponto). Opcional: sem ela o gráfico não rotula trechos. */
+  /** Mudança desde a coleta anterior (campos da API; `abs: null` no 1º ponto). Opcional: sem ela os trechos não têm hover. */
   variacao?: { abs: number | null; pct: number | null; dias: number | null };
 }
 
@@ -27,9 +27,6 @@ const BAIXO = 40;
 
 /** Alta e queda: azul e vermelhão do Okabe-Ito (seguros para daltônicos); o sinal no texto repete a direção. */
 const COR_VARIACAO = { alta: PALETAS.categorica[5], queda: PALETAS.categorica[6], neutra: "var(--cor-texto-suave)" } as const;
-/** Largura estimada por caractere (fonte 12 px) e respiro: abaixo disso o rótulo não cabe no trecho. */
-const PX_POR_CARACTERE = 6.6;
-const RESPIRO = 10;
 
 const dia = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" });
 const diaMes = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
@@ -40,21 +37,26 @@ function tooltipSerie(): ReturnType<typeof criarFlutuante> {
   return balao;
 }
 
-/** Rótulo no meio de cada trecho, acima da linha; trecho estreito demais fica sem rótulo (a variação segue no tooltip e na tabela). */
-function rotularTrechos(svg: SVGSVGElement, dados: readonly PontoTempo[], x: (d: Date) => number, y: (v: number) => number): void {
+/**
+ * Variação de cada trecho, só no hover: uma linha de realce (invisível até o hover) e uma área de captura
+ * transparente e grossa, para ser fácil de acertar. Sem rótulo fixo na série; teclado e leitor de tela
+ * leem a variação no ponto e na tabela alternativa.
+ */
+function ligarTrechos(svg: SVGSVGElement, dados: readonly PontoTempo[], x: (d: Date) => number, y: (v: number) => number): void {
   for (let i = 1; i < dados.length; i++) {
     const a = dados[i - 1];
     const b = dados[i];
     const texto = b?.variacao ? formatarVariacao(b.variacao) : null;
-    if (!a || !b || texto === null || !b.variacao) continue;
-    const xa = x(new Date(a.quando));
-    const xb = x(new Date(b.quando));
-    if (xb - xa < texto.length * PX_POR_CARACTERE + RESPIRO) continue;
-    const sentido = (b.variacao.abs ?? 0) > 0 ? "alta" : (b.variacao.abs ?? 0) < 0 ? "queda" : "neutra";
-    svg.append(textoSvg((xa + xb) / 2, Math.max(TOPO - 4, (y(a.valor) + y(b.valor)) / 2 - 10), texto, {
-      class: `variacao-trecho ${sentido}`, "text-anchor": "middle", fill: COR_VARIACAO[sentido], "font-weight": 600,
-      stroke: "var(--cor-superficie)", "stroke-width": 3, "paint-order": "stroke",
-    }));
+    if (!a || !b || texto === null) continue;
+    const geo = { x1: x(new Date(a.quando)), y1: y(a.valor), x2: x(new Date(b.quando)), y2: y(b.valor) };
+    const sentido = (b.variacao?.abs ?? 0) > 0 ? "alta" : (b.variacao?.abs ?? 0) < 0 ? "queda" : "neutra";
+    const realce = no("line", { class: `trecho-realce ${sentido}`, ...geo, stroke: COR_VARIACAO[sentido], "stroke-width": 5, "stroke-linecap": "round", opacity: 0, "pointer-events": "none" });
+    const captura = no("line", { class: "trecho-captura", ...geo, stroke: "transparent", "stroke-width": 16, "stroke-linecap": "round" });
+    const titulo = `${diaMes.format(new Date(a.quando))} → ${diaMes.format(new Date(b.quando))}`;
+    captura.addEventListener("mouseenter", () => { realce.classList.add("ativo"); realce.setAttribute("opacity", "1"); });
+    captura.addEventListener("mouseleave", () => { realce.classList.remove("ativo"); realce.setAttribute("opacity", "0"); });
+    ligarMarca(captura, tooltipSerie(), () => corpoRico({ titulo, linhas: [["Variação", texto]] }));
+    svg.append(realce, captura);
   }
 }
 
@@ -77,7 +79,7 @@ function desenhar(container: HTMLElement, dados: readonly PontoTempo[], o: Opcoe
   svg.append(textoSvg(14, h / 2, o.medida, { "text-anchor": "middle", transform: `rotate(-90 14 ${String(h / 2)})` }));
   const caminho = line<PontoTempo>().x((d) => x(new Date(d.quando))).y((d) => y(d.valor))(dados);
   svg.append(no("path", { class: "linha-serie", d: caminho ?? "", fill: "none", stroke: COR.principal, "stroke-width": 2 }));
-  rotularTrechos(svg, dados, x, y);
+  ligarTrechos(svg, dados, x, y);
   for (const d of dados) {
     const c = no("circle", { class: "marca", cx: x(new Date(d.quando)), cy: y(d.valor), r: 5, fill: COR.principal, stroke: "var(--cor-superficie)", "stroke-width": 1.5 });
     const variacao = d.variacao ? formatarVariacao(d.variacao) : null;

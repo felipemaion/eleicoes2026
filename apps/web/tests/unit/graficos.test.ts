@@ -541,7 +541,7 @@ describe("dispersão com eixo vertical próprio e diagonal y = x (T-W28)", () =>
     dispersao.render(el, sem, { titulo: "t", grandeza: "g", formatoX: formatarMoeda, rotuloEixoX: "x", aoSelecionar: () => undefined });
     expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).not.toMatch(/link/);
     expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).toContain("Ao ativar, abre os dados");
-    const com = [{ ...sem[0], linkExterno: { url: "https://exemplo.org/p", convite: "Abrir" } }];
+    const com = [{ id: "1", rotulo: "Ana", custo: 10, votos: 500, linkExterno: { url: "https://exemplo.org/p", convite: "Abrir" } }];
     dispersao.render(el, com, { titulo: "t", grandeza: "g", formatoX: formatarMoeda, rotuloEixoX: "x", aoSelecionar: () => undefined });
     expect(el.querySelector("circle.marca")?.getAttribute("aria-label")).toContain("link do perfil");
   });
