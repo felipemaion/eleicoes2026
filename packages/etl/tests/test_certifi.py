@@ -7,7 +7,10 @@ RAIZES_REVOGADAS = ("emSign ECC Root CA - G3",)
 
 
 def test_bundle_do_certifi_sem_raizes_revogadas() -> None:
-    """O TLS de saída (Meta, TSE) usa o certifi do lock; raiz revogada não pode voltar num `uv lock`."""
+    """O TLS de saída usa o certifi do lock; raiz revogada não pode voltar num `uv lock`."""
     bundle = certifi.contents()
     presentes = [raiz for raiz in RAIZES_REVOGADAS if raiz in bundle]
-    assert not presentes, f"certifi {certifi.__version__} ainda confia em: {presentes} — rode `uv lock --upgrade-package certifi`"
+    assert not presentes, (
+        f"certifi {certifi.__version__} confia em {presentes}: "
+        "rode `uv lock --upgrade-package certifi`"
+    )
