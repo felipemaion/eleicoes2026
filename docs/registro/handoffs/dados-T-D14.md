@@ -9,7 +9,7 @@
 - `make lint test` do ETL verde.
 
 ## Dockerfile (`packages/etl/Dockerfile`)
-- Instala com `uv sync --frozen --no-package-dev … --package etl`: o certifi da imagem **é o do lock**. Não há pip solto.
+- Instala com `uv sync --frozen --no-dev … --package etl`: o certifi da imagem **é o do lock**. Não há pip solto.
 - O código não sobrescreve TLS (sem `verify=`, `SSL_CERT_FILE` ou `REQUESTS_CA_BUNDLE`): o httpx usa o certifi.
 - A imagem `python:3.12-slim-bookworm` traz também o bundle do sistema (`/etc/ssl/certs`), mas nenhum código do
   ETL o usa. Se algum dia for usado (ex.: curl no container), ele segue a versão do Debian, fora deste controle.
