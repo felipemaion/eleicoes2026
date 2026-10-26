@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from api.repositorio.base import Repositorio
 from api.servicos.redes_base import em_utc
 
+COLETAS_QUE_GRAVAM = ("ok", "parcial")
+
 
 class ColetaRedes(BaseModel):
     """Última coleta de redes sociais e o resultado da tentativa mais recente."""
@@ -15,9 +17,13 @@ class ColetaRedes(BaseModel):
         description="Última coleta que entrou nos dados (UTC); nula se nunca houve."
     )
     resultado: str | None = Field(
-        description="Tentativa mais recente: `ok`, `limite` ou `erro`; nulo sem `status.json`."
+        description="Tentativa mais recente: `ok`, `parcial` (mais de 5% dos perfis com erro, mas "
+        "com snapshots gravados), `limite` ou `erro`; nulo sem `status.json`."
     )
     motivo: str | None = Field(description="Motivo informado quando o resultado não é `ok`.")
+    perfis_com_erro: int = Field(
+        description="Perfis com `erro_transitorio` na tentativa mais recente (0 sem `status.json`)."
+    )
     dias_desde_ultima_coleta_ok: int | None = Field(
         description="Dias inteiros desde `coletado_em`; nulo se nunca houve coleta bem-sucedida."
     )
@@ -29,6 +35,7 @@ class ColetaRedes(BaseModel):
                     "coletado_em": "2026-10-13T09:00:00Z",
                     "resultado": "ok",
                     "motivo": None,
+                    "perfis_com_erro": 0,
                     "dias_desde_ultima_coleta_ok": 1,
                 }
             ]
@@ -40,12 +47,18 @@ def montar_coleta_redes(repo: Repositorio, agora: datetime) -> ColetaRedes | Non
     """Combina `status.json` (tentativa mais recente) com a coleta que está nos dados.
 
     Uma tentativa `erro`/`limite` não conta como coleta boa: os dias valem desde a última coleta
-    que de fato gravou snapshots. Sem status e sem dados de redes → `None` (nada a mostrar).
+    que de fato gravou snapshots. `parcial` grava snapshots (só há perfis com erro transitório),
+    então avança `coletado_em`; o aviso ao leitor vem de `resultado` e `perfis_com_erro`.
+    Sem status e sem dados de redes → `None` (nada a mostrar).
     """
     meta, status = repo.redes_meta(), repo.redes_status()
     if meta is None and status is None:
         return None
-    if status is not None and status.resultado == "ok" and status.coletado_em is not None:
+    if (
+        status is not None
+        and status.resultado in COLETAS_QUE_GRAVAM
+        and status.coletado_em is not None
+    ):
         ultima_ok = em_utc(status.coletado_em)
     elif meta is not None:
         ultima_ok = em_utc(meta.coletado_em)
@@ -56,5 +69,6 @@ def montar_coleta_redes(repo: Repositorio, agora: datetime) -> ColetaRedes | Non
         coletado_em=ultima_ok,
         resultado=status.resultado if status else None,
         motivo=status.motivo if status else None,
+        perfis_com_erro=status.perfis_com_erro if status else 0,
         dias_desde_ultima_coleta_ok=dias,
     )

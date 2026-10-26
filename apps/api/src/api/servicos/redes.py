@@ -3,7 +3,8 @@
 O leitor precisa distinguir situações que valem coisas diferentes e nunca viram zero:
 ``sem_rede`` (não declarou Instagram ao TSE), ``nao_coletado`` (declarou; a coleta ainda não
 chegou), ``nao_encontrado``/``nao_comercial`` (a API da Meta não mostra números: conta pessoal
-ou inexistente) e ``ok``.
+ou inexistente), ``erro_transitorio`` (falha da coleta, não da conta;
+a próxima rodada tenta de novo) e ``ok``.
 """
 
 from datetime import datetime
@@ -21,7 +22,9 @@ from api.servicos.grupos import Catalogo
 from api.servicos.redes_base import STATUS_NAO_COLETADO, BaseRedes, carregar, em_utc
 from api.servicos.redes_perfis import PerfilRede, perfis_do_candidato
 
-StatusRede = Literal["ok", "nao_encontrado", "nao_comercial", "nao_coletado", "sem_rede"]
+StatusRede = Literal[
+    "ok", "nao_encontrado", "nao_comercial", "erro_transitorio", "nao_coletado", "sem_rede"
+]
 AVISO_CONTAS_SEM_DADOS = "redes_contas_sem_dados"  # id em docs/metodologia/publico/textos.json
 
 
@@ -236,7 +239,8 @@ def _excluidos(candidatos: list[RedeCandidato]) -> Excluidos:
         sem_instagram=sum(c.status == "sem_rede" for c in candidatos),
         nao_coletado=sum(c.status == STATUS_NAO_COLETADO for c in candidatos),
         indisponivel=sum(
-            c.status in ("nao_encontrado", "nao_comercial") and not c.tem_dados for c in candidatos
+            c.status in ("nao_encontrado", "nao_comercial", "erro_transitorio") and not c.tem_dados
+            for c in candidatos
         ),
         sem_votos=sum(c.tem_dados and c.votos is None for c in candidatos),
     )

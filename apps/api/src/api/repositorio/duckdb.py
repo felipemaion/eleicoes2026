@@ -561,6 +561,7 @@ class RepositorioDuckDB:
             resultado=str(resultado) if resultado else None,
             motivo=str(motivo) if motivo else None,
             coletado_em=instante,
+            perfis_com_erro=int(bruto.get("perfis_com_erro") or 0),
         )
 
     def redes_declaradas(self, ano: int, sqs: Sequence[int]) -> list[RedeDeclarada]:
