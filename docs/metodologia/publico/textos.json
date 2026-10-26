@@ -15,7 +15,9 @@
   "placeholders": {
     "dt_geracao": "data e hora de geração do arquivo do TSE usado na tela (DT_GERACAO), ex. 07/10/2026 08:00",
     "mes_base_ipca": "mês-base da correção monetária, ex. set/2026 (enquanto não sair, o último mês publicado do IPCA)",
-    "dt_coleta_redes": "data da coleta mais recente do Instagram usada na tela, ex. 08/10/2026"
+    "dt_coleta_redes": "data da coleta mais recente do Instagram usada na tela, ex. 08/10/2026",
+    "ultima_coleta_ok": "data da última coleta em que a conta analisada foi encontrada, ex. 20/10/2026",
+    "conta_indisponivel_desde": "data da primeira coleta em que a conta analisada não foi encontrada, ex. 22/10/2026"
   },
   "indicadores": {
     "votos_nominais": {
@@ -441,7 +443,7 @@
       "resumo": "Quantos votos o candidato teve para cada mil seguidores no Instagram, e o inverso: seguidores por mil votos.",
       "como_ler": "Acima de 1.000 votos por mil seguidores, o candidato teve mais votos do que seguidores. Abaixo, a audiência na rede foi maior que a votação. Compare só candidatos do mesmo cargo.",
       "unidade": "votos por mil seguidores (e seguidores por mil votos)",
-      "denominador": "seguidores da conta principal na coleta mais recente; votos nominais válidos",
+      "denominador": "seguidores da conta analisada (a de mais seguidores em toda a série) na última coleta em que ela foi encontrada; votos nominais válidos",
       "cuidado": "Seguidores não são eleitores: incluem gente de outros estados, menores de idade, estrangeiros e perfis falsos. Contas pessoais não têm números e aparecem só com o link.",
       "fonte": "Instagram — API oficial da Meta (Business Discovery); perfis declarados ao TSE; TSE — votação nominal",
       "vetor": "seguidores_votos",
@@ -646,7 +648,8 @@
         "redes_nao_causalidade",
         "redes_contas_sem_dados",
         "redes_seguidores_sem_historico",
-        "redes_segundo_turno"
+        "redes_segundo_turno",
+        "redes_conta_indisponivel"
       ]
     },
     "referencias": {
@@ -767,6 +770,11 @@
       "titulo": "Contas que faltam",
       "nivel": "info",
       "texto": "Candidato sem prestação de contas publicada aparece com “sem dado”, nunca com zero. Se menos de 3 dos 5 de referência têm o dado, não calculamos a mediana."
+    },
+    "redes_conta_indisponivel": {
+      "titulo": "Conta não encontrada na última coleta",
+      "nivel": "atencao",
+      "texto": "Desde {conta_indisponivel_desde}, a coleta não encontrou esta conta no Instagram (pode ter sido renomeada, apagada ou ter virado pessoal). Os números são da última coleta boa, em {ultima_coleta_ok}, e não foram trocados pelos de outra conta do candidato."
     }
   },
   "glossario": {
