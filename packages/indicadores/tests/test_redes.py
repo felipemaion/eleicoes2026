@@ -197,3 +197,73 @@ def test_erros_falham_alto() -> None:
         redes.ultimo_snapshot(perfis)
     with pytest.raises(ValueError, match="tamanhos diferentes"):
         redes.spearman_listas([1.0, 2.0], [1.0])
+
+
+def _renomeacoes(pares: list[tuple[str, str]]) -> pl.DataFrame:
+    return pl.DataFrame(pares, schema=["username_tse", "username_atual"], orient="row")
+
+
+def test_renomeacao_une_a_serie_da_mesma_conta() -> None:
+    """Conta renomeada (T-D15): os snapshots sob o nome do TSE e o atual são uma série só."""
+    perfis = pl.DataFrame(
+        [
+            _perfil("renan_tse", 3000, datetime(2026, 10, 15, 12)),
+            _perfil("renan", 3100, datetime(2026, 10, 22, 12)),
+            _perfil("lateral", 50, datetime(2026, 10, 22, 12)),
+        ]
+    )
+    unificado = redes.aplicar_renomeacoes(perfis, _renomeacoes([("renan_tse", "renan")]))
+    assert unificado["username"].to_list() == ["renan", "renan", "lateral"]
+    votos = pl.DataFrame({"sq_candidato": [1], "cd_cargo": [6], "votos": [100]})
+    vazio = pl.DataFrame(
+        schema={
+            "username": pl.String,
+            "media_id": pl.String,
+            "timestamp": pl.Datetime("us", "UTC"),
+            "media_type": pl.String,
+            "media_product_type": pl.String,
+            "like_count": pl.Int64,
+            "comments_count": pl.Int64,
+            "coletado_em": pl.Datetime("us", "UTC"),
+        }
+    )
+    out = redes.indicadores_candidato(unificado, vazio, votos)
+    assert out["username"][0] == "renan"
+    assert out["seguidores"][0] == 3100
+
+
+def test_renomeacao_sem_mapa_e_mapa_invalido() -> None:
+    perfis = pl.DataFrame([_perfil("ana", 1, datetime(2026, 10, 8))])
+    assert redes.aplicar_renomeacoes(perfis, None).equals(perfis)
+    with pytest.raises(ValueError, match="repetido"):
+        redes.aplicar_renomeacoes(perfis, _renomeacoes([("ana", "b"), ("ana", "c")]))
+    with pytest.raises(ValueError, match="encadeada"):
+        redes.aplicar_renomeacoes(perfis, _renomeacoes([("ana", "b"), ("b", "c")]))
+    with pytest.raises(ValueError, match="colunas ausentes"):
+        redes.aplicar_renomeacoes(perfis, pl.DataFrame({"username_tse": ["ana"]}))
+
+
+def test_metricas_janelas_usa_ultimo_snapshot_valido() -> None:
+    """Conta que some na última coleta continua com métricas até a última coleta boa."""
+    perfis = pl.DataFrame(
+        [
+            _perfil("ana", 100, datetime(2026, 10, 20, 12)),
+            _perfil("ana", None, datetime(2026, 10, 22, 12)),
+        ]
+    )
+    posts = pl.DataFrame(
+        {
+            "username": ["ana"],
+            "media_id": ["1"],
+            "timestamp": [datetime(2026, 9, 1)],
+            "media_type": ["IMAGE"],
+            "media_product_type": ["FEED"],
+            "like_count": [9],
+            "comments_count": [1],
+            "coletado_em": [datetime(2026, 10, 20, 12)],
+        }
+    )
+    out = redes.metricas_janelas(perfis, posts)
+    pos = out.filter(janela="pos_eleicao")
+    assert pos["dias"][0] == pytest.approx(15.375)  # 05/10 00h BRT → 20/10 12h UTC
+    assert out.filter(janela="campanha")["engajamento_medio"][0] == pytest.approx(10.0)

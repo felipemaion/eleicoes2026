@@ -1,7 +1,7 @@
 {
   "indicador": "seguidores_votos",
   "spec": "docs/metodologia/indicadores.md#seguidores-votos",
-  "versao": 1,
+  "versao": 2,
   "descricao": "Resumo por candidato: conta principal, seguidores por mil votos, votos por mil seguidores, ritmo campanha→pós, % de vídeo e engajamento da campanha.",
   "tolerancia_absoluta": 1e-09,
   "convencoes": [
@@ -9,7 +9,9 @@
     "pre_campanha 01/01–15/08 (227 dias), campanha 16/08–04/10 (50 dias), pos_eleicao 05/10 00:00 → última coleta da conta (dias fracionários), total 01/01 → última coleta.",
     "Taxa por semana = 7 × n / dias; janela com menos de 7 dias → taxa null (n continua).",
     "Post repetido em várias coletas: vale a coleta mais recente. Conta sem seguidores (status ≠ ok) sai.",
-    "Conta principal = a de mais seguidores no último snapshot (empate: username). Sem perfil declarado → status sem_rede; sem métricas → tem_dados false."
+    "Conta analisada = a de mais seguidores em QUALQUER snapshot válido da série (máximo histórico; empate: username). Falha de coleta nunca troca a conta. Sem perfil declarado → status sem_rede; sem nenhum snapshot válido → tem_dados false (sem fallback).",
+    "Snapshot válido = followers_count não nulo. Se o último snapshot da conta analisada não é válido, os indicadores usam o último válido dela: ultima_coleta_ok = coletado_em desse snapshot, conta_indisponivel_desde = primeira coleta falha depois dele, desatualizado = true; status = status do último válido; status_ultima_coleta = o da coleta mais recente.",
+    "A janela pos_eleicao e total terminam na última coleta VÁLIDA da conta (posts só são lidos quando o perfil é encontrado)."
   ],
   "casos": [
     {
@@ -296,6 +298,323 @@
           "pct_video": null,
           "engajamento_mediano": null,
           "engajamento_medio": null
+        }
+      ]
+    },
+    {
+      "nome": "conta_analisada_fixa_sem_fallback",
+      "descricao": "renan: principal some a partir de 22/10 → continua analisada pelo último válido (20/10), com aviso; a lateral jaguar cresce mas nunca passa o máximo histórico (2100). gil: caiu para 300 mas o máximo histórico (1000) supera o de gil2 (600). hugo: nunca teve dado → tem_dados false, sem fallback. ivo: empate no máximo (800) → ivo_a. ju: falhou e voltou → não está desatualizada.",
+      "entrada": {
+        "perfis": [
+          {
+            "sq_candidato": 10,
+            "username": "renan",
+            "status": "ok",
+            "followers_count": 2000,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "renan",
+            "status": "ok",
+            "followers_count": 2100,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "renan",
+            "status": "nao_encontrado",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-22T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "renan",
+            "status": "nao_encontrado",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-24T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "jaguar",
+            "status": "ok",
+            "followers_count": 40,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "jaguar",
+            "status": "ok",
+            "followers_count": 50,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "jaguar",
+            "status": "ok",
+            "followers_count": 60,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-22T12:00:00Z"
+          },
+          {
+            "sq_candidato": 10,
+            "username": "jaguar",
+            "status": "ok",
+            "followers_count": 70,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-24T12:00:00Z"
+          },
+          {
+            "sq_candidato": 12,
+            "username": "gil",
+            "status": "ok",
+            "followers_count": 1000,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 12,
+            "username": "gil",
+            "status": "ok",
+            "followers_count": 300,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 12,
+            "username": "gil2",
+            "status": "ok",
+            "followers_count": 500,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 12,
+            "username": "gil2",
+            "status": "ok",
+            "followers_count": 600,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 13,
+            "username": "hugo",
+            "status": "nao_encontrado",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 13,
+            "username": "hugo",
+            "status": "nao_encontrado",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 14,
+            "username": "ivo_b",
+            "status": "ok",
+            "followers_count": 800,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 14,
+            "username": "ivo_a",
+            "status": "ok",
+            "followers_count": 800,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 14,
+            "username": "ivo_a",
+            "status": "ok",
+            "followers_count": 700,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-22T12:00:00Z"
+          },
+          {
+            "sq_candidato": 15,
+            "username": "ju",
+            "status": "ok",
+            "followers_count": 100,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-15T12:00:00Z"
+          },
+          {
+            "sq_candidato": 15,
+            "username": "ju",
+            "status": "nao_encontrado",
+            "followers_count": null,
+            "follows_count": null,
+            "media_count": null,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "sq_candidato": 15,
+            "username": "ju",
+            "status": "ok",
+            "followers_count": 110,
+            "follows_count": 10,
+            "media_count": 5,
+            "coletado_em": "2026-10-22T12:00:00Z"
+          }
+        ],
+        "posts": [
+          {
+            "username": "renan",
+            "media_id": "r1",
+            "timestamp": "2026-09-01T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 200,
+            "comments_count": 10,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "username": "renan",
+            "media_id": "r2",
+            "timestamp": "2026-10-10T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 20,
+            "comments_count": 1,
+            "coletado_em": "2026-10-20T12:00:00Z"
+          },
+          {
+            "username": "jaguar",
+            "media_id": "j1",
+            "timestamp": "2026-09-02T12:00:00Z",
+            "media_type": "IMAGE",
+            "media_product_type": "FEED",
+            "like_count": 5,
+            "comments_count": 0,
+            "coletado_em": "2026-10-24T12:00:00Z"
+          }
+        ],
+        "votos": [
+          {
+            "sq_candidato": 10,
+            "cd_cargo": 6,
+            "votos": 21000
+          },
+          {
+            "sq_candidato": 12,
+            "cd_cargo": 6,
+            "votos": 3000
+          },
+          {
+            "sq_candidato": 13,
+            "cd_cargo": 6,
+            "votos": 900
+          },
+          {
+            "sq_candidato": 14,
+            "cd_cargo": 6,
+            "votos": 400
+          },
+          {
+            "sq_candidato": 15,
+            "cd_cargo": 6,
+            "votos": 1100
+          }
+        ]
+      },
+      "saida": [
+        {
+          "sq_candidato": 10,
+          "username": "renan",
+          "status": "ok",
+          "status_ultima_coleta": "nao_encontrado",
+          "tem_dados": true,
+          "seguidores": 2100,
+          "ultima_coleta_ok": "2026-10-20T12:00:00Z",
+          "conta_indisponivel_desde": "2026-10-22T12:00:00Z",
+          "desatualizado": true,
+          "seguidores_por_mil_votos": 100.0,
+          "votos_por_mil_seguidores": 10000.0,
+          "posts_semana_campanha": 0.14,
+          "posts_semana_pos": 0.45528455284552843,
+          "variacao_ritmo_pct": 225.20325203252028,
+          "pct_video": 0.0,
+          "engajamento_mediano": 10.0,
+          "engajamento_medio": 10.0
+        },
+        {
+          "sq_candidato": 12,
+          "username": "gil",
+          "status": "ok",
+          "status_ultima_coleta": "ok",
+          "tem_dados": true,
+          "seguidores": 300,
+          "ultima_coleta_ok": "2026-10-20T12:00:00Z",
+          "conta_indisponivel_desde": null,
+          "desatualizado": false,
+          "seguidores_por_mil_votos": 100.0,
+          "votos_por_mil_seguidores": 10000.0
+        },
+        {
+          "sq_candidato": 13,
+          "username": "hugo",
+          "status": "nao_encontrado",
+          "status_ultima_coleta": "nao_encontrado",
+          "tem_dados": false,
+          "seguidores": null,
+          "ultima_coleta_ok": null,
+          "conta_indisponivel_desde": null,
+          "desatualizado": false,
+          "seguidores_por_mil_votos": null,
+          "votos_por_mil_seguidores": null,
+          "posts_semana_campanha": null,
+          "engajamento_mediano": null
+        },
+        {
+          "sq_candidato": 14,
+          "username": "ivo_a",
+          "status": "ok",
+          "tem_dados": true,
+          "seguidores": 700,
+          "ultima_coleta_ok": "2026-10-22T12:00:00Z",
+          "desatualizado": false
+        },
+        {
+          "sq_candidato": 15,
+          "username": "ju",
+          "status": "ok",
+          "status_ultima_coleta": "ok",
+          "tem_dados": true,
+          "seguidores": 110,
+          "ultima_coleta_ok": "2026-10-22T12:00:00Z",
+          "conta_indisponivel_desde": null,
+          "desatualizado": false,
+          "votos_por_mil_seguidores": 10000.0
         }
       ]
     }
