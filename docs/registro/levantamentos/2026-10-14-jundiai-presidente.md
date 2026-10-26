@@ -36,7 +36,46 @@ Renan Santos: 3,94% dos válidos em Jundiaí contra 2,24% no país.
 
 ## 2º turno (25/10/2026)
 
-_Pendente — refazer quando o TSE publicar o resultado do 2º turno._
+Fonte: TSE, **divulgação oficial de resultados** (`resultados.tse.jus.br/oficial/ele2026/6258/dados/sp/sp66192-c0001-e006258-u.json`,
+eleição 6258, município TSE 66192), gerada em 25/10/2026 21:11:33, **100% das seções apuradas** (974 de 974).
+Conferência: válidos + brancos + nulos = comparecimento (261.933 + 3.488 + 8.515 = 273.936).
+Ainda falta confirmar com os dados abertos (`votacao_candidato_munzona`, `nr_turno=2`) quando o TSE publicar.
+
+| # | Candidato | Partido | Votos | % válidos |
+|---:|---|---|---:|---:|
+| 1 | Flávio Bolsonaro | PL | 161.594 | 61,69% |
+| 2 | Lula | PT | 100.339 | 38,31% |
+| | **Válidos** | | **261.933** | 100% |
+
+| | Quantidade | % |
+|---|---:|---:|
+| Aptos | 337.853 | |
+| Comparecimento | 273.936 | 81,08% dos aptos |
+| Abstenção | 63.917 | 18,92% dos aptos |
+| Brancos | 3.488 | 1,27% do comparecimento |
+| Nulos | 8.515 | 3,11% do comparecimento |
+
+### 1º × 2º turno
+
+| | 1º turno | 2º turno | Diferença |
+|---|---:|---:|---:|
+| Flávio Bolsonaro | 145.880 | 161.594 | +15.714 |
+| Lula | 76.564 | 100.339 | +23.775 |
+| Demais candidatos (Cury, Renan, Caiado, Zema e outros) | 29.388 | — | −29.388 |
+| Válidos | 251.832 | 261.933 | +10.101 |
+| Brancos | 5.158 | 3.488 | −1.670 |
+| Nulos | 9.341 | 8.515 | −826 |
+| Comparecimento | 266.331 | 273.936 | +7.605 |
+| Abstenção | 71.520 | 63.917 | −7.603 |
+| Margem Flávio − Lula | 69.316 | 61.255 | −8.061 |
+
+- Flávio venceu com folga em Jundiaí (61,69%); no país, com 99,98% das seções às 22:03, Lula tinha 51,78% contra
+  48,22% — Jundiaí ficou **13,5 pontos mais à direita** que o resultado nacional.
+- Dos 39.489 votos válidos que os dois finalistas ganharam do 1º para o 2º turno, **Lula ficou com 60%** (23.775) e
+  Flávio com 40% (15.714): a margem caiu 8 mil votos. Entre só os dois, Lula passou de 34,42% (1º turno) para 38,31%.
+- Esses votos vieram de três lugares: eleitores dos candidatos eliminados (29.388), 7.605 pessoas a mais votando e
+  2.496 brancos e nulos a menos. **Não dá para dizer para onde foram os 9.927 eleitores do Renan**: o dado é por
+  município, não por eleitor, e atribuir transferência a partir dele é falácia ecológica.
 
 ## Como refazer
 
