@@ -227,7 +227,9 @@ class SerieConta(BaseModel):
 
     username: str
     link: str
-    status: str = Field(description="Situação na coleta mais recente (`ok`, `nao_encontrado`…).")
+    status: str = Field(
+        description="Situação na coleta mais recente (`ok`, `nao_encontrado`, `erro_transitorio`…)."
+    )
     pontos: list[PontoSerie] = Field(description="Só coletas com seguidores; pelo menos uma.")
     resumo: ResumoSerie
 

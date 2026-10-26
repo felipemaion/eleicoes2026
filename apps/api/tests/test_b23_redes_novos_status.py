@@ -53,11 +53,13 @@ def test_rotas_de_redes_aceitam_perfil_erro_transitorio(tmp_path: Path) -> None:
     with _api(dir_redes) as api:
         lista = api.get("/api/redes", params=PARAMS)
         assert lista.status_code == 200, lista.text
-        status = {c["username"]: c["status"] for c in lista.json()["candidatos"] if c["username"]}
+        status = {
+            p["username"]: p["status"] for c in lista.json()["candidatos"] for p in c["perfis"]
+        }
         assert status["bruno_lima"] == "erro_transitorio"
         assert lista.json()["excluidos"]["indisponivel"] >= 1
-        for rota in ("/api/redes/serie", "/api/redes/correlacoes"):
-            assert api.get(rota, params=PARAMS).status_code in (200, 404), rota
+        assert api.get("/api/redes/correlacoes", params=PARAMS).status_code == 200
+        assert api.get("/api/redes/serie", params={"sq": 3}).status_code == 200
 
 
 def test_health_coleta_parcial_avanca_ultima_ok_e_expoe_erros(tmp_path: Path) -> None:

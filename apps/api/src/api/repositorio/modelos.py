@@ -182,6 +182,7 @@ class RedesMeta:
 class RedesStatus:
     """Última tentativa de coleta, como o ETL a registra em `status.json` (T-D09)."""
 
-    resultado: str | None  # ok | limite | erro
+    resultado: str | None  # ok | parcial | limite | erro
     motivo: str | None
     coletado_em: datetime | None  # UTC
+    perfis_com_erro: int = 0  # perfis com `erro_transitorio` na rodada (0 em status antigo)

@@ -2024,7 +2024,7 @@
               }
             ],
             "title": "Resultado",
-            "description": "Tentativa mais recente: `ok`, `limite` ou `erro`; nulo sem `status.json`."
+            "description": "Tentativa mais recente: `ok`, `parcial` (mais de 5% dos perfis com erro, mas com snapshots gravados), `limite` ou `erro`; nulo sem `status.json`."
           },
           "motivo": {
             "anyOf": [
@@ -2037,6 +2037,11 @@
             ],
             "title": "Motivo",
             "description": "Motivo informado quando o resultado não é `ok`."
+          },
+          "perfis_com_erro": {
+            "type": "integer",
+            "title": "Perfis Com Erro",
+            "description": "Perfis com `erro_transitorio` na tentativa mais recente (0 sem `status.json`)."
           },
           "dias_desde_ultima_coleta_ok": {
             "anyOf": [
@@ -2056,6 +2061,7 @@
           "coletado_em",
           "resultado",
           "motivo",
+          "perfis_com_erro",
           "dias_desde_ultima_coleta_ok"
         ],
         "title": "ColetaRedes",
@@ -2064,6 +2070,7 @@
           {
             "coletado_em": "2026-10-13T09:00:00Z",
             "dias_desde_ultima_coleta_ok": 1,
+            "perfis_com_erro": 0,
             "resultado": "ok"
           }
         ]
@@ -4817,7 +4824,7 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "`ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial` ou `nao_coletado` (declarado, ainda sem coleta). Só `ok` traz números."
+            "description": "`ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial`, `erro_transitorio` (falha da coleta, não da conta) ou `nao_coletado` (declarado, ainda sem coleta). Só `ok` traz números."
           },
           "seguidores": {
             "anyOf": [
@@ -5311,6 +5318,7 @@
               "ok",
               "nao_encontrado",
               "nao_comercial",
+              "erro_transitorio",
               "nao_coletado",
               "sem_rede"
             ],
@@ -6430,7 +6438,7 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "Situação na coleta mais recente (`ok`, `nao_encontrado`…)."
+            "description": "Situação na coleta mais recente (`ok`, `nao_encontrado`, `erro_transitorio`…)."
           },
           "pontos": {
             "items": {

@@ -33,8 +33,9 @@ class PerfilRede(BaseModel):
         description="Conta usada nos indicadores: a de mais seguidores entre as com números."
     )
     status: str = Field(
-        description="`ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial` ou "
-        "`nao_coletado` (declarado, ainda sem coleta). Só `ok` traz números."
+        description="`ok`, `nao_encontrado` (pessoal ou inexistente), `nao_comercial`, "
+        "`erro_transitorio` (falha da coleta, não da conta) ou `nao_coletado` (declarado, ainda "
+        "sem coleta). Só `ok` traz números."
     )
     seguidores: int | None = Field(description="null = indisponível (≠ zero).")
     seguindo: int | None
