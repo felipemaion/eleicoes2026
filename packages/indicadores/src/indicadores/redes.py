@@ -20,6 +20,8 @@ import polars as pl
 from indicadores._comum import exigir_colunas, exigir_unicidade, razao, spearman_listas
 
 __all__ = [
+    "aplicar_renomeacoes",
+    "conta_analisada",
     "correlacao",
     "indicadores_candidato",
     "metricas_janelas",
@@ -93,14 +95,119 @@ def ultimo_snapshot(perfis: pl.DataFrame) -> pl.DataFrame:
 
     Falha alto em snapshot repetido (mesma conta e mesmo `coletado_em`).
     """
-    exigir_colunas(perfis, _COLUNAS_PERFIS, "redes.ultimo_snapshot")
-    exigir_unicidade(perfis, ("username", "coletado_em"), "redes.ultimo_snapshot")
     return (
-        _em_utc(perfis, ["coletado_em"])
-        .sort("coletado_em")
+        _snapshots(perfis, "redes.ultimo_snapshot")
         .group_by("username", maintain_order=True)
         .last()
         .sort("username")
+    )
+
+
+def aplicar_renomeacoes(df: pl.DataFrame, renomeacoes: pl.DataFrame | None) -> pl.DataFrame:
+    """Troca `username` pela identidade atual da conta (mapa `username_tse → username_atual`).
+
+    Ponto de extensão para contas renomeadas (T-D15): os snapshots sob o nome declarado ao TSE e
+    sob o nome atual passam a ser **uma série só** (spec §9.0, conta analisada). Vale para
+    `redes_perfis` e `redes_posts`; aplique às duas antes dos demais indicadores. Sem mapa
+    (`None`), devolve `df` intacto. Falha alto em `username_tse` repetido ou mapa encadeado
+    (a→b e b→c), que deixaria a identidade ambígua.
+    """
+    if renomeacoes is None:
+        return df
+    exigir_colunas(renomeacoes, ("username_tse", "username_atual"), "redes.aplicar_renomeacoes")
+    exigir_colunas(df, ("username",), "redes.aplicar_renomeacoes")
+    mapa = renomeacoes.filter(pl.col("username_tse") != pl.col("username_atual"))
+    repetidos = mapa.filter(pl.col("username_tse").is_duplicated())["username_tse"].unique()
+    if repetidos.len():
+        raise ValueError(f"redes.aplicar_renomeacoes: username_tse repetido: {repetidos.to_list()}")
+    encadeados = set(mapa["username_tse"].to_list()) & set(mapa["username_atual"].to_list())
+    if encadeados:
+        raise ValueError(f"redes.aplicar_renomeacoes: renomeação encadeada: {sorted(encadeados)}")
+    de_para = dict(
+        zip(mapa["username_tse"].to_list(), mapa["username_atual"].to_list(), strict=True)
+    )
+    return df.with_columns(pl.col("username").replace(de_para))
+
+
+def _snapshots(perfis: pl.DataFrame, contexto: str) -> pl.DataFrame:
+    exigir_colunas(perfis, _COLUNAS_PERFIS, contexto)
+    exigir_unicidade(perfis, ("username", "coletado_em"), contexto)
+    return _em_utc(perfis, ["coletado_em"]).sort("coletado_em")
+
+
+def _ultimo_valido(snapshots: pl.DataFrame, chave: Sequence[str]) -> pl.DataFrame:
+    """Último snapshot com seguidores de cada `chave` (contas sem nenhum válido ficam fora)."""
+    return (
+        snapshots.filter(pl.col("followers_count").is_not_null())
+        .group_by(chave, maintain_order=True)
+        .last()
+    )
+
+
+def conta_analisada(perfis: pl.DataFrame) -> pl.DataFrame:
+    """Conta analisada de cada candidato e a situação dela na coleta (spec §9.0, T-A13).
+
+    Conta analisada = a de **mais seguidores em qualquer snapshot válido** da série (máximo
+    histórico; empate: `username`). Uma falha de coleta nunca troca a conta: se o snapshot mais
+    recente dela não é válido, os números vêm do **último válido dela**, com
+    `conta_indisponivel_desde` (primeira coleta falha depois dele) e `desatualizado = true`.
+    Sem nenhum snapshot válido: a conta de menor `username` só como link, `seguidores` nulo.
+    Colunas: `sq_candidato, username, status` (do último válido; senão o da coleta mais recente),
+    `status_ultima_coleta, seguidores, seguindo, ultima_coleta_ok, conta_indisponivel_desde,
+    desatualizado`. Contas renomeadas: aplique `aplicar_renomeacoes` antes.
+    """
+    snaps = _snapshots(perfis, "redes.conta_analisada")
+    chave = ["sq_candidato", "username"]
+    validos = snaps.filter(pl.col("followers_count").is_not_null())
+    com_dados = (
+        validos.group_by(chave)
+        .agg(pl.col("followers_count").max().alias("_maximo"))
+        .sort(["sq_candidato", "_maximo", "username"], descending=[False, True, False])
+        .unique(subset="sq_candidato", keep="first", maintain_order=True)
+        .select(chave)
+    )
+    sem_dados = (
+        snaps.join(com_dados.select("sq_candidato"), on="sq_candidato", how="anti")
+        .group_by("sq_candidato")
+        .agg(pl.col("username").min())
+    )
+    escolhidas = pl.concat([com_dados, sem_dados.select(chave)])
+    seguindo = (
+        pl.col("follows_count") if "follows_count" in snaps.columns else pl.lit(None, pl.Int64)
+    )
+    ultimo_ok = _ultimo_valido(snaps, chave).select(
+        *chave,
+        pl.col("status").alias("_status_ok"),
+        pl.col("followers_count").alias("seguidores"),
+        seguindo.alias("seguindo"),
+        pl.col("coletado_em").alias("ultima_coleta_ok"),
+    )
+    ultimo = snaps.group_by(chave).agg(pl.col("status").last().alias("status_ultima_coleta"))
+    falhas = (
+        snaps.join(ultimo_ok.select(*chave, "ultima_coleta_ok"), on=chave, how="inner")
+        .filter(pl.col("coletado_em") > pl.col("ultima_coleta_ok"))
+        .group_by(chave)
+        .agg(pl.col("coletado_em").min().alias("conta_indisponivel_desde"))
+    )
+    return (
+        escolhidas.join(ultimo_ok, on=chave, how="left")
+        .join(ultimo, on=chave, how="left")
+        .join(falhas, on=chave, how="left")
+        .with_columns(
+            pl.coalesce("_status_ok", "status_ultima_coleta").alias("status"),
+            pl.col("conta_indisponivel_desde").is_not_null().alias("desatualizado"),
+        )
+        .sort("sq_candidato")
+        .select(
+            *chave,
+            "status",
+            "status_ultima_coleta",
+            "seguidores",
+            "seguindo",
+            "ultima_coleta_ok",
+            "conta_indisponivel_desde",
+            "desatualizado",
+        )
     )
 
 
@@ -144,15 +251,16 @@ def _por_semana(n: str) -> pl.Expr:
 def metricas_janelas(perfis: pl.DataFrame, posts: pl.DataFrame) -> pl.DataFrame:
     """Posts, vídeos, ritmo semanal e engajamento por conta × janela (spec §9.1 e §9.2).
 
-    Só contas com dados (seguidores não nulos no último snapshot). Janelas: `pre_campanha`,
-    `campanha`, `pos_eleicao` (até a última coleta da conta) e `total`. Taxa por semana nula
+    Só contas com algum snapshot válido; seguidores e fim das janelas abertas vêm do **último
+    snapshot válido** (uma coleta falha não apaga as métricas; T-A13). Janelas: `pre_campanha`,
+    `campanha`, `pos_eleicao` (até a última coleta válida da conta) e `total`. Taxa por semana nula
     em janela com menos de 7 dias; `pct_video` nulo sem post. Engajamento por post =
     `100 × (curtidas + comentários) / seguidores`, sem curtidas/comentários nulos nem posts com
     menos de 48 h na coleta; média, mediana e `n_posts_engajamento`.
     """
     contas = (
-        ultimo_snapshot(perfis)
-        .filter(pl.col("followers_count").is_not_null())
+        _ultimo_valido(_snapshots(perfis, "redes.metricas_janelas"), ["username"])
+        .sort("username")
         .select(
             "username",
             pl.col("followers_count").alias("seguidores"),
@@ -228,31 +336,17 @@ def indicadores_candidato(
 ) -> pl.DataFrame:
     """Resumo por candidatura (spec §9.3): uma linha por `sq_candidato` de `votos`.
 
-    `votos` traz `sq_candidato, cd_cargo, votos` (nominais válidos, §2.1). Conta principal = a de
-    mais seguidores no último snapshot (empate: `username`); sem perfil → `status = sem_rede`.
-    Colunas: seguidores e seguindo, `seguidores_por_mil_votos`, `votos_por_mil_seguidores`,
-    ritmo de posts na campanha e no pós e `variacao_ritmo_pct`, `pct_video` (janela total),
+    `votos` traz `sq_candidato, cd_cargo, votos` (nominais válidos, §2.1). Conta = a de
+    `conta_analisada` (máximo histórico, sem fallback em falha de coleta, com
+    `ultima_coleta_ok`, `conta_indisponivel_desde`, `desatualizado`, `status_ultima_coleta`);
+    sem perfil → `status = sem_rede`. Colunas: seguidores e seguindo,
+    `seguidores_por_mil_votos`, `votos_por_mil_seguidores`, ritmo de posts na campanha e no
+    pós e `variacao_ritmo_pct`, `pct_video` (janela total),
     engajamento mediano e médio da campanha, `tem_dados`.
     """
     exigir_colunas(votos, ("sq_candidato", "cd_cargo", "votos"), "redes.indicadores_candidato")
     exigir_unicidade(votos, ("sq_candidato",), "redes.indicadores_candidato")
-    ultimos = ultimo_snapshot(perfis)
-    seguindo = "follows_count" if "follows_count" in ultimos.columns else None
-    principal = (
-        ultimos.sort(
-            ["sq_candidato", "followers_count", "username"],
-            descending=[False, True, False],
-            nulls_last=True,
-        )
-        .unique(subset="sq_candidato", keep="first", maintain_order=True)
-        .select(
-            "sq_candidato",
-            "username",
-            "status",
-            pl.col("followers_count").alias("seguidores"),
-            (pl.col(seguindo) if seguindo else pl.lit(None, dtype=pl.Int64)).alias("seguindo"),
-        )
-    )
+    principal = conta_analisada(perfis)
     janelas = metricas_janelas(perfis, posts)
     campanha = _da_janela(
         janelas,
@@ -274,6 +368,7 @@ def indicadores_candidato(
         .with_columns(
             pl.col("status").fill_null(STATUS_SEM_REDE),
             pl.col("seguidores").is_not_null().alias("tem_dados"),
+            pl.col("desatualizado").fill_null(False),
             (1000 * razao(pl.col("seguidores"), pl.col("votos"))).alias("seguidores_por_mil_votos"),
             (1000 * razao(pl.col("votos"), pl.col("seguidores"))).alias("votos_por_mil_seguidores"),
             (100 * razao(pl.col("posts_semana_pos"), pl.col("posts_semana_campanha")) - 100).alias(
@@ -288,6 +383,10 @@ def indicadores_candidato(
             "username",
             "status",
             "tem_dados",
+            "status_ultima_coleta",
+            "ultima_coleta_ok",
+            "conta_indisponivel_desde",
+            "desatualizado",
             "seguidores",
             "seguindo",
             "seguidores_por_mil_votos",
@@ -303,10 +402,8 @@ def indicadores_candidato(
 
 
 def _snapshots_validos(perfis: pl.DataFrame) -> pl.DataFrame:
-    exigir_colunas(perfis, _COLUNAS_PERFIS, "redes.serie_seguidores")
-    exigir_unicidade(perfis, ("username", "coletado_em"), "redes.serie_seguidores")
     return (
-        _em_utc(perfis, ["coletado_em"])
+        _snapshots(perfis, "redes.serie_seguidores")
         .filter(pl.col("followers_count").is_not_null())
         .sort("username", "coletado_em")
     )

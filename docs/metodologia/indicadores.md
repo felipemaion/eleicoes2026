@@ -750,8 +750,8 @@ oculto —, `comments_count, coletado_em`).
   |---|---|---|---|
   | `pre_campanha` | 01/01/2026 | 15/08/2026 | 227 |
   | `campanha` | 16/08/2026 (propaganda permitida, Lei 9.504/1997 art. 36) | 04/10/2026 (1º turno, CF art. 77) | 50 |
-  | `pos_eleicao` | 05/10/2026 00:00 | última coleta da conta | fracionário |
-  | `total` | 01/01/2026 | última coleta da conta | fracionário |
+  | `pos_eleicao` | 05/10/2026 00:00 | última coleta **válida** da conta | fracionário |
+  | `total` | 01/01/2026 | última coleta **válida** da conta | fracionário |
 
   Antes de 01/01/2026 fica fora (a coleta pagina só até essa data). Para quem disputa o 2º turno
   (25/10/2026), `pos_eleicao` inclui a campanha do 2º turno — a tela avisa nesses cargos.
@@ -762,14 +762,40 @@ oculto —, `comments_count, coletado_em`).
   (curtidas acumuladas). **Vídeo** = `media_type = VIDEO` (inclui reels,
   `media_product_type = REELS`); carrossel conta como post, não como vídeo (a API não diz o tipo
   dos itens internos sem outra chamada por post).
-- **Conta com dados** = `followers_count` não nulo no último snapshot. Conta pessoal ou
-  inexistente (`status` ≠ `ok`) não tem métrica: aparece **só com o link** e sai de médias e
-  correlações — sempre **contada** (`n_excluidos`, `tem_dados = false`). Candidato sem
+- **Snapshot válido** = `followers_count` não nulo. **Conta com dados** = conta com pelo menos
+  um snapshot válido na série. Conta pessoal ou inexistente desde a primeira coleta
+  (`status` ≠ `ok` em todos os snapshots) não tem métrica: aparece **só com o link** e sai de
+  médias e correlações — sempre **contada** (`n_excluidos`, `tem_dados = false`). Candidato sem
   Instagram declarado ao TSE → `status = sem_rede`.
-- **Conta principal.** Candidato com mais de uma conta com dados: vale a de **mais seguidores**
-  no último snapshot (empate: `username` em ordem alfabética). Somar contas dupla-contaria o
-  público comum; as demais aparecem só como link.
-- **Seguidores = último snapshot.** A API não tem histórico de seguidores (ADR 0008): o
+
+<a id="conta-analisada"></a>
+- **Conta analisada (fixa, sem fallback — T-A13).** Candidato com mais de uma conta: vale a de
+  **mais seguidores em qualquer snapshot válido da série** (máximo histórico; empate: `username`
+  em ordem alfabética). Somar contas dupla-contaria o público comum; as demais aparecem só como
+  link. **Uma falha de coleta nunca troca a conta analisada**: com a regra antiga ("mais
+  seguidores no último snapshot"), a conta de 2,97 mi de um candidato deu `nao_encontrado` em
+  22/10 e o painel passou a analisá-lo por uma conta lateral de 4,7 mil, sem aviso. A conta só
+  muda se outra **superar o máximo histórico** dela — crescimento real, não ausência de dado.
+  - Se o snapshot mais recente da conta analisada **não é válido**, todos os indicadores usam o
+    **último snapshot válido dela** (nunca o de outra conta) e o resultado leva
+    `ultima_coleta_ok` (data dele), `conta_indisponivel_desde` (primeira coleta falha depois
+    dele), `status_ultima_coleta` (o `status` cru da coleta mais recente) e
+    `desatualizado = true`; `status` fica o do último válido (`ok`). A tela **avisa**
+    (`redes_conta_indisponivel` em `publico/textos.json`). Conta que falhou e voltou não está
+    desatualizada.
+  - **Nenhum indicador vira nulo** por estar desatualizado: seguidores, as razões por mil, ritmo
+    e engajamento usam numerador e denominador do **mesmo período** (as janelas abertas terminam
+    na última coleta válida, e posts só são lidos quando o perfil é encontrado), então o número
+    é correto para o período que cobre — só não é o de hoje. Anular a variação de ritmo
+    esconderia semanas de dado real; o que protege o leitor é a data explícita
+    (`ultima_coleta_ok`) e o aviso, que a tela é obrigada a mostrar quando `desatualizado`.
+  - Sem nenhum snapshot válido em toda a série → `tem_dados = false`, `seguidores` nulo, conta de
+    menor `username` só como link, `status` = o da coleta mais recente (`nao_encontrado`,
+    `nao_comercial`). Não há fallback para outra conta sem dados.
+  - **Contas renomeadas** (T-D15): o mapa `username_tse → username_atual` entra por
+    `aplicar_renomeacoes` (perfis **e** posts) antes dos indicadores; os snapshots sob os dois
+    nomes viram uma série só. Mapa com `username_tse` repetido ou encadeado (a→b, b→c) falha alto.
+- **Seguidores = último snapshot válido.** A API não tem histórico de seguidores (ADR 0008): o
   denominador do engajamento de um post de março é o público de outubro. Por isso o engajamento
   padrão da tela é o da **campanha** (perto da coleta), não o do ano.
 
@@ -807,8 +833,9 @@ oculto —, `comments_count, coletado_em`).
 - **Fórmulas:** `seguidores_por_mil_votos = 1000 × seguidores / votos` (votos 0 → `null`);
   `votos_por_mil_seguidores = 1000 × votos / seguidores` (seguidores 0 → `null`). `votos` =
   votos nominais válidos do candidato no cargo (§2.1), total da UF (Brasil para presidente).
-- **Resumo por candidato** (uma linha por candidatura, inclusive sem conta): `username`,
-  `status`, `tem_dados`, `seguidores`, as duas razões, `posts_semana_campanha`,
+- **Resumo por candidato** (uma linha por candidatura, inclusive sem conta): `username` (conta
+  analisada, §9.0), `status`, `tem_dados`, `status_ultima_coleta`, `ultima_coleta_ok`,
+  `conta_indisponivel_desde`, `desatualizado`, `seguidores`, as duas razões, `posts_semana_campanha`,
   `posts_semana_pos`, `variacao_ritmo_pct` (§9.1), `pct_video` (janela `total`),
   `engajamento_mediano` e `engajamento_medio` (janela `campanha`).
 - **Por que as duas razões:** "votos por mil seguidores" lê como **conversão** do público em voto

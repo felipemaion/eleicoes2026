@@ -315,7 +315,9 @@ def _redes_janelas(entrada: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _redes_candidato(entrada: dict[str, Any]) -> list[dict[str, Any]]:
     votos = pl.DataFrame(entrada["votos"])
-    return _linhas(redes.indicadores_candidato(_perfis(entrada), _posts(entrada), votos))
+    out = redes.indicadores_candidato(_perfis(entrada), _posts(entrada), votos)
+    datas = [c for c, t in out.schema.items() if isinstance(t, pl.Datetime)]
+    return _linhas(out.with_columns(pl.col(datas).dt.strftime("%Y-%m-%dT%H:%M:%SZ")))
 
 
 def _redes_serie(entrada: dict[str, Any]) -> dict[str, Any]:
